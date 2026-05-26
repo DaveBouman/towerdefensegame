@@ -1,0 +1,21 @@
+import type { DamageType } from '../combat/types';
+
+export type TowerArchetype = 'close' | 'long';
+
+export interface TowerProfile {
+    archetype: TowerArchetype;
+    unitType: string;
+    range: number;
+    damage: number;
+    maxHealth: number;
+    isMobile: boolean;
+    /** World pixels moved per simulation tick. */
+    moveSpeedPerTick: number;
+    /** Attacks per second at the fixed simulation tick rate. */
+    attacksPerSecond: number;
+    color: number;
+    sizeScale: number;
+    weaknesses: DamageType[];
+    /** Gold awarded to the killer when this unit is destroyed. */
+    goldValue: number;
+}
