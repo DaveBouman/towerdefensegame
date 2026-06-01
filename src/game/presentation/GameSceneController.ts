@@ -72,20 +72,31 @@ export class GameSceneController
                     row: tile.row,
                 });
             },
+            (pointer) =>
+                this.towerDropTarget.pickTowerIdAtWorld({
+                    x: pointer.worldX,
+                    y: pointer.worldY,
+                }) !== null,
         );
         this.towerRelocation = new TowerRelocationController(
             scene,
             grid,
-            () => this.session.isBetweenWaves(),
+            () => this.session.canRepositionTowers(),
             (world) => this.towerDropTarget.pickTowerIdAtWorld(world),
             () => this.selection.getSelectedTowerId(),
-            (towerId, tile) =>
             {
-                EventBus.emit(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, {
-                    towerId,
-                    col: tile.col,
-                    row: tile.row,
-                });
+                onRelocate: (towerId, tile) =>
+                {
+                    EventBus.emit(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, {
+                        towerId,
+                        col: tile.col,
+                        row: tile.row,
+                    });
+                },
+                onDragStart: (towerId, world) => this.towerPresenter.beginDrag(towerId, world),
+                onDragMove: (towerId, world) => this.towerPresenter.updateDrag(towerId, world),
+                onDragEnd: (towerId) => this.towerPresenter.endDrag(towerId),
+                canDropAt: (towerId, tile) => this.session.canRelocateTowerTo(towerId, tile),
             },
         );
     }
@@ -259,6 +270,8 @@ export class GameSceneController
             this.towerPresenter.setHealth(tower.id, tower.health, tower.maxHealth);
         }
 
+        this.towerPresenter.setRelocateMode(this.session.canRepositionTowers());
+
         this.enemyPresenter.lerpFrame(deltaMs);
         this.towerPresenter.lerpFrame(deltaMs);
         this.selection.syncFrame();
@@ -291,13 +304,27 @@ export class GameSceneController
         row: number;
     }): void
     {
-        if (!this.session.relocateTowerAt({ col, row }, towerId))
+        const snapshot = this.session.towers.getSnapshot(towerId);
+
+        if (!snapshot)
         {
             return;
         }
 
-        this.towerPresenter.setTargetPosition(towerId, this.session.towers.getSnapshot(towerId)!.position);
-        this.towerPresenter.snapToTarget(towerId);
+        const moved = this.session.relocateTowerAt({ col, row }, towerId);
+        const next = this.session.towers.getSnapshot(towerId);
+
+        if (next)
+        {
+            this.towerPresenter.setTargetPosition(towerId, next.position);
+            this.towerPresenter.snapToTarget(towerId);
+        }
+        else if (!moved)
+        {
+            this.towerPresenter.setTargetPosition(towerId, snapshot.position);
+            this.towerPresenter.snapToTarget(towerId);
+        }
+
         this.selection.syncFrame();
     }
 
@@ -339,6 +366,7 @@ export class GameSceneController
         }
 
         this.towerPresenter.place(this.scene, this.grid, snapshot);
+        this.towerPresenter.setRelocateMode(this.session.canRepositionTowers());
     }
 
     private onTowerRemoved ({ id }: { id: string }): void

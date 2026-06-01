@@ -67,6 +67,29 @@ export class TowerPresenter
         return this.towers.get(towerId)?.getDisplayPosition();
     }
 
+    setRelocateMode (enabled: boolean): void
+    {
+        for (const tower of this.towers.values())
+        {
+            tower.setRelocateEnabled(enabled);
+        }
+    }
+
+    beginDrag (towerId: string, world: WorldPosition): void
+    {
+        this.towers.get(towerId)?.beginDrag(world);
+    }
+
+    updateDrag (towerId: string, world: WorldPosition): void
+    {
+        this.towers.get(towerId)?.updateDrag(world);
+    }
+
+    endDrag (towerId: string): void
+    {
+        this.towers.get(towerId)?.endDrag();
+    }
+
     lerpFrame (deltaMs: number): void
     {
         for (const tower of this.towers.values())

@@ -126,9 +126,25 @@ export class GameSession
         return WaveRoundController.isCombatActive(this.state);
     }
 
+    /** True during deployment or between waves (not combat / reward pick). */
+    canRepositionTowers (): boolean
+    {
+        if (this.state.upgradePick || this.isRoundActive())
+        {
+            return false;
+        }
+
+        return this.deployment.active || this.isBetweenWaves();
+    }
+
+    canRelocateTowerTo (towerId: string, tile: GridPosition): boolean
+    {
+        return this.towers.canRelocateTo(towerId, tile);
+    }
+
     relocateTowerAt (tile: GridPosition, towerId: string): boolean
     {
-        if (!this.isBetweenWaves())
+        if (!this.canRepositionTowers())
         {
             return false;
         }

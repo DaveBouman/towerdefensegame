@@ -14,6 +14,7 @@ export class Tower
     private targetPosition: WorldPosition;
     private lastTopLeftX = Number.NaN;
     private lastTopLeftY = Number.NaN;
+    private dragging = false;
 
     constructor (
         scene: Phaser.Scene,
@@ -43,8 +44,41 @@ export class Tower
         return copyWorldPosition(this.displayPosition);
     }
 
+    setRelocateEnabled (enabled: boolean): void
+    {
+        this.view.setRelocateEnabled(enabled);
+    }
+
+    beginDrag (world: WorldPosition): void
+    {
+        this.dragging = true;
+        this.view.setDragVisual(true);
+        this.setDisplayCenter(world);
+    }
+
+    updateDrag (world: WorldPosition): void
+    {
+        if (!this.dragging)
+        {
+            return;
+        }
+
+        this.setDisplayCenter(world);
+    }
+
+    endDrag (): void
+    {
+        this.dragging = false;
+        this.view.setDragVisual(false);
+    }
+
     lerpTowardTarget (deltaMs: number): void
     {
+        if (this.dragging)
+        {
+            return;
+        }
+
         this.displayPosition = lerpWorldPosition(
             this.displayPosition,
             this.targetPosition,
@@ -75,6 +109,12 @@ export class Tower
     destroy (): void
     {
         this.view.destroy();
+    }
+
+    private setDisplayCenter (world: WorldPosition): void
+    {
+        this.displayPosition = copyWorldPosition(world);
+        this.applyDisplayPosition();
     }
 
     private applyDisplayPosition (): void

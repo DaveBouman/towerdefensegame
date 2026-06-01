@@ -15,12 +15,14 @@ export const GameHud = () =>
         EventBus.emit(GAME_EVENTS.START_WAVE);
     };
 
-    const betweenWaves = canStartWave && !upgradePick && !deployment?.active;
+    const canReposition = !upgradePick && (deployment?.active || canStartWave);
+    const dragHint = `Drag placed towers on the bottom ${PLAYER_PLACEMENT_ROW_COUNT} rows to reposition them`;
+    const hasPlacedTowers = (deployment?.placedCount ?? 0) > 0 || (canStartWave && wave >= 0);
 
     const deployHint = deployment?.active && deployment.nextArchetype
-        ? `Place ${deploymentUnitLabel(deployment.nextArchetype)} (${deployment.placedCount + 1}/${deployment.totalCount}) on the bottom ${PLAYER_PLACEMENT_ROW_COUNT} rows`
-        : betweenWaves
-            ? `Drag towers on the bottom ${PLAYER_PLACEMENT_ROW_COUNT} rows to reposition, or select one and click an empty tile`
+        ? `Place ${deploymentUnitLabel(deployment.nextArchetype)} (${deployment.placedCount + 1}/${deployment.totalCount}) on the green rows.${deployment.placedCount > 0 ? ` ${dragHint}` : ''}`
+        : canReposition && hasPlacedTowers
+            ? dragHint
             : null;
 
     const hasNextWave = hasWaveDefinition(nextWave);

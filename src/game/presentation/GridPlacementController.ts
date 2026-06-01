@@ -12,11 +12,12 @@ export class GridPlacementController
         private readonly grid: Grid,
         private readonly isDeploymentActive: () => boolean,
         private readonly onTileChosen: (tile: GridPosition) => void,
+        private readonly shouldIgnorePointer: (pointer: Input.Pointer) => boolean = () => false,
     )
     {
         this.onPointerDown = (pointer: Input.Pointer) =>
         {
-            if (!this.isDeploymentActive())
+            if (!this.isDeploymentActive() || this.shouldIgnorePointer(pointer))
             {
                 return;
             }

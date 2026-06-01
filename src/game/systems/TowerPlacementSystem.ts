@@ -50,7 +50,7 @@ export class TowerPlacementSystem
         return tower;
     }
 
-    tryRelocate (towerId: string, tile: GridPosition): boolean
+    canRelocateTo (towerId: string, tile: GridPosition): boolean
     {
         const tower = this.placed.get(towerId);
 
@@ -64,9 +64,26 @@ export class TowerPlacementSystem
             return true;
         }
 
-        if (this.towerOnTile(tile, towerId))
+        return !this.towerOnTile(tile, towerId);
+    }
+
+    tryRelocate (towerId: string, tile: GridPosition): boolean
+    {
+        if (!this.canRelocateTo(towerId, tile))
         {
             return false;
+        }
+
+        const tower = this.placed.get(towerId);
+
+        if (!tower)
+        {
+            return false;
+        }
+
+        if (tower.spawnTile.col === tile.col && tower.spawnTile.row === tile.row)
+        {
+            return true;
         }
 
         const previousTile = { ...tower.spawnTile };
