@@ -322,13 +322,6 @@ export class GameSession
             return;
         }
 
-        const enemyNexus = this.enemies.getEnemyNexus();
-
-        if (enemyNexus && enemyNexus.health > 0)
-        {
-            return;
-        }
-
         this.resetPlayerTowersAfterWave();
         this.towerUpgrades.offerPostWaveDraft(this.state);
         this.towerUpgrades.publishInventorySnapshot();

@@ -9,6 +9,7 @@ import { Grid } from '../grid/Grid';
 import { tileCenterWorld } from '../grid/worldPosition';
 import {
     canEnemiesTargetPlayerNexus,
+    canEnemyNexusAttack,
     canPlayerNexusTargetEnemyNexus,
     enemiesAttackableByTowers,
     livingMinions,
@@ -77,5 +78,11 @@ describe('targetPriority', () =>
     {
         expect(canPlayerNexusTargetEnemyNexus([ minion() ])).toBe(false);
         expect(canPlayerNexusTargetEnemyNexus([ nexus() ])).toBe(true);
+    });
+
+    it('enemy nexus may only attack while wave minions remain', () =>
+    {
+        expect(canEnemyNexusAttack([ minion(), nexus() ])).toBe(true);
+        expect(canEnemyNexusAttack([ nexus() ])).toBe(false);
     });
 });

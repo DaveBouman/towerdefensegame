@@ -20,7 +20,7 @@
       "maxHealth": 2500,
       "damage": 18,
       "defense": 8,
-      "range": 10,
+      "range": 8,
       "attacksPerSecond": 0.6,
       "moveSpeedPerTick": 0,
       "goldValue": 0,

@@ -34,7 +34,7 @@ describe('GameSession.checkWaveComplete', () =>
         expect(session.state.upgradePick).toBeNull();
     });
 
-    it('offers rewards once when combat ends with no enemies left', () =>
+    it('offers rewards when minions are cleared even if the enemy nexus survives', () =>
     {
         session.state.setTowerDraftPick(null);
         session.state.setWave(1);
@@ -43,10 +43,7 @@ describe('GameSession.checkWaveComplete', () =>
 
         const enemyNexus = session.enemies.getEnemyNexus();
 
-        if (enemyNexus)
-        {
-            enemyNexus.health = 0;
-        }
+        expect(enemyNexus?.health).toBeGreaterThan(0);
 
         session.checkWaveComplete();
 
@@ -58,6 +55,7 @@ describe('GameSession.checkWaveComplete', () =>
         session.checkWaveComplete();
 
         expect(session.state.upgradePick?.choices).toEqual(firstChoices);
+        expect(enemyNexus?.health).toBeGreaterThan(0);
     });
 
     it('opens a tower draft after claiming a post-wave reward', () =>
