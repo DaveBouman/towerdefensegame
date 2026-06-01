@@ -19,7 +19,8 @@ export const collectAttackRingTiles = (
     blocked: ReadonlySet<string>,
 ): GridPosition[] =>
 {
-    const targetTile = grid.toGrid(target.position.x, target.position.y);
+    const targetTile = grid.toGrid(target.position.x, target.position.y)
+        ?? grid.layout.playfieldAnchorTile(target.position);
 
     if (!targetTile)
     {
@@ -106,7 +107,8 @@ export const pickSurroundGoalTile = (
     slotIndex: number,
 ): GridPosition | null =>
 {
-    const targetTile = grid.toGrid(target.position.x, target.position.y);
+    const targetTile = grid.toGrid(target.position.x, target.position.y)
+        ?? grid.layout.playfieldAnchorTile(target.position);
 
     if (!targetTile)
     {

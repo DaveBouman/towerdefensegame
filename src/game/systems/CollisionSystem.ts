@@ -104,6 +104,22 @@ export class CollisionSystem
         return [ ...this.bodies.keys() ];
     }
 
+    forEachBody (
+        excludeId: string,
+        visit: (center: WorldPosition, halfWidth: number, halfHeight: number) => void,
+    ): void
+    {
+        for (const [ id, entry ] of this.bodies)
+        {
+            if (id === excludeId)
+            {
+                continue;
+            }
+
+            visit(entry.center, entry.halfWidth, entry.halfHeight);
+        }
+    }
+
     clear (): void
     {
         this.bodies.clear();

@@ -35,6 +35,3 @@ export const canEnemiesTargetPlayerNexus = (towers: readonly TowerState[]): bool
 export const canPlayerNexusTargetEnemyNexus = (enemies: readonly EnemyState[]): boolean =>
     livingMinions(enemies).length === 0;
 
-/** Enemy nexus only attacks during an active wave assault (while minions are on the field). */
-export const canEnemyNexusAttack = (enemies: readonly EnemyState[]): boolean =>
-    livingMinions(enemies).length > 0;

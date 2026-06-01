@@ -21,12 +21,12 @@ describe('pickTowerMovementTarget', () =>
     const towerAt = (row: number) =>
         new TowerState(grid, { col: 5, row }, towerDef.id, towerDef.profile);
 
-    const enemyAt = (row: number) =>
+    const enemyAt = (row: number, damage = enemyDef.baseStats.damage) =>
         new EnemyState(
             tileCenterWorld(GRID_CONFIG, { col: 5, row }),
             enemyDef.id,
             enemyDef.unitType,
-            enemyDef.baseStats,
+            { ...enemyDef.baseStats, damage },
             enemyHalf,
             enemyHalf,
         );
@@ -40,12 +40,26 @@ describe('pickTowerMovementTarget', () =>
         expect(pickTowerMovementTarget(tower, [ far, near ], rangePx)?.id).toBe(near.id);
     });
 
-    it('returns null when an enemy is already in attack range', () =>
+    it('returns null when the preferred target is in attack range', () =>
     {
         const tower = towerAt(35);
         const inRange = enemyAt(34);
 
         expect(pickTowerMovementTarget(tower, [ inRange ], rangePx)).toBeNull();
+    });
+
+    it('advances on the priority target when only a non-preferred enemy is in range', () =>
+    {
+        const tower = towerAt(35);
+
+        tower.setTargetingMode('highestDamage');
+
+        const weakInRange = enemyAt(34, 5);
+        const strongFar = enemyAt(5, 50);
+
+        expect(
+            pickTowerMovementTarget(tower, [ weakInRange, strongFar ], rangePx)?.id,
+        ).toBe(strongFar.id);
     });
 
     it('targets the enemy nexus when it is the only attackable enemy', () =>

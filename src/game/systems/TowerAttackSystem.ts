@@ -5,6 +5,7 @@ import { attacksPerSecondToIntervalTicks } from '../config/gameClockConfig';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
 import type { Grid } from '../grid/Grid';
+import { isPersistentEnemyNexus } from '../combat/enemyNexusPersistence';
 import { pickTowerAttackTarget } from '../combat/towerTargeting';
 import type { EnemySpawnSystem } from './EnemySpawnSystem';
 import type { KillRewardSystem } from './KillRewardSystem';
@@ -76,7 +77,11 @@ export class TowerAttackSystem
 
         EventBus.emit(GAME_EVENTS.TOWER_ATTACKED, payload);
 
-        if (enemyDied)
+        if (enemyDied && isPersistentEnemyNexus(target))
+        {
+            EventBus.emit(GAME_EVENTS.ENEMY_DAMAGED, target.snapshot());
+        }
+        else if (enemyDied)
         {
             this.killRewards.onEnemyKilled(target);
             this.enemies.remove(target.id);

@@ -3,6 +3,7 @@ import type { PlayerNexusState } from '../domain/PlayerNexusState';
 import type { PlayerNexusAttackPayload } from '../domain/types';
 import { EventBus } from '../EventBus';
 import { attacksPerSecondToIntervalTicks } from '../config/gameClockConfig';
+import { isPersistentEnemyNexus } from '../combat/enemyNexusPersistence';
 import {
     canPlayerNexusTargetEnemyNexus,
     livingMinions,
@@ -126,7 +127,11 @@ export class PlayerNexusAttackSystem
 
         EventBus.emit(GAME_EVENTS.PLAYER_NEXUS_ATTACKED, payload);
 
-        if (enemyDied)
+        if (enemyDied && isPersistentEnemyNexus(target))
+        {
+            EventBus.emit(GAME_EVENTS.ENEMY_DAMAGED, target.snapshot());
+        }
+        else if (enemyDied)
         {
             this.killRewards.onEnemyKilled(target);
             this.enemies.remove(target.id);

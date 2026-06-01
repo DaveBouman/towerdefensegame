@@ -22,6 +22,11 @@ import { WaveRoundController } from './WaveRoundController';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerDefinitionId } from '../config/towerCatalog';
 import { rollTowerDraftChoices } from '../config/towerDraft';
+import {
+    isEnemyNexusDefeated,
+    isPlayerNexusDefeated,
+    isWaveRoundComplete,
+} from '../combat/roundOutcome';
 import { PlayerNexusSystem } from '../systems/PlayerNexusSystem';
 import { EnemyNexusAttackSystem } from '../systems/EnemyNexusAttackSystem';
 import { PlayerNexusAttackSystem } from '../systems/PlayerNexusAttackSystem';
@@ -135,7 +140,7 @@ export class GameSession
         this.waveSpawns.clear();
         this.deployment.reset();
         this.playerNexus.spawn();
-        this.enemies.spawnEnemyNexus();
+        this.enemies.resetEnemyNexus();
         this.state.setLives(this.playerNexus.active?.maxHealth ?? this.state.lives);
         this.state.setWave(0);
         this.state.setUpgradePick(null);
@@ -173,6 +178,8 @@ export class GameSession
         }
 
         this.state.setTowerDraftPick(null);
+        this.towers.snapAllToSpawnTiles();
+        this.towerMovement.clearAll();
         this.deployment.beginWithQueue([ definitionId ]);
         this.syncDeploymentState();
 
@@ -317,11 +324,34 @@ export class GameSession
             return;
         }
 
-        if (this.enemies.livingCombatCount > 0 || this.waveSpawns.hasPendingSpawns)
+        if (isPlayerNexusDefeated(this.playerNexus.active))
         {
+            this.finishWave();
+
             return;
         }
 
+        if (isEnemyNexusDefeated(this.enemies.getEnemyNexus()))
+        {
+            this.finishWave();
+
+            return;
+        }
+
+        if (
+            isWaveRoundComplete(
+                this.enemies.all,
+                this.towers.all,
+                this.waveSpawns.hasPendingSpawns,
+            )
+        )
+        {
+            this.finishWave();
+        }
+    }
+
+    private finishWave (): void
+    {
         this.resetPlayerTowersAfterWave();
         this.towerUpgrades.offerPostWaveDraft(this.state);
         this.towerUpgrades.publishInventorySnapshot();

@@ -145,7 +145,7 @@ export class EnemyMovementSystem
 
         pathState.waypoints = step.path;
 
-        if (!this.collision.setPositionFromPath(enemy.id, step.position))
+        if (!this.collision.tryMove(enemy.id, step.position))
         {
             this.paths.delete(enemy.id);
 
@@ -178,7 +178,7 @@ export class EnemyMovementSystem
             : tileCenterWorld(this.mapGrid.config, goalTile);
         const next = stepTowardWorldTarget(enemy.position, standGoal, speed);
 
-        if (!this.collision.setPositionFromPath(enemy.id, next))
+        if (!this.collision.tryMove(enemy.id, next))
         {
             this.paths.delete(enemy.id);
 

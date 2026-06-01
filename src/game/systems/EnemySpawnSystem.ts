@@ -48,6 +48,14 @@ export class EnemySpawnSystem
         return enemiesAttackableByTowers(this.all);
     }
 
+    /** Full-health enemy nexus at run start (or after a full session reset). */
+    resetEnemyNexus (): EnemyState | null
+    {
+        this.remove(ENEMY_NEXUS_ID, true);
+
+        return this.spawnEnemyNexus();
+    }
+
     spawnEnemyNexus (): EnemyState | null
     {
         if (this.getEnemyNexus())
@@ -171,9 +179,14 @@ export class EnemySpawnSystem
         }
     }
 
-    remove (id: string): void
+    remove (id: string, force = false): void
     {
         const enemy = this.active.get(id);
+
+        if (enemy?.isNexus && !force)
+        {
+            return;
+        }
 
         if (!enemy || !this.active.delete(id))
         {

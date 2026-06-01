@@ -75,6 +75,31 @@ export class WorldLayout
         };
     }
 
+    /**
+     * Nearest in-bounds playfield tile for a world position (including off-grid nexuses).
+     */
+    playfieldAnchorTile ({ x, y }: WorldPosition): GridPosition | null
+    {
+        const { cols, rows, tileSize } = this.config;
+        const col = Math.max(0, Math.min(cols - 1, Math.floor(x / tileSize)));
+        const localY = y - this.playfieldOffsetY;
+
+        if (localY < 0)
+        {
+            return { col, row: 0 };
+        }
+
+        if (localY >= rows * tileSize)
+        {
+            return { col, row: rows - 1 };
+        }
+
+        return {
+            col,
+            row: Math.floor(localY / tileSize),
+        };
+    }
+
     worldToGrid ({ x, y }: WorldPosition): GridPosition | null
     {
         const localY = y - this.playfieldOffsetY;

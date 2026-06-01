@@ -9,6 +9,7 @@ vi.mock('../EventBus', () => ({
 }));
 
 import { GRID_CONFIG } from '../config/gridConfig';
+import { getTowerDefinitionOrThrow } from '../config/towerCatalog';
 import { Grid } from '../grid/Grid';
 import { GameSession } from './GameSession';
 
@@ -34,7 +35,24 @@ describe('GameSession.checkWaveComplete', () =>
         expect(session.state.upgradePick).toBeNull();
     });
 
-    it('offers rewards when minions are cleared even if the enemy nexus survives', () =>
+    it('preserves enemy nexus HP after a wave ends', () =>
+    {
+        session.state.setTowerDraftPick(null);
+        session.state.setWave(1);
+        session.state.setCanStartWave(false);
+        session.state.setUpgradePick(null);
+
+        const enemyNexus = session.enemies.getEnemyNexus();
+
+        expect(enemyNexus).toBeDefined();
+        enemyNexus!.health = enemyNexus!.maxHealth - 150;
+
+        session.checkWaveComplete();
+
+        expect(session.enemies.getEnemyNexus()?.health).toBe(enemyNexus!.maxHealth - 150);
+    });
+
+    it('ends the wave when minions are cleared and all player towers are destroyed', () =>
     {
         session.state.setTowerDraftPick(null);
         session.state.setWave(1);
@@ -48,14 +66,81 @@ describe('GameSession.checkWaveComplete', () =>
         session.checkWaveComplete();
 
         expect(session.state.upgradePick?.choices.length).toBeGreaterThan(0);
-        expect(session.state.canStartWave).toBe(false);
+        expect(enemyNexus?.health).toBeGreaterThan(0);
+    });
 
-        const firstChoices = [ ...(session.state.upgradePick?.choices ?? []) ];
+    it('does not end the wave when minions are cleared but player towers remain', () =>
+    {
+        session.state.setTowerDraftPick(null);
+        session.state.setWave(1);
+        session.state.setCanStartWave(false);
+        session.state.setUpgradePick(null);
+
+        const def = getTowerDefinitionOrThrow('militia');
+
+        session.towers.tryPlace({ col: 4, row: 35 }, def.id);
 
         session.checkWaveComplete();
 
-        expect(session.state.upgradePick?.choices).toEqual(firstChoices);
-        expect(enemyNexus?.health).toBeGreaterThan(0);
+        expect(session.state.upgradePick).toBeNull();
+    });
+
+    it('ends the run when the enemy nexus is finally destroyed', () =>
+    {
+        session.state.setTowerDraftPick(null);
+        session.state.setWave(1);
+        session.state.setCanStartWave(false);
+        session.state.setUpgradePick(null);
+
+        const enemyNexus = session.enemies.getEnemyNexus();
+
+        if (enemyNexus)
+        {
+            enemyNexus.health = 0;
+        }
+
+        session.checkWaveComplete();
+
+        expect(session.state.upgradePick?.choices.length).toBeGreaterThan(0);
+        expect(session.enemies.getEnemyNexus()?.health).toBe(0);
+    });
+
+    it('does not end the round when towers are wiped but minions remain', () =>
+    {
+        session.state.setTowerDraftPick(null);
+        session.state.setWave(1);
+        session.state.setCanStartWave(false);
+        session.state.setUpgradePick(null);
+
+        session.enemies.trySpawnAt({ col: 1, row: 1 }, 'basic');
+
+        const def = getTowerDefinitionOrThrow('militia');
+        const tower = session.towers.tryPlace({ col: 4, row: 35 }, def.id);
+
+        session.towers.remove(tower!.id);
+
+        session.checkWaveComplete();
+
+        expect(session.state.upgradePick).toBeNull();
+    });
+
+    it('ends the round when the player nexus is destroyed', () =>
+    {
+        session.state.setTowerDraftPick(null);
+        session.state.setWave(1);
+        session.state.setCanStartWave(false);
+        session.state.setUpgradePick(null);
+
+        const nexus = session.playerNexus.active;
+
+        if (nexus)
+        {
+            nexus.health = 0;
+        }
+
+        session.checkWaveComplete();
+
+        expect(session.state.upgradePick?.choices.length).toBeGreaterThan(0);
     });
 
     it('opens a tower draft after claiming a post-wave reward', () =>

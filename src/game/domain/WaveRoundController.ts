@@ -84,6 +84,7 @@ export class WaveRoundController
         this.waveSpawns.clear();
         this.state.setCanStartWave(false);
         this.waves.startNextWave();
+        this.towers.snapAllToSpawnTiles();
         this.towerMovement.clearAll();
         this.towerAttacks.clearAll();
         this.enemyMovement.clearAll();

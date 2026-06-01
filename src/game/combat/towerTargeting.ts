@@ -37,28 +37,19 @@ export const enemiesInTowerRange = (
         (enemy) => !enemy.isPreview && isWithinAttackRange(tower, enemy, rangePx),
     );
 
-/**
- * Picks an attack target by player priority among in-range enemies only.
- * Tie-break: closer to the tower (fairer focus fire).
- */
-export const pickTowerAttackTarget = (
+const livingEnemies = (enemies: readonly EnemyState[]): EnemyState[] =>
+    enemies.filter((enemy) => !enemy.isPreview && enemy.health > 0);
+
+const sortEnemiesByPriority = (
     mode: TowerTargetingMode,
     tower: TowerState,
-    enemies: readonly EnemyState[],
-    rangePx: number,
-): EnemyState | null =>
+    candidates: readonly EnemyState[],
+): EnemyState[] =>
 {
-    const inRange = enemiesInTowerRange(tower, enemies, rangePx);
-
-    if (inRange.length === 0)
-    {
-        return null;
-    }
-
     const byNearest = (a: EnemyState, b: EnemyState): number =>
         distanceBetween(tower, a) - distanceBetween(tower, b);
 
-    const sorted = [ ...inRange ];
+    const sorted = [ ...candidates ];
 
     switch (mode)
     {
@@ -78,5 +69,36 @@ export const pickTowerAttackTarget = (
             break;
     }
 
-    return sorted[0] ?? null;
+    return sorted;
+};
+
+/**
+ * Preferred enemy by targeting mode (ignores range).
+ * Used to decide where mobile towers should advance.
+ */
+export const pickTowerPriorityTarget = (
+    mode: TowerTargetingMode,
+    tower: TowerState,
+    enemies: readonly EnemyState[],
+): EnemyState | null =>
+{
+    const living = livingEnemies(enemies);
+
+    return sortEnemiesByPriority(mode, tower, living)[0] ?? null;
+};
+
+/**
+ * Picks an attack target by player priority among in-range enemies only.
+ * Tie-break: closer to the tower (fairer focus fire).
+ */
+export const pickTowerAttackTarget = (
+    mode: TowerTargetingMode,
+    tower: TowerState,
+    enemies: readonly EnemyState[],
+    rangePx: number,
+): EnemyState | null =>
+{
+    const inRange = enemiesInTowerRange(tower, enemies, rangePx);
+
+    return sortEnemiesByPriority(mode, tower, inRange)[0] ?? null;
 };

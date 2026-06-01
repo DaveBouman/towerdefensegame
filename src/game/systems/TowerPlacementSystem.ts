@@ -101,7 +101,11 @@ export class TowerPlacementSystem
 
     tryPlace (tile: GridPosition, definitionId: TowerDefinitionId): TowerState | null
     {
-        if (!this.grid.isInBounds(tile) || !isPlayerPlacementTile(tile))
+        if (
+            !this.grid.isInBounds(tile)
+            || !isPlayerPlacementTile(tile)
+            || this.towerOnTile(tile, '')
+        )
         {
             return null;
         }
@@ -163,6 +167,12 @@ export class TowerPlacementSystem
     }
 
     resetPlayerTowers (): void
+    {
+        this.snapAllToSpawnTiles();
+    }
+
+    /** Returns towers to their placement tiles (simulation + collision). */
+    snapAllToSpawnTiles (): void
     {
         for (const tower of this.all)
         {

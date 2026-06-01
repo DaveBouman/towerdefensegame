@@ -146,6 +146,7 @@ export class GameSceneController
         EventBus.on(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
         EventBus.on(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.onPlayerNexusSpawned, this);
         EventBus.on(GAME_EVENTS.PLAYER_NEXUS_DAMAGED, this.onPlayerNexusDamaged, this);
+        EventBus.on(GAME_EVENTS.PLAYER_NEXUS_DESTROYED, this.onPlayerNexusDestroyed, this);
         EventBus.on(GAME_EVENTS.PLAYER_NEXUS_ATTACKED, this.onPlayerNexusAttacked, this);
         EventBus.on(GAME_EVENTS.ENEMY_NEXUS_ATTACKED, this.onEnemyNexusAttacked, this);
     }
@@ -180,6 +181,7 @@ export class GameSceneController
         EventBus.off(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
         EventBus.off(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.onPlayerNexusSpawned, this);
         EventBus.off(GAME_EVENTS.PLAYER_NEXUS_DAMAGED, this.onPlayerNexusDamaged, this);
+        EventBus.off(GAME_EVENTS.PLAYER_NEXUS_DESTROYED, this.onPlayerNexusDestroyed, this);
         EventBus.off(GAME_EVENTS.PLAYER_NEXUS_ATTACKED, this.onPlayerNexusAttacked, this);
         EventBus.off(GAME_EVENTS.ENEMY_NEXUS_ATTACKED, this.onEnemyNexusAttacked, this);
     }
@@ -407,6 +409,12 @@ export class GameSceneController
     {
         this.selection.onEnemyDamaged(snapshot);
         this.enemyPresenter.flashHit(snapshot.id);
+        this.enemyPresenter.setHealth(snapshot.id, snapshot.health, snapshot.stats.maxHealth);
+
+        if (snapshot.isNexus)
+        {
+            this.session.checkWaveComplete();
+        }
     }
 
     private onTowerPlaced (snapshot: TowerStateSnapshot): void
@@ -426,6 +434,7 @@ export class GameSceneController
         this.session.towerAttacks.clearTower(id);
         this.session.towerMovement.clearTower(id);
         this.towerPresenter.remove(id);
+        this.session.checkWaveComplete();
     }
 
     private onTowerSelected (snapshot: TowerStateSnapshot): void
@@ -440,6 +449,13 @@ export class GameSceneController
 
     private onTowerDamaged (snapshot: TowerStateSnapshot): void
     {
+        this.towerPresenter.setTargetPosition(snapshot.id, snapshot.position);
+
+        if (!this.session.isRoundActive())
+        {
+            this.towerPresenter.snapToTarget(snapshot.id);
+        }
+
         this.selection.onTowerDamaged(snapshot);
         this.towerPresenter.setHealth(snapshot.id, snapshot.health, snapshot.maxHealth);
     }
@@ -520,5 +536,11 @@ export class GameSceneController
         this.session.syncLivesFromPlayerNexus();
         this.playerNexusPresenter.setHealth(snapshot.health, snapshot.maxHealth);
         this.selection.syncFrame();
+        this.session.checkWaveComplete();
+    }
+
+    private onPlayerNexusDestroyed (): void
+    {
+        this.session.checkWaveComplete();
     }
 }

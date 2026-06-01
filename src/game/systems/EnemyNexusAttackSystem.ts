@@ -4,11 +4,7 @@ import type { TowerState } from '../domain/TowerState';
 import type { EnemyNexusAttackPayload } from '../domain/types';
 import { EventBus } from '../EventBus';
 import { attacksPerSecondToIntervalTicks } from '../config/gameClockConfig';
-import {
-    canEnemiesTargetPlayerNexus,
-    canEnemyNexusAttack,
-    livingTowers,
-} from '../combat/targetPriority';
+import { canEnemiesTargetPlayerNexus, livingTowers } from '../combat/targetPriority';
 import { isWithinAttackRange } from '../combat/combatRange';
 import { worldDistance } from '../grid/worldPosition';
 import { GAME_EVENTS } from '../events/gameEvents';
@@ -42,7 +38,7 @@ export class EnemyNexusAttackSystem
     {
         const nexus = this.enemies.getEnemyNexus();
 
-        if (!nexus || nexus.health <= 0 || !canEnemyNexusAttack(this.enemies.all))
+        if (!nexus || nexus.health <= 0)
         {
             return;
         }
@@ -64,12 +60,16 @@ export class EnemyNexusAttackSystem
             return;
         }
 
+        if (!canEnemiesTargetPlayerNexus(this.towers.all))
+        {
+            return;
+        }
+
         const playerNexus = this.playerNexus.active;
 
         if (
             playerNexus
             && playerNexus.health > 0
-            && canEnemiesTargetPlayerNexus(this.towers.all)
             && isWithinAttackRange(nexus, playerNexus, rangePx)
         )
         {
@@ -77,7 +77,10 @@ export class EnemyNexusAttackSystem
         }
     }
 
-    private findTowerInRange (nexus: EnemyState, rangePx: number): TowerState | null
+    private findTowerInRange (
+        nexus: EnemyState,
+        rangePx: number,
+    ): TowerState | null
     {
         let closest: TowerState | null = null;
         let closestDistance = Infinity;

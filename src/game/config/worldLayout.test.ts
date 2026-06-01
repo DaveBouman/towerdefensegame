@@ -51,6 +51,15 @@ describe('WorldLayout', () =>
         expect(layout.worldToGrid(layout.gridTileCenter(tile))).toEqual(tile);
     });
 
+    it('playfieldAnchorTile maps off-grid nexuses onto the nearest playfield row', () =>
+    {
+        expect(layout.playfieldAnchorTile(layout.enemyNexusPosition())).toEqual({ col: 5, row: 0 });
+        expect(layout.playfieldAnchorTile(layout.playerNexusPosition())).toEqual({
+            col: 5,
+            row: GRID_CONFIG.rows - 1,
+        });
+    });
+
     it('zone helpers match nexus band geometry', () =>
     {
         const width = layout.arenaPixelSize().width;

@@ -1,11 +1,12 @@
-import { edgeToEdgeDistance, isWithinAttackRange } from '../combat/combatRange';
+import { isWithinAttackRange } from '../combat/combatRange';
+import { pickTowerPriorityTarget } from '../combat/towerTargeting';
 import type { EnemyState } from '../domain/EnemyState';
 import type { TowerState } from '../domain/TowerState';
 
 /**
  * Enemy to walk toward this tick.
- * - Hold position when any enemy is already in attack range.
- * - Otherwise advance on the nearest living threat (no short leash).
+ * - Hold position when the preferred target (by targeting mode) is in range.
+ * - Otherwise advance on that target so the tower can shoot it.
  */
 export const pickTowerMovementTarget = (
     tower: TowerState,
@@ -13,33 +14,17 @@ export const pickTowerMovementTarget = (
     rangePx: number,
 ): EnemyState | null =>
 {
-    const living = enemies.filter((enemy) => enemy.health > 0 && !enemy.isPreview);
+    const priority = pickTowerPriorityTarget(tower.targetingMode, tower, enemies);
 
-    if (living.length === 0)
+    if (!priority)
     {
         return null;
     }
 
-    const anyoneInRange = living.some((enemy) => isWithinAttackRange(tower, enemy, rangePx));
-
-    if (anyoneInRange)
+    if (isWithinAttackRange(tower, priority, rangePx))
     {
         return null;
     }
 
-    let closest: EnemyState | null = null;
-    let closestEdge = Infinity;
-
-    for (const enemy of living)
-    {
-        const gap = edgeToEdgeDistance(tower, enemy);
-
-        if (gap < closestEdge)
-        {
-            closest = enemy;
-            closestEdge = gap;
-        }
-    }
-
-    return closest;
+    return priority;
 };
