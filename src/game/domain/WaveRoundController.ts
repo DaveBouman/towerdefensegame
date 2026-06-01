@@ -37,7 +37,7 @@ export class WaveRoundController
 
     showUpcomingWavePreview (): void
     {
-        if (!this.state.canStartWave || this.state.upgradePick)
+        if (this.state.upgradePick)
         {
             return;
         }
@@ -45,6 +45,13 @@ export class WaveRoundController
         const nextWave = this.state.wave + 1;
 
         if (!hasWaveDefinition(nextWave))
+        {
+            return;
+        }
+
+        const mayPreview = this.deployment.active || this.state.canStartWave;
+
+        if (!mayPreview)
         {
             return;
         }

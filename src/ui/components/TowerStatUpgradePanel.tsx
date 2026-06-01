@@ -27,7 +27,7 @@ export const TowerStatUpgradePanel = ({ tower }: Props) =>
     return (
         <section className="unit-info-bar__section tower-stat-upgrades">
             <h3 className="unit-info-bar__section-title">Between waves</h3>
-            <p className="tower-stat-upgrades__hint">Spend gold to upgrade this tower.</p>
+            <p className="tower-stat-upgrades__hint">Spend gold on this tower only — other towers are unchanged.</p>
             <div className="tower-stat-upgrades__buttons">
                 {upgrades.map((def) =>
                 {

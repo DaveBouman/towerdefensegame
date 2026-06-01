@@ -40,11 +40,12 @@ export class Game extends Scene
                 return;
             }
 
+            this.cameraPan.initialize();
+            this.publishCameraScroll();
             this.controller.startSession();
         });
 
         EventBus.emit(GAME_EVENTS.SCENE_READY, this);
-        this.publishCameraScroll();
     }
 
     shutdown (): void
@@ -63,16 +64,22 @@ export class Game extends Scene
             return;
         }
 
-        this.cameraPan.setScrollY(scrollY);
-        this.publishCameraScroll();
+        if (this.cameraPan.setScrollY(scrollY))
+        {
+            this.publishCameraScroll();
+        }
     }
 
     private publishCameraScroll (): void
     {
-        EventBus.emit(GAME_EVENTS.CAMERA_SCROLL_CHANGED, {
-            scrollY: this.cameraPan.getScrollY(),
-            maxScrollY: this.cameraPan.getMaxScrollY(),
-        });
+        const scroll = this.cameraPan.tryGetScrollState();
+
+        if (!scroll)
+        {
+            return;
+        }
+
+        EventBus.emit(GAME_EVENTS.CAMERA_SCROLL_CHANGED, scroll);
     }
 
     update (_time: number, delta: number): void

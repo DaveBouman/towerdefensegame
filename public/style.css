@@ -553,6 +553,49 @@ body {
     color: #8a8aa8;
 }
 
+.unit-info-bar__tower-id {
+    margin: 0 0 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #9a9ab8;
+}
+
+.unit-info-bar__hint {
+    margin: 0 0 8px;
+    font-size: 11px;
+    line-height: 1.35;
+    color: #6e6e88;
+}
+
+.unit-info-bar__targeting {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.unit-info-bar__targeting-btn {
+    padding: 6px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: #c8c8e0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+}
+
+.unit-info-bar__targeting-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.18);
+}
+
+.unit-info-bar__targeting-btn--active {
+    color: #fff;
+    background: rgba(99, 120, 255, 0.35);
+    border-color: rgba(130, 150, 255, 0.65);
+}
+
 .unit-info-bar__tags {
     display: flex;
     flex-wrap: wrap;

@@ -22,6 +22,7 @@ import { AttackBeamEffect } from './AttackBeamEffect';
 import { TowerPresenter } from './TowerPresenter';
 import { TowerDropTarget } from './TowerDropTarget';
 import { GridPlacementController } from './GridPlacementController';
+import type { TowerTargetingMode } from '../combat/towerTargeting';
 
 export class GameSceneController
 {
@@ -96,6 +97,7 @@ export class GameSceneController
             this,
         );
         EventBus.on(GAME_EVENTS.PURCHASE_TOWER_STAT_UPGRADE, this.onPurchaseTowerStatUpgrade, this);
+        EventBus.on(GAME_EVENTS.SET_TOWER_TARGETING_MODE, this.onSetTowerTargetingMode, this);
         EventBus.on(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
     }
 
@@ -123,6 +125,7 @@ export class GameSceneController
             this,
         );
         EventBus.off(GAME_EVENTS.PURCHASE_TOWER_STAT_UPGRADE, this.onPurchaseTowerStatUpgrade, this);
+        EventBus.off(GAME_EVENTS.SET_TOWER_TARGETING_MODE, this.onSetTowerTargetingMode, this);
         EventBus.off(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
     }
 
@@ -158,7 +161,7 @@ export class GameSceneController
 
     private onRequestInventory (): void
     {
-        this.session.towerUpgrades.publishInventorySnapshot(this.session.towers.all);
+        this.session.towerUpgrades.publishInventorySnapshot();
     }
 
     private onPurchaseTowerStatUpgrade ({
@@ -170,6 +173,17 @@ export class GameSceneController
     }): void
     {
         this.session.purchaseTowerStatUpgrade(towerId, upgradeId);
+    }
+
+    private onSetTowerTargetingMode ({
+        towerId,
+        mode,
+    }: {
+        towerId: string;
+        mode: TowerTargetingMode;
+    }): void
+    {
+        this.session.setTowerTargetingMode(towerId, mode);
     }
 
     private onEquipCatalogUpgradeAtScreen ({

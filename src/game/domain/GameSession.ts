@@ -19,6 +19,7 @@ import { DeploymentPhase } from './DeploymentPhase';
 import { TowerUpgradeService } from './TowerUpgradeService';
 import type { TowerUpgradeDefinition } from '../config/towerUpgradeCatalog';
 import { WaveRoundController } from './WaveRoundController';
+import type { TowerTargetingMode } from '../combat/towerTargeting';
 
 export class GameSession
 {
@@ -111,6 +112,7 @@ export class GameSession
         this.state.setCanStartWave(false);
         this.syncDeploymentState();
         this.clock.reset();
+        this.waveRounds.showUpcomingWavePreview();
     }
 
     isDeploymentActive (): boolean
@@ -161,7 +163,7 @@ export class GameSession
 
         if (claimed)
         {
-            this.towerUpgrades.publishInventorySnapshot(this.towers.all);
+            this.towerUpgrades.publishInventorySnapshot();
             this.waveRounds.showUpcomingWavePreview();
         }
 
@@ -174,21 +176,36 @@ export class GameSession
 
         if (discarded)
         {
-            this.towerUpgrades.publishInventorySnapshot(this.towers.all);
+            this.towerUpgrades.publishInventorySnapshot();
             this.waveRounds.showUpcomingWavePreview();
         }
 
         return discarded;
     }
 
-    getUnusedUpgradeDefinitions (): TowerUpgradeDefinition[]
+    getInventoryUpgradeDefinitions (): TowerUpgradeDefinition[]
     {
-        return this.towerUpgrades.getUnusedCatalogUpgrades(this.towers.all);
+        return this.towerUpgrades.getInventoryUpgrades();
     }
 
     equipCatalogUpgradeToTower (towerId: string, upgradeId: string): boolean
     {
         return this.towerUpgrades.equipCatalogUpgrade(this.towers.all, towerId, upgradeId);
+    }
+
+    setTowerTargetingMode (towerId: string, mode: TowerTargetingMode): boolean
+    {
+        const tower = this.towers.all.find((t) => t.id === towerId);
+
+        if (!tower)
+        {
+            return false;
+        }
+
+        tower.setTargetingMode(mode);
+        EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
+
+        return true;
     }
 
     isBetweenWaves (): boolean
@@ -216,8 +233,8 @@ export class GameSession
         )
         {
             this.resetPlayerTowersAfterWave();
-            this.towerUpgrades.offerPostWaveDraft(this.state, this.towers.all);
-            this.towerUpgrades.publishInventorySnapshot(this.towers.all);
+            this.towerUpgrades.offerPostWaveDraft(this.state);
+            this.towerUpgrades.publishInventorySnapshot();
 
             if (this.state.canStartWave && !this.state.upgradePick)
             {

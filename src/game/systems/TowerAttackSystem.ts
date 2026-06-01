@@ -5,8 +5,7 @@ import { attacksPerSecondToIntervalTicks } from '../config/gameClockConfig';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
 import type { Grid } from '../grid/Grid';
-import { isWithinAttackRange } from '../combat/combatRange';
-import { worldDistance } from '../grid/worldPosition';
+import { pickTowerAttackTarget } from '../combat/towerTargeting';
 import type { EnemySpawnSystem } from './EnemySpawnSystem';
 import type { KillRewardSystem } from './KillRewardSystem';
 import type { TowerPlacementSystem } from './TowerPlacementSystem';
@@ -46,7 +45,13 @@ export class TowerAttackSystem
             return;
         }
 
-        const target = this.findTarget(tower);
+        const rangePx = this.grid.rangeToPixels(tower.range);
+        const target = pickTowerAttackTarget(
+            tower.targetingMode,
+            tower,
+            this.enemies.combatants,
+            rangePx,
+        );
 
         if (!target)
         {
@@ -80,34 +85,6 @@ export class TowerAttackSystem
         {
             EventBus.emit(GAME_EVENTS.ENEMY_DAMAGED, target.snapshot());
         }
-    }
-
-    private findTarget (tower: TowerState): EnemyState | null
-    {
-        const rangePx = this.grid.rangeToPixels(tower.range);
-        let closest: EnemyState | null = null;
-        let closestDistance = Infinity;
-
-        for (const enemy of this.enemies.combatants)
-        {
-
-            if (!isWithinAttackRange(tower, enemy, rangePx))
-            {
-                continue;
-            }
-
-            const distance = worldDistance(tower.position, enemy.position);
-
-            if (distance >= closestDistance)
-            {
-                continue;
-            }
-
-            closest = enemy;
-            closestDistance = distance;
-        }
-
-        return closest;
     }
 
     clearTower (towerId: string): void

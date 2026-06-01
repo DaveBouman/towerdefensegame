@@ -10,6 +10,7 @@ import { getTowerUpgradeDefinition, towerUpgradeHoverText } from '../../game/con
 import { useInventoryPanel } from '../context/InventoryPanelContext';
 import { useUnitSelection } from '../viewmodels/useUnitSelection';
 import { TowerStatUpgradePanel } from './TowerStatUpgradePanel';
+import { TowerTargetingPanel } from './TowerTargetingPanel';
 
 const InventoryIcon = () => (
     <svg
@@ -84,11 +85,18 @@ const EnemyDetails = ({ enemy }: { enemy: EnemyStateSnapshot }) => (
     </>
 );
 
+const towerArchetypeLabel = (archetype: TowerStateSnapshot['archetype']): string =>
+    archetype === 'close' ? 'Close range' : 'Long range';
+
 const TowerDetails = ({ tower }: { tower: TowerStateSnapshot }) => (
     <>
+        <p className="unit-info-bar__tower-id" aria-label="Selected tower">
+            {towerArchetypeLabel(tower.archetype)} · this tower only
+        </p>
         <StatList stats={getTowerStatRows(tower)} />
 
         <div className="unit-info-bar__extra">
+            <TowerTargetingPanel tower={tower} />
             <TowerStatUpgradePanel tower={tower} />
             <TagList
                 title="Upgrades"

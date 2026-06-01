@@ -2,6 +2,7 @@ import type { WorldPosition } from '../grid/types';
 import type { DamageType, EnemyStatsSnapshot } from './combat/types';
 import type { TowerArchetype } from './towers/types';
 import type { TowerEquippedUpgrade } from '../config/towerUpgradeCatalog';
+import type { TowerTargetingMode } from '../combat/towerTargeting';
 
 export interface UpgradePickState {
     choices: string[];
@@ -49,6 +50,7 @@ export interface TowerStateSnapshot {
     equippedUpgrades: TowerEquippedUpgrade[];
     /** Purchased between-wave stat upgrade levels keyed by catalog id. */
     statUpgradeLevels: Record<string, number>;
+    targetingMode: TowerTargetingMode;
 }
 
 export type UnitSelection =

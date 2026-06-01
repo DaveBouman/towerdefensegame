@@ -1,7 +1,9 @@
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
 import type { TowerUpgradeDefinition } from '../config/towerUpgradeCatalog';
-import { TOWER_UPGRADE_CATALOG } from '../config/towerUpgradeCatalog';
+import {
+    getTowerUpgradeDefinition,
+} from '../config/towerUpgradeCatalog';
 import {
     getTowerStatUpgradeCost,
     getTowerStatUpgradeDefinition,
@@ -13,10 +15,13 @@ import { rollWaveUpgradeChoiceIds } from './waveUpgradeDraft';
 
 export class TowerUpgradeService
 {
+    /** Upgrade ids won from drafts but not yet dragged onto a tower. */
+    private readonly stash: string[] = [];
     private readonly discardedCatalogIds = new Set<string>();
 
     reset (): void
     {
+        this.stash.length = 0;
         this.discardedCatalogIds.clear();
     }
 
@@ -27,27 +32,21 @@ export class TowerUpgradeService
             && livingEnemyCount === 0;
     }
 
-    getUnusedCatalogUpgrades (towers: readonly TowerState[]): TowerUpgradeDefinition[]
+    /** Items in inventory waiting to be equipped (each tower keeps its own equipped list). */
+    getInventoryUpgrades (): TowerUpgradeDefinition[]
     {
-        const used = new Set<string>();
-
-        for (const tower of towers)
+        return this.stash.flatMap((id) =>
         {
-            for (const u of tower.equippedUpgrades)
-            {
-                used.add(u.id);
-            }
-        }
+            const def = getTowerUpgradeDefinition(id);
 
-        return TOWER_UPGRADE_CATALOG.filter(
-            (d) => !used.has(d.id) && !this.discardedCatalogIds.has(d.id),
-        );
+            return def ? [ def ] : [];
+        });
     }
 
-    publishInventorySnapshot (towers: readonly TowerState[]): void
+    publishInventorySnapshot (): void
     {
         EventBus.emit(GAME_EVENTS.INVENTORY_SNAPSHOT, {
-            unused: this.getUnusedCatalogUpgrades(towers),
+            unused: this.getInventoryUpgrades(),
         });
     }
 
@@ -57,16 +56,16 @@ export class TowerUpgradeService
         upgradeId: string,
     ): boolean
     {
-        const tower = towers.find((t) => t.id === towerId);
+        const stashIndex = this.stash.indexOf(upgradeId);
 
-        if (!tower)
+        if (stashIndex === -1)
         {
             return false;
         }
 
-        const unusedIds = new Set(this.getUnusedCatalogUpgrades(towers).map((d) => d.id));
+        const tower = towers.find((t) => t.id === towerId);
 
-        if (!unusedIds.has(upgradeId))
+        if (!tower)
         {
             return false;
         }
@@ -76,8 +75,9 @@ export class TowerUpgradeService
             return false;
         }
 
+        this.stash.splice(stashIndex, 1);
         EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
-        this.publishInventorySnapshot(towers);
+        this.publishInventorySnapshot();
 
         return true;
     }
@@ -98,6 +98,8 @@ export class TowerUpgradeService
                 this.discardedCatalogIds.add(id);
             }
         }
+
+        this.stash.push(upgradeId);
 
         return this.finishWaveRewardDraft(state);
     }
@@ -128,10 +130,9 @@ export class TowerUpgradeService
         return true;
     }
 
-    offerPostWaveDraft (state: GameState, towers: readonly TowerState[]): void
+    offerPostWaveDraft (state: GameState): void
     {
-        const equippedIds = towers.flatMap((t) => t.equippedUpgrades.map((u) => u.id));
-        const choices = rollWaveUpgradeChoiceIds(equippedIds);
+        const choices = rollWaveUpgradeChoiceIds([ ...this.discardedCatalogIds ]);
 
         if (choices.length === 0)
         {

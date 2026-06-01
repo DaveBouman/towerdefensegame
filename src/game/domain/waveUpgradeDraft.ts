@@ -1,9 +1,10 @@
 import { TOWER_UPGRADE_CATALOG } from '../config/towerUpgradeCatalog';
 
-export const rollWaveUpgradeChoiceIds = (equippedIds: readonly string[]): string[] =>
+/** Picks draft choices from the catalog, excluding ids discarded from prior drafts. */
+export const rollWaveUpgradeChoiceIds = (excludedIds: readonly string[]): string[] =>
 {
-    const owned = new Set(equippedIds);
-    const pool = TOWER_UPGRADE_CATALOG.map((d) => d.id).filter((id) => !owned.has(id));
+    const excluded = new Set(excludedIds);
+    const pool = TOWER_UPGRADE_CATALOG.map((d) => d.id).filter((id) => !excluded.has(id));
 
     if (pool.length === 0)
     {

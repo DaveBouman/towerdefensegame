@@ -21,6 +21,7 @@ export const GAME_EVENTS = {
     INVENTORY_SNAPSHOT: 'inventory-snapshot',
     EQUIP_CATALOG_UPGRADE_AT_SCREEN: 'equip-catalog-upgrade-at-screen',
     PURCHASE_TOWER_STAT_UPGRADE: 'purchase-tower-stat-upgrade',
+    SET_TOWER_TARGETING_MODE: 'set-tower-targeting-mode',
     SCENE_READY: 'current-scene-ready',
     CAMERA_SCROLL_CHANGED: 'camera-scroll-changed',
     SET_CAMERA_SCROLL_Y: 'set-camera-scroll-y',

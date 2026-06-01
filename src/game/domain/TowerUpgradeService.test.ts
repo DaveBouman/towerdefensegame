@@ -8,13 +8,17 @@ vi.mock('../EventBus', () => ({
     },
 }));
 
+import { GRID_CONFIG } from '../config/gridConfig';
 import { GameState } from './GameState';
 import { TowerUpgradeService } from './TowerUpgradeService';
+import { createTowerState } from './createTowerState';
+import { Grid } from '../grid/Grid';
 
 describe('TowerUpgradeService', () =>
 {
     let service: TowerUpgradeService;
     let state: GameState;
+    const grid = new Grid(GRID_CONFIG);
 
     beforeEach(() =>
     {
@@ -23,32 +27,52 @@ describe('TowerUpgradeService', () =>
         service.reset();
     });
 
-    it('claiming a wave reward discards other choices from the draft', () =>
+    it('claiming a wave reward adds the item to inventory stash', () =>
     {
         state.setUpgradePick({ choices: [ 'spyglass', 'gilded-plating', 'bracers-of-haste' ] });
 
         expect(service.claimWaveReward(state, 'spyglass')).toBe(true);
 
-        const unused = service.getUnusedCatalogUpgrades([]);
+        const inventory = service.getInventoryUpgrades();
 
-        expect(unused.some((d) => d.id === 'spyglass')).toBe(true);
-        expect(unused.some((d) => d.id === 'gilded-plating')).toBe(false);
-        expect(unused.some((d) => d.id === 'bracers-of-haste')).toBe(false);
+        expect(inventory.map((d) => d.id)).toEqual([ 'spyglass' ]);
         expect(state.canStartWave).toBe(true);
         expect(state.upgradePick).toBeNull();
     });
 
-    it('discarding a wave reward removes all choices from the pool', () =>
+    it('discarding a wave reward leaves inventory empty', () =>
     {
         state.setUpgradePick({ choices: [ 'spyglass', 'gilded-plating' ] });
 
         expect(service.discardWaveReward(state)).toBe(true);
 
-        const unused = service.getUnusedCatalogUpgrades([]);
-
-        expect(unused.some((d) => d.id === 'spyglass')).toBe(false);
-        expect(unused.some((d) => d.id === 'gilded-plating')).toBe(false);
+        expect(service.getInventoryUpgrades()).toHaveLength(0);
         expect(state.canStartWave).toBe(true);
         expect(state.upgradePick).toBeNull();
+    });
+
+    it('lets two towers equip the same catalog upgrade from separate stash copies', () =>
+    {
+        const claimGilded = (): void =>
+        {
+            state.setUpgradePick({ choices: [ 'gilded-plating' ] });
+            service.claimWaveReward(state, 'gilded-plating');
+        };
+
+        claimGilded();
+        claimGilded();
+
+        const towerA = createTowerState(grid, { col: 1, row: 30 }, 'close');
+        const towerB = createTowerState(grid, { col: 3, row: 30 }, 'close');
+
+        expect(
+            service.equipCatalogUpgrade([ towerA, towerB ], towerA.id, 'gilded-plating'),
+        ).toBe(true);
+        expect(
+            service.equipCatalogUpgrade([ towerA, towerB ], towerB.id, 'gilded-plating'),
+        ).toBe(true);
+        expect(towerA.equippedUpgrades.some((u) => u.id === 'gilded-plating')).toBe(true);
+        expect(towerB.equippedUpgrades.some((u) => u.id === 'gilded-plating')).toBe(true);
+        expect(service.getInventoryUpgrades()).toHaveLength(0);
     });
 });

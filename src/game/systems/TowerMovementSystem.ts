@@ -49,7 +49,7 @@ export class TowerMovementSystem
             return;
         }
 
-        const target = this.findNearestEnemy(tower);
+        const target = this.findMovementTarget(tower);
 
         if (!target)
         {
@@ -132,8 +132,14 @@ export class TowerMovementSystem
         };
     }
 
-    private findNearestEnemy (tower: TowerState): EnemyState | null
+    /**
+     * Only chase enemies near the tower's range — not across the map because
+     * attack priority picked a distant target.
+     */
+    private findMovementTarget (tower: TowerState): EnemyState | null
     {
+        const rangePx = this.grid.rangeToPixels(tower.range);
+        const leashPx = rangePx + this.grid.config.tileSize;
         let closest: EnemyState | null = null;
         let closestDistance = Infinity;
 
@@ -141,11 +147,13 @@ export class TowerMovementSystem
         {
             const enemyDistance = worldDistance(tower.position, enemy.position);
 
-            if (enemyDistance < closestDistance)
+            if (enemyDistance > leashPx || enemyDistance >= closestDistance)
             {
-                closest = enemy;
-                closestDistance = enemyDistance;
+                continue;
             }
+
+            closest = enemy;
+            closestDistance = enemyDistance;
         }
 
         return closest;

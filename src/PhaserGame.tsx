@@ -69,7 +69,6 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame
         };
 
         EventBus.on(GAME_EVENTS.CAMERA_SCROLL_CHANGED, onCameraScroll);
-        EventBus.emit(GAME_EVENTS.REQUEST_CAMERA_SCROLL);
 
         return () => EventBus.off(GAME_EVENTS.CAMERA_SCROLL_CHANGED, onCameraScroll);
     }, []);

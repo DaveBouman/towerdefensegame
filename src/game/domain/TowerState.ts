@@ -15,6 +15,7 @@ import { bodyHalfExtent } from '../config/entityBodies';
 import type { Grid } from '../grid/Grid';
 import type { GridPosition, WorldPosition } from '../grid/types';
 import { tileCenterWorld } from '../grid/worldPosition';
+import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerStateSnapshot } from './types';
 
 let nextTowerId = 0;
@@ -31,6 +32,7 @@ export class TowerState
     private equippedUpgradeIds: string[];
     private readonly statUpgradeLevels = new Map<string, number>();
     private bonus: TowerUpgradeModifiers;
+    private _targetingMode: TowerTargetingMode = 'nearest';
 
     constructor (
         grid: Grid,
@@ -160,6 +162,16 @@ export class TowerState
         return this.profile.isMobile;
     }
 
+    get targetingMode (): TowerTargetingMode
+    {
+        return this._targetingMode;
+    }
+
+    setTargetingMode (mode: TowerTargetingMode): void
+    {
+        this._targetingMode = mode;
+    }
+
     applyDamage (amount: number): number
     {
         const damage = Math.max(0, amount);
@@ -193,6 +205,7 @@ export class TowerState
             weaknesses: [ ...this.profile.weaknesses ],
             equippedUpgrades: this.equippedUpgrades,
             statUpgradeLevels: Object.fromEntries(this.statUpgradeLevels),
+            targetingMode: this._targetingMode,
         };
     }
 }

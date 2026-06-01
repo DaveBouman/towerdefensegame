@@ -1,5 +1,5 @@
 import { Input, Math as PhaserMath } from 'phaser';
-import type { Scene } from 'phaser';
+import type { Camera, Scene } from 'phaser';
 import { CAMERA_PAN_PX_PER_SEC } from '../config/cameraConfig';
 import type { GridPixelSize } from '../grid/types';
 
@@ -14,6 +14,11 @@ const isTypingInFormField = (): boolean =>
 
     return Boolean(active.closest('input, textarea, select, [contenteditable="true"]'));
 };
+
+export interface CameraScrollState {
+    scrollY: number;
+    maxScrollY: number;
+}
 
 export class CameraPanController
 {
@@ -42,36 +47,55 @@ export class CameraPanController
             left: keyboard.addKey(Input.Keyboard.KeyCodes.A),
             right: keyboard.addKey(Input.Keyboard.KeyCodes.D),
         };
+    }
 
-        const camera = scene.cameras.main;
+    /** Call once the scene main camera exists (e.g. next frame after create). */
+    initialize (): void
+    {
+        const camera = this.getMainCamera();
 
-        camera.setBounds(0, 0, worldSize.width, worldSize.height);
+        if (!camera)
+        {
+            return;
+        }
+
+        camera.setBounds(0, 0, this.worldSize.width, this.worldSize.height);
         camera.setScroll(
             PhaserMath.Clamp(camera.scrollX, 0, this.getMaxScrollX()),
             PhaserMath.Clamp(camera.scrollY, 0, this.getMaxScrollY()),
         );
     }
 
-    getScrollY (): number
+    tryGetScrollState (): CameraScrollState | null
     {
-        return this.scene.cameras.main.scrollY;
+        const camera = this.getMainCamera();
+
+        if (!camera)
+        {
+            return null;
+        }
+
+        return {
+            scrollY: camera.scrollY,
+            maxScrollY: this.getMaxScrollY(),
+        };
     }
 
-    getMaxScrollY (): number
+    setScrollY (scrollY: number): boolean
     {
-        const camera = this.scene.cameras.main;
+        const camera = this.getMainCamera();
 
-        return Math.max(0, this.worldSize.height - camera.height);
-    }
-
-    setScrollY (scrollY: number): void
-    {
-        const camera = this.scene.cameras.main;
+        if (!camera)
+        {
+            return false;
+        }
 
         camera.setScroll(
             camera.scrollX,
             PhaserMath.Clamp(scrollY, 0, this.getMaxScrollY()),
         );
+
+        return true;
     }
 
     update (deltaMs: number): boolean
@@ -81,7 +105,13 @@ export class CameraPanController
             return false;
         }
 
-        const camera = this.scene.cameras.main;
+        const camera = this.getMainCamera();
+
+        if (!camera)
+        {
+            return false;
+        }
+
         const step = (CAMERA_PAN_PX_PER_SEC * deltaMs) / 1000;
         let dx = 0;
         let dy = 0;
@@ -121,15 +151,37 @@ export class CameraPanController
         return camera.scrollY !== previousY;
     }
 
-    private getMaxScrollX (): number
-    {
-        const camera = this.scene.cameras.main;
-
-        return Math.max(0, this.worldSize.width - camera.width);
-    }
-
     destroy (): void
     {
         this.keys = null;
+    }
+
+    private getMainCamera (): Camera | null
+    {
+        return this.scene.cameras?.main ?? null;
+    }
+
+    private getMaxScrollY (): number
+    {
+        const camera = this.getMainCamera();
+
+        if (!camera)
+        {
+            return 0;
+        }
+
+        return Math.max(0, this.worldSize.height - camera.height);
+    }
+
+    private getMaxScrollX (): number
+    {
+        const camera = this.getMainCamera();
+
+        if (!camera)
+        {
+            return 0;
+        }
+
+        return Math.max(0, this.worldSize.width - camera.width);
     }
 }

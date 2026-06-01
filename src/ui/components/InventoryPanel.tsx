@@ -57,7 +57,7 @@ export const InventoryPanel = () =>
                             Wave reward
                         </h3>
                         <p className="inventory-panel__hint">
-                            Pick one upgrade to keep and drag it onto a tower, or discard the reward to skip it.
+                            Pick one upgrade for your stash, then drag it onto a tower. Each tower keeps its own items.
                         </p>
                         <div className="inventory-panel__reward-choices">
                             {rewardChoices.map((id) =>
@@ -107,7 +107,7 @@ export const InventoryPanel = () =>
                     </section>
                 ) : (
                     <p className="inventory-panel__hint">
-                        Drag an upgrade onto a tower on the map to equip it. Press H or the sidebar button to close.
+                        Drag an upgrade onto a tower to equip it to that tower only. Press H to close.
                     </p>
                 )}
 
@@ -115,13 +115,13 @@ export const InventoryPanel = () =>
                     <p className="inventory-panel__empty">No upgrades waiting to be equipped.</p>
                 ) : !showRewardStep ? (
                     <ul className="inventory-panel__list">
-                        {items.map((def) =>
+                        {items.map((def, index) =>
                         {
                             const stats = formatTowerUpgradeStatsTooltip(def.modifiers);
 
                             return (
                                 <li
-                                    key={def.id}
+                                    key={`${def.id}-${index}`}
                                     className="inventory-panel__item"
                                     title={stats}
                                     draggable
