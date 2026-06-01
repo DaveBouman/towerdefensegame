@@ -21,6 +21,7 @@ import { SelectionController } from './SelectionController';
 import { AttackBeamEffect } from './AttackBeamEffect';
 import { TowerPresenter } from './TowerPresenter';
 import { TowerDropTarget } from './TowerDropTarget';
+import { GridPlacementController } from './GridPlacementController';
 
 export class GameSceneController
 {
@@ -30,6 +31,7 @@ export class GameSceneController
     private readonly towerPresenter: TowerPresenter;
     private readonly selection: SelectionController;
     private readonly towerDropTarget: TowerDropTarget;
+    private readonly gridPlacement: GridPlacementController;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -42,6 +44,7 @@ export class GameSceneController
         );
         this.towerPresenter = new TowerPresenter(
             (id) => this.session.towers.getSnapshot(id),
+            () => !this.session.isDeploymentActive(),
         );
         this.selection = new SelectionController(
             scene,
@@ -54,6 +57,18 @@ export class GameSceneController
         this.towerDropTarget = new TowerDropTarget(
             scene,
             () => this.session.towers.all,
+        );
+        this.gridPlacement = new GridPlacementController(
+            scene,
+            grid,
+            () => this.session.isDeploymentActive(),
+            (tile) =>
+            {
+                EventBus.emit(GAME_EVENTS.PLACE_TOWER_AT_TILE, {
+                    col: tile.col,
+                    row: tile.row,
+                });
+            },
         );
     }
 
@@ -73,6 +88,7 @@ export class GameSceneController
         EventBus.on(GAME_EVENTS.START_WAVE, this.onStartWave, this);
         EventBus.on(GAME_EVENTS.WAVE_COMPLETED, this.onWaveCompleted, this);
         EventBus.on(GAME_EVENTS.CLAIM_WAVE_REWARD, this.onClaimWaveReward, this);
+        EventBus.on(GAME_EVENTS.DISCARD_WAVE_REWARD, this.onDiscardWaveReward, this);
         EventBus.on(GAME_EVENTS.REQUEST_INVENTORY, this.onRequestInventory, this);
         EventBus.on(
             GAME_EVENTS.EQUIP_CATALOG_UPGRADE_AT_SCREEN,
@@ -80,6 +96,7 @@ export class GameSceneController
             this,
         );
         EventBus.on(GAME_EVENTS.PURCHASE_TOWER_STAT_UPGRADE, this.onPurchaseTowerStatUpgrade, this);
+        EventBus.on(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
     }
 
     unbind (): void
@@ -98,6 +115,7 @@ export class GameSceneController
         EventBus.off(GAME_EVENTS.START_WAVE, this.onStartWave, this);
         EventBus.off(GAME_EVENTS.WAVE_COMPLETED, this.onWaveCompleted, this);
         EventBus.off(GAME_EVENTS.CLAIM_WAVE_REWARD, this.onClaimWaveReward, this);
+        EventBus.off(GAME_EVENTS.DISCARD_WAVE_REWARD, this.onDiscardWaveReward, this);
         EventBus.off(GAME_EVENTS.REQUEST_INVENTORY, this.onRequestInventory, this);
         EventBus.off(
             GAME_EVENTS.EQUIP_CATALOG_UPGRADE_AT_SCREEN,
@@ -105,6 +123,7 @@ export class GameSceneController
             this,
         );
         EventBus.off(GAME_EVENTS.PURCHASE_TOWER_STAT_UPGRADE, this.onPurchaseTowerStatUpgrade, this);
+        EventBus.off(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
     }
 
     startSession (): void
@@ -130,6 +149,11 @@ export class GameSceneController
     private onClaimWaveReward ({ upgradeId }: { upgradeId: string }): void
     {
         this.session.claimWaveReward(upgradeId);
+    }
+
+    private onDiscardWaveReward (): void
+    {
+        this.session.discardWaveReward();
     }
 
     private onRequestInventory (): void
@@ -210,11 +234,17 @@ export class GameSceneController
     destroy (): void
     {
         this.unbind();
+        this.gridPlacement.destroy();
         this.enemyPresenter.clearAll();
         this.towerPresenter.clearAll();
         this.selection.clear();
         this.rangeIndicator.destroy();
         this.attackBeamEffect.destroy();
+    }
+
+    private onPlaceTowerAtTile ({ col, row }: { col: number; row: number }): void
+    {
+        this.session.tryDeployTowerAt({ col, row });
     }
 
     private onEnemySpawned (snapshot: EnemyStateSnapshot): void

@@ -31,7 +31,7 @@ export class TowerMovementSystem
     {
         for (const tower of this.towers.all)
         {
-            if (!tower.isMobile)
+            if (tower.moveSpeedPerTick <= 0)
             {
                 continue;
             }
@@ -137,13 +137,8 @@ export class TowerMovementSystem
         let closest: EnemyState | null = null;
         let closestDistance = Infinity;
 
-        for (const enemy of this.enemies.all)
+        for (const enemy of this.enemies.combatants)
         {
-            if (enemy.health <= 0)
-            {
-                continue;
-            }
-
             const enemyDistance = worldDistance(tower.position, enemy.position);
 
             if (enemyDistance < closestDistance)

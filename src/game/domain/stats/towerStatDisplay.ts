@@ -39,18 +39,13 @@ const TOWER_STAT_FIELDS: readonly StatField<TowerStateSnapshot>[] = [
     },
     {
         label: 'Move speed',
-        show: (tower) => tower.isMobile,
+        show: () => true,
         format: (tower) => formatMoveSpeed(tower.moveSpeedPerTick),
     },
     {
         label: 'Type',
         show: () => true,
         format: (tower) => (tower.archetype === 'close' ? 'Close' : 'Long'),
-    },
-    {
-        label: 'Mobile',
-        show: () => true,
-        format: (tower) => (tower.isMobile ? 'Yes' : 'No'),
     },
     {
         label: 'Tile',

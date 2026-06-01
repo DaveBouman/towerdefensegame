@@ -1,8 +1,8 @@
-import { getGridPixelSize, GRID_CONFIG } from './config/gridConfig';
+import { getViewportPixelSize } from './config/gridConfig';
 import { Game as MainGame } from './scenes/Game';
 import { AUTO, Game } from 'phaser';
 
-const { width, height } = getGridPixelSize(GRID_CONFIG);
+const { width, height } = getViewportPixelSize();
 
 const config: Phaser.Types.Core.GameConfig = {
     type: AUTO,

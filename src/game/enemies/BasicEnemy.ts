@@ -62,6 +62,11 @@ export class BasicEnemy
         this.view.setHealthFraction(fraction);
     }
 
+    setPreviewAppearance (): void
+    {
+        this.view.gameObject.setAlpha(0.45);
+    }
+
     flashHit (): void
     {
         this.view.flashHit();

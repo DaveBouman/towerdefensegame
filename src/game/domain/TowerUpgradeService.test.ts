@@ -37,4 +37,18 @@ describe('TowerUpgradeService', () =>
         expect(state.canStartWave).toBe(true);
         expect(state.upgradePick).toBeNull();
     });
+
+    it('discarding a wave reward removes all choices from the pool', () =>
+    {
+        state.setUpgradePick({ choices: [ 'spyglass', 'gilded-plating' ] });
+
+        expect(service.discardWaveReward(state)).toBe(true);
+
+        const unused = service.getUnusedCatalogUpgrades([]);
+
+        expect(unused.some((d) => d.id === 'spyglass')).toBe(false);
+        expect(unused.some((d) => d.id === 'gilded-plating')).toBe(false);
+        expect(state.canStartWave).toBe(true);
+        expect(state.upgradePick).toBeNull();
+    });
 });

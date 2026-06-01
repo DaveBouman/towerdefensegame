@@ -11,6 +11,7 @@ export class EnemyState
 {
     readonly id: string;
     readonly unitType: string;
+    readonly isPreview: boolean;
     readonly stats: EnemyStats;
     readonly bodyHalfWidth: number;
     readonly bodyHalfHeight: number;
@@ -24,10 +25,12 @@ export class EnemyState
         bodyHalfWidth: number,
         bodyHalfHeight: number,
         perks: readonly EnemyPerk[] = [],
+        isPreview = false,
     )
     {
         this.id = `enemy-${nextEnemyId++}`;
         this.unitType = unitType;
+        this.isPreview = isPreview;
         this.position = { ...position };
         this.bodyHalfWidth = bodyHalfWidth;
         this.bodyHalfHeight = bodyHalfHeight;
@@ -73,6 +76,7 @@ export class EnemyState
             unitType: this.unitType,
             health: this.health,
             stats: this.stats.snapshot(),
+            isPreview: this.isPreview,
         };
     }
 }

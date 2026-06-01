@@ -88,12 +88,8 @@ export class TowerAttackSystem
         let closest: EnemyState | null = null;
         let closestDistance = Infinity;
 
-        for (const enemy of this.enemies.all)
+        for (const enemy of this.enemies.combatants)
         {
-            if (enemy.health <= 0)
-            {
-                continue;
-            }
 
             if (!isWithinAttackRange(tower, enemy, rangePx))
             {

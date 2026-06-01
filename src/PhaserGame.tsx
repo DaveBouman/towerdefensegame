@@ -1,9 +1,13 @@
-import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, type DragEvent } from 'react';
+import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, type DragEvent, type UIEvent } from 'react';
 import StartGame from './game/main';
+import { getGridPixelSize, GRID_CONFIG, VIEWPORT_CONFIG } from './game/config/gridConfig';
 import { EventBus } from './game/EventBus';
 import { GAME_EVENTS } from './game/events/gameEvents';
 import { INVENTORY_UPGRADE_DRAG_MIME } from './ui/inventoryDragMime';
 import { endInventoryDrag, getActiveInventoryDragId } from './ui/inventoryDragSession';
+
+const WORLD_SCROLL_HEIGHT = getGridPixelSize(GRID_CONFIG).height;
+const VIEWPORT_HEIGHT = getGridPixelSize(VIEWPORT_CONFIG).height;
 
 export interface IRefPhaserGame
 {
@@ -20,6 +24,8 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame
 {
     const game = useRef<Phaser.Game | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const scrollTrackRef = useRef<HTMLDivElement>(null);
+    const scrollSyncingRef = useRef(false);
 
     useLayoutEffect(() =>
     {
@@ -48,12 +54,36 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame
 
     useEffect(() =>
     {
+        const onCameraScroll = ({ scrollY }: { scrollY: number; maxScrollY: number }) =>
+        {
+            const track = scrollTrackRef.current;
+
+            if (!track || scrollSyncingRef.current)
+            {
+                return;
+            }
+
+            scrollSyncingRef.current = true;
+            track.scrollTop = scrollY;
+            scrollSyncingRef.current = false;
+        };
+
+        EventBus.on(GAME_EVENTS.CAMERA_SCROLL_CHANGED, onCameraScroll);
+        EventBus.emit(GAME_EVENTS.REQUEST_CAMERA_SCROLL);
+
+        return () => EventBus.off(GAME_EVENTS.CAMERA_SCROLL_CHANGED, onCameraScroll);
+    }, []);
+
+    useEffect(() =>
+    {
         const onSceneReady = (scene_instance: Phaser.Scene) =>
         {
             if (currentActiveScene)
             {
                 currentActiveScene(scene_instance);
             }
+
+            EventBus.emit(GAME_EVENTS.REQUEST_CAMERA_SCROLL);
 
             if (typeof ref === 'function')
             {
@@ -79,6 +109,16 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame
         e.dataTransfer.dropEffect = 'copy';
     }, []);
 
+    const onScrollTrack = useCallback((e: UIEvent<HTMLDivElement>) =>
+    {
+        if (scrollSyncingRef.current)
+        {
+            return;
+        }
+
+        EventBus.emit(GAME_EVENTS.SET_CAMERA_SCROLL_Y, { scrollY: e.currentTarget.scrollTop });
+    }, []);
+
     const onDrop = useCallback((e: DragEvent<HTMLDivElement>) =>
     {
         e.preventDefault();
@@ -102,12 +142,28 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame
     }, []);
 
     return (
-        <div
-            id="game-container"
-            ref={containerRef}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
-        />
+        <div className="game-viewport">
+            <div
+                id="game-container"
+                ref={containerRef}
+                onDragOver={onDragOver}
+                onDrop={onDrop}
+            />
+            <div
+                className="game-scroll-track"
+                ref={scrollTrackRef}
+                style={{ height: VIEWPORT_HEIGHT }}
+                onScroll={onScrollTrack}
+                aria-label="Scroll map vertically"
+                role="scrollbar"
+                aria-orientation="vertical"
+            >
+                <div
+                    className="game-scroll-track__spacer"
+                    style={{ height: WORLD_SCROLL_HEIGHT }}
+                />
+            </div>
+        </div>
     );
 
 });

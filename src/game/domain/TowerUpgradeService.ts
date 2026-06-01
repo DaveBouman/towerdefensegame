@@ -99,6 +99,29 @@ export class TowerUpgradeService
             }
         }
 
+        return this.finishWaveRewardDraft(state);
+    }
+
+    /** Skip the wave reward; all offered choices are removed from the pool. */
+    discardWaveReward (state: GameState): boolean
+    {
+        const pick = state.upgradePick;
+
+        if (!pick)
+        {
+            return false;
+        }
+
+        for (const id of pick.choices)
+        {
+            this.discardedCatalogIds.add(id);
+        }
+
+        return this.finishWaveRewardDraft(state);
+    }
+
+    private finishWaveRewardDraft (state: GameState): boolean
+    {
         state.setUpgradePick(null);
         state.setCanStartWave(true);
 

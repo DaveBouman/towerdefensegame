@@ -26,7 +26,7 @@ export class EnemyAttackSystem
     {
         for (const enemy of this.enemies.all)
         {
-            if (enemy.health <= 0)
+            if (enemy.health <= 0 || enemy.isPreview)
             {
                 continue;
             }

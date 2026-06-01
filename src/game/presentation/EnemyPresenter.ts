@@ -33,6 +33,11 @@ export class EnemyPresenter
 
         this.enemies.set(snapshot.id, enemy);
         enemy.setHealth(snapshot.health, snapshot.stats.maxHealth);
+
+        if (snapshot.isPreview)
+        {
+            enemy.setPreviewAppearance();
+        }
     }
 
     setHealth (enemyId: string, health: number, maxHealth: number): void

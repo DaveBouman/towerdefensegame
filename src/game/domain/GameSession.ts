@@ -12,9 +12,13 @@ import { KillRewardSystem } from '../systems/KillRewardSystem';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
 import { WaveSystem } from '../systems/WaveSystem';
+import { WaveSpawnSystem } from '../systems/WaveSpawnSystem';
 import type { Grid } from '../grid/Grid';
+import type { GridPosition } from '../grid/types';
+import { DeploymentPhase } from './DeploymentPhase';
 import { TowerUpgradeService } from './TowerUpgradeService';
 import type { TowerUpgradeDefinition } from '../config/towerUpgradeCatalog';
+import { WaveRoundController } from './WaveRoundController';
 
 export class GameSession
 {
@@ -22,6 +26,7 @@ export class GameSession
     readonly clock: GameClock;
     readonly collision: CollisionSystem;
     readonly waves: WaveSystem;
+    readonly waveSpawns: WaveSpawnSystem;
     readonly enemies: EnemySpawnSystem;
     readonly towers: TowerPlacementSystem;
     readonly towerMovement: TowerMovementSystem;
@@ -29,7 +34,9 @@ export class GameSession
     readonly enemyAttacks: EnemyAttackSystem;
     readonly towerAttacks: TowerAttackSystem;
     readonly towerUpgrades: TowerUpgradeService;
+    readonly deployment: DeploymentPhase;
 
+    private readonly waveRounds: WaveRoundController;
     private readonly tickPipeline: readonly TickSystem[];
 
     constructor (grid: Grid)
@@ -39,8 +46,10 @@ export class GameSession
         this.collision = new CollisionSystem(grid);
         this.waves = new WaveSystem(this.state);
         this.enemies = new EnemySpawnSystem(this.collision);
+        this.waveSpawns = new WaveSpawnSystem(this.enemies);
         this.towers = new TowerPlacementSystem(grid, this.collision);
         this.towerUpgrades = new TowerUpgradeService();
+        this.deployment = new DeploymentPhase();
         this.enemyMovement = new EnemyMovementSystem(
             this.enemies,
             this.towers,
@@ -55,10 +64,34 @@ export class GameSession
         );
         const killRewards = new KillRewardSystem(this.state);
 
-        this.enemyAttacks = new EnemyAttackSystem(this.enemies, this.towers, grid, killRewards);
-        this.towerAttacks = new TowerAttackSystem(this.towers, this.enemies, grid, killRewards);
+        this.enemyAttacks = new EnemyAttackSystem(
+            this.enemies,
+            this.towers,
+            grid,
+            killRewards,
+        );
+        this.towerAttacks = new TowerAttackSystem(
+            this.towers,
+            this.enemies,
+            grid,
+            killRewards,
+        );
+
+        this.waveRounds = new WaveRoundController(
+            this.state,
+            this.clock,
+            this.waves,
+            this.waveSpawns,
+            this.enemies,
+            this.towers,
+            this.towerMovement,
+            this.towerAttacks,
+            this.enemyMovement,
+            this.deployment,
+        );
 
         this.tickPipeline = [
+            this.waveSpawns,
             this.enemyMovement,
             this.towerMovement,
             this.enemyAttacks,
@@ -69,23 +102,57 @@ export class GameSession
     prepare (): void
     {
         this.towerUpgrades.reset();
-        this.towers.placePlayer();
-        this.towers.placeLongRange();
+        this.enemies.clearAll();
+        this.towers.clearAll();
+        this.waveSpawns.clear();
+        this.deployment.begin();
         this.state.setWave(0);
         this.state.setUpgradePick(null);
-        this.state.setCanStartWave(true);
+        this.state.setCanStartWave(false);
+        this.syncDeploymentState();
+        this.clock.reset();
+    }
+
+    isDeploymentActive (): boolean
+    {
+        return this.deployment.active;
+    }
+
+    /** Simulation ticks run only during an active combat round. */
+    isRoundActive (): boolean
+    {
+        return WaveRoundController.isCombatActive(this.state);
+    }
+
+    tryDeployTowerAt (tile: GridPosition): boolean
+    {
+        const archetype = this.deployment.peekNext();
+
+        if (!archetype)
+        {
+            return false;
+        }
+
+        if (!this.towers.tryPlace(tile, archetype))
+        {
+            return false;
+        }
+
+        this.deployment.takeNext();
+        this.syncDeploymentState();
+
+        if (!this.deployment.active)
+        {
+            this.state.setCanStartWave(true);
+            this.waveRounds.showUpcomingWavePreview();
+        }
+
+        return true;
     }
 
     startWave (): void
     {
-        if (!this.state.canStartWave || this.state.upgradePick)
-        {
-            return;
-        }
-
-        this.state.setCanStartWave(false);
-        this.waves.startNextWave();
-        this.enemies.spawnBasic();
+        this.waveRounds.startCombatRound();
     }
 
     claimWaveReward (upgradeId: string): boolean
@@ -95,9 +162,23 @@ export class GameSession
         if (claimed)
         {
             this.towerUpgrades.publishInventorySnapshot(this.towers.all);
+            this.waveRounds.showUpcomingWavePreview();
         }
 
         return claimed;
+    }
+
+    discardWaveReward (): boolean
+    {
+        const discarded = this.towerUpgrades.discardWaveReward(this.state);
+
+        if (discarded)
+        {
+            this.towerUpgrades.publishInventorySnapshot(this.towers.all);
+            this.waveRounds.showUpcomingWavePreview();
+        }
+
+        return discarded;
     }
 
     getUnusedUpgradeDefinitions (): TowerUpgradeDefinition[]
@@ -112,7 +193,7 @@ export class GameSession
 
     isBetweenWaves (): boolean
     {
-        return this.towerUpgrades.isBetweenWaves(this.state, this.enemies.all.length);
+        return this.towerUpgrades.isBetweenWaves(this.state, this.enemies.livingCombatCount);
     }
 
     purchaseTowerStatUpgrade (towerId: string, upgradeId: string): boolean
@@ -122,30 +203,36 @@ export class GameSession
             this.towers.all,
             towerId,
             upgradeId,
-            this.enemies.all.length,
+            this.enemies.livingCombatCount,
         );
     }
 
     checkWaveComplete (): void
     {
-        if (this.state.wave > 0 && this.enemies.all.length === 0)
+        if (
+            this.state.wave > 0
+            && this.enemies.livingCombatCount === 0
+            && !this.waveSpawns.hasPendingSpawns
+        )
         {
             this.resetPlayerTowersAfterWave();
             this.towerUpgrades.offerPostWaveDraft(this.state, this.towers.all);
             this.towerUpgrades.publishInventorySnapshot(this.towers.all);
-        }
-    }
 
-    private resetPlayerTowersAfterWave (): void
-    {
-        this.towers.resetPlayerTowers();
-        this.towerMovement.clearAll();
-        this.towerAttacks.clearAll();
-        EventBus.emit(GAME_EVENTS.WAVE_COMPLETED);
+            if (this.state.canStartWave && !this.state.upgradePick)
+            {
+                this.waveRounds.showUpcomingWavePreview();
+            }
+        }
     }
 
     advanceTick (): void
     {
+        if (!this.isRoundActive())
+        {
+            return;
+        }
+
         const gameTick = this.clock.step();
 
         for (const system of this.tickPipeline)
@@ -158,6 +245,29 @@ export class GameSession
     {
         this.clock.reset();
         this.collision.clear();
+        this.waveSpawns.clear();
         this.towerUpgrades.reset();
+        this.deployment.reset();
+        this.state.setDeployment(null);
+    }
+
+    private resetPlayerTowersAfterWave (): void
+    {
+        this.towers.resetPlayerTowers();
+        this.towerMovement.clearAll();
+        this.towerAttacks.clearAll();
+        EventBus.emit(GAME_EVENTS.WAVE_COMPLETED);
+    }
+
+    private syncDeploymentState (): void
+    {
+        if (this.deployment.active)
+        {
+            this.state.setDeployment(this.deployment.snapshot());
+        }
+        else
+        {
+            this.state.setDeployment(null);
+        }
     }
 }

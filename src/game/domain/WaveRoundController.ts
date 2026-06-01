@@ -1,0 +1,82 @@
+import type { GameClock } from '../systems/GameClock';
+import type { EnemyMovementSystem } from '../systems/EnemyMovementSystem';
+import type { EnemySpawnSystem } from '../systems/EnemySpawnSystem';
+import type { TowerAttackSystem } from '../systems/TowerAttackSystem';
+import type { TowerMovementSystem } from '../systems/TowerMovementSystem';
+import type { TowerPlacementSystem } from '../systems/TowerPlacementSystem';
+import type { WaveSpawnSystem } from '../systems/WaveSpawnSystem';
+import type { WaveSystem } from '../systems/WaveSystem';
+import { hasWaveDefinition } from '../config/waveCatalog';
+import type { DeploymentPhase } from './DeploymentPhase';
+import type { GameState } from './GameState';
+
+export class WaveRoundController
+{
+    constructor (
+        private readonly state: GameState,
+        private readonly clock: GameClock,
+        private readonly waves: WaveSystem,
+        private readonly waveSpawns: WaveSpawnSystem,
+        private readonly enemies: EnemySpawnSystem,
+        private readonly towers: TowerPlacementSystem,
+        private readonly towerMovement: TowerMovementSystem,
+        private readonly towerAttacks: TowerAttackSystem,
+        private readonly enemyMovement: EnemyMovementSystem,
+        private readonly deployment: DeploymentPhase,
+    ) {}
+
+    static isCombatActive (state: GameState): boolean
+    {
+        if (state.wave === 0 || state.upgradePick || state.canStartWave)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    showUpcomingWavePreview (): void
+    {
+        if (!this.state.canStartWave || this.state.upgradePick)
+        {
+            return;
+        }
+
+        const nextWave = this.state.wave + 1;
+
+        if (!hasWaveDefinition(nextWave))
+        {
+            return;
+        }
+
+        this.enemies.clearAll();
+        this.enemies.spawnWavePreview(nextWave);
+    }
+
+    startCombatRound (): boolean
+    {
+        if (!this.state.canStartWave || this.state.upgradePick || this.deployment.active)
+        {
+            return false;
+        }
+
+        const nextWave = this.state.wave + 1;
+
+        if (!hasWaveDefinition(nextWave))
+        {
+            return false;
+        }
+
+        this.enemies.removeAllPreviews();
+        this.enemies.clearAll();
+        this.waveSpawns.clear();
+        this.state.setCanStartWave(false);
+        this.waves.startNextWave();
+        this.towerMovement.clearAll();
+        this.towerAttacks.clearAll();
+        this.enemyMovement.clearAll();
+        this.waveSpawns.beginCombatWave(this.state.wave, this.clock.currentTick);
+
+        return true;
+    }
+}

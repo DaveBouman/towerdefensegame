@@ -32,7 +32,7 @@ export class EnemyMovementSystem
     {
         for (const enemy of this.enemies.all)
         {
-            if (enemy.health <= 0)
+            if (enemy.health <= 0 || enemy.isPreview)
             {
                 continue;
             }
@@ -103,7 +103,7 @@ export class EnemyMovementSystem
 
         pathState.waypoints = step.path;
 
-        if (!this.collision.setPositionFromPath(enemy.id, step.position))
+        if (!this.collision.tryMove(enemy.id, step.position))
         {
             this.paths.delete(enemy.id);
             return;
@@ -160,5 +160,10 @@ export class EnemyMovementSystem
     clearEnemy (enemyId: string): void
     {
         this.paths.delete(enemyId);
+    }
+
+    clearAll (): void
+    {
+        this.paths.clear();
     }
 }

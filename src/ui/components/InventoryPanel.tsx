@@ -57,7 +57,7 @@ export const InventoryPanel = () =>
                             Wave reward
                         </h3>
                         <p className="inventory-panel__hint">
-                            Pick one upgrade to keep, then drag it onto any tower below.
+                            Pick one upgrade to keep and drag it onto a tower, or discard the reward to skip it.
                         </p>
                         <div className="inventory-panel__reward-choices">
                             {rewardChoices.map((id) =>
@@ -87,14 +87,23 @@ export const InventoryPanel = () =>
                                 );
                             })}
                         </div>
-                        <button
-                            type="button"
-                            className="inventory-panel__reward-confirm"
-                            disabled={!selectedRewardId}
-                            onClick={confirmReward}
-                        >
-                            Keep reward
-                        </button>
+                        <div className="inventory-panel__reward-actions">
+                            <button
+                                type="button"
+                                className="inventory-panel__reward-discard"
+                                onClick={() => EventBus.emit(GAME_EVENTS.DISCARD_WAVE_REWARD)}
+                            >
+                                Discard reward
+                            </button>
+                            <button
+                                type="button"
+                                className="inventory-panel__reward-confirm"
+                                disabled={!selectedRewardId}
+                                onClick={confirmReward}
+                            >
+                                Keep reward
+                            </button>
+                        </div>
                     </section>
                 ) : (
                     <p className="inventory-panel__hint">

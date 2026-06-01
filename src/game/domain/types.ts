@@ -7,12 +7,20 @@ export interface UpgradePickState {
     choices: string[];
 }
 
+export interface DeploymentSnapshot {
+    active: boolean;
+    nextArchetype: TowerArchetype | null;
+    placedCount: number;
+    totalCount: number;
+}
+
 export interface GameStateSnapshot {
     gold: number;
     wave: number;
     lives: number;
     canStartWave: boolean;
     upgradePick: UpgradePickState | null;
+    deployment: DeploymentSnapshot | null;
 }
 
 export interface EnemyStateSnapshot {
@@ -21,6 +29,7 @@ export interface EnemyStateSnapshot {
     unitType: string;
     health: number;
     stats: EnemyStatsSnapshot;
+    isPreview: boolean;
 }
 
 export interface TowerStateSnapshot {

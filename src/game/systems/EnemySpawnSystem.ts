@@ -8,6 +8,13 @@ import type { GridPosition } from '../grid/types';
 import { tileCenterWorld } from '../grid/worldPosition';
 import { GRID_CONFIG } from '../config/gridConfig';
 import { bodyHalfExtent } from '../config/entityBodies';
+import {
+    BASIC_ENEMY_BASE_STATS,
+    BASIC_ENEMY_PERKS,
+    BASIC_ENEMY_UNIT_TYPE,
+} from '../config/basicEnemyStats';
+import { BASIC_ENEMY_CONFIG } from '../config/enemyConfig';
+import { getWaveDefinition } from '../config/waveCatalog';
 import type { CollisionSystem } from './CollisionSystem';
 
 export class EnemySpawnSystem
@@ -21,6 +28,16 @@ export class EnemySpawnSystem
         return [ ...this.active.values() ];
     }
 
+    get combatants (): readonly EnemyState[]
+    {
+        return this.all.filter((enemy) => !enemy.isPreview && enemy.health > 0);
+    }
+
+    get livingCombatCount (): number
+    {
+        return this.combatants.length;
+    }
+
     getSnapshot (id: string)
     {
         return this.active.get(id)?.snapshot();
@@ -31,6 +48,59 @@ export class EnemySpawnSystem
         const enemy = new BasicEnemyState();
 
         return this.registerEnemy(enemy);
+    }
+
+    trySpawnBasicAt (tile: GridPosition): EnemyState | null
+    {
+        return this.spawnBasicAt(tile, false);
+    }
+
+    trySpawnBasicPreviewAt (tile: GridPosition): EnemyState | null
+    {
+        return this.spawnBasicAt(tile, true);
+    }
+
+    /** Shows the full spawn pattern for an upcoming wave (frozen, non-combat). */
+    spawnWavePreview (wave: number): void
+    {
+        const definition = getWaveDefinition(wave);
+        const placedTiles = new Set<string>();
+
+        for (const entry of definition.spawns)
+        {
+            if (entry.kind !== 'basic')
+            {
+                continue;
+            }
+
+            const tileKey = `${entry.tile.col},${entry.tile.row}`;
+
+            if (placedTiles.has(tileKey))
+            {
+                continue;
+            }
+
+            if (this.trySpawnBasicPreviewAt(entry.tile))
+            {
+                placedTiles.add(tileKey);
+            }
+        }
+    }
+
+    private spawnBasicAt (tile: GridPosition, isPreview: boolean): EnemyState | null
+    {
+        const half = bodyHalfExtent(GRID_CONFIG, BASIC_ENEMY_CONFIG.sizeScale);
+        const enemy = new EnemyState(
+            tileCenterWorld(GRID_CONFIG, tile),
+            BASIC_ENEMY_UNIT_TYPE,
+            BASIC_ENEMY_BASE_STATS,
+            half,
+            half,
+            BASIC_ENEMY_PERKS,
+            isPreview,
+        );
+
+        return this.tryRegisterEnemy(enemy);
     }
 
     spawnAt (
@@ -53,33 +123,73 @@ export class EnemySpawnSystem
         return this.registerEnemy(enemy);
     }
 
-    remove (id: string): void
+    removeAllPreviews (): void
     {
-        if (!this.active.delete(id))
+        for (const enemy of this.all)
         {
-            return;
+            if (enemy.isPreview)
+            {
+                this.remove(enemy.id);
+            }
         }
-
-        this.collision.unregister(id);
-        EventBus.emit(GAME_EVENTS.ENEMY_REMOVED, { id });
     }
 
-    private registerEnemy<T extends EnemyState> (enemy: T): T
+    private tryRegisterEnemy<T extends EnemyState> (enemy: T): T | null
     {
-        if (!this.collision.register(
-            enemy.id,
-            'enemy',
-            enemy.position,
-            enemy.bodyHalfWidth,
-            enemy.bodyHalfHeight,
-        ))
+        if (!enemy.isPreview)
         {
-            throw new Error(`Cannot spawn enemy ${enemy.id}: body overlaps another entity`);
+            if (!this.collision.register(
+                enemy.id,
+                'enemy',
+                enemy.position,
+                enemy.bodyHalfWidth,
+                enemy.bodyHalfHeight,
+            ))
+            {
+                return null;
+            }
         }
 
         this.active.set(enemy.id, enemy);
         EventBus.emit(GAME_EVENTS.ENEMY_SPAWNED, enemy.snapshot());
 
         return enemy;
+    }
+
+    clearAll (): void
+    {
+        for (const id of [ ...this.active.keys() ])
+        {
+            this.remove(id);
+        }
+    }
+
+    remove (id: string): void
+    {
+        const enemy = this.active.get(id);
+
+        if (!enemy || !this.active.delete(id))
+        {
+            return;
+        }
+
+        if (!enemy.isPreview)
+        {
+            this.collision.unregister(id);
+        }
+
+        EventBus.emit(GAME_EVENTS.ENEMY_REMOVED, { id });
+    }
+
+    private registerEnemy<T extends EnemyState> (enemy: T): T
+    {
+        const registered = this.tryRegisterEnemy(enemy);
+
+        if (!registered)
+        {
+            throw new Error(`Cannot spawn enemy ${enemy.id}: body overlaps another entity`);
+        }
+
+        return registered;
     }
 }

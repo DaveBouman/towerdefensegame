@@ -1,6 +1,6 @@
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
-import type { GameStateSnapshot, UpgradePickState } from './types';
+import type { DeploymentSnapshot, GameStateSnapshot, UpgradePickState } from './types';
 
 export class GameState
 {
@@ -9,6 +9,7 @@ export class GameState
     private _lives = 20;
     private _canStartWave = true;
     private _upgradePick: UpgradePickState | null = null;
+    private _deployment: DeploymentSnapshot | null = null;
 
     get gold (): number
     {
@@ -35,6 +36,11 @@ export class GameState
         return this._upgradePick;
     }
 
+    get deployment (): DeploymentSnapshot | null
+    {
+        return this._deployment;
+    }
+
     snapshot (): GameStateSnapshot
     {
         return {
@@ -43,7 +49,14 @@ export class GameState
             lives: this._lives,
             canStartWave: this._canStartWave,
             upgradePick: this._upgradePick,
+            deployment: this._deployment,
         };
+    }
+
+    setDeployment (deployment: DeploymentSnapshot | null): void
+    {
+        this._deployment = deployment;
+        this.notify();
     }
 
     setGold (gold: number): void

@@ -26,7 +26,9 @@ export interface GameEventMap {
     'selection-cleared': void;
     'start-wave': void;
     'wave-completed': void;
+    'place-tower-at-tile': { col: number; row: number };
     'claim-wave-reward': { upgradeId: string };
+    'discard-wave-reward': void;
     'request-inventory': void;
     'inventory-snapshot': { unused: TowerUpgradeDefinition[] };
     'equip-catalog-upgrade-at-screen': {
@@ -35,4 +37,7 @@ export interface GameEventMap {
         clientY: number;
     };
     'purchase-tower-stat-upgrade': { towerId: string; upgradeId: string };
+    'camera-scroll-changed': { scrollY: number; maxScrollY: number };
+    'set-camera-scroll-y': { scrollY: number };
+    'request-camera-scroll': void;
 }

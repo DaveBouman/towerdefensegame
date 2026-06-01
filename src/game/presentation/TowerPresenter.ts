@@ -13,6 +13,7 @@ export class TowerPresenter
 
     constructor (
         private readonly resolveSnapshot: (id: string) => TowerStateSnapshot | undefined,
+        private readonly canSelectTower: () => boolean = () => true,
     ) {}
 
     place (scene: Phaser.Scene, grid: Grid, snapshot: TowerStateSnapshot): void
@@ -23,16 +24,24 @@ export class TowerPresenter
         }
 
         const config = getTowerVisualConfig(snapshot.archetype);
+        const towerId = snapshot.id;
 
-        const tower = new Tower(scene, grid, snapshot.position, config, () =>
+        const onSelect = () =>
         {
-            const current = this.resolveSnapshot(snapshot.id);
+            if (!this.canSelectTower())
+            {
+                return;
+            }
+
+            const current = this.resolveSnapshot(towerId);
 
             if (current)
             {
                 EventBus.emit(GAME_EVENTS.TOWER_SELECTED, current);
             }
-        });
+        };
+
+        const tower = new Tower(scene, grid, snapshot.position, config, onSelect);
 
         this.towers.set(snapshot.id, tower);
         tower.setHealth(snapshot.health, snapshot.maxHealth);
