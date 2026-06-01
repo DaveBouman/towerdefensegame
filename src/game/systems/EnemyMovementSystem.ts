@@ -4,6 +4,8 @@ import { pickSurroundGoalTile } from '../pathfinding/surroundGoal';
 import { tileKey } from '../pathfinding/tileKey';
 import { followPathStep, pathToWorldWaypoints, stepTowardWorldTarget } from '../movement/followPath';
 import { tileCenterWorld } from '../grid/worldPosition';
+import { canEnemiesTargetPlayerNexus, livingTowers } from '../combat/targetPriority';
+import type { CombatEntity } from '../combat/combatRange';
 import type { EnemyState } from '../domain/EnemyState';
 import type { TowerState } from '../domain/TowerState';
 import type { Grid } from '../grid/Grid';
@@ -12,6 +14,7 @@ import { isWithinAttackRange } from '../combat/combatRange';
 import { worldDistance } from '../grid/worldPosition';
 import type { EnemySpawnSystem } from './EnemySpawnSystem';
 import type { CollisionSystem } from './CollisionSystem';
+import type { PlayerNexusSystem } from './PlayerNexusSystem';
 import type { TowerPlacementSystem } from './TowerPlacementSystem';
 
 interface EnemyPathState
@@ -28,6 +31,7 @@ export class EnemyMovementSystem
     constructor (
         private readonly enemies: EnemySpawnSystem,
         private readonly towers: TowerPlacementSystem,
+        private readonly playerNexus: PlayerNexusSystem,
         private readonly grid: Grid,
         private readonly collision: CollisionSystem,
     ) {}
@@ -35,7 +39,7 @@ export class EnemyMovementSystem
     tick (_gameTick: number): void
     {
         const movers = this.enemies.all
-            .filter((enemy) => enemy.health > 0 && !enemy.isPreview)
+            .filter((enemy) => enemy.health > 0 && !enemy.isPreview && !enemy.isNexus)
             .sort((a, b) => a.id.localeCompare(b.id));
 
         for (const enemy of movers)
@@ -53,42 +57,64 @@ export class EnemyMovementSystem
             return;
         }
 
-        const target = this.findNearestTower(enemy);
+        const tower = this.findNearestTower(enemy);
 
-        if (!target)
+        if (tower)
         {
-            this.paths.delete(enemy.id);
+            this.moveTowardTarget(enemy, tower, tower.id, speed);
+
             return;
         }
 
+        const nexus = this.playerNexus.active;
+
+        if (!nexus || nexus.health <= 0 || !canEnemiesTargetPlayerNexus(this.towers.all))
+        {
+            this.paths.delete(enemy.id);
+
+            return;
+        }
+
+        this.moveTowardTarget(enemy, nexus, 'player-nexus', speed);
+    }
+
+    private moveTowardTarget (
+        enemy: EnemyState,
+        target: CombatEntity,
+        targetId: string,
+        speed: number,
+    ): void
+    {
         const rangePx = this.grid.rangeToPixels(enemy.stats.range);
 
         if (isWithinAttackRange(enemy, target, rangePx))
         {
             this.paths.delete(enemy.id);
+
             return;
         }
 
         const startTile = this.grid.toGrid(enemy.position.x, enemy.position.y);
-        const towerTile = this.grid.toGrid(target.position.x, target.position.y);
+        const targetTile = this.grid.toGrid(target.position.x, target.position.y);
 
-        if (!startTile || !towerTile)
+        if (!startTile || !targetTile)
         {
             return;
         }
 
-        const goalKey = `${target.id}:${towerTile.col},${towerTile.row}`;
+        const goalKey = `${targetId}:${targetTile.col},${targetTile.row}`;
         let pathState = this.paths.get(enemy.id);
 
         if (!pathState || pathState.goalKey !== goalKey)
         {
-            pathState = this.planPath(enemy, target, startTile, towerTile, goalKey);
+            pathState = this.planPath(enemy, target, startTile, targetTile, goalKey, targetId);
             this.paths.set(enemy.id, pathState);
         }
 
         if (pathState.waypoints.length === 0)
         {
-            this.chaseTower(enemy, target, pathState.goalTile, speed);
+            this.chaseTarget(enemy, target, pathState.goalTile, speed);
+
             return;
         }
 
@@ -102,7 +128,8 @@ export class EnemyMovementSystem
         if (!step)
         {
             this.paths.delete(enemy.id);
-            this.chaseTower(enemy, target, pathState.goalTile, speed);
+            this.chaseTarget(enemy, target, pathState.goalTile, speed);
+
             return;
         }
 
@@ -111,6 +138,7 @@ export class EnemyMovementSystem
         if (!this.collision.setPositionFromPath(enemy.id, step.position))
         {
             this.paths.delete(enemy.id);
+
             return;
         }
 
@@ -118,9 +146,9 @@ export class EnemyMovementSystem
     }
 
     /** Walk the final distance when pathfinding ends one tile short of attack range. */
-    private chaseTower (
+    private chaseTarget (
         enemy: EnemyState,
-        target: TowerState,
+        target: CombatEntity,
         goalTile: GridPosition,
         speed: number,
     ): void
@@ -130,6 +158,7 @@ export class EnemyMovementSystem
         if (isWithinAttackRange(enemy, target, rangePx))
         {
             this.paths.delete(enemy.id);
+
             return;
         }
 
@@ -139,6 +168,7 @@ export class EnemyMovementSystem
         if (!this.collision.setPositionFromPath(enemy.id, next))
         {
             this.paths.delete(enemy.id);
+
             return;
         }
 
@@ -148,19 +178,20 @@ export class EnemyMovementSystem
 
     private planPath (
         enemy: EnemyState,
-        target: TowerState,
+        target: CombatEntity,
         startTile: GridPosition,
-        towerTile: GridPosition,
+        targetTile: GridPosition,
         goalKey: string,
+        targetId: string,
     ): EnemyPathState
     {
         const blocked = buildBlockedTiles(this.grid, this.collision, enemy.id);
 
-        blocked.add(tileKey(towerTile));
+        blocked.add(tileKey(targetTile));
 
         const rangePx = this.grid.rangeToPixels(enemy.stats.range);
-        const reservedGoals = this.collectReservedGoalTiles(enemy.id, target.id);
-        const slotIndex = this.slotIndexForTower(enemy.id, target.id);
+        const reservedGoals = this.collectReservedGoalTiles(enemy.id, targetId);
+        const slotIndex = this.slotIndexForTarget(enemy.id, targetId);
         const goalTile = pickSurroundGoalTile(
             this.grid,
             startTile,
@@ -171,7 +202,7 @@ export class EnemyMovementSystem
             blocked,
             reservedGoals,
             slotIndex,
-        ) ?? towerTile;
+        ) ?? targetTile;
 
         const tilePath = findPath(this.grid, startTile, goalTile, blocked);
 
@@ -204,10 +235,10 @@ export class EnemyMovementSystem
         return reserved;
     }
 
-    private slotIndexForTower (enemyId: string, towerId: string): number
+    private slotIndexForTarget (enemyId: string, targetId: string): number
     {
         const squad = this.enemies.combatants
-            .filter((other) => this.findNearestTower(other)?.id === towerId)
+            .filter((other) => this.moveTargetId(other) === targetId)
             .map((other) => other.id)
             .sort();
 
@@ -216,18 +247,30 @@ export class EnemyMovementSystem
         return index >= 0 ? index : 0;
     }
 
+    private moveTargetId (enemy: EnemyState): string
+    {
+        const tower = this.findNearestTower(enemy);
+
+        if (tower)
+        {
+            return tower.id;
+        }
+
+        if (canEnemiesTargetPlayerNexus(this.towers.all))
+        {
+            return 'player-nexus';
+        }
+
+        return '';
+    }
+
     private findNearestTower (enemy: EnemyState): TowerState | null
     {
         let closest: TowerState | null = null;
         let closestDistance = Infinity;
 
-        for (const tower of this.towers.all)
+        for (const tower of livingTowers(this.towers.all))
         {
-            if (tower.health <= 0)
-            {
-                continue;
-            }
-
             const towerDistance = worldDistance(enemy.position, tower.position);
 
             if (towerDistance < closestDistance)

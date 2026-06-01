@@ -1,14 +1,17 @@
 import type { EnemyState } from '../domain/EnemyState';
+import type { PlayerNexusState } from '../domain/PlayerNexusState';
 import type { TowerState } from '../domain/TowerState';
 import type { EnemyAttackPayload } from '../domain/types';
 import { EventBus } from '../EventBus';
 import { attacksPerSecondToIntervalTicks } from '../config/gameClockConfig';
+import { canEnemiesTargetPlayerNexus, livingTowers } from '../combat/targetPriority';
 import { GAME_EVENTS } from '../events/gameEvents';
 import type { Grid } from '../grid/Grid';
 import { isWithinAttackRange } from '../combat/combatRange';
 import { worldDistance } from '../grid/worldPosition';
 import type { EnemySpawnSystem } from './EnemySpawnSystem';
 import type { KillRewardSystem } from './KillRewardSystem';
+import type { PlayerNexusSystem } from './PlayerNexusSystem';
 import type { TowerPlacementSystem } from './TowerPlacementSystem';
 
 export class EnemyAttackSystem
@@ -18,6 +21,7 @@ export class EnemyAttackSystem
     constructor (
         private readonly enemies: EnemySpawnSystem,
         private readonly towers: TowerPlacementSystem,
+        private readonly playerNexus: PlayerNexusSystem,
         private readonly grid: Grid,
         private readonly killRewards: KillRewardSystem,
     ) {}
@@ -26,7 +30,7 @@ export class EnemyAttackSystem
     {
         for (const enemy of this.enemies.all)
         {
-            if (enemy.health <= 0 || enemy.isPreview)
+            if (enemy.health <= 0 || enemy.isPreview || enemy.isNexus)
             {
                 continue;
             }
@@ -46,24 +50,43 @@ export class EnemyAttackSystem
             return;
         }
 
-        const target = this.findTarget(enemy);
+        const rangePx = this.grid.rangeToPixels(enemy.stats.range);
+        const towerTarget = this.findTowerInRange(enemy, rangePx);
 
-        if (!target)
+        if (towerTarget)
         {
+            this.attackTower(enemy, towerTarget, gameTick);
+
             return;
         }
 
+        const nexus = this.playerNexus.active;
+
+        if (
+            nexus
+            && nexus.health > 0
+            && canEnemiesTargetPlayerNexus(this.towers.all)
+            && isWithinAttackRange(enemy, nexus, rangePx)
+        )
+        {
+            this.attackPlayerNexus(enemy, nexus, gameTick);
+        }
+    }
+
+    private attackTower (enemy: EnemyState, target: TowerState, gameTick: number): void
+    {
         const damage = target.applyDamage(enemy.stats.damage);
 
         this.lastAttackTick.set(enemy.id, gameTick);
 
         const payload: EnemyAttackPayload = {
             enemyId: enemy.id,
+            targetKind: 'tower',
             towerId: target.id,
             enemyPosition: { ...enemy.position },
-            towerPosition: { ...target.position },
+            targetPosition: { ...target.position },
             damage,
-            towerHealth: target.health,
+            targetHealth: target.health,
         };
 
         EventBus.emit(GAME_EVENTS.ENEMY_ATTACKED, payload);
@@ -77,19 +100,35 @@ export class EnemyAttackSystem
         }
     }
 
-    private findTarget (enemy: EnemyState): TowerState | null
+    private attackPlayerNexus (
+        enemy: EnemyState,
+        target: PlayerNexusState,
+        gameTick: number,
+    ): void
     {
-        const rangePx = this.grid.rangeToPixels(enemy.stats.range);
+        const damage = this.playerNexus.applyDamage(enemy.stats.damage);
+
+        this.lastAttackTick.set(enemy.id, gameTick);
+
+        const payload: EnemyAttackPayload = {
+            enemyId: enemy.id,
+            targetKind: 'playerNexus',
+            enemyPosition: { ...enemy.position },
+            targetPosition: { ...target.position },
+            damage,
+            targetHealth: target.health,
+        };
+
+        EventBus.emit(GAME_EVENTS.ENEMY_ATTACKED, payload);
+    }
+
+    private findTowerInRange (enemy: EnemyState, rangePx: number): TowerState | null
+    {
         let closest: TowerState | null = null;
         let closestDistance = Infinity;
 
-        for (const tower of this.towers.all)
+        for (const tower of livingTowers(this.towers.all))
         {
-            if (tower.health <= 0)
-            {
-                continue;
-            }
-
             if (!isWithinAttackRange(enemy, tower, rangePx))
             {
                 continue;
@@ -97,13 +136,11 @@ export class EnemyAttackSystem
 
             const distance = worldDistance(enemy.position, tower.position);
 
-            if (distance >= closestDistance)
+            if (distance < closestDistance)
             {
-                continue;
+                closest = tower;
+                closestDistance = distance;
             }
-
-            closest = tower;
-            closestDistance = distance;
         }
 
         return closest;

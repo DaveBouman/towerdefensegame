@@ -3,6 +3,7 @@ import type { TowerDefinitionId } from '../config/towerCatalog';
 import { createTowerState } from '../domain/createTowerState';
 import { TowerState } from '../domain/TowerState';
 import { GAME_EVENTS } from '../events/gameEvents';
+import { isPlayerNexusTile } from '../config/nexusConfig';
 import { isPlayerPlacementTile } from '../config/placementZone';
 import type { Grid } from '../grid/Grid';
 import type { GridPosition } from '../grid/types';
@@ -31,7 +32,12 @@ export class TowerPlacementSystem
     {
         const tower = this.placed.get(towerId);
 
-        if (!tower || !this.grid.isInBounds(tile) || !isPlayerPlacementTile(tile))
+        if (
+            !tower
+            || !this.grid.isInBounds(tile)
+            || !isPlayerPlacementTile(tile)
+            || isPlayerNexusTile(tile)
+        )
         {
             return false;
         }
@@ -97,7 +103,7 @@ export class TowerPlacementSystem
 
     tryPlace (tile: GridPosition, definitionId: TowerDefinitionId): TowerState | null
     {
-        if (!this.grid.isInBounds(tile) || !isPlayerPlacementTile(tile))
+        if (!this.grid.isInBounds(tile) || !isPlayerPlacementTile(tile) || isPlayerNexusTile(tile))
         {
             return null;
         }

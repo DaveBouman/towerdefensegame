@@ -13,6 +13,20 @@
       "sizeScale": 0.5,
       "color": "#e74c3c",
       "perks": []
+    },
+    {
+      "id": "enemy-nexus",
+      "unitType": "Enemy Nexus",
+      "maxHealth": 2500,
+      "damage": 40,
+      "defense": 8,
+      "range": 3.5,
+      "attacksPerSecond": 0.6,
+      "moveSpeedPerTick": 0,
+      "goldValue": 0,
+      "sizeScale": 1.15,
+      "color": "#9b59b6",
+      "perks": []
     }
   ]
 }

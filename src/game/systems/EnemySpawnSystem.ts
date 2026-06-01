@@ -8,6 +8,13 @@ import { tileCenterWorld } from '../grid/worldPosition';
 import { GRID_CONFIG } from '../config/gridConfig';
 import { bodyHalfExtent } from '../config/entityBodies';
 import { getWaveDefinition } from '../config/waveCatalog';
+import {
+    ENEMY_NEXUS_ID,
+    ENEMY_NEXUS_KIND,
+    ENEMY_NEXUS_TILE,
+    isEnemyNexusTile,
+} from '../config/nexusConfig';
+import { enemiesAttackableByTowers, livingMinions } from '../combat/targetPriority';
 import type { CollisionSystem } from './CollisionSystem';
 
 export class EnemySpawnSystem
@@ -21,14 +28,50 @@ export class EnemySpawnSystem
         return [ ...this.active.values() ];
     }
 
+  /** Living wave units (excludes the enemy nexus). */
     get combatants (): readonly EnemyState[]
     {
-        return this.all.filter((enemy) => !enemy.isPreview && enemy.health > 0);
+        return livingMinions(this.all);
     }
 
     get livingCombatCount (): number
     {
         return this.combatants.length;
+    }
+
+    getEnemyNexus (): EnemyState | undefined
+    {
+        return this.active.get(ENEMY_NEXUS_ID);
+    }
+
+    get attackableByTowers (): readonly EnemyState[]
+    {
+        return enemiesAttackableByTowers(this.all);
+    }
+
+    spawnEnemyNexus (): EnemyState | null
+    {
+        if (this.getEnemyNexus())
+        {
+            return this.getEnemyNexus() ?? null;
+        }
+
+        const definition = getEnemyDefinitionOrThrow(ENEMY_NEXUS_KIND);
+        const half = bodyHalfExtent(GRID_CONFIG, definition.visual.sizeScale);
+        const enemy = new EnemyState(
+            tileCenterWorld(GRID_CONFIG, ENEMY_NEXUS_TILE),
+            definition.id,
+            definition.unitType,
+            definition.baseStats,
+            half,
+            half,
+            definition.perks,
+            false,
+            true,
+            ENEMY_NEXUS_ID,
+        );
+
+        return this.tryRegisterEnemy(enemy);
     }
 
     getSnapshot (id: string)
@@ -38,6 +81,11 @@ export class EnemySpawnSystem
 
     trySpawnAt (tile: GridPosition, kind: EnemyDefinitionId, isPreview = false): EnemyState | null
     {
+        if (isEnemyNexusTile(tile))
+        {
+            return null;
+        }
+
         const definition = getEnemyDefinitionOrThrow(kind);
         const half = bodyHalfExtent(GRID_CONFIG, definition.visual.sizeScale);
         const enemy = new EnemyState(
@@ -118,6 +166,13 @@ export class EnemySpawnSystem
     {
         for (const id of [ ...this.active.keys() ])
         {
+            const enemy = this.active.get(id);
+
+            if (enemy?.isNexus)
+            {
+                continue;
+            }
+
             this.remove(id);
         }
     }

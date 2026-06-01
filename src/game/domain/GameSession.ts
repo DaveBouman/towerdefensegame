@@ -22,6 +22,8 @@ import { WaveRoundController } from './WaveRoundController';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerDefinitionId } from '../config/towerCatalog';
 import { rollTowerDraftChoices } from '../config/towerDraft';
+import { PlayerNexusSystem } from '../systems/PlayerNexusSystem';
+import { EnemyNexusAttackSystem } from '../systems/EnemyNexusAttackSystem';
 
 export class GameSession
 {
@@ -37,6 +39,7 @@ export class GameSession
     readonly enemyAttacks: EnemyAttackSystem;
     readonly towerAttacks: TowerAttackSystem;
     readonly towerUpgrades: TowerUpgradeService;
+    readonly playerNexus: PlayerNexusSystem;
     readonly deployment: DeploymentPhase;
 
     private readonly waveRounds: WaveRoundController;
@@ -52,10 +55,12 @@ export class GameSession
         this.waveSpawns = new WaveSpawnSystem(this.enemies);
         this.towers = new TowerPlacementSystem(grid, this.collision);
         this.towerUpgrades = new TowerUpgradeService();
+        this.playerNexus = new PlayerNexusSystem();
         this.deployment = new DeploymentPhase();
         this.enemyMovement = new EnemyMovementSystem(
             this.enemies,
             this.towers,
+            this.playerNexus,
             grid,
             this.collision,
         );
@@ -70,12 +75,20 @@ export class GameSession
         this.enemyAttacks = new EnemyAttackSystem(
             this.enemies,
             this.towers,
+            this.playerNexus,
             grid,
             killRewards,
         );
         this.towerAttacks = new TowerAttackSystem(
             this.towers,
             this.enemies,
+            grid,
+            killRewards,
+        );
+        const enemyNexusAttacks = new EnemyNexusAttackSystem(
+            this.enemies,
+            this.towers,
+            this.playerNexus,
             grid,
             killRewards,
         );
@@ -98,6 +111,7 @@ export class GameSession
             this.enemyMovement,
             this.towerMovement,
             this.enemyAttacks,
+            enemyNexusAttacks,
             this.towerAttacks,
         ];
     }
@@ -105,10 +119,14 @@ export class GameSession
     prepare (): void
     {
         this.towerUpgrades.reset();
+        this.playerNexus.reset();
         this.enemies.clearAll();
         this.towers.clearAll();
         this.waveSpawns.clear();
         this.deployment.reset();
+        this.playerNexus.spawn();
+        this.enemies.spawnEnemyNexus();
+        this.state.setLives(this.playerNexus.active?.maxHealth ?? this.state.lives);
         this.state.setWave(0);
         this.state.setUpgradePick(null);
         this.state.setTowerDraftPick({ choices: rollTowerDraftChoices(0, 5) });
@@ -222,7 +240,7 @@ export class GameSession
         if (claimed)
         {
             this.towerUpgrades.publishInventorySnapshot();
-            this.waveRounds.showUpcomingWavePreview();
+            this.beginPostWaveTowerDraft();
         }
 
         return claimed;
@@ -235,7 +253,7 @@ export class GameSession
         if (discarded)
         {
             this.towerUpgrades.publishInventorySnapshot();
-            this.waveRounds.showUpcomingWavePreview();
+            this.beginPostWaveTowerDraft();
         }
 
         return discarded;
@@ -284,21 +302,43 @@ export class GameSession
 
     checkWaveComplete (): void
     {
-        if (
-            this.state.wave > 0
-            && this.enemies.livingCombatCount === 0
-            && !this.waveSpawns.hasPendingSpawns
-        )
+        if (!this.isRoundActive())
         {
-            this.resetPlayerTowersAfterWave();
-            this.towerUpgrades.offerPostWaveDraft(this.state);
-            this.towerUpgrades.publishInventorySnapshot();
-
-            if (this.state.canStartWave && !this.state.upgradePick)
-            {
-                this.waveRounds.showUpcomingWavePreview();
-            }
+            return;
         }
+
+        if (this.enemies.livingCombatCount > 0 || this.waveSpawns.hasPendingSpawns)
+        {
+            return;
+        }
+
+        const enemyNexus = this.enemies.getEnemyNexus();
+
+        if (enemyNexus && enemyNexus.health > 0)
+        {
+            return;
+        }
+
+        this.resetPlayerTowersAfterWave();
+        this.towerUpgrades.offerPostWaveDraft(this.state);
+        this.towerUpgrades.publishInventorySnapshot();
+
+        if (!this.state.upgradePick)
+        {
+            this.beginPostWaveTowerDraft();
+        }
+    }
+
+    /** After wave 1+, draft one extra tower to place before the next wave. */
+    private beginPostWaveTowerDraft (): void
+    {
+        if (this.state.wave < 1 || this.state.towerDraftPick)
+        {
+            return;
+        }
+
+        this.state.setTowerDraftPick({ choices: rollTowerDraftChoices(this.state.wave, 5) });
+        this.state.setCanStartWave(false);
     }
 
     advanceTick (): void
@@ -322,8 +362,19 @@ export class GameSession
         this.collision.clear();
         this.waveSpawns.clear();
         this.towerUpgrades.reset();
+        this.playerNexus.reset();
         this.deployment.reset();
         this.state.setDeployment(null);
+    }
+
+    syncLivesFromPlayerNexus (): void
+    {
+        const nexus = this.playerNexus.active;
+
+        if (nexus)
+        {
+            this.state.setLives(nexus.health);
+        }
     }
 
     private resetPlayerTowersAfterWave (): void

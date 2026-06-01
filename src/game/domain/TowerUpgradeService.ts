@@ -132,6 +132,11 @@ export class TowerUpgradeService
 
     offerPostWaveDraft (state: GameState): void
     {
+        if (state.upgradePick)
+        {
+            return;
+        }
+
         const choices = rollWaveUpgradeChoiceIds([ ...this.discardedCatalogIds ]);
 
         if (choices.length === 0)

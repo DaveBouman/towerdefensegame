@@ -3,6 +3,7 @@ import { GAME_EVENTS } from '../events/gameEvents';
 import type { Grid } from '../grid/Grid';
 import type {
     EnemyStateSnapshot,
+    PlayerNexusStateSnapshot,
     TowerStateSnapshot,
     UnitSelection,
 } from '../domain/types';
@@ -38,6 +39,12 @@ export class SelectionController
     selectTower (snapshot: TowerStateSnapshot): void
     {
         this.selection = { kind: 'tower', data: snapshot };
+        this.publish();
+    }
+
+    selectPlayerNexus (snapshot: PlayerNexusStateSnapshot): void
+    {
+        this.selection = { kind: 'playerNexus', data: snapshot };
         this.publish();
     }
 
@@ -125,8 +132,17 @@ export class SelectionController
                 this.scene,
                 live.position,
                 enemyAttackIndicatorRadiusPx(this.grid, live.stats.range),
-                ENEMY_RANGE_COLOR,
+                live.isNexus
+                    ? 0x9b59b6
+                    : ENEMY_RANGE_COLOR,
             );
+
+            return;
+        }
+
+        if (this.selection.kind === 'playerNexus')
+        {
+            this.rangeIndicator.hide();
 
             return;
         }

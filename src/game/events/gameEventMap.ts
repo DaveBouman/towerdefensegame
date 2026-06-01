@@ -4,8 +4,10 @@ import type { TowerUpgradeDefinition } from '../config/towerUpgradeCatalog';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type {
     EnemyStateSnapshot,
+    EnemyNexusAttackPayload,
     GameStateSnapshot,
     EnemyAttackPayload,
+    PlayerNexusStateSnapshot,
     TowerAttackPayload,
     TowerStateSnapshot,
     UnitSelection,
@@ -19,6 +21,10 @@ export interface GameEventMap {
     'enemy-selected': EnemyStateSnapshot;
     'enemy-damaged': EnemyStateSnapshot;
     'enemy-attacked': EnemyAttackPayload;
+    'enemy-nexus-attacked': EnemyNexusAttackPayload;
+    'player-nexus-spawned': PlayerNexusStateSnapshot;
+    'player-nexus-damaged': PlayerNexusStateSnapshot;
+    'player-nexus-destroyed': PlayerNexusStateSnapshot;
     'tower-placed': TowerStateSnapshot;
     'tower-removed': { id: string };
     'tower-selected': TowerStateSnapshot;

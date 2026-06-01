@@ -41,7 +41,7 @@ export const GameHud = () =>
         <aside className="game-hud">
             <span>Gold {gold}</span>
             <span>Wave {wave}</span>
-            <span>Lives {lives}</span>
+            <span>Nexus {lives}</span>
             {deployHint && (
                 <span className="game-hud__deploy-hint">{deployHint}</span>
             )}

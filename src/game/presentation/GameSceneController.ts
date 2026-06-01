@@ -9,7 +9,9 @@ import {
 } from '../config/attackBeamColors';
 import type {
     EnemyAttackPayload,
+    EnemyNexusAttackPayload,
     EnemyStateSnapshot,
+    PlayerNexusStateSnapshot,
     TowerAttackPayload,
     TowerStateSnapshot,
 } from '../domain/types';
@@ -23,6 +25,7 @@ import { TowerPresenter } from './TowerPresenter';
 import { TowerDropTarget } from './TowerDropTarget';
 import { GridPlacementController } from './GridPlacementController';
 import { TowerRelocationController } from './TowerRelocationController';
+import { PlayerNexusPresenter } from './PlayerNexusPresenter';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerDefinitionId } from '../config/towerCatalog';
 
@@ -36,6 +39,7 @@ export class GameSceneController
     private readonly towerDropTarget: TowerDropTarget;
     private readonly gridPlacement: GridPlacementController;
     private readonly towerRelocation: TowerRelocationController;
+    private readonly playerNexusPresenter: PlayerNexusPresenter;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -100,6 +104,15 @@ export class GameSceneController
                 canDropAt: (towerId, tile) => this.session.canRelocateTowerTo(towerId, tile),
             },
         );
+        this.playerNexusPresenter = new PlayerNexusPresenter(() =>
+        {
+            const snapshot = this.session.playerNexus.getSnapshot();
+
+            if (snapshot)
+            {
+                this.selection.selectPlayerNexus(snapshot);
+            }
+        });
     }
 
     bind (): void
@@ -130,6 +143,9 @@ export class GameSceneController
         EventBus.on(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
         EventBus.on(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, this.onRelocateTowerAtTile, this);
         EventBus.on(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
+        EventBus.on(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.onPlayerNexusSpawned, this);
+        EventBus.on(GAME_EVENTS.PLAYER_NEXUS_DAMAGED, this.onPlayerNexusDamaged, this);
+        EventBus.on(GAME_EVENTS.ENEMY_NEXUS_ATTACKED, this.onEnemyNexusAttacked, this);
     }
 
     unbind (): void
@@ -160,6 +176,9 @@ export class GameSceneController
         EventBus.off(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
         EventBus.off(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, this.onRelocateTowerAtTile, this);
         EventBus.off(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
+        EventBus.off(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.onPlayerNexusSpawned, this);
+        EventBus.off(GAME_EVENTS.PLAYER_NEXUS_DAMAGED, this.onPlayerNexusDamaged, this);
+        EventBus.off(GAME_EVENTS.ENEMY_NEXUS_ATTACKED, this.onEnemyNexusAttacked, this);
     }
 
     startSession (): void
@@ -287,6 +306,7 @@ export class GameSceneController
         this.towerRelocation.destroy();
         this.enemyPresenter.clearAll();
         this.towerPresenter.clearAll();
+        this.playerNexusPresenter.destroy();
         this.selection.clear();
         this.rangeIndicator.destroy();
         this.attackBeamEffect.destroy();
@@ -427,8 +447,40 @@ export class GameSceneController
         this.attackBeamEffect.play(
             this.scene,
             payload.enemyPosition,
-            payload.towerPosition,
+            payload.targetPosition,
             { beam: ENEMY_BEAM_COLOR, impact: ENEMY_IMPACT_COLOR },
         );
+    }
+
+    private onEnemyNexusAttacked (payload: EnemyNexusAttackPayload): void
+    {
+        if (!canAddToScene(this.scene))
+        {
+            return;
+        }
+
+        this.attackBeamEffect.play(
+            this.scene,
+            payload.nexusPosition,
+            payload.targetPosition,
+            { beam: 0x9b59b6, impact: ENEMY_IMPACT_COLOR },
+        );
+    }
+
+    private onPlayerNexusSpawned (snapshot: PlayerNexusStateSnapshot): void
+    {
+        if (!canAddToScene(this.scene))
+        {
+            return;
+        }
+
+        this.playerNexusPresenter.spawn(this.scene, this.grid, snapshot);
+    }
+
+    private onPlayerNexusDamaged (snapshot: PlayerNexusStateSnapshot): void
+    {
+        this.session.syncLivesFromPlayerNexus();
+        this.playerNexusPresenter.setHealth(snapshot.health, snapshot.maxHealth);
+        this.selection.syncFrame();
     }
 }

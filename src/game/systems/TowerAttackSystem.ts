@@ -49,7 +49,7 @@ export class TowerAttackSystem
         const target = pickTowerAttackTarget(
             tower.targetingMode,
             tower,
-            this.enemies.combatants,
+            this.enemies.attackableByTowers,
             rangePx,
         );
 

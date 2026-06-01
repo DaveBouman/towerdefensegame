@@ -38,6 +38,15 @@ export interface EnemyStateSnapshot {
     health: number;
     stats: EnemyStatsSnapshot;
     isPreview: boolean;
+    isNexus: boolean;
+}
+
+export interface PlayerNexusStateSnapshot {
+    id: string;
+    position: WorldPosition;
+    unitType: string;
+    health: number;
+    maxHealth: number;
 }
 
 export interface TowerStateSnapshot {
@@ -63,7 +72,8 @@ export interface TowerStateSnapshot {
 
 export type UnitSelection =
     | { kind: 'enemy'; data: EnemyStateSnapshot }
-    | { kind: 'tower'; data: TowerStateSnapshot };
+    | { kind: 'tower'; data: TowerStateSnapshot }
+    | { kind: 'playerNexus'; data: PlayerNexusStateSnapshot };
 
 export interface TowerAttackPayload {
     towerId: string;
@@ -77,9 +87,20 @@ export interface TowerAttackPayload {
 
 export interface EnemyAttackPayload {
     enemyId: string;
-    towerId: string;
+    targetKind: 'tower' | 'playerNexus';
+    towerId?: string;
     enemyPosition: WorldPosition;
-    towerPosition: WorldPosition;
+    targetPosition: WorldPosition;
     damage: number;
-    towerHealth: number;
+    targetHealth: number;
+}
+
+export interface EnemyNexusAttackPayload {
+    enemyNexusId: string;
+    targetKind: 'tower' | 'playerNexus';
+    towerId?: string;
+    nexusPosition: WorldPosition;
+    targetPosition: WorldPosition;
+    damage: number;
+    targetHealth: number;
 }

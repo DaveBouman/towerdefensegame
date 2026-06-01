@@ -1,4 +1,8 @@
-import type { EnemyStateSnapshot, TowerStateSnapshot } from '../../game/domain/types';
+import type {
+    EnemyStateSnapshot,
+    PlayerNexusStateSnapshot,
+    TowerStateSnapshot,
+} from '../../game/domain/types';
 import {
     getEnemyPerkTags,
     getEnemyResistanceTags,
@@ -88,6 +92,17 @@ const EnemyDetails = ({ enemy }: { enemy: EnemyStateSnapshot }) => (
 const towerArchetypeLabel = (archetype: TowerStateSnapshot['archetype']): string =>
     archetype === 'close' ? 'Close range' : 'Long range';
 
+const PlayerNexusDetails = ({ nexus }: { nexus: PlayerNexusStateSnapshot }) => (
+    <StatList
+        stats={[
+            {
+                label: 'Health',
+                value: `${nexus.health} / ${nexus.maxHealth}`,
+            },
+        ]}
+    />
+);
+
 const TowerDetails = ({ tower }: { tower: TowerStateSnapshot }) => (
     <>
         <p className="unit-info-bar__tower-id" aria-label="Selected tower">
@@ -128,7 +143,9 @@ export const UnitInfoBar = () =>
         ? 'unit-info-bar--empty'
         : selection.kind === 'enemy'
             ? 'unit-info-bar--enemy'
-            : 'unit-info-bar--tower';
+            : selection.kind === 'playerNexus'
+                ? 'unit-info-bar--tower'
+                : 'unit-info-bar--tower';
 
     return (
         <footer
@@ -149,6 +166,9 @@ export const UnitInfoBar = () =>
                 <div className="unit-info-bar__content">
                     {selection?.kind === 'enemy' && <EnemyDetails enemy={selection.data} />}
                     {selection?.kind === 'tower' && <TowerDetails tower={selection.data} />}
+                    {selection?.kind === 'playerNexus' && (
+                        <PlayerNexusDetails nexus={selection.data} />
+                    )}
                 </div>
 
                 {selection && (
