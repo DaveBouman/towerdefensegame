@@ -2,7 +2,8 @@ import { buildBlockedTiles } from '../pathfinding/buildBlockedTiles';
 import { findPath } from '../pathfinding/aStar';
 import { pickSurroundGoalTile } from '../pathfinding/surroundGoal';
 import { tileKey } from '../pathfinding/tileKey';
-import { followPathStep, pathToWorldWaypoints } from '../movement/followPath';
+import { followPathStep, pathToWorldWaypoints, stepTowardWorldTarget } from '../movement/followPath';
+import { tileCenterWorld } from '../grid/worldPosition';
 import type { EnemyState } from '../domain/EnemyState';
 import type { TowerState } from '../domain/TowerState';
 import type { Grid } from '../grid/Grid';
@@ -87,6 +88,7 @@ export class EnemyMovementSystem
 
         if (pathState.waypoints.length === 0)
         {
+            this.chaseTower(enemy, target, pathState.goalTile, speed);
             return;
         }
 
@@ -100,18 +102,48 @@ export class EnemyMovementSystem
         if (!step)
         {
             this.paths.delete(enemy.id);
+            this.chaseTower(enemy, target, pathState.goalTile, speed);
             return;
         }
 
         pathState.waypoints = step.path;
 
-        if (!this.collision.tryMove(enemy.id, step.position))
+        if (!this.collision.setPositionFromPath(enemy.id, step.position))
         {
             this.paths.delete(enemy.id);
             return;
         }
 
         enemy.position = step.position;
+    }
+
+    /** Walk the final distance when pathfinding ends one tile short of attack range. */
+    private chaseTower (
+        enemy: EnemyState,
+        target: TowerState,
+        goalTile: GridPosition,
+        speed: number,
+    ): void
+    {
+        const rangePx = this.grid.rangeToPixels(enemy.stats.range);
+
+        if (isWithinAttackRange(enemy, target, rangePx))
+        {
+            this.paths.delete(enemy.id);
+            return;
+        }
+
+        const standGoal = tileCenterWorld(this.grid.config, goalTile);
+        const next = stepTowardWorldTarget(enemy.position, standGoal, speed);
+
+        if (!this.collision.setPositionFromPath(enemy.id, next))
+        {
+            this.paths.delete(enemy.id);
+            return;
+        }
+
+        enemy.position = next;
+        this.paths.delete(enemy.id);
     }
 
     private planPath (

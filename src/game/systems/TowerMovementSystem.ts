@@ -6,7 +6,8 @@ import type { TowerState } from '../domain/TowerState';
 import type { Grid } from '../grid/Grid';
 import type { GridPosition, WorldPosition } from '../grid/types';
 import { isWithinAttackRange } from '../combat/combatRange';
-import { worldDistance } from '../grid/worldPosition';
+import { stepTowardWorldTarget } from '../movement/followPath';
+import { pickTowerMovementTarget } from '../movement/towerMovementTarget';
 import type { EnemySpawnSystem } from './EnemySpawnSystem';
 import type { CollisionSystem } from './CollisionSystem';
 import type { TowerPlacementSystem } from './TowerPlacementSystem';
@@ -31,7 +32,7 @@ export class TowerMovementSystem
     {
         for (const tower of this.towers.all)
         {
-            if (tower.moveSpeedPerTick <= 0)
+            if (!tower.isMobile || tower.moveSpeedPerTick <= 0)
             {
                 continue;
             }
@@ -49,17 +50,10 @@ export class TowerMovementSystem
             return;
         }
 
-        const target = this.findMovementTarget(tower);
+        const rangePx = this.grid.rangeToPixels(tower.range);
+        const target = pickTowerMovementTarget(tower, this.enemies.combatants, rangePx);
 
         if (!target)
-        {
-            this.paths.delete(tower.id);
-            return;
-        }
-
-        const rangePx = this.grid.rangeToPixels(tower.range);
-
-        if (isWithinAttackRange(tower, target, rangePx))
         {
             this.paths.delete(tower.id);
             return;
@@ -84,6 +78,7 @@ export class TowerMovementSystem
 
         if (pathState.waypoints.length === 0)
         {
+            this.chaseTarget(tower, target, speed);
             return;
         }
 
@@ -132,31 +127,27 @@ export class TowerMovementSystem
         };
     }
 
-    /**
-     * Only chase enemies near the tower's range — not across the map because
-     * attack priority picked a distant target.
-     */
-    private findMovementTarget (tower: TowerState): EnemyState | null
+    /** Closes the last gap when A* has no tiles left but we are not in range yet. */
+    private chaseTarget (tower: TowerState, target: EnemyState, speed: number): void
     {
         const rangePx = this.grid.rangeToPixels(tower.range);
-        const leashPx = rangePx + this.grid.config.tileSize;
-        let closest: EnemyState | null = null;
-        let closestDistance = Infinity;
 
-        for (const enemy of this.enemies.combatants)
+        if (isWithinAttackRange(tower, target, rangePx))
         {
-            const enemyDistance = worldDistance(tower.position, enemy.position);
-
-            if (enemyDistance > leashPx || enemyDistance >= closestDistance)
-            {
-                continue;
-            }
-
-            closest = enemy;
-            closestDistance = enemyDistance;
+            this.paths.delete(tower.id);
+            return;
         }
 
-        return closest;
+        const next = stepTowardWorldTarget(tower.position, target.position, speed);
+
+        if (!this.collision.setPositionFromPath(tower.id, next))
+        {
+            this.paths.delete(tower.id);
+            return;
+        }
+
+        tower.position = next;
+        this.paths.delete(tower.id);
     }
 
     clearTower (towerId: string): void

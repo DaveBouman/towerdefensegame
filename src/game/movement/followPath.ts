@@ -4,7 +4,8 @@ import { worldDistance } from '../grid/worldPosition';
 
 const WAYPOINT_THRESHOLD = 4;
 
-const moveToward = (
+/** One step of continuous movement toward a world target (combat chase / last-mile). */
+export const stepTowardWorldTarget = (
     from: WorldPosition,
     to: WorldPosition,
     maxStep: number,
@@ -66,7 +67,7 @@ export const followPathStep = (
         return null;
     }
 
-    const next = moveToward(from, waypoint, speed);
+    const next = stepTowardWorldTarget(from, waypoint, speed);
 
     return { position: next, path: remaining };
 };
