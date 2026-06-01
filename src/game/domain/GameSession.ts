@@ -13,10 +13,8 @@ import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
 import { WaveSystem } from '../systems/WaveSystem';
 import type { Grid } from '../grid/Grid';
-import type { TowerState } from './TowerState';
-import { rollWaveUpgradeChoiceIds } from './waveUpgradeDraft';
+import { TowerUpgradeService } from './TowerUpgradeService';
 import type { TowerUpgradeDefinition } from '../config/towerUpgradeCatalog';
-import { TOWER_UPGRADE_CATALOG } from '../config/towerUpgradeCatalog';
 
 export class GameSession
 {
@@ -30,6 +28,7 @@ export class GameSession
     readonly enemyMovement: EnemyMovementSystem;
     readonly enemyAttacks: EnemyAttackSystem;
     readonly towerAttacks: TowerAttackSystem;
+    readonly towerUpgrades: TowerUpgradeService;
 
     private readonly tickPipeline: readonly TickSystem[];
 
@@ -41,6 +40,7 @@ export class GameSession
         this.waves = new WaveSystem(this.state);
         this.enemies = new EnemySpawnSystem(this.collision);
         this.towers = new TowerPlacementSystem(grid, this.collision);
+        this.towerUpgrades = new TowerUpgradeService();
         this.enemyMovement = new EnemyMovementSystem(
             this.enemies,
             this.towers,
@@ -68,6 +68,7 @@ export class GameSession
 
     prepare (): void
     {
+        this.towerUpgrades.reset();
         this.towers.placePlayer();
         this.towers.placeLongRange();
         this.state.setWave(0);
@@ -87,41 +88,42 @@ export class GameSession
         this.enemies.spawnBasic();
     }
 
-    pickWaveUpgrade (upgradeId: string): void
+    claimWaveReward (upgradeId: string): boolean
     {
-        const pick = this.state.upgradePick;
+        const claimed = this.towerUpgrades.claimWaveReward(this.state, upgradeId);
 
-        if (!pick || !pick.choices.includes(upgradeId))
+        if (claimed)
         {
-            return;
+            this.towerUpgrades.publishInventorySnapshot(this.towers.all);
         }
 
-        const close = this.findCloseTower();
-
-        if (close)
-        {
-            close.equipUpgrade(upgradeId);
-            EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, close.snapshot());
-        }
-
-        this.state.setUpgradePick(null);
-        this.state.setCanStartWave(true);
+        return claimed;
     }
 
-    /** Catalog upgrades not equipped on any player tower. */
     getUnusedUpgradeDefinitions (): TowerUpgradeDefinition[]
     {
-        const used = new Set<string>();
+        return this.towerUpgrades.getUnusedCatalogUpgrades(this.towers.all);
+    }
 
-        for (const tower of this.towers.all)
-        {
-            for (const u of tower.equippedUpgrades)
-            {
-                used.add(u.id);
-            }
-        }
+    equipCatalogUpgradeToTower (towerId: string, upgradeId: string): boolean
+    {
+        return this.towerUpgrades.equipCatalogUpgrade(this.towers.all, towerId, upgradeId);
+    }
 
-        return TOWER_UPGRADE_CATALOG.filter((d) => !used.has(d.id));
+    isBetweenWaves (): boolean
+    {
+        return this.towerUpgrades.isBetweenWaves(this.state, this.enemies.all.length);
+    }
+
+    purchaseTowerStatUpgrade (towerId: string, upgradeId: string): boolean
+    {
+        return this.towerUpgrades.purchaseStatUpgrade(
+            this.state,
+            this.towers.all,
+            towerId,
+            upgradeId,
+            this.enemies.all.length,
+        );
     }
 
     checkWaveComplete (): void
@@ -129,38 +131,9 @@ export class GameSession
         if (this.state.wave > 0 && this.enemies.all.length === 0)
         {
             this.resetPlayerTowersAfterWave();
-            this.offerPostWaveUpgradeDraft();
+            this.towerUpgrades.offerPostWaveDraft(this.state, this.towers.all);
+            this.towerUpgrades.publishInventorySnapshot(this.towers.all);
         }
-    }
-
-    private findCloseTower (): TowerState | undefined
-    {
-        return this.towers.all.find((t) => t.profile.archetype === 'close');
-    }
-
-    private offerPostWaveUpgradeDraft (): void
-    {
-        const close = this.findCloseTower();
-
-        if (!close)
-        {
-            this.state.setCanStartWave(true);
-
-            return;
-        }
-
-        const equippedIds = close.equippedUpgrades.map((u) => u.id);
-        const choices = rollWaveUpgradeChoiceIds(equippedIds);
-
-        if (choices.length === 0)
-        {
-            this.state.setCanStartWave(true);
-
-            return;
-        }
-
-        this.state.setUpgradePick({ choices });
-        this.state.setCanStartWave(false);
     }
 
     private resetPlayerTowersAfterWave (): void
@@ -185,5 +158,6 @@ export class GameSession
     {
         this.clock.reset();
         this.collision.clear();
+        this.towerUpgrades.reset();
     }
 }

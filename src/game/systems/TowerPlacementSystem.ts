@@ -1,6 +1,5 @@
 import { EventBus } from '../EventBus';
-import { CloseRangeTowerState } from '../domain/CloseRangeTowerState';
-import { LongRangeTowerState } from '../domain/LongRangeTowerState';
+import { createTowerState } from '../domain/createTowerState';
 import { TowerState } from '../domain/TowerState';
 import { GAME_EVENTS } from '../events/gameEvents';
 import {
@@ -31,26 +30,19 @@ export class TowerPlacementSystem
         return this.placed.get(id)?.snapshot();
     }
 
-    placePlayer (): CloseRangeTowerState
+    placePlayer (): TowerState
     {
-        return this.placeClose(PLAYER_TOWER_SPAWN);
+        return this.place(PLAYER_TOWER_SPAWN, 'close');
     }
 
-    placeClose (tile: GridPosition): CloseRangeTowerState
+    placeLongRange (): TowerState
     {
-        const tower = new CloseRangeTowerState(this.grid, tile);
-
-        return this.registerTower(tower);
+        return this.place(LONG_RANGE_TOWER_SPAWN, 'long');
     }
 
-    placeLongRange (): LongRangeTowerState
+    place (tile: GridPosition, archetype: TowerArchetype): TowerState
     {
-        return this.placeLong(LONG_RANGE_TOWER_SPAWN);
-    }
-
-    placeLong (tile: GridPosition): LongRangeTowerState
-    {
-        const tower = new LongRangeTowerState(this.grid, tile);
+        const tower = createTowerState(this.grid, tile, archetype);
 
         return this.registerTower(tower);
     }
@@ -89,7 +81,7 @@ export class TowerPlacementSystem
         }
     }
 
-    private registerTower<T extends TowerState> (tower: T): T
+    private registerTower (tower: TowerState): TowerState
     {
         if (!this.collision.register(
             tower.id,

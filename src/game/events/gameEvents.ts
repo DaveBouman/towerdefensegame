@@ -14,8 +14,10 @@ export const GAME_EVENTS = {
     SELECTION_CLEARED: 'selection-cleared',
     START_WAVE: 'start-wave',
     WAVE_COMPLETED: 'wave-completed',
-    PICK_WAVE_UPGRADE: 'pick-wave-upgrade',
+    CLAIM_WAVE_REWARD: 'claim-wave-reward',
     REQUEST_INVENTORY: 'request-inventory',
     INVENTORY_SNAPSHOT: 'inventory-snapshot',
+    EQUIP_CATALOG_UPGRADE_AT_SCREEN: 'equip-catalog-upgrade-at-screen',
+    PURCHASE_TOWER_STAT_UPGRADE: 'purchase-tower-stat-upgrade',
     SCENE_READY: 'current-scene-ready',
 } as const;

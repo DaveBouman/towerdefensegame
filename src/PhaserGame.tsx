@@ -1,7 +1,9 @@
-import { forwardRef, useEffect, useLayoutEffect, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, type DragEvent } from 'react';
 import StartGame from './game/main';
 import { EventBus } from './game/EventBus';
 import { GAME_EVENTS } from './game/events/gameEvents';
+import { INVENTORY_UPGRADE_DRAG_MIME } from './ui/inventoryDragMime';
+import { endInventoryDrag, getActiveInventoryDragId } from './ui/inventoryDragSession';
 
 export interface IRefPhaserGame
 {
@@ -71,8 +73,41 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame
         };
     }, [ currentActiveScene, ref ]);
 
+    const onDragOver = useCallback((e: DragEvent<HTMLDivElement>) =>
+    {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+    }, []);
+
+    const onDrop = useCallback((e: DragEvent<HTMLDivElement>) =>
+    {
+        e.preventDefault();
+        const fromPanel = getActiveInventoryDragId();
+        const fromMime = e.dataTransfer.getData(INVENTORY_UPGRADE_DRAG_MIME);
+        const plain = e.dataTransfer.getData('text/plain');
+        const upgradeId = fromMime || (plain === fromPanel ? plain : '');
+
+        if (!upgradeId || upgradeId !== fromPanel)
+        {
+            return;
+        }
+
+        endInventoryDrag();
+
+        EventBus.emit(GAME_EVENTS.EQUIP_CATALOG_UPGRADE_AT_SCREEN, {
+            upgradeId,
+            clientX: e.clientX,
+            clientY: e.clientY,
+        });
+    }, []);
+
     return (
-        <div id="game-container" ref={containerRef} />
+        <div
+            id="game-container"
+            ref={containerRef}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+        />
     );
 
 });

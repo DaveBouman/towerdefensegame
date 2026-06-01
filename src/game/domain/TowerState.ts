@@ -5,6 +5,12 @@ import {
     getTowerUpgradeDefinition,
     type TowerUpgradeModifiers,
 } from '../config/towerUpgradeCatalog';
+import {
+    computeStatUpgradeModifiers,
+    getTowerStatUpgradeDefinition,
+    isStatUpgradeAvailableForArchetype,
+    mergeTowerUpgradeModifierMaps,
+} from '../config/towerStatUpgradeCatalog';
 import { bodyHalfExtent } from '../config/entityBodies';
 import type { Grid } from '../grid/Grid';
 import type { GridPosition, WorldPosition } from '../grid/types';
@@ -23,6 +29,7 @@ export class TowerState
     position: WorldPosition;
     health: number;
     private equippedUpgradeIds: string[];
+    private readonly statUpgradeLevels = new Map<string, number>();
     private bonus: TowerUpgradeModifiers;
 
     constructor (
@@ -37,17 +44,54 @@ export class TowerState
         this.spawnTile = { ...spawnTile };
         this.position = tileCenterWorld(grid.config, spawnTile);
         this.equippedUpgradeIds = [ ...equippedUpgradeIds ];
-        this.bonus = mergeTowerUpgradeModifiers(this.equippedUpgradeIds);
-        this.health = this.profile.maxHealth + (this.bonus.maxHealth ?? 0);
+        this.refreshModifiers();
+        this.health = this.maxHealth;
         const half = bodyHalfExtent(grid.config, profile.sizeScale);
 
         this.bodyHalfWidth = half;
         this.bodyHalfHeight = half;
     }
 
-    private refreshBonus (): void
+    private refreshModifiers (): void
     {
-        this.bonus = mergeTowerUpgradeModifiers(this.equippedUpgradeIds);
+        const catalogBonus = mergeTowerUpgradeModifiers(this.equippedUpgradeIds);
+        const statBonus = computeStatUpgradeModifiers(this.statUpgradeLevels, this.profile.archetype);
+
+        this.bonus = mergeTowerUpgradeModifierMaps(catalogBonus, statBonus);
+    }
+
+    getStatUpgradeLevel (upgradeId: string): number
+    {
+        return this.statUpgradeLevels.get(upgradeId) ?? 0;
+    }
+
+    purchaseStatUpgrade (upgradeId: string): boolean
+    {
+        const def = getTowerStatUpgradeDefinition(upgradeId);
+
+        if (!def || !isStatUpgradeAvailableForArchetype(def, this.profile.archetype))
+        {
+            return false;
+        }
+
+        const level = this.getStatUpgradeLevel(upgradeId);
+
+        if (def.maxLevel !== undefined && level >= def.maxLevel)
+        {
+            return false;
+        }
+
+        const previousMax = this.maxHealth;
+
+        this.statUpgradeLevels.set(upgradeId, level + 1);
+        this.refreshModifiers();
+
+        if (def.stat === 'maxHealth')
+        {
+            this.health = Math.min(this.health + (this.maxHealth - previousMax), this.maxHealth);
+        }
+
+        return true;
     }
 
     get maxHealth (): number
@@ -90,7 +134,7 @@ export class TowerState
         const previousMax = this.maxHealth;
 
         this.equippedUpgradeIds.push(upgradeId);
-        this.refreshBonus();
+        this.refreshModifiers();
         this.health = Math.min(this.health + (this.maxHealth - previousMax), this.maxHealth);
 
         return true;
@@ -148,6 +192,7 @@ export class TowerState
             goldValue: this.goldValue,
             weaknesses: [ ...this.profile.weaknesses ],
             equippedUpgrades: this.equippedUpgrades,
+            statUpgradeLevels: Object.fromEntries(this.statUpgradeLevels),
         };
     }
 }

@@ -10,6 +10,7 @@ import {
 import { EventBus } from '../../game/EventBus';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
 import type { TowerUpgradeDefinition } from '../../game/config/towerUpgradeCatalog';
+import type { GameStateSnapshot } from '../../game/domain/types';
 
 type InventoryPanelContextValue = {
     open: boolean;
@@ -62,6 +63,24 @@ export const InventoryPanelProvider = ({ children }: { children: ReactNode }) =>
 
         return () => EventBus.off(GAME_EVENTS.INVENTORY_SNAPSHOT, onSnapshot);
     }, [ onSnapshot ]);
+
+    useEffect(() =>
+    {
+        const onStateChanged = (snapshot: GameStateSnapshot): void =>
+        {
+            if (!snapshot.upgradePick?.choices.length)
+            {
+                return;
+            }
+
+            awaitingSnapshot.current = true;
+            EventBus.emit(GAME_EVENTS.REQUEST_INVENTORY);
+        };
+
+        EventBus.on(GAME_EVENTS.STATE_CHANGED, onStateChanged);
+
+        return () => EventBus.off(GAME_EVENTS.STATE_CHANGED, onStateChanged);
+    }, []);
 
     useEffect(() =>
     {

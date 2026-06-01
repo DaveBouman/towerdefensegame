@@ -20,6 +20,7 @@ import { RangeIndicator } from './RangeIndicator';
 import { SelectionController } from './SelectionController';
 import { AttackBeamEffect } from './AttackBeamEffect';
 import { TowerPresenter } from './TowerPresenter';
+import { TowerDropTarget } from './TowerDropTarget';
 
 export class GameSceneController
 {
@@ -28,6 +29,7 @@ export class GameSceneController
     private readonly enemyPresenter: EnemyPresenter;
     private readonly towerPresenter: TowerPresenter;
     private readonly selection: SelectionController;
+    private readonly towerDropTarget: TowerDropTarget;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -49,6 +51,10 @@ export class GameSceneController
             (id) => this.session.towers.getSnapshot(id),
             (id) => this.towerPresenter.getDisplayPosition(id),
         );
+        this.towerDropTarget = new TowerDropTarget(
+            scene,
+            () => this.session.towers.all,
+        );
     }
 
     bind (): void
@@ -66,8 +72,14 @@ export class GameSceneController
         EventBus.on(GAME_EVENTS.TOWER_DAMAGED, this.onTowerDamaged, this);
         EventBus.on(GAME_EVENTS.START_WAVE, this.onStartWave, this);
         EventBus.on(GAME_EVENTS.WAVE_COMPLETED, this.onWaveCompleted, this);
-        EventBus.on(GAME_EVENTS.PICK_WAVE_UPGRADE, this.onPickWaveUpgrade, this);
+        EventBus.on(GAME_EVENTS.CLAIM_WAVE_REWARD, this.onClaimWaveReward, this);
         EventBus.on(GAME_EVENTS.REQUEST_INVENTORY, this.onRequestInventory, this);
+        EventBus.on(
+            GAME_EVENTS.EQUIP_CATALOG_UPGRADE_AT_SCREEN,
+            this.onEquipCatalogUpgradeAtScreen,
+            this,
+        );
+        EventBus.on(GAME_EVENTS.PURCHASE_TOWER_STAT_UPGRADE, this.onPurchaseTowerStatUpgrade, this);
     }
 
     unbind (): void
@@ -85,8 +97,14 @@ export class GameSceneController
         EventBus.off(GAME_EVENTS.TOWER_DAMAGED, this.onTowerDamaged, this);
         EventBus.off(GAME_EVENTS.START_WAVE, this.onStartWave, this);
         EventBus.off(GAME_EVENTS.WAVE_COMPLETED, this.onWaveCompleted, this);
-        EventBus.off(GAME_EVENTS.PICK_WAVE_UPGRADE, this.onPickWaveUpgrade, this);
+        EventBus.off(GAME_EVENTS.CLAIM_WAVE_REWARD, this.onClaimWaveReward, this);
         EventBus.off(GAME_EVENTS.REQUEST_INVENTORY, this.onRequestInventory, this);
+        EventBus.off(
+            GAME_EVENTS.EQUIP_CATALOG_UPGRADE_AT_SCREEN,
+            this.onEquipCatalogUpgradeAtScreen,
+            this,
+        );
+        EventBus.off(GAME_EVENTS.PURCHASE_TOWER_STAT_UPGRADE, this.onPurchaseTowerStatUpgrade, this);
     }
 
     startSession (): void
@@ -109,16 +127,50 @@ export class GameSceneController
         this.session.startWave();
     }
 
-    private onPickWaveUpgrade ({ upgradeId }: { upgradeId: string }): void
+    private onClaimWaveReward ({ upgradeId }: { upgradeId: string }): void
     {
-        this.session.pickWaveUpgrade(upgradeId);
+        this.session.claimWaveReward(upgradeId);
     }
 
     private onRequestInventory (): void
     {
-        EventBus.emit(GAME_EVENTS.INVENTORY_SNAPSHOT, {
-            unused: this.session.getUnusedUpgradeDefinitions(),
-        });
+        this.session.towerUpgrades.publishInventorySnapshot(this.session.towers.all);
+    }
+
+    private onPurchaseTowerStatUpgrade ({
+        towerId,
+        upgradeId,
+    }: {
+        towerId: string;
+        upgradeId: string;
+    }): void
+    {
+        this.session.purchaseTowerStatUpgrade(towerId, upgradeId);
+    }
+
+    private onEquipCatalogUpgradeAtScreen ({
+        upgradeId,
+        clientX,
+        clientY,
+    }: {
+        upgradeId: string;
+        clientX: number;
+        clientY: number;
+    }): void
+    {
+        if (!canAddToScene(this.scene))
+        {
+            return;
+        }
+
+        const towerId = this.towerDropTarget.resolveTowerIdAtScreen(clientX, clientY);
+
+        if (!towerId)
+        {
+            return;
+        }
+
+        this.session.equipCatalogUpgradeToTower(towerId, upgradeId);
     }
 
     private onWaveCompleted (): void

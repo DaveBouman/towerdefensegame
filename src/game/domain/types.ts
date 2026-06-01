@@ -38,6 +38,8 @@ export interface TowerStateSnapshot {
     goldValue: number;
     weaknesses: DamageType[];
     equippedUpgrades: TowerEquippedUpgrade[];
+    /** Purchased between-wave stat upgrade levels keyed by catalog id. */
+    statUpgradeLevels: Record<string, number>;
 }
 
 export type UnitSelection =

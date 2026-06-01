@@ -63,6 +63,19 @@ export class GameState
         this.notify();
     }
 
+    spendGold (amount: number): boolean
+    {
+        if (amount <= 0 || this._gold < amount)
+        {
+            return false;
+        }
+
+        this._gold -= amount;
+        this.notify();
+
+        return true;
+    }
+
     setWave (wave: number): void
     {
         this._wave = wave;

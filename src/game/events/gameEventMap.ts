@@ -26,7 +26,13 @@ export interface GameEventMap {
     'selection-cleared': void;
     'start-wave': void;
     'wave-completed': void;
-    'pick-wave-upgrade': { upgradeId: string };
+    'claim-wave-reward': { upgradeId: string };
     'request-inventory': void;
     'inventory-snapshot': { unused: TowerUpgradeDefinition[] };
+    'equip-catalog-upgrade-at-screen': {
+        upgradeId: string;
+        clientX: number;
+        clientY: number;
+    };
+    'purchase-tower-stat-upgrade': { towerId: string; upgradeId: string };
 }

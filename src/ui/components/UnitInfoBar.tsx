@@ -9,6 +9,7 @@ import type { DisplayStat } from '../../game/domain/stats/displayStat';
 import { getTowerUpgradeDefinition, towerUpgradeHoverText } from '../../game/config/towerUpgradeCatalog';
 import { useInventoryPanel } from '../context/InventoryPanelContext';
 import { useUnitSelection } from '../viewmodels/useUnitSelection';
+import { TowerStatUpgradePanel } from './TowerStatUpgradePanel';
 
 const InventoryIcon = () => (
     <svg
@@ -88,6 +89,7 @@ const TowerDetails = ({ tower }: { tower: TowerStateSnapshot }) => (
         <StatList stats={getTowerStatRows(tower)} />
 
         <div className="unit-info-bar__extra">
+            <TowerStatUpgradePanel tower={tower} />
             <TagList
                 title="Upgrades"
                 items={tower.equippedUpgrades.map((u) =>
