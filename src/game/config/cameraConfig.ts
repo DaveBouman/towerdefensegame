@@ -1,4 +1,4 @@
-import { BASIC_ENEMY_BASE_STATS } from './basicEnemyStats';
+import { getEnemyDefinitionOrThrow } from './enemyCatalog';
 import { TICKS_PER_SECOND } from './gameClockConfig';
 import { TOWER_MOVE_SPEED_PER_TICK } from './towerProfiles';
 
@@ -12,7 +12,7 @@ const MAX_TOWER_MOVE_BONUS_PER_TICK = 4;
 export const maxUnitMovePixelsPerSecond = (): number =>
 {
     const maxPerTick = Math.max(
-        BASIC_ENEMY_BASE_STATS.moveSpeedPerTick,
+        getEnemyDefinitionOrThrow('basic').baseStats.moveSpeedPerTick,
         TOWER_MOVE_SPEED_PER_TICK + MAX_TOWER_MOVE_BONUS_PER_TICK,
     );
 

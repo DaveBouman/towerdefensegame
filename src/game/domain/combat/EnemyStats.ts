@@ -19,12 +19,12 @@ export class EnemyStats
 
     get maxHealth (): number
     {
-        return this.resolved.health + goldToBonusMaxHealth(this.killGold);
+        return this.resolved.maxHealth + goldToBonusMaxHealth(this.killGold);
     }
 
-    get attackDamage (): number
+    get damage (): number
     {
-        return this.resolved.attackDamage + goldToBonusAttack(this.killGold);
+        return this.resolved.damage + goldToBonusAttack(this.killGold);
     }
 
     get defense (): number
@@ -88,7 +88,7 @@ export class EnemyStats
 
         return {
             maxHealth: this.maxHealth,
-            attackDamage: this.attackDamage,
+            damage: this.damage,
             defense: this.defense,
             range: this.range,
             attacksPerSecond: this.attacksPerSecond,

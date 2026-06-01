@@ -50,7 +50,7 @@ export const TowerDraftPick = () =>
                     Choose your tower
                 </h2>
                 <p className="tower-draft-pick__hint">
-                    Pick 1 of 5 random units. Higher tiers appear more often in later waves.
+                    Pick 1 starter unit (tier 1 only). Higher tiers can appear in drafts later in the run.
                 </p>
                 <div className="tower-draft-pick__choices">
                     {towerDraftPick.choices.map((id) =>

@@ -1,5 +1,4 @@
 import { VISUAL_LERP_SMOOTHNESS } from '../config/visualConfig';
-import { BASIC_ENEMY_CONFIG } from '../config/enemyConfig';
 import { bodySize } from '../config/entityBodies';
 import type { Grid } from '../grid/Grid';
 import type { WorldPosition } from '../grid/types';
@@ -20,8 +19,8 @@ export class BasicEnemy
         scene: Phaser.Scene,
         grid: Grid,
         position: WorldPosition,
+        config: EnemyConfig,
         onSelect?: () => void,
-        config: EnemyConfig = BASIC_ENEMY_CONFIG,
     )
     {
         this.displayPosition = copyWorldPosition(position);

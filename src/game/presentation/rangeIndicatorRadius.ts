@@ -1,12 +1,16 @@
-import { BASIC_ENEMY_CONFIG } from '../config/enemyConfig';
+import { getEnemyDefinitionOrThrow } from '../config/enemyCatalog';
 import { bodyHalfExtent } from '../config/entityBodies';
 import { GRID_CONFIG } from '../config/gridConfig';
-import { CLOSE_RANGE_TOWER_PROFILE } from '../config/towerProfiles';
+import { TOWER_DEFINITIONS } from '../config/towerCatalog';
 import { rangeIndicatorRadiusPx } from '../combat/combatRange';
 import type { Grid } from '../grid/Grid';
 
-const TOWER_BODY_HALF = bodyHalfExtent(GRID_CONFIG, CLOSE_RANGE_TOWER_PROFILE.sizeScale);
-const ENEMY_BODY_HALF = bodyHalfExtent(GRID_CONFIG, BASIC_ENEMY_CONFIG.sizeScale);
+const defaultTowerSizeScale = TOWER_DEFINITIONS[0]?.profile.sizeScale ?? 0.75;
+const TOWER_BODY_HALF = bodyHalfExtent(GRID_CONFIG, defaultTowerSizeScale);
+const ENEMY_BODY_HALF = bodyHalfExtent(
+    GRID_CONFIG,
+    getEnemyDefinitionOrThrow('basic').visual.sizeScale,
+);
 
 export const towerAttackIndicatorRadiusPx = (grid: Grid, rangeInTiles: number): number =>
     rangeIndicatorRadiusPx(

@@ -73,7 +73,7 @@ export const pickTowerAttackTarget = (
             break;
         case 'highestDamage':
             sorted.sort(
-                (a, b) => b.stats.attackDamage - a.stats.attackDamage || byNearest(a, b),
+                (a, b) => b.stats.damage - a.stats.damage || byNearest(a, b),
             );
             break;
     }

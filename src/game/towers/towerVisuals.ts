@@ -1,16 +1,34 @@
+import { getTowerDefinition, TOWER_DEFINITIONS } from '../config/towerCatalog';
+import type { TowerDefinitionId } from '../config/towerCatalog';
 import type { TowerArchetype } from '../domain/towers/types';
-import { CLOSE_RANGE_TOWER_PROFILE, LONG_RANGE_TOWER_PROFILE } from '../config/towerProfiles';
 import type { TowerConfig } from './types';
 
-const PROFILE_BY_ARCHETYPE = {
-    close: CLOSE_RANGE_TOWER_PROFILE,
-    long: LONG_RANGE_TOWER_PROFILE,
-} as const;
+export const getTowerVisualConfig = (definitionId: TowerDefinitionId): TowerConfig =>
+{
+    const definition = getTowerDefinition(definitionId);
 
-export const getTowerVisualConfig = (archetype: TowerArchetype): TowerConfig => ({
-    sizeScale: PROFILE_BY_ARCHETYPE[archetype].sizeScale,
-    color: PROFILE_BY_ARCHETYPE[archetype].color,
-});
+    if (!definition)
+    {
+        throw new Error(`Unknown tower for visuals: ${definitionId}`);
+    }
 
-export const getRangeIndicatorColor = (archetype: TowerArchetype): number =>
-    PROFILE_BY_ARCHETYPE[archetype].color;
+    return {
+        sizeScale: definition.profile.sizeScale,
+        color: definition.profile.color,
+    };
+};
+
+export const getRangeIndicatorColor = (definitionId: TowerDefinitionId): number =>
+    getTowerVisualConfig(definitionId).color;
+
+export const getRangeIndicatorColorByArchetype = (archetype: TowerArchetype): number =>
+{
+    const definition = TOWER_DEFINITIONS.find((d) => d.profile.archetype === archetype);
+
+    if (!definition)
+    {
+        throw new Error(`No tower in towers.json for archetype: ${archetype}`);
+    }
+
+    return definition.profile.color;
+};

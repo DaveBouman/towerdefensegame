@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GRID_CONFIG } from '../config/gridConfig';
 import { bodyHalfExtent } from '../config/entityBodies';
-import { BASIC_ENEMY_CONFIG } from '../config/enemyConfig';
+import { getEnemyDefinitionOrThrow } from '../config/enemyCatalog';
 import { Grid } from '../grid/Grid';
 import { tileCenterWorld } from '../grid/worldPosition';
 import { collectAttackRingTiles, pickSurroundGoalTile } from './surroundGoal';
@@ -10,7 +10,10 @@ import { tileKey } from './tileKey';
 describe('surroundGoal', () =>
 {
     const grid = new Grid(GRID_CONFIG);
-    const enemyHalf = bodyHalfExtent(GRID_CONFIG, BASIC_ENEMY_CONFIG.sizeScale);
+    const enemyHalf = bodyHalfExtent(
+        GRID_CONFIG,
+        getEnemyDefinitionOrThrow('basic').visual.sizeScale,
+    );
     const towerHalf = bodyHalfExtent(GRID_CONFIG, 0.75);
     const rangePx = grid.rangeToPixels(1.25);
 

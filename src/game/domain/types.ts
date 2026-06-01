@@ -32,6 +32,7 @@ export interface GameStateSnapshot {
 
 export interface EnemyStateSnapshot {
     id: string;
+    enemyKind: string;
     position: WorldPosition;
     unitType: string;
     health: number;

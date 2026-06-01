@@ -147,7 +147,7 @@ export class SelectionController
             this.scene,
             ringPosition,
             towerAttackIndicatorRadiusPx(this.grid, live.range),
-            getRangeIndicatorColor(live.archetype),
+            getRangeIndicatorColor(live.definitionId),
         );
     }
 

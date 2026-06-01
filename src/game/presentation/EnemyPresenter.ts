@@ -1,5 +1,6 @@
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
+import { getEnemyDefinitionOrThrow } from '../config/enemyCatalog';
 import { BasicEnemy } from '../enemies/BasicEnemy';
 import type { EnemyStateSnapshot } from '../domain/types';
 import type { WorldPosition } from '../grid/types';
@@ -21,7 +22,8 @@ export class EnemyPresenter
             return;
         }
 
-        const enemy = new BasicEnemy(scene, grid, snapshot.position, () =>
+        const visual = getEnemyDefinitionOrThrow(snapshot.enemyKind).visual;
+        const enemy = new BasicEnemy(scene, grid, snapshot.position, visual, () =>
         {
             const current = this.resolveSnapshot(snapshot.id);
 

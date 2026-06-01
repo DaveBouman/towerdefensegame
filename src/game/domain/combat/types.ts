@@ -3,8 +3,8 @@ export const DAMAGE_TYPES = [ 'physical', 'fire', 'water', 'earth', 'air' ] as c
 export type DamageType = typeof DAMAGE_TYPES[number];
 
 export interface EnemyBaseStats {
-    health: number;
-    attackDamage: number;
+    maxHealth: number;
+    damage: number;
     defense: number;
     range: number;
     attacksPerSecond: number;
@@ -16,7 +16,7 @@ export interface EnemyBaseStats {
 
 export interface EnemyStatsSnapshot {
     maxHealth: number;
-    attackDamage: number;
+    damage: number;
     defense: number;
     range: number;
     attacksPerSecond: number;

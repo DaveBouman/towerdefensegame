@@ -53,7 +53,7 @@ export class EnemyAttackSystem
             return;
         }
 
-        const damage = target.applyDamage(enemy.stats.attackDamage);
+        const damage = target.applyDamage(enemy.stats.damage);
 
         this.lastAttackTick.set(enemy.id, gameTick);
 

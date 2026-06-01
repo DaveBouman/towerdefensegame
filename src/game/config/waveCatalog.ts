@@ -1,7 +1,9 @@
 import type { GridPosition } from '../grid/types';
+import { getEnemyDefinitionOrThrow, hasEnemyDefinition } from './enemyCatalog';
+import type { EnemyDefinitionId } from './enemyCatalog';
 import wavesJson from './waves.json';
 
-export type WaveEnemyKind = 'basic';
+export type WaveEnemyKind = EnemyDefinitionId;
 
 export interface WaveSpawnEntry {
     kind: WaveEnemyKind;
@@ -37,11 +39,23 @@ const parseWaveFile = (file: WavesFile): Readonly<Record<number, WaveDefinition>
     for (const entry of file.waves)
     {
         catalog[entry.wave] = {
-            spawns: entry.spawns.map((spawn) => ({
-                kind: spawn.kind as WaveEnemyKind,
-                tile: { col: spawn.col, row: spawn.row },
-                delayTicks: spawn.delayTicks,
-            })),
+            spawns: entry.spawns.map((spawn) =>
+            {
+                if (!hasEnemyDefinition(spawn.kind))
+                {
+                    throw new Error(
+                        `Wave ${entry.wave} references unknown enemy "${spawn.kind}" — add it to enemies.json`,
+                    );
+                }
+
+                getEnemyDefinitionOrThrow(spawn.kind);
+
+                return {
+                    kind: spawn.kind,
+                    tile: { col: spawn.col, row: spawn.row },
+                    delayTicks: spawn.delayTicks,
+                };
+            }),
         };
     }
 

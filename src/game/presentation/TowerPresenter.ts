@@ -23,7 +23,7 @@ export class TowerPresenter
             return;
         }
 
-        const config = getTowerVisualConfig(snapshot.archetype);
+        const config = getTowerVisualConfig(snapshot.definitionId);
         const towerId = snapshot.id;
 
         const onSelect = () =>

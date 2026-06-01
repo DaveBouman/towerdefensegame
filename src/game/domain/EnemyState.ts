@@ -10,6 +10,7 @@ let nextEnemyId = 0;
 export class EnemyState
 {
     readonly id: string;
+    readonly enemyKind: string;
     readonly unitType: string;
     readonly isPreview: boolean;
     readonly stats: EnemyStats;
@@ -20,6 +21,7 @@ export class EnemyState
 
     constructor (
         position: WorldPosition,
+        enemyKind: string,
         unitType: string,
         baseStats: EnemyBaseStats,
         bodyHalfWidth: number,
@@ -29,6 +31,7 @@ export class EnemyState
     )
     {
         this.id = `enemy-${nextEnemyId++}`;
+        this.enemyKind = enemyKind;
         this.unitType = unitType;
         this.isPreview = isPreview;
         this.position = { ...position };
@@ -72,6 +75,7 @@ export class EnemyState
     {
         return {
             id: this.id,
+            enemyKind: this.enemyKind,
             position: { ...this.position },
             unitType: this.unitType,
             health: this.health,

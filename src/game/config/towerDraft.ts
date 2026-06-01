@@ -52,18 +52,31 @@ const weightedPickId = (
     return pool[pool.length - 1]?.id ?? null;
 };
 
+/** Towers that can appear in a draft for the given wave (wave 0 = before wave 1). */
+export const definitionsEligibleForDraft = (wave: number) =>
+{
+    if (wave === 0)
+    {
+        return TOWER_DEFINITIONS.filter((def) => def.tier === 1);
+    }
+
+    return [ ...TOWER_DEFINITIONS ];
+};
+
 /** Rolls unique tower ids for a draft (e.g. pick 1 of 5 at run start). */
 export const rollTowerDraftChoices = (
     wave: number,
     count: number = DRAFT_SIZE,
 ): TowerDefinitionId[] =>
 {
+    const eligible = definitionsEligibleForDraft(wave);
+    const targetCount = Math.min(count, eligible.length);
     const chosen = new Set<TowerDefinitionId>();
-    const maxAttempts = count * 40;
+    const maxAttempts = targetCount * 40;
 
-    for (let attempt = 0; chosen.size < count && attempt < maxAttempts; attempt++)
+    for (let attempt = 0; chosen.size < targetCount && attempt < maxAttempts; attempt++)
     {
-        const pool = TOWER_DEFINITIONS.map((def) => ({
+        const pool = eligible.map((def) => ({
             id: def.id,
             weight: chosen.has(def.id) ? 0 : tierWeightForWave(def.tier, wave),
         })).filter((entry) => entry.weight > 0);
@@ -76,11 +89,11 @@ export const rollTowerDraftChoices = (
         }
     }
 
-    if (chosen.size < count)
+    if (chosen.size < targetCount)
     {
-        for (const def of TOWER_DEFINITIONS)
+        for (const def of eligible)
         {
-            if (chosen.size >= count)
+            if (chosen.size >= targetCount)
             {
                 break;
             }

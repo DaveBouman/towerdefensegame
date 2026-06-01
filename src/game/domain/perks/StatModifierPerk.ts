@@ -16,8 +16,8 @@ export class StatModifierPerk implements EnemyPerk
     modifyBase (stats: EnemyBaseStats): EnemyBaseStats
     {
         return {
-            health: stats.health + (this.modifiers.health ?? 0),
-            attackDamage: stats.attackDamage + (this.modifiers.attackDamage ?? 0),
+            maxHealth: stats.maxHealth + (this.modifiers.maxHealth ?? 0),
+            damage: stats.damage + (this.modifiers.damage ?? 0),
             defense: stats.defense + (this.modifiers.defense ?? 0),
             range: stats.range + (this.modifiers.range ?? 0),
             attacksPerSecond: stats.attacksPerSecond + (this.modifiers.attacksPerSecond ?? 0),

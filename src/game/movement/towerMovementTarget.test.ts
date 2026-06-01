@@ -1,29 +1,31 @@
 import { describe, expect, it } from 'vitest';
 import { GRID_CONFIG } from '../config/gridConfig';
-import { BASIC_ENEMY_BASE_STATS } from '../config/basicEnemyStats';
-import { bodyHalfExtent } from '../config/entityBodies';
-import { BASIC_ENEMY_CONFIG } from '../config/enemyConfig';
-import { CLOSE_RANGE_TOWER_PROFILE } from '../config/towerProfiles';
+import { getEnemyDefinitionOrThrow } from '../config/enemyCatalog';
+import { getTowerDefinitionOrThrow } from '../config/towerCatalog';
 import { EnemyState } from '../domain/EnemyState';
-import { TowerState } from '../domain/TowerState';
+import { bodyHalfExtent } from '../config/entityBodies';
 import { Grid } from '../grid/Grid';
 import { tileCenterWorld } from '../grid/worldPosition';
+import { TowerState } from '../domain/TowerState';
 import { pickTowerMovementTarget } from './towerMovementTarget';
 
 describe('pickTowerMovementTarget', () =>
 {
     const grid = new Grid(GRID_CONFIG);
-    const rangePx = grid.rangeToPixels(CLOSE_RANGE_TOWER_PROFILE.range);
-    const enemyHalf = bodyHalfExtent(GRID_CONFIG, BASIC_ENEMY_CONFIG.sizeScale);
+    const enemyDef = getEnemyDefinitionOrThrow('basic');
+    const towerDef = getTowerDefinitionOrThrow('bruiser');
+    const enemyHalf = bodyHalfExtent(GRID_CONFIG, enemyDef.visual.sizeScale);
+    const rangePx = grid.rangeToPixels(towerDef.profile.range);
 
     const towerAt = (row: number) =>
-        new TowerState(grid, { col: 5, row }, 'bruiser', CLOSE_RANGE_TOWER_PROFILE);
+        new TowerState(grid, { col: 5, row }, towerDef.id, towerDef.profile);
 
     const enemyAt = (row: number) =>
         new EnemyState(
             tileCenterWorld(GRID_CONFIG, { col: 5, row }),
-            'Enemy',
-            BASIC_ENEMY_BASE_STATS,
+            enemyDef.id,
+            enemyDef.unitType,
+            enemyDef.baseStats,
             enemyHalf,
             enemyHalf,
         );

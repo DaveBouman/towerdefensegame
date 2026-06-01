@@ -23,9 +23,9 @@ const ENEMY_STAT_FIELDS: readonly StatField<EnemyDisplayContext>[] = [
         format: ({ enemy }) => `${enemy.health} / ${enemy.stats.maxHealth}`,
     },
     {
-        label: 'Attack',
+        label: 'Damage',
         show: () => true,
-        format: ({ enemy }) => String(enemy.stats.attackDamage),
+        format: ({ enemy }) => String(enemy.stats.damage),
     },
     {
         label: 'Gold',

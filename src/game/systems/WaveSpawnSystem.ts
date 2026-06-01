@@ -61,11 +61,6 @@ export class WaveSpawnSystem implements TickSystem
 
     private spawnEntry (entry: WaveSpawnEntry): boolean
     {
-        if (entry.kind === 'basic')
-        {
-            return this.enemies.trySpawnBasicAt(entry.tile) !== null;
-        }
-
-        throw new Error(`Unknown wave enemy kind: ${entry.kind satisfies never}`);
+        return this.enemies.trySpawnAt(entry.tile, entry.kind) !== null;
     }
 }
