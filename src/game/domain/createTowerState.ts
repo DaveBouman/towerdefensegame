@@ -23,11 +23,15 @@ export const createTowerState = (
         throw new Error(`Unknown tower definition: ${definitionId}`);
     }
 
+    const startingUpgrades = definition.tier === 1
+        ? []
+        : STARTING_CATALOG_UPGRADES[definition.profile.archetype];
+
     return new TowerState(
         grid,
         spawnTile,
         definition.id,
         definition.profile,
-        STARTING_CATALOG_UPGRADES[definition.profile.archetype],
+        startingUpgrades,
     );
 };
