@@ -1,13 +1,13 @@
 import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, type DragEvent, type UIEvent } from 'react';
 import StartGame from './game/main';
 import { VIEWPORT_CONFIG, getGridPixelSize } from './game/config/gridConfig';
-import { getWorldPixelSize } from './game/config/worldLayout';
+import { WORLD_LAYOUT } from './game/config/worldLayout';
 import { EventBus } from './game/EventBus';
 import { GAME_EVENTS } from './game/events/gameEvents';
 import { INVENTORY_UPGRADE_DRAG_MIME } from './ui/inventoryDragMime';
 import { endInventoryDrag, getActiveInventoryDragId } from './ui/inventoryDragSession';
 
-const WORLD_SCROLL_HEIGHT = getWorldPixelSize().height;
+const WORLD_SCROLL_HEIGHT = WORLD_LAYOUT.arenaPixelSize().height;
 const VIEWPORT_HEIGHT = getGridPixelSize(VIEWPORT_CONFIG).height;
 
 export interface IRefPhaserGame

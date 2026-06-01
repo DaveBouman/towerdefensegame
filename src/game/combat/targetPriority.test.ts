@@ -9,6 +9,7 @@ import { Grid } from '../grid/Grid';
 import { tileCenterWorld } from '../grid/worldPosition';
 import {
     canEnemiesTargetPlayerNexus,
+    canPlayerNexusTargetEnemyNexus,
     enemiesAttackableByTowers,
     livingMinions,
 } from './targetPriority';
@@ -70,5 +71,11 @@ describe('targetPriority', () =>
     {
         expect(canEnemiesTargetPlayerNexus([ tower() ])).toBe(false);
         expect(canEnemiesTargetPlayerNexus([])).toBe(true);
+    });
+
+    it('player nexus may only attack enemy nexus when minions are cleared', () =>
+    {
+        expect(canPlayerNexusTargetEnemyNexus([ minion() ])).toBe(false);
+        expect(canPlayerNexusTargetEnemyNexus([ nexus() ])).toBe(true);
     });
 });

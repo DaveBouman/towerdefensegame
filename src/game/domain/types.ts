@@ -47,6 +47,19 @@ export interface PlayerNexusStateSnapshot {
     unitType: string;
     health: number;
     maxHealth: number;
+    range: number;
+    attacksPerSecond: number;
+}
+
+export interface PlayerNexusAttackPayload {
+    playerNexusId: string;
+    targetKind: 'enemy' | 'enemyNexus';
+    enemyId: string;
+    nexusPosition: WorldPosition;
+    targetPosition: WorldPosition;
+    damage: number;
+    targetHealth: number;
+    enemyDied: boolean;
 }
 
 export interface TowerStateSnapshot {

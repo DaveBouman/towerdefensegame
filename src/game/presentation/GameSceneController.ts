@@ -11,6 +11,7 @@ import type {
     EnemyAttackPayload,
     EnemyNexusAttackPayload,
     EnemyStateSnapshot,
+    PlayerNexusAttackPayload,
     PlayerNexusStateSnapshot,
     TowerAttackPayload,
     TowerStateSnapshot,
@@ -145,6 +146,7 @@ export class GameSceneController
         EventBus.on(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
         EventBus.on(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.onPlayerNexusSpawned, this);
         EventBus.on(GAME_EVENTS.PLAYER_NEXUS_DAMAGED, this.onPlayerNexusDamaged, this);
+        EventBus.on(GAME_EVENTS.PLAYER_NEXUS_ATTACKED, this.onPlayerNexusAttacked, this);
         EventBus.on(GAME_EVENTS.ENEMY_NEXUS_ATTACKED, this.onEnemyNexusAttacked, this);
     }
 
@@ -178,6 +180,7 @@ export class GameSceneController
         EventBus.off(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
         EventBus.off(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.onPlayerNexusSpawned, this);
         EventBus.off(GAME_EVENTS.PLAYER_NEXUS_DAMAGED, this.onPlayerNexusDamaged, this);
+        EventBus.off(GAME_EVENTS.PLAYER_NEXUS_ATTACKED, this.onPlayerNexusAttacked, this);
         EventBus.off(GAME_EVENTS.ENEMY_NEXUS_ATTACKED, this.onEnemyNexusAttacked, this);
     }
 
@@ -484,6 +487,21 @@ export class GameSceneController
             payload.nexusPosition,
             payload.targetPosition,
             { beam: 0x9b59b6, impact: ENEMY_IMPACT_COLOR },
+        );
+    }
+
+    private onPlayerNexusAttacked (payload: PlayerNexusAttackPayload): void
+    {
+        if (!canAddToScene(this.scene))
+        {
+            return;
+        }
+
+        this.attackBeamEffect.play(
+            this.scene,
+            payload.nexusPosition,
+            payload.targetPosition,
+            { beam: FRIENDLY_BEAM_COLOR, impact: FRIENDLY_IMPACT_COLOR },
         );
     }
 

@@ -8,6 +8,7 @@ import {
     getEnemyResistanceTags,
     getEnemyStatRows,
 } from '../../game/domain/stats/enemyStatDisplay';
+import { getPlayerNexusStatRows } from '../../game/domain/stats/playerNexusStatDisplay';
 import { getTowerStatRows } from '../../game/domain/stats/towerStatDisplay';
 import type { DisplayStat } from '../../game/domain/stats/displayStat';
 import { getTowerUpgradeDefinition, towerUpgradeHoverText } from '../../game/config/towerUpgradeCatalog';
@@ -93,16 +94,13 @@ const EnemyDetails = ({ enemy, wave }: { enemy: EnemyStateSnapshot; wave: number
 const towerArchetypeLabel = (archetype: TowerStateSnapshot['archetype']): string =>
     archetype === 'close' ? 'Close range' : 'Long range';
 
-const PlayerNexusDetails = ({ nexus }: { nexus: PlayerNexusStateSnapshot }) => (
-    <StatList
-        stats={[
-            {
-                label: 'Health',
-                value: `${nexus.health} / ${nexus.maxHealth}`,
-            },
-        ]}
-    />
-);
+const PlayerNexusDetails = ({
+    nexus,
+    wave,
+}: {
+    nexus: PlayerNexusStateSnapshot;
+    wave: number;
+}) => <StatList stats={getPlayerNexusStatRows(nexus, wave)} />;
 
 const TowerDetails = ({ tower }: { tower: TowerStateSnapshot }) => (
     <>
@@ -171,7 +169,7 @@ export const UnitInfoBar = () =>
                     )}
                     {selection?.kind === 'tower' && <TowerDetails tower={selection.data} />}
                     {selection?.kind === 'playerNexus' && (
-                        <PlayerNexusDetails nexus={selection.data} />
+                        <PlayerNexusDetails nexus={selection.data} wave={wave} />
                     )}
                 </div>
 

@@ -7,6 +7,7 @@ import type {
     EnemyNexusAttackPayload,
     GameStateSnapshot,
     EnemyAttackPayload,
+    PlayerNexusAttackPayload,
     PlayerNexusStateSnapshot,
     TowerAttackPayload,
     TowerStateSnapshot,
@@ -23,6 +24,7 @@ export interface GameEventMap {
     'enemy-attacked': EnemyAttackPayload;
     'enemy-nexus-attacked': EnemyNexusAttackPayload;
     'player-nexus-spawned': PlayerNexusStateSnapshot;
+    'player-nexus-attacked': PlayerNexusAttackPayload;
     'player-nexus-damaged': PlayerNexusStateSnapshot;
     'player-nexus-destroyed': PlayerNexusStateSnapshot;
     'tower-placed': TowerStateSnapshot;

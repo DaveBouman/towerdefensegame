@@ -11,6 +11,8 @@ export class PlayerNexusState
     readonly bodyHalfWidth: number;
     readonly bodyHalfHeight: number;
     readonly maxHealth = PLAYER_NEXUS_CONFIG.maxHealth;
+    readonly range = PLAYER_NEXUS_CONFIG.range;
+    readonly attacksPerSecond = PLAYER_NEXUS_CONFIG.attacksPerSecond;
     position: WorldPosition;
     health: number;
 
@@ -39,6 +41,8 @@ export class PlayerNexusState
             unitType: this.unitType,
             health: this.health,
             maxHealth: this.maxHealth,
+            range: this.range,
+            attacksPerSecond: this.attacksPerSecond,
         };
     }
 }

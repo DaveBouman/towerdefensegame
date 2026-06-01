@@ -9,7 +9,7 @@ import { isWithinAttackRange } from '../combat/combatRange';
 import { worldDistance } from '../grid/worldPosition';
 import { GAME_EVENTS } from '../events/gameEvents';
 import type { Grid } from '../grid/Grid';
-import { getEnemyNexusDamageForWave } from '../config/enemyNexusScaling';
+import { getNexusDamageForWave } from '../config/nexusCombatScaling';
 import { rangeTilesToPixels } from '../grid/rangePixels';
 import type { EnemySpawnSystem } from './EnemySpawnSystem';
 import type { KillRewardSystem } from './KillRewardSystem';
@@ -31,7 +31,7 @@ export class EnemyNexusAttackSystem
 
     private nexusDamage (): number
     {
-        return getEnemyNexusDamageForWave(this.getCurrentWave());
+        return getNexusDamageForWave(this.getCurrentWave());
     }
 
     tick (gameTick: number): void

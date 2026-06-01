@@ -22,9 +22,9 @@ import { WaveRoundController } from './WaveRoundController';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerDefinitionId } from '../config/towerCatalog';
 import { rollTowerDraftChoices } from '../config/towerDraft';
-import { getWorldPixelSize } from '../config/worldLayout';
 import { PlayerNexusSystem } from '../systems/PlayerNexusSystem';
 import { EnemyNexusAttackSystem } from '../systems/EnemyNexusAttackSystem';
+import { PlayerNexusAttackSystem } from '../systems/PlayerNexusAttackSystem';
 
 export class GameSession
 {
@@ -50,7 +50,7 @@ export class GameSession
     {
         this.state = new GameState();
         this.clock = new GameClock();
-        this.collision = new CollisionSystem(getWorldPixelSize());
+        this.collision = new CollisionSystem(grid.layout.arenaPixelSize());
         this.waves = new WaveSystem(this.state);
         this.enemies = new EnemySpawnSystem(this.collision);
         this.waveSpawns = new WaveSpawnSystem(this.enemies);
@@ -94,6 +94,13 @@ export class GameSession
             killRewards,
             () => this.state.wave,
         );
+        const playerNexusAttacks = new PlayerNexusAttackSystem(
+            this.playerNexus,
+            this.enemies,
+            grid,
+            killRewards,
+            () => this.state.wave,
+        );
 
         this.waveRounds = new WaveRoundController(
             this.state,
@@ -115,6 +122,7 @@ export class GameSession
             this.enemyAttacks,
             enemyNexusAttacks,
             this.towerAttacks,
+            playerNexusAttacks,
         ];
     }
 

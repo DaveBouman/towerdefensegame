@@ -30,3 +30,7 @@ export const enemiesAttackableByTowers = (enemies: readonly EnemyState[]): Enemy
 /** Enemies may only strike the player nexus when no player towers remain. */
 export const canEnemiesTargetPlayerNexus = (towers: readonly TowerState[]): boolean =>
     livingTowers(towers).length === 0;
+
+/** Player nexus may only strike the enemy nexus when no wave minions remain. */
+export const canPlayerNexusTargetEnemyNexus = (enemies: readonly EnemyState[]): boolean =>
+    livingMinions(enemies).length === 0;

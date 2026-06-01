@@ -7,6 +7,7 @@ export const GAME_EVENTS = {
     ENEMY_ATTACKED: 'enemy-attacked',
     ENEMY_NEXUS_ATTACKED: 'enemy-nexus-attacked',
     PLAYER_NEXUS_SPAWNED: 'player-nexus-spawned',
+    PLAYER_NEXUS_ATTACKED: 'player-nexus-attacked',
     PLAYER_NEXUS_DAMAGED: 'player-nexus-damaged',
     PLAYER_NEXUS_DESTROYED: 'player-nexus-destroyed',
     TOWER_PLACED: 'tower-placed',

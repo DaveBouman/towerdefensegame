@@ -7,6 +7,7 @@ import { bodyHalfExtent } from '../config/entityBodies';
 import { Grid } from '../grid/Grid';
 import { tileCenterWorld } from '../grid/worldPosition';
 import { TowerState } from '../domain/TowerState';
+import { ENEMY_NEXUS_ID, getEnemyNexusWorldPosition } from '../config/nexusConfig';
 import { pickTowerMovementTarget } from './towerMovementTarget';
 
 describe('pickTowerMovementTarget', () =>
@@ -45,5 +46,26 @@ describe('pickTowerMovementTarget', () =>
         const inRange = enemyAt(34);
 
         expect(pickTowerMovementTarget(tower, [ inRange ], rangePx)).toBeNull();
+    });
+
+    it('targets the enemy nexus when it is the only attackable enemy', () =>
+    {
+        const tower = towerAt(35);
+        const nexusDef = getEnemyDefinitionOrThrow('enemy-nexus');
+        const nexusHalf = bodyHalfExtent(GRID_CONFIG, nexusDef.visual.sizeScale);
+        const nexus = new EnemyState(
+            getEnemyNexusWorldPosition(),
+            nexusDef.id,
+            nexusDef.unitType,
+            nexusDef.baseStats,
+            nexusHalf,
+            nexusHalf,
+            nexusDef.perks,
+            false,
+            true,
+            ENEMY_NEXUS_ID,
+        );
+
+        expect(pickTowerMovementTarget(tower, [ nexus ], rangePx)?.id).toBe(ENEMY_NEXUS_ID);
     });
 });

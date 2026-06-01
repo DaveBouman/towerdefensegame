@@ -7,6 +7,7 @@ import type { Grid } from '../grid/Grid';
 import type { GridPosition, WorldPosition } from '../grid/types';
 import { isWithinAttackRange } from '../combat/combatRange';
 import { stepTowardWorldTarget } from '../movement/followPath';
+import { getEnemyNexusApproachTile } from '../config/nexusConfig';
 import { pickTowerMovementTarget } from '../movement/towerMovementTarget';
 import type { EnemySpawnSystem } from './EnemySpawnSystem';
 import type { CollisionSystem } from './CollisionSystem';
@@ -51,7 +52,11 @@ export class TowerMovementSystem
         }
 
         const rangePx = this.grid.rangeToPixels(tower.range);
-        const target = pickTowerMovementTarget(tower, this.enemies.combatants, rangePx);
+        const target = pickTowerMovementTarget(
+            tower,
+            this.enemies.attackableByTowers,
+            rangePx,
+        );
 
         if (!target)
         {
@@ -60,9 +65,17 @@ export class TowerMovementSystem
         }
 
         const startTile = this.grid.toGrid(tower.position.x, tower.position.y);
-        const goalTile = this.grid.toGrid(target.position.x, target.position.y);
 
-        if (!startTile || !goalTile)
+        if (!startTile)
+        {
+            return;
+        }
+
+        const goalTile = target.isNexus
+            ? getEnemyNexusApproachTile()
+            : this.grid.toGrid(target.position.x, target.position.y);
+
+        if (!goalTile)
         {
             return;
         }
