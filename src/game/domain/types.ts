@@ -1,5 +1,6 @@
 import type { WorldPosition } from '../grid/types';
 import type { DamageType, EnemyStatsSnapshot } from './combat/types';
+import type { TowerDefinitionId } from '../config/towerCatalog';
 import type { TowerArchetype } from './towers/types';
 import type { TowerEquippedUpgrade } from '../config/towerUpgradeCatalog';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
@@ -8,9 +9,13 @@ export interface UpgradePickState {
     choices: string[];
 }
 
+export interface TowerDraftPickState {
+    choices: TowerDefinitionId[];
+}
+
 export interface DeploymentSnapshot {
     active: boolean;
-    nextArchetype: TowerArchetype | null;
+    nextTowerId: TowerDefinitionId | null;
     placedCount: number;
     totalCount: number;
 }
@@ -21,6 +26,7 @@ export interface GameStateSnapshot {
     lives: number;
     canStartWave: boolean;
     upgradePick: UpgradePickState | null;
+    towerDraftPick: TowerDraftPickState | null;
     deployment: DeploymentSnapshot | null;
 }
 
@@ -38,6 +44,7 @@ export interface TowerStateSnapshot {
     position: WorldPosition;
     unitType: string;
     archetype: TowerArchetype;
+    definitionId: TowerDefinitionId;
     range: number;
     damage: number;
     health: number;

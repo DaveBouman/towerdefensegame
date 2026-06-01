@@ -1,27 +1,21 @@
-import type { TowerArchetype } from './towers/types';
+import type { TowerDefinitionId } from '../config/towerCatalog';
 import type { DeploymentSnapshot } from './types';
-import { STARTING_DEPLOYMENT_QUEUE } from '../config/deploymentConfig';
 
 export class DeploymentPhase
 {
-    private queue: TowerArchetype[] = [];
-    private readonly startingQueue: readonly TowerArchetype[];
-    private readonly totalCount: number;
+    private queue: TowerDefinitionId[] = [];
+    private totalCount = 0;
 
-    constructor (startingQueue: readonly TowerArchetype[] = STARTING_DEPLOYMENT_QUEUE)
+    beginWithQueue (towerIds: readonly TowerDefinitionId[]): void
     {
-        this.startingQueue = startingQueue;
-        this.totalCount = startingQueue.length;
-    }
-
-    begin (): void
-    {
-        this.queue = [ ...this.startingQueue ];
+        this.queue = [ ...towerIds ];
+        this.totalCount = towerIds.length;
     }
 
     reset (): void
     {
         this.queue = [];
+        this.totalCount = 0;
     }
 
     get active (): boolean
@@ -29,12 +23,12 @@ export class DeploymentPhase
         return this.queue.length > 0;
     }
 
-    peekNext (): TowerArchetype | null
+    peekNext (): TowerDefinitionId | null
     {
         return this.queue[0] ?? null;
     }
 
-    takeNext (): TowerArchetype | null
+    takeNext (): TowerDefinitionId | null
     {
         return this.queue.shift() ?? null;
     }
@@ -45,7 +39,7 @@ export class DeploymentPhase
 
         return {
             active: this.active,
-            nextArchetype: this.peekNext(),
+            nextTowerId: this.peekNext(),
             placedCount,
             totalCount: this.totalCount,
         };

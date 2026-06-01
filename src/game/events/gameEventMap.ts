@@ -1,4 +1,5 @@
 import type { Scene } from 'phaser';
+import type { TowerDefinitionId } from '../config/towerCatalog';
 import type { TowerUpgradeDefinition } from '../config/towerUpgradeCatalog';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type {
@@ -28,6 +29,7 @@ export interface GameEventMap {
     'start-wave': void;
     'wave-completed': void;
     'place-tower-at-tile': { col: number; row: number };
+    'confirm-tower-draft': { towerId: TowerDefinitionId };
     'relocate-tower-at-tile': { towerId: string; col: number; row: number };
     'claim-wave-reward': { upgradeId: string };
     'discard-wave-reward': void;

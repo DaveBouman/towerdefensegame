@@ -130,6 +130,125 @@ body {
     white-space: normal;
 }
 
+.tower-draft-pick {
+    position: fixed;
+    inset: 0;
+    z-index: 160;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.78);
+    box-sizing: border-box;
+}
+
+.tower-draft-pick__panel {
+    max-width: 640px;
+    width: 100%;
+    padding: 24px 28px;
+    background: linear-gradient(180deg, #1e1e36 0%, #141425 100%);
+    border: 1px solid #3a3a5c;
+    border-radius: 8px;
+    color: #e0e0f0;
+    font-family: monospace;
+}
+
+.tower-draft-pick__title {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.tower-draft-pick__hint {
+    margin: 0 0 16px;
+    font-size: 13px;
+    color: #8a8aa8;
+}
+
+.tower-draft-pick__choices {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: min(52vh, 420px);
+    overflow-y: auto;
+}
+
+.tower-draft-pick__choice {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    padding: 12px 14px;
+    border: 1px solid #3a3a5c;
+    border-radius: 6px;
+    background: #1a1a2e;
+    color: #e0e0f0;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.tower-draft-pick__choice:hover {
+    background: #24243a;
+    border-color: #5dade2;
+}
+
+.tower-draft-pick__choice--selected {
+    background: #243a52;
+    border-color: #3498db;
+    box-shadow: 0 0 0 1px #3498db;
+}
+
+.tower-draft-pick__tier {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.tower-draft-pick__tier--1 { background: #3d5c45; color: #b8e0c0; }
+.tower-draft-pick__tier--2 { background: #2f4f6f; color: #b8d4f0; }
+.tower-draft-pick__tier--3 { background: #4a3f6b; color: #d4c8f0; }
+.tower-draft-pick__tier--4 { background: #6b4a2f; color: #f0d4b8; }
+.tower-draft-pick__tier--5 { background: #6b3f2f; color: #ffd4b8; }
+
+.tower-draft-pick__name {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.tower-draft-pick__stats {
+    font-size: 11px;
+    color: #8a8aa8;
+}
+
+.tower-draft-pick__confirm {
+    margin-top: 16px;
+    width: 100%;
+    padding: 12px 18px;
+    border: 1px solid #2ecc71;
+    border-radius: 6px;
+    background: #1a3a2a;
+    color: #e0e0f0;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tower-draft-pick__confirm:hover:not(:disabled) {
+    background: #244a32;
+    border-color: #58d68d;
+}
+
+.tower-draft-pick__confirm:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 .inventory-panel {
     position: fixed;
     right: 0;

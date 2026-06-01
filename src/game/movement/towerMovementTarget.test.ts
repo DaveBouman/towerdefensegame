@@ -17,7 +17,7 @@ describe('pickTowerMovementTarget', () =>
     const enemyHalf = bodyHalfExtent(GRID_CONFIG, BASIC_ENEMY_CONFIG.sizeScale);
 
     const towerAt = (row: number) =>
-        new TowerState(grid, { col: 5, row }, CLOSE_RANGE_TOWER_PROFILE);
+        new TowerState(grid, { col: 5, row }, 'bruiser', CLOSE_RANGE_TOWER_PROFILE);
 
     const enemyAt = (row: number) =>
         new EnemyState(

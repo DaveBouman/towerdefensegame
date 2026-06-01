@@ -1,4 +1,5 @@
-import { CLOSE_RANGE_TOWER_PROFILE, LONG_RANGE_TOWER_PROFILE } from '../config/towerProfiles';
+import { getTowerDefinition } from '../config/towerCatalog';
+import type { TowerDefinitionId } from '../config/towerCatalog';
 import type { Grid } from '../grid/Grid';
 import type { GridPosition } from '../grid/types';
 import type { TowerArchetype } from './towers/types';
@@ -9,17 +10,24 @@ const STARTING_CATALOG_UPGRADES: Record<TowerArchetype, readonly string[]> = {
     long: [ 'spyglass', 'bracers-of-haste' ],
 };
 
-const profileForArchetype = (archetype: TowerArchetype) =>
-    archetype === 'close' ? CLOSE_RANGE_TOWER_PROFILE : LONG_RANGE_TOWER_PROFILE;
-
 export const createTowerState = (
     grid: Grid,
     spawnTile: GridPosition,
-    archetype: TowerArchetype,
+    definitionId: TowerDefinitionId,
 ): TowerState =>
-    new TowerState(
+{
+    const definition = getTowerDefinition(definitionId);
+
+    if (!definition)
+    {
+        throw new Error(`Unknown tower definition: ${definitionId}`);
+    }
+
+    return new TowerState(
         grid,
         spawnTile,
-        profileForArchetype(archetype),
-        STARTING_CATALOG_UPGRADES[archetype],
+        definition.id,
+        definition.profile,
+        STARTING_CATALOG_UPGRADES[definition.profile.archetype],
     );
+};

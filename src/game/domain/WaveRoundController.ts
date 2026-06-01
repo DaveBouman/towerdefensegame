@@ -27,7 +27,7 @@ export class WaveRoundController
 
     static isCombatActive (state: GameState): boolean
     {
-        if (state.wave === 0 || state.upgradePick || state.canStartWave)
+        if (state.wave === 0 || state.upgradePick || state.towerDraftPick || state.canStartWave)
         {
             return false;
         }
@@ -37,7 +37,7 @@ export class WaveRoundController
 
     showUpcomingWavePreview (): void
     {
-        if (this.state.upgradePick)
+        if (this.state.upgradePick || this.state.towerDraftPick)
         {
             return;
         }
@@ -62,7 +62,12 @@ export class WaveRoundController
 
     startCombatRound (): boolean
     {
-        if (!this.state.canStartWave || this.state.upgradePick || this.deployment.active)
+        if (
+            !this.state.canStartWave
+            || this.state.upgradePick
+            || this.state.towerDraftPick
+            || this.deployment.active
+        )
         {
             return false;
         }

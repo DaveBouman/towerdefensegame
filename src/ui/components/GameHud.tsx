@@ -7,7 +7,7 @@ import { useGameViewModel } from '../viewmodels/useGameViewModel';
 
 export const GameHud = () =>
 {
-    const { gold, wave, lives, canStartWave, deployment, upgradePick } = useGameViewModel();
+    const { gold, wave, lives, canStartWave, deployment, upgradePick, towerDraftPick } = useGameViewModel();
     const nextWave = wave + 1;
 
     const handleStartWave = () =>
@@ -19,8 +19,10 @@ export const GameHud = () =>
     const dragHint = `Drag placed towers on the bottom ${PLAYER_PLACEMENT_ROW_COUNT} rows to reposition them`;
     const hasPlacedTowers = (deployment?.placedCount ?? 0) > 0 || (canStartWave && wave >= 0);
 
-    const deployHint = deployment?.active && deployment.nextArchetype
-        ? `Place ${deploymentUnitLabel(deployment.nextArchetype)} (${deployment.placedCount + 1}/${deployment.totalCount}) on the green rows.${deployment.placedCount > 0 ? ` ${dragHint}` : ''}`
+    const deployHint = towerDraftPick
+        ? null
+        : deployment?.active && deployment.nextTowerId
+            ? `Place ${deploymentUnitLabel(deployment.nextTowerId)} (${deployment.placedCount + 1}/${deployment.totalCount}) on the green rows.${deployment.placedCount > 0 ? ` ${dragHint}` : ''}`
         : canReposition && hasPlacedTowers
             ? dragHint
             : null;

@@ -1,3 +1,4 @@
+import type { TowerDefinitionId } from '../config/towerCatalog';
 import type { TowerProfile } from './towers/types';
 import type { TowerEquippedUpgrade } from '../config/towerUpgradeCatalog';
 import {
@@ -23,6 +24,7 @@ let nextTowerId = 0;
 export class TowerState
 {
     readonly id: string;
+    readonly definitionId: TowerDefinitionId;
     readonly profile: TowerProfile;
     private _spawnTile: GridPosition;
 
@@ -42,11 +44,13 @@ export class TowerState
     constructor (
         grid: Grid,
         spawnTile: GridPosition,
+        definitionId: TowerDefinitionId,
         profile: TowerProfile,
         equippedUpgradeIds: readonly string[] = [],
     )
     {
         this.id = `tower-${nextTowerId++}`;
+        this.definitionId = definitionId;
         this.profile = profile;
         this._spawnTile = { ...spawnTile };
         this.position = tileCenterWorld(grid.config, spawnTile);
@@ -206,6 +210,7 @@ export class TowerState
             position: { ...this.position },
             unitType: this.profile.unitType,
             archetype: this.profile.archetype,
+            definitionId: this.definitionId,
             range: this.range,
             damage: this.damage,
             health: this.health,

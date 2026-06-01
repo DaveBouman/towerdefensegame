@@ -20,6 +20,8 @@ import { TowerUpgradeService } from './TowerUpgradeService';
 import type { TowerUpgradeDefinition } from '../config/towerUpgradeCatalog';
 import { WaveRoundController } from './WaveRoundController';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
+import type { TowerDefinitionId } from '../config/towerCatalog';
+import { rollTowerDraftChoices } from '../config/towerDraft';
 
 export class GameSession
 {
@@ -106,11 +108,12 @@ export class GameSession
         this.enemies.clearAll();
         this.towers.clearAll();
         this.waveSpawns.clear();
-        this.deployment.begin();
+        this.deployment.reset();
         this.state.setWave(0);
         this.state.setUpgradePick(null);
+        this.state.setTowerDraftPick({ choices: rollTowerDraftChoices(0, 5) });
         this.state.setCanStartWave(false);
-        this.syncDeploymentState();
+        this.state.setDeployment(null);
         this.clock.reset();
         this.waveRounds.showUpcomingWavePreview();
     }
@@ -127,9 +130,30 @@ export class GameSession
     }
 
     /** True during deployment or between waves (not combat / reward pick). */
+    isTowerDraftActive (): boolean
+    {
+        return this.state.towerDraftPick !== null;
+    }
+
+    confirmTowerDraft (definitionId: TowerDefinitionId): boolean
+    {
+        const pick = this.state.towerDraftPick;
+
+        if (!pick || !pick.choices.includes(definitionId))
+        {
+            return false;
+        }
+
+        this.state.setTowerDraftPick(null);
+        this.deployment.beginWithQueue([ definitionId ]);
+        this.syncDeploymentState();
+
+        return true;
+    }
+
     canRepositionTowers (): boolean
     {
-        if (this.state.upgradePick || this.isRoundActive())
+        if (this.state.upgradePick || this.state.towerDraftPick || this.isRoundActive())
         {
             return false;
         }
@@ -162,14 +186,14 @@ export class GameSession
 
     tryDeployTowerAt (tile: GridPosition): boolean
     {
-        const archetype = this.deployment.peekNext();
+        const towerId = this.deployment.peekNext();
 
-        if (!archetype)
+        if (!towerId)
         {
             return false;
         }
 
-        if (!this.towers.tryPlace(tile, archetype))
+        if (!this.towers.tryPlace(tile, towerId))
         {
             return false;
         }

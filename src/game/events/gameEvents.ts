@@ -15,6 +15,7 @@ export const GAME_EVENTS = {
     START_WAVE: 'start-wave',
     WAVE_COMPLETED: 'wave-completed',
     PLACE_TOWER_AT_TILE: 'place-tower-at-tile',
+    CONFIRM_TOWER_DRAFT: 'confirm-tower-draft',
     RELOCATE_TOWER_AT_TILE: 'relocate-tower-at-tile',
     CLAIM_WAVE_REWARD: 'claim-wave-reward',
     DISCARD_WAVE_REWARD: 'discard-wave-reward',

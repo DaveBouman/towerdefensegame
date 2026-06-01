@@ -9,6 +9,7 @@ const INITIAL_STATE: GameStateSnapshot = {
     lives: 20,
     canStartWave: true,
     upgradePick: null,
+    towerDraftPick: null,
     deployment: null,
 };
 

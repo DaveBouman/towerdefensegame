@@ -1,10 +1,9 @@
 import { EventBus } from '../EventBus';
+import type { TowerDefinitionId } from '../config/towerCatalog';
 import { createTowerState } from '../domain/createTowerState';
 import { TowerState } from '../domain/TowerState';
 import { GAME_EVENTS } from '../events/gameEvents';
 import { isPlayerPlacementTile } from '../config/placementZone';
-import { LONG_RANGE_TOWER_SPAWN, PLAYER_TOWER_SPAWN } from '../config/spawnConfig';
-import type { TowerArchetype } from '../domain/towers/types';
 import type { Grid } from '../grid/Grid';
 import type { GridPosition } from '../grid/types';
 import type { CollisionSystem } from './CollisionSystem';
@@ -26,28 +25,6 @@ export class TowerPlacementSystem
     getSnapshot (id: string)
     {
         return this.placed.get(id)?.snapshot();
-    }
-
-    placePlayer (): TowerState
-    {
-        return this.place(PLAYER_TOWER_SPAWN, 'close');
-    }
-
-    placeLongRange (): TowerState
-    {
-        return this.place(LONG_RANGE_TOWER_SPAWN, 'long');
-    }
-
-    place (tile: GridPosition, archetype: TowerArchetype): TowerState
-    {
-        const tower = this.tryPlace(tile, archetype);
-
-        if (!tower)
-        {
-            throw new Error(`Cannot place ${archetype} tower at ${tile.col},${tile.row}`);
-        }
-
-        return tower;
     }
 
     canRelocateTo (towerId: string, tile: GridPosition): boolean
@@ -118,14 +95,14 @@ export class TowerPlacementSystem
         return true;
     }
 
-    tryPlace (tile: GridPosition, archetype: TowerArchetype): TowerState | null
+    tryPlace (tile: GridPosition, definitionId: TowerDefinitionId): TowerState | null
     {
         if (!this.grid.isInBounds(tile) || !isPlayerPlacementTile(tile))
         {
             return null;
         }
 
-        const tower = createTowerState(this.grid, tile, archetype);
+        const tower = createTowerState(this.grid, tile, definitionId);
 
         if (!this.collision.register(
             tower.id,
@@ -183,24 +160,11 @@ export class TowerPlacementSystem
 
     resetPlayerTowers (): void
     {
-        const present = new Set<TowerArchetype>();
-
         for (const tower of this.all)
         {
-            present.add(tower.profile.archetype);
             tower.resetForNextWave(this.grid);
             this.collision.setPositionFromPath(tower.id, tower.position);
             EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
-        }
-
-        if (!present.has('close'))
-        {
-            this.placePlayer();
-        }
-
-        if (!present.has('long'))
-        {
-            this.placeLongRange();
         }
     }
 }

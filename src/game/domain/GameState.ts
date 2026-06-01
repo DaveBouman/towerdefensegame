@@ -1,6 +1,11 @@
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
-import type { DeploymentSnapshot, GameStateSnapshot, UpgradePickState } from './types';
+import type {
+    DeploymentSnapshot,
+    GameStateSnapshot,
+    TowerDraftPickState,
+    UpgradePickState,
+} from './types';
 
 export class GameState
 {
@@ -9,6 +14,7 @@ export class GameState
     private _lives = 20;
     private _canStartWave = true;
     private _upgradePick: UpgradePickState | null = null;
+    private _towerDraftPick: TowerDraftPickState | null = null;
     private _deployment: DeploymentSnapshot | null = null;
 
     get gold (): number
@@ -41,6 +47,11 @@ export class GameState
         return this._deployment;
     }
 
+    get towerDraftPick (): TowerDraftPickState | null
+    {
+        return this._towerDraftPick;
+    }
+
     snapshot (): GameStateSnapshot
     {
         return {
@@ -49,6 +60,7 @@ export class GameState
             lives: this._lives,
             canStartWave: this._canStartWave,
             upgradePick: this._upgradePick,
+            towerDraftPick: this._towerDraftPick,
             deployment: this._deployment,
         };
     }
@@ -110,6 +122,12 @@ export class GameState
     setUpgradePick (pick: UpgradePickState | null): void
     {
         this._upgradePick = pick?.choices.length ? { choices: [ ...pick.choices ] } : null;
+        this.notify();
+    }
+
+    setTowerDraftPick (pick: TowerDraftPickState | null): void
+    {
+        this._towerDraftPick = pick?.choices.length ? { choices: [ ...pick.choices ] } : null;
         this.notify();
     }
 

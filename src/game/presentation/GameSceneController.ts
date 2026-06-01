@@ -24,6 +24,7 @@ import { TowerDropTarget } from './TowerDropTarget';
 import { GridPlacementController } from './GridPlacementController';
 import { TowerRelocationController } from './TowerRelocationController';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
+import type { TowerDefinitionId } from '../config/towerCatalog';
 
 export class GameSceneController
 {
@@ -128,6 +129,7 @@ export class GameSceneController
         EventBus.on(GAME_EVENTS.SET_TOWER_TARGETING_MODE, this.onSetTowerTargetingMode, this);
         EventBus.on(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
         EventBus.on(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, this.onRelocateTowerAtTile, this);
+        EventBus.on(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
     }
 
     unbind (): void
@@ -157,6 +159,7 @@ export class GameSceneController
         EventBus.off(GAME_EVENTS.SET_TOWER_TARGETING_MODE, this.onSetTowerTargetingMode, this);
         EventBus.off(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
         EventBus.off(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, this.onRelocateTowerAtTile, this);
+        EventBus.off(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
     }
 
     startSession (): void
@@ -292,6 +295,11 @@ export class GameSceneController
     private onPlaceTowerAtTile ({ col, row }: { col: number; row: number }): void
     {
         this.session.tryDeployTowerAt({ col, row });
+    }
+
+    private onConfirmTowerDraft ({ towerId }: { towerId: TowerDefinitionId }): void
+    {
+        this.session.confirmTowerDraft(towerId);
     }
 
     private onRelocateTowerAtTile ({

@@ -27,7 +27,7 @@ describe('TowerPlacementSystem.tryRelocate', () =>
 
     it('moves a tower to an empty placement tile', () =>
     {
-        const tower = towers.tryPlace({ col: 4, row: 35 }, 'close');
+        const tower = towers.tryPlace({ col: 4, row: 35 }, 'militia');
 
         expect(tower).not.toBeNull();
         expect(towers.tryRelocate(tower!.id, { col: 6, row: 37 })).toBe(true);
@@ -36,8 +36,8 @@ describe('TowerPlacementSystem.tryRelocate', () =>
 
     it('rejects a tile occupied by another tower', () =>
     {
-        const a = towers.tryPlace({ col: 3, row: 35 }, 'close');
-        const b = towers.tryPlace({ col: 5, row: 35 }, 'long');
+        const a = towers.tryPlace({ col: 3, row: 35 }, 'militia');
+        const b = towers.tryPlace({ col: 5, row: 35 }, 'scout');
 
         expect(a).not.toBeNull();
         expect(b).not.toBeNull();

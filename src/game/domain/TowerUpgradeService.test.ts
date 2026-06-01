@@ -62,8 +62,8 @@ describe('TowerUpgradeService', () =>
         claimGilded();
         claimGilded();
 
-        const towerA = createTowerState(grid, { col: 1, row: 30 }, 'close');
-        const towerB = createTowerState(grid, { col: 3, row: 30 }, 'close');
+        const towerA = createTowerState(grid, { col: 1, row: 30 }, 'militia');
+        const towerB = createTowerState(grid, { col: 3, row: 30 }, 'militia');
 
         expect(
             service.equipCatalogUpgrade([ towerA, towerB ], towerA.id, 'gilded-plating'),

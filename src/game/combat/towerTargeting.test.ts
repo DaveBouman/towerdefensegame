@@ -18,6 +18,7 @@ describe('pickTowerAttackTarget', () =>
     const tower = new TowerState(
         grid,
         { col: 5, row: 35 },
+        'bruiser',
         CLOSE_RANGE_TOWER_PROFILE,
     );
 
