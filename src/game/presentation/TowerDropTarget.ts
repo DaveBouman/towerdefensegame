@@ -1,5 +1,6 @@
 import type { Scene } from 'phaser';
 import type { TowerState } from '../domain/TowerState';
+import type { WorldPosition } from '../grid/types';
 import { clientPointerToWorld } from './clientPointerToWorld';
 
 export class TowerDropTarget
@@ -18,10 +19,15 @@ export class TowerDropTarget
             return null;
         }
 
+        return this.pickTowerIdAtWorld(world);
+    }
+
+    pickTowerIdAtWorld (world: WorldPosition): string | null
+    {
         return this.pickTowerAtWorld(world)?.id ?? null;
     }
 
-    private pickTowerAtWorld (world: { x: number; y: number }): TowerState | undefined
+    pickTowerAtWorld (world: WorldPosition): TowerState | undefined
     {
         let best: TowerState | undefined;
         let bestDistSq = Infinity;

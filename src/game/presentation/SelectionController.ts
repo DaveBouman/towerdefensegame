@@ -61,6 +61,11 @@ export class SelectionController
         EventBus.emit(GAME_EVENTS.SELECTION_CHANGED, null);
     }
 
+    getSelectedTowerId (): string | undefined
+    {
+        return this.selection?.kind === 'tower' ? this.selection.data.id : undefined;
+    }
+
     onEnemyRemoved (id: string): void
     {
         if (this.selection?.kind === 'enemy' && this.selection.data.id === id)

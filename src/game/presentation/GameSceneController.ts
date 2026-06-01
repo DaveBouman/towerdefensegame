@@ -22,6 +22,7 @@ import { AttackBeamEffect } from './AttackBeamEffect';
 import { TowerPresenter } from './TowerPresenter';
 import { TowerDropTarget } from './TowerDropTarget';
 import { GridPlacementController } from './GridPlacementController';
+import { TowerRelocationController } from './TowerRelocationController';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 
 export class GameSceneController
@@ -33,6 +34,7 @@ export class GameSceneController
     private readonly selection: SelectionController;
     private readonly towerDropTarget: TowerDropTarget;
     private readonly gridPlacement: GridPlacementController;
+    private readonly towerRelocation: TowerRelocationController;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -71,6 +73,21 @@ export class GameSceneController
                 });
             },
         );
+        this.towerRelocation = new TowerRelocationController(
+            scene,
+            grid,
+            () => this.session.isBetweenWaves(),
+            (world) => this.towerDropTarget.pickTowerIdAtWorld(world),
+            () => this.selection.getSelectedTowerId(),
+            (towerId, tile) =>
+            {
+                EventBus.emit(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, {
+                    towerId,
+                    col: tile.col,
+                    row: tile.row,
+                });
+            },
+        );
     }
 
     bind (): void
@@ -99,6 +116,7 @@ export class GameSceneController
         EventBus.on(GAME_EVENTS.PURCHASE_TOWER_STAT_UPGRADE, this.onPurchaseTowerStatUpgrade, this);
         EventBus.on(GAME_EVENTS.SET_TOWER_TARGETING_MODE, this.onSetTowerTargetingMode, this);
         EventBus.on(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
+        EventBus.on(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, this.onRelocateTowerAtTile, this);
     }
 
     unbind (): void
@@ -127,6 +145,7 @@ export class GameSceneController
         EventBus.off(GAME_EVENTS.PURCHASE_TOWER_STAT_UPGRADE, this.onPurchaseTowerStatUpgrade, this);
         EventBus.off(GAME_EVENTS.SET_TOWER_TARGETING_MODE, this.onSetTowerTargetingMode, this);
         EventBus.off(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
+        EventBus.off(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, this.onRelocateTowerAtTile, this);
     }
 
     startSession (): void
@@ -249,6 +268,7 @@ export class GameSceneController
     {
         this.unbind();
         this.gridPlacement.destroy();
+        this.towerRelocation.destroy();
         this.enemyPresenter.clearAll();
         this.towerPresenter.clearAll();
         this.selection.clear();
@@ -259,6 +279,26 @@ export class GameSceneController
     private onPlaceTowerAtTile ({ col, row }: { col: number; row: number }): void
     {
         this.session.tryDeployTowerAt({ col, row });
+    }
+
+    private onRelocateTowerAtTile ({
+        towerId,
+        col,
+        row,
+    }: {
+        towerId: string;
+        col: number;
+        row: number;
+    }): void
+    {
+        if (!this.session.relocateTowerAt({ col, row }, towerId))
+        {
+            return;
+        }
+
+        this.towerPresenter.setTargetPosition(towerId, this.session.towers.getSnapshot(towerId)!.position);
+        this.towerPresenter.snapToTarget(towerId);
+        this.selection.syncFrame();
     }
 
     private onEnemySpawned (snapshot: EnemyStateSnapshot): void

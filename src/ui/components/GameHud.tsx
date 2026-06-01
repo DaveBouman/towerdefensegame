@@ -7,7 +7,7 @@ import { useGameViewModel } from '../viewmodels/useGameViewModel';
 
 export const GameHud = () =>
 {
-    const { gold, wave, lives, canStartWave, deployment } = useGameViewModel();
+    const { gold, wave, lives, canStartWave, deployment, upgradePick } = useGameViewModel();
     const nextWave = wave + 1;
 
     const handleStartWave = () =>
@@ -15,9 +15,13 @@ export const GameHud = () =>
         EventBus.emit(GAME_EVENTS.START_WAVE);
     };
 
+    const betweenWaves = canStartWave && !upgradePick && !deployment?.active;
+
     const deployHint = deployment?.active && deployment.nextArchetype
         ? `Place ${deploymentUnitLabel(deployment.nextArchetype)} (${deployment.placedCount + 1}/${deployment.totalCount}) on the bottom ${PLAYER_PLACEMENT_ROW_COUNT} rows`
-        : null;
+        : betweenWaves
+            ? `Drag towers on the bottom ${PLAYER_PLACEMENT_ROW_COUNT} rows to reposition, or select one and click an empty tile`
+            : null;
 
     const hasNextWave = hasWaveDefinition(nextWave);
 

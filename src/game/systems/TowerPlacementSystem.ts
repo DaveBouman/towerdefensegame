@@ -50,6 +50,57 @@ export class TowerPlacementSystem
         return tower;
     }
 
+    tryRelocate (towerId: string, tile: GridPosition): boolean
+    {
+        const tower = this.placed.get(towerId);
+
+        if (!tower || !this.grid.isInBounds(tile) || !isPlayerPlacementTile(tile))
+        {
+            return false;
+        }
+
+        if (tower.spawnTile.col === tile.col && tower.spawnTile.row === tile.row)
+        {
+            return true;
+        }
+
+        if (this.towerOnTile(tile, towerId))
+        {
+            return false;
+        }
+
+        const previousTile = { ...tower.spawnTile };
+        const previousPosition = { ...tower.position };
+
+        this.collision.unregister(tower.id);
+        tower.relocateTo(this.grid, tile);
+
+        if (!this.collision.register(
+            tower.id,
+            'tower',
+            tower.position,
+            tower.bodyHalfWidth,
+            tower.bodyHalfHeight,
+        ))
+        {
+            tower.relocateTo(this.grid, previousTile);
+            tower.position = previousPosition;
+            this.collision.register(
+                tower.id,
+                'tower',
+                tower.position,
+                tower.bodyHalfWidth,
+                tower.bodyHalfHeight,
+            );
+
+            return false;
+        }
+
+        EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
+
+        return true;
+    }
+
     tryPlace (tile: GridPosition, archetype: TowerArchetype): TowerState | null
     {
         if (!this.grid.isInBounds(tile) || !isPlayerPlacementTile(tile))
@@ -93,6 +144,24 @@ export class TowerPlacementSystem
 
         this.collision.unregister(id);
         EventBus.emit(GAME_EVENTS.TOWER_REMOVED, { id });
+    }
+
+    private towerOnTile (tile: GridPosition, exceptTowerId: string): boolean
+    {
+        for (const tower of this.placed.values())
+        {
+            if (tower.id === exceptTowerId)
+            {
+                continue;
+            }
+
+            if (tower.spawnTile.col === tile.col && tower.spawnTile.row === tile.row)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     resetPlayerTowers (): void

@@ -126,6 +126,24 @@ export class GameSession
         return WaveRoundController.isCombatActive(this.state);
     }
 
+    relocateTowerAt (tile: GridPosition, towerId: string): boolean
+    {
+        if (!this.isBetweenWaves())
+        {
+            return false;
+        }
+
+        if (!this.towers.tryRelocate(towerId, tile))
+        {
+            return false;
+        }
+
+        this.towerMovement.clearTower(towerId);
+        this.towerAttacks.clearTower(towerId);
+
+        return true;
+    }
+
     tryDeployTowerAt (tile: GridPosition): boolean
     {
         const archetype = this.deployment.peekNext();

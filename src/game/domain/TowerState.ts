@@ -24,7 +24,12 @@ export class TowerState
 {
     readonly id: string;
     readonly profile: TowerProfile;
-    readonly spawnTile: GridPosition;
+    private _spawnTile: GridPosition;
+
+    get spawnTile (): GridPosition
+    {
+        return this._spawnTile;
+    }
     readonly bodyHalfWidth: number;
     readonly bodyHalfHeight: number;
     position: WorldPosition;
@@ -43,7 +48,7 @@ export class TowerState
     {
         this.id = `tower-${nextTowerId++}`;
         this.profile = profile;
-        this.spawnTile = { ...spawnTile };
+        this._spawnTile = { ...spawnTile };
         this.position = tileCenterWorld(grid.config, spawnTile);
         this.equippedUpgradeIds = [ ...equippedUpgradeIds ];
         this.refreshModifiers();
@@ -184,7 +189,14 @@ export class TowerState
     resetForNextWave (grid: Grid): void
     {
         this.health = this.maxHealth;
-        this.position = tileCenterWorld(grid.config, this.spawnTile);
+        this.position = tileCenterWorld(grid.config, this._spawnTile);
+    }
+
+    /** Updates home tile between waves (also moves the unit to that tile center). */
+    relocateTo (grid: Grid, tile: GridPosition): void
+    {
+        this._spawnTile = { ...tile };
+        this.position = tileCenterWorld(grid.config, tile);
     }
 
     snapshot (): TowerStateSnapshot

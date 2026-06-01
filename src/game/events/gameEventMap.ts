@@ -28,6 +28,7 @@ export interface GameEventMap {
     'start-wave': void;
     'wave-completed': void;
     'place-tower-at-tile': { col: number; row: number };
+    'relocate-tower-at-tile': { towerId: string; col: number; row: number };
     'claim-wave-reward': { upgradeId: string };
     'discard-wave-reward': void;
     'request-inventory': void;
