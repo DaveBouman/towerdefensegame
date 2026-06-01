@@ -1,3 +1,4 @@
+import { GRID_WORLD_OFFSET_Y } from '../config/worldLayout';
 import type { GridConfig, GridPosition, WorldPosition } from './types';
 
 export const tileCenterWorld = (
@@ -9,7 +10,7 @@ export const tileCenterWorld = (
 
     return {
         x: col * config.tileSize + half,
-        y: row * config.tileSize + half,
+        y: GRID_WORLD_OFFSET_Y + row * config.tileSize + half,
     };
 };
 
@@ -48,8 +49,20 @@ export const worldToTileLabel = (
     { x, y }: WorldPosition,
 ): string =>
 {
+    const localY = y - GRID_WORLD_OFFSET_Y;
+
+    if (localY < 0)
+    {
+        return 'Enemy nexus';
+    }
+
+    if (localY >= config.rows * config.tileSize)
+    {
+        return 'Your nexus';
+    }
+
     const col = Math.floor(x / config.tileSize);
-    const row = Math.floor(y / config.tileSize);
+    const row = Math.floor(localY / config.tileSize);
 
     return `${col}, ${row}`;
 };

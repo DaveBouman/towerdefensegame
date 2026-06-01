@@ -189,6 +189,26 @@ export class GameSceneController
         }
 
         this.session.prepare();
+        this.syncNexusesToScene();
+    }
+
+    private syncNexusesToScene (): void
+    {
+        const player = this.session.playerNexus.getSnapshot();
+
+        if (player)
+        {
+            this.playerNexusPresenter.destroy();
+            this.playerNexusPresenter.spawn(this.scene, this.grid, player);
+        }
+
+        const enemyNexus = this.session.enemies.getEnemyNexus();
+
+        if (enemyNexus)
+        {
+            this.enemyPresenter.remove(enemyNexus.id);
+            this.onEnemySpawned(enemyNexus.snapshot());
+        }
     }
 
     private onStartWave (): void

@@ -7,6 +7,7 @@ import { attacksPerSecondToIntervalTicks } from '../config/gameClockConfig';
 import { canEnemiesTargetPlayerNexus, livingTowers } from '../combat/targetPriority';
 import { GAME_EVENTS } from '../events/gameEvents';
 import type { Grid } from '../grid/Grid';
+import { rangeTilesToPixels } from '../grid/rangePixels';
 import { isWithinAttackRange } from '../combat/combatRange';
 import { worldDistance } from '../grid/worldPosition';
 import type { EnemySpawnSystem } from './EnemySpawnSystem';
@@ -50,7 +51,7 @@ export class EnemyAttackSystem
             return;
         }
 
-        const rangePx = this.grid.rangeToPixels(enemy.stats.range);
+        const rangePx = rangeTilesToPixels(this.grid, enemy.stats.range);
         const towerTarget = this.findTowerInRange(enemy, rangePx);
 
         if (towerTarget)

@@ -41,6 +41,13 @@ describe('GameSession.checkWaveComplete', () =>
         session.state.setCanStartWave(false);
         session.state.setUpgradePick(null);
 
+        const enemyNexus = session.enemies.getEnemyNexus();
+
+        if (enemyNexus)
+        {
+            enemyNexus.health = 0;
+        }
+
         session.checkWaveComplete();
 
         expect(session.state.upgradePick?.choices.length).toBeGreaterThan(0);

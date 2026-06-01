@@ -1,6 +1,6 @@
 import { boxFromCenter, boxesOverlap } from '../collision/aabb';
 import type { OccupantKind } from '../collision/types';
-import type { Grid } from '../grid/Grid';
+import type { GridPixelSize } from '../grid/types';
 import type { WorldPosition } from '../grid/types';
 
 interface BodyEntry {
@@ -14,7 +14,7 @@ export class CollisionSystem
 {
     private readonly bodies = new Map<string, BodyEntry>();
 
-    constructor (private readonly grid: Grid) {}
+    constructor (private readonly arenaSize: GridPixelSize) {}
 
     register (
         id: string,
@@ -119,8 +119,8 @@ export class CollisionSystem
 
         return box.left >= 0
             && box.top >= 0
-            && box.right <= this.grid.size.width
-            && box.bottom <= this.grid.size.height;
+            && box.right <= this.arenaSize.width
+            && box.bottom <= this.arenaSize.height;
     }
 
     private overlapsOthers (

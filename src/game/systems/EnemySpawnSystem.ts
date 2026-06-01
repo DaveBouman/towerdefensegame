@@ -11,8 +11,7 @@ import { getWaveDefinition } from '../config/waveCatalog';
 import {
     ENEMY_NEXUS_ID,
     ENEMY_NEXUS_KIND,
-    ENEMY_NEXUS_TILE,
-    isEnemyNexusTile,
+    getEnemyNexusWorldPosition,
 } from '../config/nexusConfig';
 import { enemiesAttackableByTowers, livingMinions } from '../combat/targetPriority';
 import type { CollisionSystem } from './CollisionSystem';
@@ -59,7 +58,7 @@ export class EnemySpawnSystem
         const definition = getEnemyDefinitionOrThrow(ENEMY_NEXUS_KIND);
         const half = bodyHalfExtent(GRID_CONFIG, definition.visual.sizeScale);
         const enemy = new EnemyState(
-            tileCenterWorld(GRID_CONFIG, ENEMY_NEXUS_TILE),
+            getEnemyNexusWorldPosition(),
             definition.id,
             definition.unitType,
             definition.baseStats,
@@ -81,11 +80,6 @@ export class EnemySpawnSystem
 
     trySpawnAt (tile: GridPosition, kind: EnemyDefinitionId, isPreview = false): EnemyState | null
     {
-        if (isEnemyNexusTile(tile))
-        {
-            return null;
-        }
-
         const definition = getEnemyDefinitionOrThrow(kind);
         const half = bodyHalfExtent(GRID_CONFIG, definition.visual.sizeScale);
         const enemy = new EnemyState(

@@ -1,5 +1,5 @@
 import { EventBus } from '../EventBus';
-import { PLAYER_NEXUS_TILE } from '../config/nexusConfig';
+import { getPlayerNexusWorldPosition } from '../config/nexusConfig';
 import { GAME_EVENTS } from '../events/gameEvents';
 import { PlayerNexusState } from '../domain/PlayerNexusState';
 import type { PlayerNexusStateSnapshot } from '../domain/types';
@@ -15,7 +15,7 @@ export class PlayerNexusSystem
 
     spawn (): PlayerNexusState
     {
-        this.nexus = new PlayerNexusState(PLAYER_NEXUS_TILE);
+        this.nexus = new PlayerNexusState(getPlayerNexusWorldPosition());
         EventBus.emit(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.nexus.snapshot());
 
         return this.nexus;

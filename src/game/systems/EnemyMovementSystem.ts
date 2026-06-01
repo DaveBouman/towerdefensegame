@@ -4,11 +4,13 @@ import { pickSurroundGoalTile } from '../pathfinding/surroundGoal';
 import { tileKey } from '../pathfinding/tileKey';
 import { followPathStep, pathToWorldWaypoints, stepTowardWorldTarget } from '../movement/followPath';
 import { tileCenterWorld } from '../grid/worldPosition';
+import { getPlayerNexusApproachTile } from '../config/nexusConfig';
 import { canEnemiesTargetPlayerNexus, livingTowers } from '../combat/targetPriority';
 import type { CombatEntity } from '../combat/combatRange';
 import type { EnemyState } from '../domain/EnemyState';
 import type { TowerState } from '../domain/TowerState';
 import type { Grid } from '../grid/Grid';
+import { rangeTilesToPixels } from '../grid/rangePixels';
 import type { GridPosition, WorldPosition } from '../grid/types';
 import { isWithinAttackRange } from '../combat/combatRange';
 import { worldDistance } from '../grid/worldPosition';
@@ -32,7 +34,7 @@ export class EnemyMovementSystem
         private readonly enemies: EnemySpawnSystem,
         private readonly towers: TowerPlacementSystem,
         private readonly playerNexus: PlayerNexusSystem,
-        private readonly grid: Grid,
+        private readonly mapGrid: Grid,
         private readonly collision: CollisionSystem,
     ) {}
 
@@ -85,7 +87,7 @@ export class EnemyMovementSystem
         speed: number,
     ): void
     {
-        const rangePx = this.grid.rangeToPixels(enemy.stats.range);
+        const rangePx = rangeTilesToPixels(this.mapGrid, enemy.stats.range);
 
         if (isWithinAttackRange(enemy, target, rangePx))
         {
@@ -94,32 +96,40 @@ export class EnemyMovementSystem
             return;
         }
 
-        const startTile = this.grid.toGrid(enemy.position.x, enemy.position.y);
-        const targetTile = this.grid.toGrid(target.position.x, target.position.y);
+        const startTile = this.mapGrid.toGrid(enemy.position.x, enemy.position.y);
 
-        if (!startTile || !targetTile)
+        if (!startTile)
         {
             return;
         }
 
-        const goalKey = `${targetId}:${targetTile.col},${targetTile.row}`;
+        const goalTile = targetId === 'player-nexus'
+            ? getPlayerNexusApproachTile()
+            : this.mapGrid.toGrid(target.position.x, target.position.y);
+
+        if (!goalTile)
+        {
+            return;
+        }
+
+        const goalKey = `${targetId}:${goalTile.col},${goalTile.row}`;
         let pathState = this.paths.get(enemy.id);
 
         if (!pathState || pathState.goalKey !== goalKey)
         {
-            pathState = this.planPath(enemy, target, startTile, targetTile, goalKey, targetId);
+            pathState = this.planPath(enemy, target, startTile, goalTile, goalKey, targetId);
             this.paths.set(enemy.id, pathState);
         }
 
         if (pathState.waypoints.length === 0)
         {
-            this.chaseTarget(enemy, target, pathState.goalTile, speed);
+            this.chaseTarget(enemy, target, pathState.goalTile, targetId, speed);
 
             return;
         }
 
         const step = followPathStep(
-            this.grid,
+            this.mapGrid,
             enemy.position,
             pathState.waypoints,
             speed,
@@ -128,7 +138,7 @@ export class EnemyMovementSystem
         if (!step)
         {
             this.paths.delete(enemy.id);
-            this.chaseTarget(enemy, target, pathState.goalTile, speed);
+            this.chaseTarget(enemy, target, pathState.goalTile, targetId, speed);
 
             return;
         }
@@ -150,10 +160,11 @@ export class EnemyMovementSystem
         enemy: EnemyState,
         target: CombatEntity,
         goalTile: GridPosition,
+        targetId: string,
         speed: number,
     ): void
     {
-        const rangePx = this.grid.rangeToPixels(enemy.stats.range);
+        const rangePx = rangeTilesToPixels(this.mapGrid, enemy.stats.range);
 
         if (isWithinAttackRange(enemy, target, rangePx))
         {
@@ -162,7 +173,9 @@ export class EnemyMovementSystem
             return;
         }
 
-        const standGoal = tileCenterWorld(this.grid.config, goalTile);
+        const standGoal = targetId === 'player-nexus'
+            ? target.position
+            : tileCenterWorld(this.mapGrid.config, goalTile);
         const next = stepTowardWorldTarget(enemy.position, standGoal, speed);
 
         if (!this.collision.setPositionFromPath(enemy.id, next))
@@ -185,15 +198,15 @@ export class EnemyMovementSystem
         targetId: string,
     ): EnemyPathState
     {
-        const blocked = buildBlockedTiles(this.grid, this.collision, enemy.id);
+        const blocked = buildBlockedTiles(this.mapGrid, this.collision, enemy.id);
 
         blocked.add(tileKey(targetTile));
 
-        const rangePx = this.grid.rangeToPixels(enemy.stats.range);
+        const rangePx = rangeTilesToPixels(this.mapGrid, enemy.stats.range);
         const reservedGoals = this.collectReservedGoalTiles(enemy.id, targetId);
         const slotIndex = this.slotIndexForTarget(enemy.id, targetId);
         const goalTile = pickSurroundGoalTile(
-            this.grid,
+            this.mapGrid,
             startTile,
             target,
             enemy.bodyHalfWidth,
@@ -204,7 +217,7 @@ export class EnemyMovementSystem
             slotIndex,
         ) ?? targetTile;
 
-        const tilePath = findPath(this.grid, startTile, goalTile, blocked);
+        const tilePath = findPath(this.mapGrid, startTile, goalTile, blocked);
 
         if (!tilePath)
         {
@@ -214,7 +227,7 @@ export class EnemyMovementSystem
         return {
             goalKey,
             goalTile,
-            waypoints: pathToWorldWaypoints(this.grid, tilePath),
+            waypoints: pathToWorldWaypoints(this.mapGrid, tilePath),
         };
     }
 

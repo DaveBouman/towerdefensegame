@@ -1,3 +1,4 @@
+import { getEnemyNexusDamageForWave } from '../../config/enemyNexusScaling';
 import { GRID_CONFIG } from '../../config/gridConfig';
 import { formatAttacksPerSecond } from '../../config/gameClockConfig';
 import type { EnemyStateSnapshot } from '../types';
@@ -14,6 +15,8 @@ interface EnemyDisplayContext
 {
     enemy: EnemyStateSnapshot;
     resistances: [ DamageType, number ][];
+    /** Current wave (used for enemy nexus damage scaling in the UI). */
+    wave: number;
 }
 
 const ENEMY_STAT_FIELDS: readonly StatField<EnemyDisplayContext>[] = [
@@ -25,7 +28,17 @@ const ENEMY_STAT_FIELDS: readonly StatField<EnemyDisplayContext>[] = [
     {
         label: 'Damage',
         show: () => true,
-        format: ({ enemy }) => String(enemy.stats.damage),
+        format: ({ enemy, wave }) =>
+        {
+            if (enemy.isNexus)
+            {
+                const effectiveWave = Math.max(1, wave);
+
+                return `${getEnemyNexusDamageForWave(effectiveWave)} (wave ${effectiveWave})`;
+            }
+
+            return String(enemy.stats.damage);
+        },
     },
     {
         label: 'Gold',
@@ -59,11 +72,11 @@ const ENEMY_STAT_FIELDS: readonly StatField<EnemyDisplayContext>[] = [
     },
 ];
 
-export const getEnemyStatRows = (enemy: EnemyStateSnapshot): DisplayStat[] =>
+export const getEnemyStatRows = (enemy: EnemyStateSnapshot, wave = 0): DisplayStat[] =>
 {
     const resistances = Object.entries(enemy.stats.resistances) as [ DamageType, number ][];
 
-    return buildStatRows({ enemy, resistances }, ENEMY_STAT_FIELDS);
+    return buildStatRows({ enemy, resistances, wave }, ENEMY_STAT_FIELDS);
 };
 
 export const getEnemyResistanceTags = (enemy: EnemyStateSnapshot): string[] =>

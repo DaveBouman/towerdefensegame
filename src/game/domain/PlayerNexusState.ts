@@ -2,8 +2,6 @@ import { PLAYER_NEXUS_CONFIG } from '../config/playerNexusConfig';
 import { bodyHalfExtent } from '../config/entityBodies';
 import { GRID_CONFIG } from '../config/gridConfig';
 import type { WorldPosition } from '../grid/types';
-import { tileCenterWorld } from '../grid/worldPosition';
-import type { GridPosition } from '../grid/types';
 import type { PlayerNexusStateSnapshot } from './types';
 
 export class PlayerNexusState
@@ -16,11 +14,11 @@ export class PlayerNexusState
     position: WorldPosition;
     health: number;
 
-    constructor (spawnTile: GridPosition)
+    constructor (position: WorldPosition)
     {
         this.bodyHalfWidth = bodyHalfExtent(GRID_CONFIG, PLAYER_NEXUS_CONFIG.sizeScale);
         this.bodyHalfHeight = this.bodyHalfWidth;
-        this.position = tileCenterWorld(GRID_CONFIG, spawnTile);
+        this.position = { ...position };
         this.health = this.maxHealth;
     }
 

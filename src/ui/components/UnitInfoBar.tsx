@@ -12,6 +12,7 @@ import { getTowerStatRows } from '../../game/domain/stats/towerStatDisplay';
 import type { DisplayStat } from '../../game/domain/stats/displayStat';
 import { getTowerUpgradeDefinition, towerUpgradeHoverText } from '../../game/config/towerUpgradeCatalog';
 import { useInventoryPanel } from '../context/InventoryPanelContext';
+import { useGameViewModel } from '../viewmodels/useGameViewModel';
 import { useUnitSelection } from '../viewmodels/useUnitSelection';
 import { TowerStatUpgradePanel } from './TowerStatUpgradePanel';
 import { TowerTargetingPanel } from './TowerTargetingPanel';
@@ -77,9 +78,9 @@ const TagList = ({ title, items }: { title: string; items: readonly TagItem[] })
     );
 };
 
-const EnemyDetails = ({ enemy }: { enemy: EnemyStateSnapshot }) => (
+const EnemyDetails = ({ enemy, wave }: { enemy: EnemyStateSnapshot; wave: number }) => (
     <>
-        <StatList stats={getEnemyStatRows(enemy)} />
+        <StatList stats={getEnemyStatRows(enemy, wave)} />
 
         <div className="unit-info-bar__extra">
             <TagList title="Resistances" items={getEnemyResistanceTags(enemy)} />
@@ -137,6 +138,7 @@ const TowerDetails = ({ tower }: { tower: TowerStateSnapshot }) => (
 export const UnitInfoBar = () =>
 {
     const { selection, clear } = useUnitSelection();
+    const { wave } = useGameViewModel();
     const { open: inventoryOpen, toggle: toggleInventory } = useInventoryPanel();
 
     const accentClass = !selection
@@ -164,7 +166,9 @@ export const UnitInfoBar = () =>
                 </div>
 
                 <div className="unit-info-bar__content">
-                    {selection?.kind === 'enemy' && <EnemyDetails enemy={selection.data} />}
+                    {selection?.kind === 'enemy' && (
+                        <EnemyDetails enemy={selection.data} wave={wave} />
+                    )}
                     {selection?.kind === 'tower' && <TowerDetails tower={selection.data} />}
                     {selection?.kind === 'playerNexus' && (
                         <PlayerNexusDetails nexus={selection.data} />

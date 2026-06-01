@@ -62,7 +62,7 @@ export class CameraPanController
         camera.setBounds(0, 0, this.worldSize.width, this.worldSize.height);
         camera.setScroll(
             PhaserMath.Clamp(camera.scrollX, 0, this.getMaxScrollX()),
-            PhaserMath.Clamp(camera.scrollY, 0, this.getMaxScrollY()),
+            this.getMaxScrollY(),
         );
     }
 

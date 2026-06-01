@@ -12,7 +12,7 @@ import {
     enemiesAttackableByTowers,
     livingMinions,
 } from './targetPriority';
-import { ENEMY_NEXUS_ID } from '../config/nexusConfig';
+import { ENEMY_NEXUS_ID, getEnemyNexusWorldPosition } from '../config/nexusConfig';
 
 describe('targetPriority', () =>
 {
@@ -34,7 +34,7 @@ describe('targetPriority', () =>
 
     const nexus = () =>
         new EnemyState(
-            tileCenterWorld(GRID_CONFIG, { col: 4, row: 0 }),
+            getEnemyNexusWorldPosition(),
             nexusDef.id,
             nexusDef.unitType,
             nexusDef.baseStats,

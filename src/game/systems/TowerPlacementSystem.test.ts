@@ -9,6 +9,7 @@ vi.mock('../EventBus', () => ({
 }));
 
 import { GRID_CONFIG } from '../config/gridConfig';
+import { getWorldPixelSize } from '../config/worldLayout';
 import { Grid } from '../grid/Grid';
 import { CollisionSystem } from './CollisionSystem';
 import { TowerPlacementSystem } from './TowerPlacementSystem';
@@ -21,7 +22,7 @@ describe('TowerPlacementSystem.tryRelocate', () =>
 
     beforeEach(() =>
     {
-        collision = new CollisionSystem(grid);
+        collision = new CollisionSystem(getWorldPixelSize());
         towers = new TowerPlacementSystem(grid, collision);
     });
 

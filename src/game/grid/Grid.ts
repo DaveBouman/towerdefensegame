@@ -1,4 +1,6 @@
+import { GRID_WORLD_OFFSET_Y } from '../config/worldLayout';
 import type { GridConfig, GridPixelSize, GridPosition, WorldPosition } from './types';
+import { tileCenterWorld } from './worldPosition';
 import { GridView } from './GridView';
 
 export class Grid
@@ -24,7 +26,7 @@ export class Grid
     {
         return {
             x: col * this.config.tileSize,
-            y: row * this.config.tileSize,
+            y: GRID_WORLD_OFFSET_Y + row * this.config.tileSize,
         };
     }
 
@@ -36,14 +38,9 @@ export class Grid
         return { x: x + inset, y: y + inset };
     }
 
-    toTileCenter ({ col, row }: GridPosition): WorldPosition
+    toTileCenter (tile: GridPosition): WorldPosition
     {
-        const half = this.config.tileSize / 2;
-
-        return {
-            x: col * this.config.tileSize + half,
-            y: row * this.config.tileSize + half,
-        };
+        return tileCenterWorld(this.config, tile);
     }
 
     rangeToPixels (rangeInTiles: number): number
@@ -53,15 +50,22 @@ export class Grid
 
     toGrid (x: number, y: number): GridPosition | null
     {
+        const localY = y - GRID_WORLD_OFFSET_Y;
+
+        if (localY < 0)
+        {
+            return null;
+        }
+
         const position = {
             col: Math.floor(x / this.config.tileSize),
-            row: Math.floor(y / this.config.tileSize),
+            row: Math.floor(localY / this.config.tileSize),
         };
 
         return this.isInBounds(position) ? position : null;
     }
 
-    draw (scene: Phaser.Scene, offsetX = 0, offsetY = 0): GridView
+    draw (scene: Phaser.Scene, offsetX = 0, offsetY = GRID_WORLD_OFFSET_Y): GridView
     {
         return new GridView(scene, this.config, offsetX, offsetY);
     }
