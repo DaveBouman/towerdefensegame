@@ -4,6 +4,7 @@ import { EnemyStats } from './combat/EnemyStats';
 import type { EnemyPerk } from './perks/types';
 import type { EnemyBaseStats } from './combat/types';
 import type { EnemyStateSnapshot } from './types';
+import type { CombatSide } from './combatUnit';
 
 let nextEnemyId = 0;
 
@@ -56,6 +57,11 @@ export class EnemyState
         return this.stats.maxHealth;
     }
 
+    get side (): CombatSide
+    {
+        return 'enemy';
+    }
+
     applyDamage (rawDamage: number, type: DamageType = 'physical'): number
     {
         const damage = this.stats.takeDamage(rawDamage, type);
@@ -85,6 +91,7 @@ export class EnemyState
     {
         return {
             id: this.id,
+            side: this.side,
             enemyKind: this.enemyKind,
             position: { ...this.position },
             unitType: this.unitType,

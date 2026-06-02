@@ -6,6 +6,7 @@ import type { TowerRace } from './towers/types';
 import type { TowerEquippedUpgrade } from '../config/towerUpgradeCatalog';
 import type { TowerUpgradeModifiers } from '../config/towerUpgradeCatalog';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
+import type { CombatSide } from './combatUnit';
 
 export interface UpgradePickState {
     choices: string[];
@@ -36,6 +37,7 @@ export interface GameStateSnapshot {
 
 export interface EnemyStateSnapshot {
     id: string;
+    side?: CombatSide;
     enemyKind: string;
     position: WorldPosition;
     unitType: string;
@@ -68,6 +70,7 @@ export interface PlayerNexusAttackPayload {
 
 export interface TowerStateSnapshot {
     id: string;
+    side?: CombatSide;
     position: WorldPosition;
     unitType: string;
     archetype: TowerArchetype;

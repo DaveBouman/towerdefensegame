@@ -137,17 +137,16 @@ export const buildTowerPairTopology = (
     grid: Grid,
 ): TowerPairTopology =>
 {
-    const living = towers.filter((tower) => tower.health > 0);
     const undirectedLinks: TowerPairLink[] = [];
     const directed = new Map<string, DirectedTowerPairMatch[]>();
     const seenUndirected = new Set<string>();
 
-    for (let i = 0; i < living.length; i++)
+    for (let i = 0; i < towers.length; i++)
     {
-        for (let j = i + 1; j < living.length; j++)
+        for (let j = i + 1; j < towers.length; j++)
         {
-            const a = living[i];
-            const b = living[j];
+            const a = towers[i];
+            const b = towers[j];
 
             let linked = false;
 

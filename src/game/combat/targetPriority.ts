@@ -1,12 +1,19 @@
 import type { EnemyState } from '../domain/EnemyState';
 import type { TowerState } from '../domain/TowerState';
+import type { CombatUnit, CombatSide } from '../domain/combatUnit';
+
+const livingBySide = <T extends CombatUnit> (
+    units: readonly T[],
+    side: CombatSide,
+): T[] =>
+    units.filter((unit) => unit.side === side && unit.health > 0);
 
 /** Wave minions only — excludes the enemy nexus. */
 export const livingMinions = (enemies: readonly EnemyState[]): EnemyState[] =>
     enemies.filter((enemy) => !enemy.isPreview && !enemy.isNexus && enemy.health > 0);
 
 export const livingTowers = (towers: readonly TowerState[]): TowerState[] =>
-    towers.filter((tower) => tower.health > 0);
+    livingBySide(towers, 'player');
 
 /**
  * Towers may only shoot the enemy nexus when no other enemies are on the field.

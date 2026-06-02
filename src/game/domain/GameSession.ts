@@ -1,12 +1,8 @@
 import { GameState } from './GameState';
 import type { TickSystem } from './TickSystem';
-import { EnemyAttackSystem } from '../systems/EnemyAttackSystem';
 import { EnemySpawnSystem } from '../systems/EnemySpawnSystem';
-import { EnemyMovementSystem } from '../systems/EnemyMovementSystem';
 import { GameClock } from '../systems/GameClock';
 import { CollisionSystem } from '../systems/CollisionSystem';
-import { TowerAttackSystem } from '../systems/TowerAttackSystem';
-import { TowerMovementSystem } from '../systems/TowerMovementSystem';
 import { TowerPlacementSystem } from '../systems/TowerPlacementSystem';
 import { KillRewardSystem } from '../systems/KillRewardSystem';
 import { EventBus } from '../EventBus';
@@ -34,6 +30,8 @@ import { PlayerNexusSystem } from '../systems/PlayerNexusSystem';
 import { EnemyNexusAttackSystem } from '../systems/EnemyNexusAttackSystem';
 import { PlayerNexusAttackSystem } from '../systems/PlayerNexusAttackSystem';
 import { TowerRaceBonusSystem } from '../systems/TowerRaceBonusSystem';
+import { UnitAttackSystem } from '../systems/UnitAttackSystem';
+import { UnitMovementSystem } from '../systems/UnitMovementSystem';
 
 export class GameSession
 {
@@ -44,10 +42,12 @@ export class GameSession
     readonly waveSpawns: WaveSpawnSystem;
     readonly enemies: EnemySpawnSystem;
     readonly towers: TowerPlacementSystem;
-    readonly towerMovement: TowerMovementSystem;
-    readonly enemyMovement: EnemyMovementSystem;
-    readonly enemyAttacks: EnemyAttackSystem;
-    readonly towerAttacks: TowerAttackSystem;
+    readonly unitMovement: UnitMovementSystem;
+    readonly towerMovement: UnitMovementSystem;
+    readonly enemyMovement: UnitMovementSystem;
+    readonly unitAttacks: UnitAttackSystem;
+    readonly enemyAttacks: UnitAttackSystem;
+    readonly towerAttacks: UnitAttackSystem;
     readonly towerUpgrades: TowerUpgradeService;
     readonly playerNexus: PlayerNexusSystem;
     readonly deployment: DeploymentPhase;
@@ -69,34 +69,26 @@ export class GameSession
         this.playerNexus = new PlayerNexusSystem();
         this.deployment = new DeploymentPhase();
         this.raceBonuses = new TowerRaceBonusSystem(this.towers, grid);
-        this.enemyMovement = new EnemyMovementSystem(
+        this.unitMovement = new UnitMovementSystem(
             this.enemies,
             this.towers,
             this.playerNexus,
             grid,
             this.collision,
         );
-        this.towerMovement = new TowerMovementSystem(
-            this.towers,
-            this.enemies,
-            grid,
-            this.collision,
-        );
+        this.towerMovement = this.unitMovement;
+        this.enemyMovement = this.unitMovement;
         const killRewards = new KillRewardSystem(this.state);
 
-        this.enemyAttacks = new EnemyAttackSystem(
+        this.unitAttacks = new UnitAttackSystem(
             this.enemies,
             this.towers,
             this.playerNexus,
             grid,
             killRewards,
         );
-        this.towerAttacks = new TowerAttackSystem(
-            this.towers,
-            this.enemies,
-            grid,
-            killRewards,
-        );
+        this.enemyAttacks = this.unitAttacks;
+        this.towerAttacks = this.unitAttacks;
         const enemyNexusAttacks = new EnemyNexusAttackSystem(
             this.enemies,
             this.towers,
@@ -122,18 +114,17 @@ export class GameSession
             this.towers,
             this.towerMovement,
             this.towerAttacks,
-            this.enemyMovement,
+            this.unitMovement,
             this.deployment,
         );
 
         this.tickPipeline = [
             this.waveSpawns,
-            this.enemyMovement,
+            this.unitMovement,
             this.raceBonuses,
-            this.towerMovement,
-            this.enemyAttacks,
+            this.unitMovement,
+            this.unitAttacks,
             enemyNexusAttacks,
-            this.towerAttacks,
             playerNexusAttacks,
         ];
     }

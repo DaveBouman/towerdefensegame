@@ -1,14 +1,19 @@
 import type { GameClock } from '../systems/GameClock';
-import type { EnemyMovementSystem } from '../systems/EnemyMovementSystem';
 import type { EnemySpawnSystem } from '../systems/EnemySpawnSystem';
-import type { TowerAttackSystem } from '../systems/TowerAttackSystem';
-import type { TowerMovementSystem } from '../systems/TowerMovementSystem';
 import type { TowerPlacementSystem } from '../systems/TowerPlacementSystem';
 import type { WaveSpawnSystem } from '../systems/WaveSpawnSystem';
 import type { WaveSystem } from '../systems/WaveSystem';
 import { hasWaveDefinition } from '../config/waveCatalog';
 import type { DeploymentPhase } from './DeploymentPhase';
 import type { GameState } from './GameState';
+
+interface AttackResetPort {
+    clearAll (): void;
+}
+
+interface MovementResetPort {
+    clearAll (): void;
+}
 
 export class WaveRoundController
 {
@@ -19,9 +24,9 @@ export class WaveRoundController
         private readonly waveSpawns: WaveSpawnSystem,
         private readonly enemies: EnemySpawnSystem,
         private readonly towers: TowerPlacementSystem,
-        private readonly towerMovement: TowerMovementSystem,
-        private readonly towerAttacks: TowerAttackSystem,
-        private readonly enemyMovement: EnemyMovementSystem,
+        private readonly towerMovement: MovementResetPort,
+        private readonly towerAttacks: AttackResetPort,
+        private readonly enemyMovement: MovementResetPort,
         private readonly deployment: DeploymentPhase,
     ) {}
 

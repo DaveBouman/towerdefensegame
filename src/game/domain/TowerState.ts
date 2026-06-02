@@ -19,6 +19,7 @@ import { tileCenterWorld } from '../grid/worldPosition';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerStateSnapshot } from './types';
 import type { TowerRace } from './towers/types';
+import type { CombatSide } from './combatUnit';
 
 let nextTowerId = 0;
 
@@ -148,6 +149,11 @@ export class TowerState
         return this.profile.race;
     }
 
+    get side (): CombatSide
+    {
+        return 'player';
+    }
+
     get skills (): readonly string[]
     {
         return this.profile.skills;
@@ -267,6 +273,7 @@ export class TowerState
     {
         return {
             id: this.id,
+            side: this.side,
             position: { ...this.position },
             unitType: this.profile.unitType,
             archetype: this.profile.archetype,
