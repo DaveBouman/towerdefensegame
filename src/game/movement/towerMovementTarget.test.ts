@@ -75,6 +75,8 @@ describe('pickTowerMovementTarget', () =>
             nexusHalf,
             nexusHalf,
             nexusDef.perks,
+            nexusDef.skills,
+            nexusDef.kamikazeExplosionRadiusTiles,
             false,
             true,
             ENEMY_NEXUS_ID,
