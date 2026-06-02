@@ -66,7 +66,6 @@ export class WaveRoundController
             !this.state.canStartWave
             || this.state.upgradePick
             || this.state.towerDraftPick
-            || this.deployment.active
         )
         {
             return false;

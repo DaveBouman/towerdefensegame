@@ -35,7 +35,7 @@ export class TowerMovementSystem
     {
         for (const tower of this.towers.all)
         {
-            if (!tower.isMobile || tower.moveSpeedPerTick <= 0)
+            if (tower.health <= 0 || !tower.isMobile || tower.moveSpeedPerTick <= 0)
             {
                 continue;
             }

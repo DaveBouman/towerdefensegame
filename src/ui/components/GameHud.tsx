@@ -29,19 +29,17 @@ export const GameHud = () =>
 
     const hasNextWave = hasWaveDefinition(nextWave);
 
-    const startLabel = deployment?.active
-        ? 'Place your units first'
-        : !hasNextWave
-            ? 'All waves cleared'
-            : wave === 0
-                ? 'Start Wave 1'
-                : `Start Wave ${nextWave}`;
+    const startLabel = !hasNextWave
+        ? 'All waves cleared'
+        : wave === 0
+            ? 'Start Wave 1'
+            : `Start Wave ${nextWave}`;
 
     return (
         <aside className="game-hud">
             <span>Gold {gold}</span>
             <span>Wave {wave}</span>
-            <span>Nexus {lives}</span>
+            <span>HP {lives}</span>
             {deployHint && (
                 <span className="game-hud__deploy-hint">{deployHint}</span>
             )}

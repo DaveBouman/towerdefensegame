@@ -97,7 +97,7 @@ export class EnemyAttackSystem
         {
             this.killRewards.onTowerKilled(enemy, target);
             EventBus.emit(GAME_EVENTS.ENEMY_DAMAGED, enemy.snapshot());
-            this.towers.remove(target.id);
+            this.towers.disableTower(target.id);
         }
     }
 

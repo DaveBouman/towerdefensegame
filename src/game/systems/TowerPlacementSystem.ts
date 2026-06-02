@@ -171,13 +171,36 @@ export class TowerPlacementSystem
         this.snapAllToSpawnTiles();
     }
 
+    disableTower (id: string): void
+    {
+        // Towers at 0 HP should be revived next wave, so we keep them in `placed`
+        // but unregister their collision so they no longer block movement.
+        if (!this.placed.has(id))
+        {
+            return;
+        }
+
+        this.collision.unregister(id);
+    }
+
     /** Returns towers to their placement tiles (simulation + collision). */
     snapAllToSpawnTiles (): void
     {
         for (const tower of this.all)
         {
             tower.resetForNextWave(this.grid);
-            this.collision.setPositionFromPath(tower.id, tower.position);
+            const moved = this.collision.setPositionFromPath(tower.id, tower.position);
+
+            if (!moved)
+            {
+                this.collision.register(
+                    tower.id,
+                    'tower',
+                    tower.position,
+                    tower.bodyHalfWidth,
+                    tower.bodyHalfHeight,
+                );
+            }
             EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
         }
     }

@@ -156,6 +156,16 @@ export class GameSession
         return this.deployment.active;
     }
 
+    canPlaceQueuedTowers (): boolean
+    {
+        if (this.isRoundActive() || this.state.upgradePick || this.state.towerDraftPick)
+        {
+            return false;
+        }
+
+        return this.deployment.hasQueuedTowers;
+    }
+
     /** Simulation ticks run only during an active combat round. */
     isRoundActive (): boolean
     {
@@ -181,6 +191,7 @@ export class GameSession
         this.towers.snapAllToSpawnTiles();
         this.towerMovement.clearAll();
         this.deployment.beginWithQueue([ definitionId ]);
+        this.state.setCanStartWave(true);
         this.syncDeploymentState();
 
         return true;
@@ -219,28 +230,32 @@ export class GameSession
         return true;
     }
 
-    tryDeployTowerAt (tile: GridPosition): boolean
+    tryDeployTowerAt (tile: GridPosition, towerId?: TowerDefinitionId): boolean
     {
-        const towerId = this.deployment.peekNext();
+        const queuedTowerId = towerId ?? this.deployment.peekNext();
 
-        if (!towerId)
+        if (!queuedTowerId)
         {
             return false;
         }
 
-        if (!this.towers.tryPlace(tile, towerId))
+        if (!this.towers.tryPlace(tile, queuedTowerId))
         {
             return false;
         }
 
-        this.deployment.takeNext();
+        if (towerId)
+        {
+            this.deployment.takeById(towerId);
+        }
+        else
+        {
+            this.deployment.takeNext();
+        }
+
         this.syncDeploymentState();
-
-        if (!this.deployment.active)
-        {
-            this.state.setCanStartWave(true);
-            this.waveRounds.showUpcomingWavePreview();
-        }
+        this.state.setCanStartWave(true);
+        this.waveRounds.showUpcomingWavePreview();
 
         return true;
     }

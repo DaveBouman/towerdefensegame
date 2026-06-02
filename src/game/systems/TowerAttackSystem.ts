@@ -26,6 +26,11 @@ export class TowerAttackSystem
     {
         for (const tower of this.towers.all)
         {
+            if (tower.health <= 0)
+            {
+                continue;
+            }
+
             this.tryAttack(tower, gameTick);
         }
     }

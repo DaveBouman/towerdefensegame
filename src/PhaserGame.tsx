@@ -2,10 +2,12 @@ import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, type DragE
 import StartGame from './game/main';
 import { VIEWPORT_CONFIG, getGridPixelSize } from './game/config/gridConfig';
 import { WORLD_LAYOUT } from './game/config/worldLayout';
+import type { TowerDefinitionId } from './game/config/towerCatalog';
 import { EventBus } from './game/EventBus';
 import { GAME_EVENTS } from './game/events/gameEvents';
 import { INVENTORY_UPGRADE_DRAG_MIME } from './ui/inventoryDragMime';
 import { endInventoryDrag, getActiveInventoryDragId } from './ui/inventoryDragSession';
+import { TOWER_QUEUE_DRAG_MIME } from './ui/towerQueueDragMime';
 
 const WORLD_SCROLL_HEIGHT = WORLD_LAYOUT.arenaPixelSize().height;
 const VIEWPORT_HEIGHT = getGridPixelSize(VIEWPORT_CONFIG).height;
@@ -126,6 +128,17 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame
         const fromMime = e.dataTransfer.getData(INVENTORY_UPGRADE_DRAG_MIME);
         const plain = e.dataTransfer.getData('text/plain');
         const upgradeId = fromMime || (plain === fromPanel ? plain : '');
+        const queuedTowerId = e.dataTransfer.getData(TOWER_QUEUE_DRAG_MIME);
+
+        if (queuedTowerId)
+        {
+            EventBus.emit(GAME_EVENTS.PLACE_QUEUED_TOWER_AT_SCREEN, {
+                towerId: queuedTowerId as TowerDefinitionId,
+                clientX: e.clientX,
+                clientY: e.clientY,
+            });
+            return;
+        }
 
         if (!upgradeId || upgradeId !== fromPanel)
         {

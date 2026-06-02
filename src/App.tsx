@@ -1,5 +1,6 @@
 import { PhaserGame } from './PhaserGame';
 import { GameHud } from './ui/components/GameHud';
+import { TowerRosterPanel } from './ui/components/TowerRosterPanel';
 import { UnitInfoBar } from './ui/components/UnitInfoBar';
 import { InventoryPanel } from './ui/components/InventoryPanel';
 import { TowerDraftPick } from './ui/components/TowerDraftPick';
@@ -12,10 +13,13 @@ function App()
             <div id="app">
                 <TowerDraftPick />
                 <GameHud />
-                <InventoryPanel />
-                <div className="game-stage">
-                    <PhaserGame />
+                <div className="app-main">
+                    <TowerRosterPanel />
+                    <div className="game-stage">
+                        <PhaserGame />
+                    </div>
                 </div>
+                <InventoryPanel />
                 <UnitInfoBar />
             </div>
         </InventoryPanelProvider>

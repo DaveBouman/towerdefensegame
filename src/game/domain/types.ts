@@ -18,6 +18,7 @@ export interface DeploymentSnapshot {
     nextTowerId: TowerDefinitionId | null;
     placedCount: number;
     totalCount: number;
+    queue: TowerDefinitionId[];
 }
 
 export interface GameStateSnapshot {

@@ -126,7 +126,7 @@ export class EnemyNexusAttackSystem
         if (target.health <= 0)
         {
             this.killRewards.onTowerKilled(nexus, target);
-            this.towers.remove(target.id);
+            this.towers.disableTower(target.id);
         }
     }
 

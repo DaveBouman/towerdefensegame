@@ -29,6 +29,7 @@ import { TowerRelocationController } from './TowerRelocationController';
 import { PlayerNexusPresenter } from './PlayerNexusPresenter';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerDefinitionId } from '../config/towerCatalog';
+import { clientPointerToWorld } from './clientPointerToWorld';
 
 export class GameSceneController
 {
@@ -53,7 +54,7 @@ export class GameSceneController
         );
         this.towerPresenter = new TowerPresenter(
             (id) => this.session.towers.getSnapshot(id),
-            () => !this.session.isDeploymentActive(),
+            () => true,
         );
         this.selection = new SelectionController(
             scene,
@@ -70,7 +71,7 @@ export class GameSceneController
         this.gridPlacement = new GridPlacementController(
             scene,
             grid,
-            () => this.session.isDeploymentActive(),
+            () => this.session.canPlaceQueuedTowers(),
             (tile) =>
             {
                 EventBus.emit(GAME_EVENTS.PLACE_TOWER_AT_TILE, {
@@ -142,6 +143,11 @@ export class GameSceneController
         EventBus.on(GAME_EVENTS.PURCHASE_TOWER_STAT_UPGRADE, this.onPurchaseTowerStatUpgrade, this);
         EventBus.on(GAME_EVENTS.SET_TOWER_TARGETING_MODE, this.onSetTowerTargetingMode, this);
         EventBus.on(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
+        EventBus.on(
+            GAME_EVENTS.PLACE_QUEUED_TOWER_AT_SCREEN,
+            this.onPlaceQueuedTowerAtScreen,
+            this,
+        );
         EventBus.on(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, this.onRelocateTowerAtTile, this);
         EventBus.on(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
         EventBus.on(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.onPlayerNexusSpawned, this);
@@ -177,6 +183,11 @@ export class GameSceneController
         EventBus.off(GAME_EVENTS.PURCHASE_TOWER_STAT_UPGRADE, this.onPurchaseTowerStatUpgrade, this);
         EventBus.off(GAME_EVENTS.SET_TOWER_TARGETING_MODE, this.onSetTowerTargetingMode, this);
         EventBus.off(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
+        EventBus.off(
+            GAME_EVENTS.PLACE_QUEUED_TOWER_AT_SCREEN,
+            this.onPlaceQueuedTowerAtScreen,
+            this,
+        );
         EventBus.off(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, this.onRelocateTowerAtTile, this);
         EventBus.off(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
         EventBus.off(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.onPlayerNexusSpawned, this);
@@ -337,9 +348,45 @@ export class GameSceneController
         this.attackBeamEffect.destroy();
     }
 
-    private onPlaceTowerAtTile ({ col, row }: { col: number; row: number }): void
+    private onPlaceTowerAtTile ({
+        col,
+        row,
+        towerId,
+    }: { col: number; row: number; towerId?: TowerDefinitionId }): void
     {
-        this.session.tryDeployTowerAt({ col, row });
+        this.session.tryDeployTowerAt({ col, row }, towerId);
+    }
+
+    private onPlaceQueuedTowerAtScreen ({
+        towerId,
+        clientX,
+        clientY,
+    }: {
+        towerId: TowerDefinitionId;
+        clientX: number;
+        clientY: number;
+    }): void
+    {
+        if (!canAddToScene(this.scene))
+        {
+            return;
+        }
+
+        const world = clientPointerToWorld(this.scene, clientX, clientY);
+
+        if (!world)
+        {
+            return;
+        }
+
+        const tile = this.grid.toGrid(world.x, world.y);
+
+        if (!tile)
+        {
+            return;
+        }
+
+        this.session.tryDeployTowerAt(tile, towerId);
     }
 
     private onConfirmTowerDraft ({ towerId }: { towerId: TowerDefinitionId }): void
@@ -458,6 +505,13 @@ export class GameSceneController
 
         this.selection.onTowerDamaged(snapshot);
         this.towerPresenter.setHealth(snapshot.id, snapshot.health, snapshot.maxHealth);
+
+        // Wave-end may rely on towers being fully destroyed; when keeping dead
+        // towers around (health=0), we still need to re-check combat completion.
+        if (snapshot.health <= 0 && snapshot.maxHealth > 0)
+        {
+            this.session.checkWaveComplete();
+        }
     }
 
     private onTowerAttacked (payload: TowerAttackPayload): void

@@ -23,6 +23,11 @@ export class DeploymentPhase
         return this.queue.length > 0;
     }
 
+    get hasQueuedTowers (): boolean
+    {
+        return this.queue.length > 0;
+    }
+
     peekNext (): TowerDefinitionId | null
     {
         return this.queue[0] ?? null;
@@ -31,6 +36,20 @@ export class DeploymentPhase
     takeNext (): TowerDefinitionId | null
     {
         return this.queue.shift() ?? null;
+    }
+
+    takeById (towerId: TowerDefinitionId): TowerDefinitionId | null
+    {
+        const index = this.queue.indexOf(towerId);
+
+        if (index < 0)
+        {
+            return null;
+        }
+
+        const [ taken ] = this.queue.splice(index, 1);
+
+        return taken ?? null;
     }
 
     snapshot (): DeploymentSnapshot
@@ -42,6 +61,7 @@ export class DeploymentPhase
             nextTowerId: this.peekNext(),
             placedCount,
             totalCount: this.totalCount,
+            queue: [ ...this.queue ],
         };
     }
 }
