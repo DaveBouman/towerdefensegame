@@ -12,7 +12,25 @@
       "goldValue": 20,
       "sizeScale": 0.5,
       "color": "#e74c3c",
-      "perks": []
+      "perks": [],
+      "skills": [],
+      "kamikazeExplosionRadiusTiles": 0
+    },
+    {
+      "id": "kamikaze",
+      "unitType": "Kamikaze Drone",
+      "maxHealth": 60,
+      "damage": 26,
+      "defense": 0,
+      "range": 1.2,
+      "attacksPerSecond": 1.4,
+      "moveSpeedPerTick": 16,
+      "goldValue": 16,
+      "sizeScale": 0.42,
+      "color": "#ff8c42",
+      "perks": [],
+      "skills": ["kamikaze"],
+      "kamikazeExplosionRadiusTiles": 3
     },
     {
       "id": "enemy-nexus",
@@ -26,7 +44,9 @@
       "goldValue": 0,
       "sizeScale": 1.15,
       "color": "#9b59b6",
-      "perks": []
+      "perks": [],
+      "skills": [],
+      "kamikazeExplosionRadiusTiles": 0
     }
   ]
 }

@@ -148,6 +148,16 @@ export class TowerState
         return this.profile.race;
     }
 
+    get skills (): readonly string[]
+    {
+        return this.profile.skills;
+    }
+
+    get kamikazeExplosionRadiusTiles (): number
+    {
+        return this.profile.kamikazeExplosionRadiusTiles;
+    }
+
     equipUpgrade (upgradeId: string): boolean
     {
         if (!getTowerUpgradeDefinition(upgradeId) || this.equippedUpgradeIds.includes(upgradeId))

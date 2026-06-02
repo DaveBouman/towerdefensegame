@@ -358,11 +358,11 @@ export const TowerRosterPanel = () =>
                                 <span className="tower-roster__item-meta">
                                     HP {formatHp(tower.health, tower.maxHealth)}
                                 </span>
-                                {tower.raceAuraTags.length > 0 && (
-                                    <span className="tower-roster__item-meta">
-                                        Links: {tower.raceAuraTags.join(', ')}
-                                    </span>
-                                )}
+                                <span className="tower-roster__item-meta">
+                                    Links: {tower.raceAuraTags.length > 0
+                                        ? tower.raceAuraTags.join(', ')
+                                        : 'No active links'}
+                                </span>
                             </li>
                         ))}
                     </ul>

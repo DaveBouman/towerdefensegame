@@ -73,6 +73,8 @@ export class EnemySpawnSystem
             half,
             half,
             definition.perks,
+            definition.skills,
+            definition.kamikazeExplosionRadiusTiles,
             false,
             true,
             ENEMY_NEXUS_ID,
@@ -98,6 +100,8 @@ export class EnemySpawnSystem
             half,
             half,
             definition.perks,
+            definition.skills,
+            definition.kamikazeExplosionRadiusTiles,
             isPreview,
         );
 

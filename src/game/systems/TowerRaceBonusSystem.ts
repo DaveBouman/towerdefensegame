@@ -5,6 +5,7 @@ import type { Grid } from '../grid/Grid';
 import type { TowerPlacementSystem } from './TowerPlacementSystem';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
+import type { GridPosition } from '../grid/types';
 
 const MODIFIER_KEYS: (keyof TowerUpgradeModifiers)[] = [
     'range',
@@ -121,13 +122,9 @@ export class TowerRaceBonusSystem
 
             const dc = Math.abs(originTile.col - otherTile.col);
             const dr = Math.abs(originTile.row - otherTile.row);
+            const isCurrentAdjacent = Math.max(dc, dr) <= RACE_BONUS_CONFIG.adjacencyRadiusTiles;
 
-            if (Math.max(dc, dr) > RACE_BONUS_CONFIG.adjacencyRadiusTiles)
-            {
-                continue;
-            }
-
-            if (other.race === tower.race)
+            if (isCurrentAdjacent && other.race === tower.race)
             {
                 const stacks = this.stackCountFor('same', stackCounts);
                 addBonus(out, RACE_BONUS_CONFIG.sameRacePerNeighborBonus[tower.race] ?? {}, stacks);
@@ -136,7 +133,7 @@ export class TowerRaceBonusSystem
 
             for (const link of RACE_BONUS_CONFIG.crossRacePerNeighborBonus)
             {
-                if (link.sourceRace === tower.race && link.targetRace === other.race)
+                if (isCurrentAdjacent && link.sourceRace === tower.race && link.targetRace === other.race)
                 {
                     const stacks = this.stackCountFor(`${link.sourceRace}->${link.targetRace}`, stackCounts);
                     addBonus(out, link.bonus, stacks);
@@ -154,12 +151,25 @@ export class TowerRaceBonusSystem
                     continue;
                 }
 
-                if (pair.sameRowOnly && originTile.row !== otherTile.row)
+                const pairOrigin = pair.useSpawnTiles ? tower.spawnTile : originTile;
+                const pairOther = pair.useSpawnTiles ? other.spawnTile : otherTile;
+                const pairAdjacent = this.isAdjacentWithinRadius(
+                    pairOrigin,
+                    pairOther,
+                    RACE_BONUS_CONFIG.adjacencyRadiusTiles,
+                );
+
+                if (!pairAdjacent)
                 {
                     continue;
                 }
 
-                const key = `pair:${pair.sourceTowerId}->${pair.targetTowerId}:${pair.sameRowOnly ? 'row' : 'adj'}`;
+                if (pair.sameRowOnly && pairOrigin.row !== pairOther.row)
+                {
+                    continue;
+                }
+
+                const key = `pair:${pair.sourceTowerId}->${pair.targetTowerId}:${pair.sameRowOnly ? 'row' : 'adj'}:${pair.useSpawnTiles ? 'spawn' : 'current'}`;
                 const seen = (stackCounts.get(key) ?? 0) + 1;
 
                 if (seen > pair.maxStacks)
@@ -171,7 +181,7 @@ export class TowerRaceBonusSystem
                 addBonus(out, pair.bonus);
                 this.bumpTag(
                     tags,
-                    `Pair ${pair.sourceTowerId}+${pair.targetTowerId}${pair.sameRowOnly ? ' (same row)' : ''}`,
+                    `Pair ${pair.sourceTowerId}+${pair.targetTowerId}${pair.sameRowOnly ? ' (same row)' : ''}${pair.useSpawnTiles ? ' (spawn-linked)' : ''}`,
                 );
             }
         }
@@ -196,6 +206,18 @@ export class TowerRaceBonusSystem
     private bumpTag (tags: Set<string>, tag: string): void
     {
         tags.add(tag);
+    }
+
+    private isAdjacentWithinRadius (
+        from: GridPosition,
+        to: GridPosition,
+        radius: number,
+    ): boolean
+    {
+        const dc = Math.abs(from.col - to.col);
+        const dr = Math.abs(from.row - to.row);
+
+        return Math.max(dc, dr) <= radius;
     }
 }
 

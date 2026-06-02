@@ -6,7 +6,8 @@
         { "kind": "basic", "col": 0, "row": 0, "delayTicks": 0 },
         { "kind": "basic", "col": 1, "row": 0, "delayTicks": 0 },
         { "kind": "basic", "col": 2, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 0, "delayTicks": 0 }
+        { "kind": "basic", "col": 3, "row": 0, "delayTicks": 0 },
+        { "kind": "kamikaze", "col": 0, "row": 1, "delayTicks": 12 }
       ]
     },
     {

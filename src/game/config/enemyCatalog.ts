@@ -12,6 +12,8 @@ export interface EnemyDefinition {
     baseStats: EnemyBaseStats;
     visual: EnemyConfig;
     perks: readonly EnemyPerk[];
+    skills: readonly string[];
+    kamikazeExplosionRadiusTiles: number;
 }
 
 interface EnemyJson {
@@ -27,6 +29,8 @@ interface EnemyJson {
     sizeScale: number;
     color: string;
     perks: unknown[];
+    skills?: unknown[];
+    kamikazeExplosionRadiusTiles?: number;
 }
 
 interface EnemiesFile {
@@ -57,6 +61,8 @@ const parseEnemy = (entry: EnemyJson): EnemyDefinition =>
             color: parseCatalogColor(entry.color),
         },
         perks: entry.perks as EnemyPerk[],
+        skills: Array.isArray(entry.skills) ? entry.skills.filter((skill): skill is string => typeof skill === 'string') : [],
+        kamikazeExplosionRadiusTiles: Math.max(0, entry.kamikazeExplosionRadiusTiles ?? 0),
     };
 };
 

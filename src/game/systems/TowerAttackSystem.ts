@@ -7,12 +7,14 @@ import { GAME_EVENTS } from '../events/gameEvents';
 import type { Grid } from '../grid/Grid';
 import { isPersistentEnemyNexus } from '../combat/enemyNexusPersistence';
 import { pickTowerAttackTarget } from '../combat/towerTargeting';
+import { isWithinAttackRange } from '../combat/combatRange';
 import type { EnemySpawnSystem } from './EnemySpawnSystem';
 import type { KillRewardSystem } from './KillRewardSystem';
 import type { TowerPlacementSystem } from './TowerPlacementSystem';
 
 export class TowerAttackSystem
 {
+    private static readonly KAMIKAZE_SKILL = 'kamikaze';
     private readonly lastAttackTick = new Map<string, number>();
 
     constructor (
@@ -95,6 +97,11 @@ export class TowerAttackSystem
         {
             EventBus.emit(GAME_EVENTS.ENEMY_DAMAGED, target.snapshot());
         }
+
+        if (this.shouldSelfDestructOnHit(tower))
+        {
+            this.selfDestructTower(tower);
+        }
     }
 
     clearTower (towerId: string): void
@@ -105,5 +112,59 @@ export class TowerAttackSystem
     clearAll (): void
     {
         this.lastAttackTick.clear();
+    }
+
+    private shouldSelfDestructOnHit (tower: TowerState): boolean
+    {
+        return tower.skills.includes(TowerAttackSystem.KAMIKAZE_SKILL);
+    }
+
+    private selfDestructTower (tower: TowerState): void
+    {
+        this.applyTowerExplosion(tower);
+        tower.health = 0;
+        this.towers.disableTower(tower.id);
+        this.lastAttackTick.delete(tower.id);
+        EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
+    }
+
+    private applyTowerExplosion (tower: TowerState): void
+    {
+        if (tower.kamikazeExplosionRadiusTiles <= 0)
+        {
+            return;
+        }
+
+        const radiusPx = this.grid.rangeToPixels(tower.kamikazeExplosionRadiusTiles);
+
+        for (const enemy of this.enemies.all)
+        {
+            if (enemy.health <= 0 || enemy.isPreview)
+            {
+                continue;
+            }
+
+            if (!isWithinAttackRange(tower, enemy, radiusPx))
+            {
+                continue;
+            }
+
+            enemy.applyDamage(tower.damage);
+            const enemyDied = enemy.health <= 0;
+
+            if (enemyDied && isPersistentEnemyNexus(enemy))
+            {
+                EventBus.emit(GAME_EVENTS.ENEMY_DAMAGED, enemy.snapshot());
+            }
+            else if (enemyDied)
+            {
+                this.killRewards.onEnemyKilled(enemy);
+                this.enemies.remove(enemy.id);
+            }
+            else
+            {
+                EventBus.emit(GAME_EVENTS.ENEMY_DAMAGED, enemy.snapshot());
+            }
+        }
     }
 }

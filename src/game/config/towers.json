@@ -15,7 +15,9 @@
             "isMobile": true,
             "moveSpeedPerTick": 16,
             "goldValue": 28,
-            "weaknesses": []
+            "weaknesses": [],
+            "skills": [],
+            "kamikazeExplosionRadiusTiles": 0
         },
         {
             "id": "scout",

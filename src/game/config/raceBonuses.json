@@ -44,10 +44,30 @@
             "sourceTowerId": "militia",
             "targetTowerId": "militia",
             "sameRowOnly": true,
+            "useSpawnTiles": true,
             "maxStacks": 1,
             "bonus": {
                 "maxHealth": 50,
                 "defense": 20
+            }
+        },
+        {
+            "sourceTowerId": "siege",
+            "targetTowerId": "juggernaut",
+            "useSpawnTiles": true,
+            "maxStacks": 1,
+            "bonus": {
+                "damage": 3
+            }
+        },
+        {
+            "sourceTowerId": "juggernaut",
+            "targetTowerId": "siege",
+            "useSpawnTiles": true,
+            "maxStacks": 1,
+            "bonus": {
+                "maxHealth": 80,
+                "defense": 6
             }
         }
     ]

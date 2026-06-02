@@ -14,6 +14,8 @@ export class EnemyState
     readonly unitType: string;
     readonly isPreview: boolean;
     readonly isNexus: boolean;
+    readonly skills: readonly string[];
+    readonly kamikazeExplosionRadiusTiles: number;
     readonly stats: EnemyStats;
     readonly bodyHalfWidth: number;
     readonly bodyHalfHeight: number;
@@ -28,6 +30,8 @@ export class EnemyState
         bodyHalfWidth: number,
         bodyHalfHeight: number,
         perks: readonly EnemyPerk[] = [],
+        skills: readonly string[] = [],
+        kamikazeExplosionRadiusTiles = 0,
         isPreview = false,
         isNexus = false,
         id?: string,
@@ -38,6 +42,8 @@ export class EnemyState
         this.unitType = unitType;
         this.isPreview = isPreview;
         this.isNexus = isNexus;
+        this.skills = skills;
+        this.kamikazeExplosionRadiusTiles = kamikazeExplosionRadiusTiles;
         this.position = { ...position };
         this.bodyHalfWidth = bodyHalfWidth;
         this.bodyHalfHeight = bodyHalfHeight;

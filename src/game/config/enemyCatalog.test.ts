@@ -7,6 +7,8 @@ describe('enemyCatalog', () =>
     {
         expect(ENEMY_DEFINITIONS.length).toBeGreaterThan(0);
         expect(getEnemyDefinition('basic')?.unitType).toBe('Basic Enemy');
+        expect(getEnemyDefinition('kamikaze')?.skills).toContain('kamikaze');
+        expect(getEnemyDefinition('kamikaze')?.kamikazeExplosionRadiusTiles).toBe(3);
     });
 
     it('throws for unknown enemy ids', () =>

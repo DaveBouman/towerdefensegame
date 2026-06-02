@@ -142,7 +142,10 @@ const TowerDetails = ({ tower }: { tower: TowerStateSnapshot }) => (
                 title="Weaknesses"
                 items={tower.weaknesses.map((w) => formatLabel(w))}
             />
-            <TagList title="Race links" items={tower.raceAuraTags} />
+            <TagList
+                title="Race links"
+                items={tower.raceAuraTags.length > 0 ? tower.raceAuraTags : [ 'No active links' ]}
+            />
         </div>
     </>
 );

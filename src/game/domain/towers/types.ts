@@ -21,4 +21,6 @@ export interface TowerProfile {
     weaknesses: DamageType[];
     /** Gold awarded to the killer when this unit is destroyed. */
     goldValue: number;
+    skills: string[];
+    kamikazeExplosionRadiusTiles: number;
 }

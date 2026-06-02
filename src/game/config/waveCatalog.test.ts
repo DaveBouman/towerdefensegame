@@ -16,7 +16,7 @@ describe('waveCatalog', () =>
         const spawns = getWaveDefinition(1).spawns;
         const tileKeys = spawns.map((s) => `${s.tile.col},${s.tile.row}`);
 
-        expect(spawns).toHaveLength(4);
+        expect(spawns).toHaveLength(5);
         expect(new Set(tileKeys).size).toBe(tileKeys.length);
     });
 

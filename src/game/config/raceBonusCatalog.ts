@@ -17,6 +17,7 @@ interface RaceBonusJson {
         sourceTowerId: string;
         targetTowerId: string;
         sameRowOnly?: boolean;
+        useSpawnTiles?: boolean;
         bonus: TowerUpgradeModifiers;
         maxStacks?: number;
     }[];
@@ -36,6 +37,7 @@ export interface RaceBonusConfig {
         sourceTowerId: TowerDefinitionId;
         targetTowerId: TowerDefinitionId;
         sameRowOnly: boolean;
+        useSpawnTiles: boolean;
         bonus: TowerUpgradeModifiers;
         maxStacks: number;
     }[];
@@ -84,6 +86,7 @@ const parse = (raw: RaceBonusJson): RaceBonusConfig =>
             sourceTowerId: entry.sourceTowerId,
             targetTowerId: entry.targetTowerId,
             sameRowOnly: entry.sameRowOnly ?? false,
+            useSpawnTiles: entry.useSpawnTiles ?? false,
             bonus: entry.bonus ?? {},
             maxStacks: Math.max(1, Math.floor(entry.maxStacks ?? 1)),
         })),
