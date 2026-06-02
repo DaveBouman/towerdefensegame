@@ -7,6 +7,13 @@
       "damage": 5,
       "damageType": "physical",
       "defense": 2,
+      "armorByType": {
+        "physical": 2,
+        "fire": 1,
+        "water": 2,
+        "earth": 3,
+        "air": 2
+      },
       "range": 1.25,
       "attacksPerSecond": 1,
       "moveSpeedPerTick": 12,
@@ -24,6 +31,13 @@
       "damage": 26,
       "damageType": "fire",
       "defense": 0,
+      "armorByType": {
+        "physical": 0,
+        "fire": 25,
+        "water": 5,
+        "earth": 0,
+        "air": 10
+      },
       "range": 1.2,
       "attacksPerSecond": 1.4,
       "moveSpeedPerTick": 16,
@@ -41,6 +55,13 @@
       "damage": 18,
       "damageType": "physical",
       "defense": 8,
+      "armorByType": {
+        "physical": 8,
+        "fire": 6,
+        "water": 6,
+        "earth": 10,
+        "air": 7
+      },
       "range": 8,
       "attacksPerSecond": 0.6,
       "moveSpeedPerTick": 0,

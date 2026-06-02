@@ -1,4 +1,4 @@
-import type { EnemyBaseStats } from '../domain/combat/types';
+import { DAMAGE_TYPES, type ArmorByType, type DamageType, type EnemyBaseStats } from '../domain/combat/types';
 import type { EnemyPerk } from '../domain/perks/types';
 import type { EnemyConfig } from '../enemies/types';
 import { parseCatalogColor } from './catalogColor';
@@ -23,6 +23,7 @@ interface EnemyJson {
     damage: number;
     damageType?: string;
     defense: number;
+    armorByType?: Partial<Record<DamageType, number>>;
     range: number;
     attacksPerSecond: number;
     moveSpeedPerTick: number;
@@ -37,6 +38,21 @@ interface EnemyJson {
 interface EnemiesFile {
     enemies: EnemyJson[];
 }
+
+const parseArmorByType = (
+    defense: number,
+    armorByType: Partial<Record<DamageType, number>> | undefined,
+): ArmorByType =>
+{
+    const parsed = {} as ArmorByType;
+
+    for (const type of DAMAGE_TYPES)
+    {
+        parsed[type] = Math.max(0, armorByType?.[type] ?? defense);
+    }
+
+    return parsed;
+};
 
 const parseEnemy = (entry: EnemyJson): EnemyDefinition =>
 {
@@ -67,6 +83,7 @@ const parseEnemy = (entry: EnemyJson): EnemyDefinition =>
             damage: entry.damage,
             damageType: damageType ?? 'physical',
             defense: entry.defense,
+            armorByType: parseArmorByType(entry.defense, entry.armorByType),
             range: entry.range,
             attacksPerSecond: entry.attacksPerSecond,
             moveSpeedPerTick: entry.moveSpeedPerTick,

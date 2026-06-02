@@ -1,6 +1,6 @@
 import type { TowerProfile } from '../domain/towers/types';
 import type { TowerRace } from '../domain/towers/types';
-import type { DamageType } from '../domain/combat/types';
+import { DAMAGE_TYPES, type ArmorByType, type DamageType } from '../domain/combat/types';
 import { parseCatalogColor } from './catalogColor';
 import towersJson from './towers.json';
 
@@ -24,6 +24,7 @@ interface TowerJson {
     damage: number;
     damageType?: string;
     defense?: number;
+    armorByType?: Partial<Record<DamageType, number>>;
     maxHealth: number;
     attacksPerSecond: number;
     color: string;
@@ -70,6 +71,22 @@ const assertRace = (race: string): TowerRace =>
     throw new Error(`Invalid tower race in towers.json: ${race}`);
 };
 
+const parseArmorByType = (
+    defense: number | undefined,
+    armorByType: Partial<Record<DamageType, number>> | undefined,
+): ArmorByType =>
+{
+    const fallback = defense ?? 0;
+    const parsed = {} as ArmorByType;
+
+    for (const type of DAMAGE_TYPES)
+    {
+        parsed[type] = Math.max(0, armorByType?.[type] ?? fallback);
+    }
+
+    return parsed;
+};
+
 const parseTower = (entry: TowerJson): TowerDefinition =>
 {
     if (!entry.id)
@@ -102,6 +119,7 @@ const parseTower = (entry: TowerJson): TowerDefinition =>
         damage: entry.damage,
         damageType: damageType ?? 'physical',
         defense: entry.defense ?? 0,
+        armorByType: parseArmorByType(entry.defense, entry.armorByType),
         maxHealth: entry.maxHealth,
         attacksPerSecond: entry.attacksPerSecond,
         color: parseCatalogColor(entry.color),

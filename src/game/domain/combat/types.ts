@@ -1,12 +1,14 @@
 export const DAMAGE_TYPES = [ 'physical', 'fire', 'water', 'earth', 'air' ] as const;
 
 export type DamageType = typeof DAMAGE_TYPES[number];
+export type ArmorByType = Record<DamageType, number>;
 
 export interface EnemyBaseStats {
     maxHealth: number;
     damage: number;
     damageType: DamageType;
     defense: number;
+    armorByType: ArmorByType;
     range: number;
     attacksPerSecond: number;
     /** World pixels moved per simulation tick. */
@@ -20,6 +22,7 @@ export interface EnemyStatsSnapshot {
     damage: number;
     damageType: DamageType;
     defense: number;
+    armorByType: ArmorByType;
     range: number;
     attacksPerSecond: number;
     moveSpeedPerTick: number;

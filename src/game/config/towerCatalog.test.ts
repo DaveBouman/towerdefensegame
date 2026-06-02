@@ -10,5 +10,7 @@ describe('towerCatalog', () =>
         expect(getTowerDefinition('champion')?.tier).toBe(5);
         expect(getTowerDefinition('militia')?.profile.skills).toEqual([]);
         expect(getTowerDefinition('militia')?.profile.kamikazeExplosionRadiusTiles).toBe(0);
+        expect(getTowerDefinition('militia')?.profile.armorByType.fire).toBe(3);
+        expect(getTowerDefinition('scout')?.profile.armorByType.physical).toBe(0);
     });
 });

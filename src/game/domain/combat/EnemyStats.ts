@@ -1,6 +1,6 @@
 import { goldToBonusAttack, goldToBonusMaxHealth } from '../../config/goldScaling';
 import type { EnemyPerk } from '../perks/types';
-import type { DamageType, EnemyBaseStats, EnemyStatsSnapshot } from './types';
+import type { ArmorByType, DamageType, EnemyBaseStats, EnemyStatsSnapshot } from './types';
 
 const MAX_RESISTANCE = 0.9;
 
@@ -35,6 +35,19 @@ export class EnemyStats
     get defense (): number
     {
         return this.resolved.defense + this.getArmorBonus();
+    }
+
+    get armorByType (): ArmorByType
+    {
+        const bonus = this.getArmorBonus();
+
+        return {
+            physical: Math.max(0, this.resolved.armorByType.physical + bonus),
+            fire: Math.max(0, this.resolved.armorByType.fire + bonus),
+            water: Math.max(0, this.resolved.armorByType.water + bonus),
+            earth: Math.max(0, this.resolved.armorByType.earth + bonus),
+            air: Math.max(0, this.resolved.armorByType.air + bonus),
+        };
     }
 
     get range (): number
@@ -96,6 +109,7 @@ export class EnemyStats
             damage: this.damage,
             damageType: this.damageType,
             defense: this.defense,
+            armorByType: this.armorByType,
             range: this.range,
             attacksPerSecond: this.attacksPerSecond,
             moveSpeedPerTick: this.moveSpeedPerTick,
@@ -116,7 +130,9 @@ export class EnemyStats
 
     takeDamage (rawDamage: number, type: DamageType = 'physical'): number
     {
-        const afterDefense = Math.max(1, rawDamage - this.defense);
+        const armor = this.armorByType[type];
+        const mitigation = Math.max(0, Math.min(0.85, armor / 100));
+        const afterDefense = Math.max(1, Math.round(rawDamage * (1 - mitigation)));
         const multiplier = 1 - this.getResistance(type);
 
         return Math.max(1, Math.round(afterDefense * multiplier));

@@ -42,6 +42,8 @@ describe('targetPriority', () =>
             half(nexusDef.visual.sizeScale),
             half(nexusDef.visual.sizeScale),
             [],
+            [],
+            0,
             false,
             true,
             ENEMY_NEXUS_ID,

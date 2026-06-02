@@ -20,7 +20,7 @@ import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerStateSnapshot } from './types';
 import type { TowerRace } from './towers/types';
 import type { CombatSide } from './combatUnit';
-import type { DamageType } from './combat/types';
+import type { ArmorByType, DamageType } from './combat/types';
 
 let nextTowerId = 0;
 
@@ -133,6 +133,19 @@ export class TowerState
     get defense (): number
     {
         return this.profile.defense + this.modifier('defense');
+    }
+
+    get armorByType (): ArmorByType
+    {
+        const delta = this.modifier('defense');
+
+        return {
+            physical: Math.max(0, this.profile.armorByType.physical + delta),
+            fire: Math.max(0, this.profile.armorByType.fire + delta),
+            water: Math.max(0, this.profile.armorByType.water + delta),
+            earth: Math.max(0, this.profile.armorByType.earth + delta),
+            air: Math.max(0, this.profile.armorByType.air + delta),
+        };
     }
 
     get attacksPerSecond (): number
@@ -260,9 +273,8 @@ export class TowerState
             return 0;
         }
 
-        const armorPct = Math.max(0, Math.min(0.85, this.defense / 100));
-        const elementalArmorPct = Math.max(0, Math.min(0.6, this.defense / 200));
-        const mitigation = type === 'physical' ? armorPct : elementalArmorPct;
+        const armor = this.armorByType[type];
+        const mitigation = Math.max(0, Math.min(0.85, armor / 100));
         const weaknessMultiplier = this.profile.weaknesses.includes(type) ? 1.25 : 1;
         const damage = Math.max(1, Math.round(amount * (1 - mitigation) * weaknessMultiplier));
 

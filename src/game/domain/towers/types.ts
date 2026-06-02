@@ -1,4 +1,4 @@
-import type { DamageType } from '../combat/types';
+import type { ArmorByType, DamageType } from '../combat/types';
 
 export type TowerArchetype = 'close' | 'long';
 export type TowerRace = 'aether-dominion' | 'swarmforge-brood' | 'iron-covenant';
@@ -11,6 +11,7 @@ export interface TowerProfile {
     damage: number;
     damageType: DamageType;
     defense: number;
+    armorByType: ArmorByType;
     maxHealth: number;
     isMobile: boolean;
     /** World pixels moved per simulation tick. */
