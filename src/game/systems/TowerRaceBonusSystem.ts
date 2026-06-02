@@ -1,4 +1,4 @@
-import { RACE_BONUS_CONFIG } from '../config/raceBonusCatalog';
+import { getCumulativeScalingDelta, RACE_BONUS_CONFIG } from '../config/raceBonusCatalog';
 import type { TowerUpgradeModifiers } from '../config/towerUpgradeCatalog';
 import type { TowerState } from '../domain/TowerState';
 import type { Grid } from '../grid/Grid';
@@ -178,19 +178,7 @@ export class TowerRaceBonusSystem
                 }
 
                 stackCounts.set(key, seen);
-                const scaling = pair.countScaling;
-                const scalar = scaling?.[Math.min(seen, scaling.length) - 1];
-
-                if (scaling?.length)
-                {
-                    const previousScalar = scaling[Math.min(seen - 1, scaling.length) - 1] ?? 0;
-
-                    addBonus(out, pair.bonus, Math.max(0, scalar - previousScalar));
-                }
-                else
-                {
-                    addBonus(out, pair.bonus);
-                }
+                addBonus(out, pair.bonus, getCumulativeScalingDelta(pair.countScaling, seen));
                 this.bumpTag(
                     tags,
                     `Pair ${pair.sourceTowerId}+${pair.targetTowerIds.join('/')}${pair.sameRowOnly ? ' (same row)' : ''}${pair.useSpawnTiles ? ' (spawn-linked)' : ''}`,

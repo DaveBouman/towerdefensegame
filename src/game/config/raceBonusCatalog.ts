@@ -46,6 +46,22 @@ export interface RaceBonusConfig {
     }[];
 }
 
+export const getCumulativeScalingDelta = (
+    scaling: readonly number[] | null,
+    count: number,
+): number =>
+{
+    if (!scaling?.length || count <= 0)
+    {
+        return 1;
+    }
+
+    const current = scaling[Math.min(count, scaling.length) - 1] ?? 0;
+    const previous = count > 1 ? (scaling[Math.min(count - 1, scaling.length) - 1] ?? 0) : 0;
+
+    return Math.max(0, current - previous);
+};
+
 const isRace = (value: string): value is TowerRace =>
     value === 'aether-dominion' || value === 'swarmforge-brood' || value === 'iron-covenant';
 
