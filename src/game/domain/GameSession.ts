@@ -163,7 +163,7 @@ export class GameSession
             return false;
         }
 
-        return this.deployment.hasQueuedTowers;
+        return this.deployment.active;
     }
 
     /** Simulation ticks run only during an active combat round. */
@@ -190,7 +190,7 @@ export class GameSession
         this.state.setTowerDraftPick(null);
         this.towers.snapAllToSpawnTiles();
         this.towerMovement.clearAll();
-        this.deployment.beginWithQueue([ definitionId ]);
+        this.deployment.enqueue(definitionId);
         this.state.setCanStartWave(true);
         this.syncDeploymentState();
 
@@ -232,6 +232,11 @@ export class GameSession
 
     tryDeployTowerAt (tile: GridPosition, towerId?: TowerDefinitionId): boolean
     {
+        if (!this.canPlaceQueuedTowers())
+        {
+            return false;
+        }
+
         const queuedTowerId = towerId ?? this.deployment.peekNext();
 
         if (!queuedTowerId)

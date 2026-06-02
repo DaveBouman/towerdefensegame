@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EventBus } from '../../game/EventBus';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
 import type {
@@ -20,17 +20,76 @@ const useNexusHealth = () =>
 {
     const [ player, setPlayer ] = useState<NexusHealth | null>(null);
     const [ enemy, setEnemy ] = useState<NexusHealth | null>(null);
+    const pendingPlayerRef = useRef<NexusHealth | null | undefined>(undefined);
+    const pendingEnemyRef = useRef<NexusHealth | null | undefined>(undefined);
+    const enemyMaxRef = useRef<number | null>(null);
 
     useEffect(() =>
     {
+        const flushIntervalMs = 50; // 20Hz UI updates max.
+        let rafId: number | null = null;
+        let timerId: ReturnType<typeof setTimeout> | null = null;
+        let lastFlushAt = 0;
+
+        const flush = () =>
+        {
+            if (pendingPlayerRef.current !== undefined)
+            {
+                setPlayer(pendingPlayerRef.current);
+                pendingPlayerRef.current = undefined;
+            }
+
+            if (pendingEnemyRef.current !== undefined)
+            {
+                setEnemy(pendingEnemyRef.current);
+                enemyMaxRef.current = pendingEnemyRef.current?.max ?? enemyMaxRef.current;
+                pendingEnemyRef.current = undefined;
+            }
+
+            lastFlushAt = Date.now();
+        };
+
+        const scheduleFlush = () =>
+        {
+            if (rafId !== null || timerId !== null)
+            {
+                return;
+            }
+
+            const wait = Math.max(0, flushIntervalMs - (Date.now() - lastFlushAt));
+            const request = () =>
+            {
+                rafId = requestAnimationFrame(() =>
+                {
+                    rafId = null;
+                    flush();
+                });
+            };
+
+            if (wait === 0)
+            {
+                request();
+            }
+            else
+            {
+                timerId = setTimeout(() =>
+                {
+                    timerId = null;
+                    request();
+                }, wait);
+            }
+        };
+
         const onPlayerSpawned = (snapshot: PlayerNexusStateSnapshot) =>
         {
-            setPlayer({ current: snapshot.health, max: snapshot.maxHealth });
+            pendingPlayerRef.current = { current: snapshot.health, max: snapshot.maxHealth };
+            scheduleFlush();
         };
 
         const onPlayerDamaged = (snapshot: PlayerNexusStateSnapshot) =>
         {
-            setPlayer({ current: snapshot.health, max: snapshot.maxHealth });
+            pendingPlayerRef.current = { current: snapshot.health, max: snapshot.maxHealth };
+            scheduleFlush();
         };
 
         const onEnemyDamaged = (snapshot: EnemyStateSnapshot) =>
@@ -40,10 +99,11 @@ const useNexusHealth = () =>
                 return;
             }
 
-            setEnemy((prev) => ({
+            pendingEnemyRef.current = {
                 current: snapshot.health,
-                max: prev?.max ?? snapshot.stats.maxHealth,
-            }));
+                max: pendingEnemyRef.current?.max ?? enemyMaxRef.current ?? snapshot.stats.maxHealth,
+            };
+            scheduleFlush();
         };
 
         EventBus.on(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, onPlayerSpawned);
@@ -55,6 +115,16 @@ const useNexusHealth = () =>
             EventBus.off(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, onPlayerSpawned);
             EventBus.off(GAME_EVENTS.PLAYER_NEXUS_DAMAGED, onPlayerDamaged);
             EventBus.off(GAME_EVENTS.ENEMY_DAMAGED, onEnemyDamaged);
+
+            if (rafId !== null)
+            {
+                cancelAnimationFrame(rafId);
+            }
+
+            if (timerId !== null)
+            {
+                clearTimeout(timerId);
+            }
         };
     }, []);
 
@@ -64,47 +134,78 @@ const useNexusHealth = () =>
 const useTowerRoster = () =>
 {
     const [ towers, setTowers ] = useState<Map<string, TowerStateSnapshot>>(new Map());
+    const towersRef = useRef<Map<string, TowerStateSnapshot>>(new Map());
 
     useEffect(() =>
     {
+        const flushIntervalMs = 50; // 20Hz UI updates max.
+        let rafId: number | null = null;
+        let timerId: ReturnType<typeof setTimeout> | null = null;
+        let lastFlushAt = 0;
+
+        const flush = () =>
+        {
+            lastFlushAt = Date.now();
+            setTowers(new Map(towersRef.current));
+        };
+
+        const scheduleFlush = () =>
+        {
+            if (rafId !== null || timerId !== null)
+            {
+                return;
+            }
+
+            const wait = Math.max(0, flushIntervalMs - (Date.now() - lastFlushAt));
+            const request = () =>
+            {
+                rafId = requestAnimationFrame(() =>
+                {
+                    rafId = null;
+                    flush();
+                });
+            };
+
+            if (wait === 0)
+            {
+                request();
+            }
+            else
+            {
+                timerId = setTimeout(() =>
+                {
+                    timerId = null;
+                    request();
+                }, wait);
+            }
+        };
+
         const onPlaced = (snapshot: TowerStateSnapshot) =>
         {
-            setTowers((prev) =>
-            {
-                const next = new Map(prev);
-                next.set(snapshot.id, snapshot);
-                return next;
-            });
+            towersRef.current.set(snapshot.id, snapshot);
+            scheduleFlush();
         };
 
         const onDamaged = (snapshot: TowerStateSnapshot) =>
         {
-            setTowers((prev) =>
+            if (!towersRef.current.has(snapshot.id))
             {
-                if (!prev.has(snapshot.id))
-                {
-                    return prev;
-                }
+                return;
+            }
 
-                const next = new Map(prev);
-                next.set(snapshot.id, snapshot);
-                return next;
-            });
+            towersRef.current.set(snapshot.id, snapshot);
+            scheduleFlush();
         };
 
         const onRemoved = ({ id }: { id: string }) =>
         {
-            setTowers((prev) =>
+            if (!towersRef.current.has(id))
             {
-                if (!prev.has(id))
-                {
-                    return prev;
-                }
+                return;
+            }
 
-                const next = new Map(prev);
-                next.delete(id);
-                return next;
-            });
+            towersRef.current.delete(id);
+            scheduleFlush();
         };
 
         EventBus.on(GAME_EVENTS.TOWER_PLACED, onPlaced);
@@ -116,6 +217,16 @@ const useTowerRoster = () =>
             EventBus.off(GAME_EVENTS.TOWER_PLACED, onPlaced);
             EventBus.off(GAME_EVENTS.TOWER_DAMAGED, onDamaged);
             EventBus.off(GAME_EVENTS.TOWER_REMOVED, onRemoved);
+
+            if (rafId !== null)
+            {
+                cancelAnimationFrame(rafId);
+            }
+
+            if (timerId !== null)
+            {
+                clearTimeout(timerId);
+            }
         };
     }, []);
 

@@ -12,6 +12,12 @@ export class DeploymentPhase
         this.totalCount = towerIds.length;
     }
 
+    enqueue (towerId: TowerDefinitionId): void
+    {
+        this.queue.push(towerId);
+        this.totalCount += 1;
+    }
+
     reset (): void
     {
         this.queue = [];
@@ -19,11 +25,6 @@ export class DeploymentPhase
     }
 
     get active (): boolean
-    {
-        return this.queue.length > 0;
-    }
-
-    get hasQueuedTowers (): boolean
     {
         return this.queue.length > 0;
     }
