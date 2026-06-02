@@ -8,6 +8,7 @@
             "unitType": "Militia",
             "range": 1.5,
             "damage": 15,
+            "damageType": "physical",
             "maxHealth": 450,
             "attacksPerSecond": 1,
             "color": "#6bcb77",

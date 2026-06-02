@@ -9,6 +9,7 @@ export interface TowerProfile {
     unitType: string;
     range: number;
     damage: number;
+    damageType: DamageType;
     defense: number;
     maxHealth: number;
     isMobile: boolean;

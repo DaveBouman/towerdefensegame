@@ -74,8 +74,8 @@ export class GameSession
         const killRewards = new KillRewardSystem(this.state);
 
         this.unitAttacks = new UnitAttackSystem(
-            this.enemies,
             this.towers,
+            this.enemies,
             this.playerNexus,
             grid,
             killRewards,

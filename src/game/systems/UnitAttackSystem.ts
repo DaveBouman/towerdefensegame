@@ -67,7 +67,10 @@ export class UnitAttackSystem
 
     private tryAttack (unit: AttackUnit, gameTick: number): void
     {
-        const interval = attacksPerSecondToIntervalTicks(unit.attacksPerSecond);
+        const attacksPerSecond = this.isTower(unit)
+            ? unit.attacksPerSecond
+            : unit.stats.attacksPerSecond;
+        const interval = attacksPerSecondToIntervalTicks(attacksPerSecond);
 
         if (interval <= 0)
         {
@@ -105,7 +108,7 @@ export class UnitAttackSystem
             return;
         }
 
-        const damage = target.applyDamage(tower.damage);
+        const damage = target.applyDamage(tower.damage, tower.damageType);
 
         this.lastAttackTick.set(tower.id, gameTick);
 
@@ -149,7 +152,7 @@ export class UnitAttackSystem
 
         if (towerTarget)
         {
-            const damage = towerTarget.applyDamage(enemy.stats.damage);
+            const damage = towerTarget.applyDamage(enemy.stats.damage, enemy.stats.damageType);
             this.lastAttackTick.set(enemy.id, gameTick);
 
             const payload: EnemyAttackPayload = {
@@ -270,7 +273,7 @@ export class UnitAttackSystem
 
         applyAreaDamage(targets, (tower) =>
         {
-            tower.applyDamage(enemy.stats.damage);
+            tower.applyDamage(enemy.stats.damage, enemy.stats.damageType);
             EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
 
             if (tower.health <= 0)

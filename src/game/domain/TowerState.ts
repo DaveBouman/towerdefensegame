@@ -20,6 +20,7 @@ import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerStateSnapshot } from './types';
 import type { TowerRace } from './towers/types';
 import type { CombatSide } from './combatUnit';
+import type { DamageType } from './combat/types';
 
 let nextTowerId = 0;
 
@@ -122,6 +123,11 @@ export class TowerState
     get damage (): number
     {
         return this.profile.damage + this.modifier('damage');
+    }
+
+    get damageType (): DamageType
+    {
+        return this.profile.damageType;
     }
 
     get defense (): number
@@ -247,9 +253,18 @@ export class TowerState
         return true;
     }
 
-    applyDamage (amount: number): number
+    applyDamage (amount: number, type: DamageType = 'physical'): number
     {
-        const damage = Math.max(0, amount - this.defense);
+        if (amount <= 0)
+        {
+            return 0;
+        }
+
+        const armorPct = Math.max(0, Math.min(0.85, this.defense / 100));
+        const elementalArmorPct = Math.max(0, Math.min(0.6, this.defense / 200));
+        const mitigation = type === 'physical' ? armorPct : elementalArmorPct;
+        const weaknessMultiplier = this.profile.weaknesses.includes(type) ? 1.25 : 1;
+        const damage = Math.max(1, Math.round(amount * (1 - mitigation) * weaknessMultiplier));
 
         this.health = Math.max(0, this.health - damage);
 
@@ -281,6 +296,7 @@ export class TowerState
             definitionId: this.definitionId,
             range: this.range,
             damage: this.damage,
+            damageType: this.damageType,
             defense: this.defense,
             health: this.health,
             maxHealth: this.maxHealth,

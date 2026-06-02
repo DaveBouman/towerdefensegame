@@ -22,6 +22,7 @@ interface TowerJson {
     unitType: string;
     range: number;
     damage: number;
+    damageType?: string;
     defense?: number;
     maxHealth: number;
     attacksPerSecond: number;
@@ -79,6 +80,19 @@ const parseTower = (entry: TowerJson): TowerDefinition =>
     const tier = assertTowerTier(entry.tier);
     const archetype = assertArchetype(entry.archetype);
     const race = assertRace(entry.race);
+    const damageType = entry.damageType;
+
+    if (
+        damageType !== undefined
+        && damageType !== 'physical'
+        && damageType !== 'fire'
+        && damageType !== 'water'
+        && damageType !== 'earth'
+        && damageType !== 'air'
+    )
+    {
+        throw new Error(`Invalid tower damageType in towers.json: ${damageType}`);
+    }
 
     const profile: TowerProfile = {
         archetype,
@@ -86,6 +100,7 @@ const parseTower = (entry: TowerJson): TowerDefinition =>
         unitType: entry.unitType,
         range: entry.range,
         damage: entry.damage,
+        damageType: damageType ?? 'physical',
         defense: entry.defense ?? 0,
         maxHealth: entry.maxHealth,
         attacksPerSecond: entry.attacksPerSecond,

@@ -78,6 +78,7 @@ export interface TowerStateSnapshot {
     definitionId: TowerDefinitionId;
     range: number;
     damage: number;
+    damageType?: DamageType;
     defense: number;
     health: number;
     maxHealth: number;

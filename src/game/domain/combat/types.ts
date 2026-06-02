@@ -5,6 +5,7 @@ export type DamageType = typeof DAMAGE_TYPES[number];
 export interface EnemyBaseStats {
     maxHealth: number;
     damage: number;
+    damageType: DamageType;
     defense: number;
     range: number;
     attacksPerSecond: number;
@@ -17,6 +18,7 @@ export interface EnemyBaseStats {
 export interface EnemyStatsSnapshot {
     maxHealth: number;
     damage: number;
+    damageType: DamageType;
     defense: number;
     range: number;
     attacksPerSecond: number;

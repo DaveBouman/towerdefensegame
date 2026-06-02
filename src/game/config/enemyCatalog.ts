@@ -21,6 +21,7 @@ interface EnemyJson {
     unitType: string;
     maxHealth: number;
     damage: number;
+    damageType?: string;
     defense: number;
     range: number;
     attacksPerSecond: number;
@@ -44,12 +45,27 @@ const parseEnemy = (entry: EnemyJson): EnemyDefinition =>
         throw new Error('Enemy entry in enemies.json is missing id');
     }
 
+    const damageType = entry.damageType;
+
+    if (
+        damageType !== undefined
+        && damageType !== 'physical'
+        && damageType !== 'fire'
+        && damageType !== 'water'
+        && damageType !== 'earth'
+        && damageType !== 'air'
+    )
+    {
+        throw new Error(`Invalid enemy damageType in enemies.json: ${damageType}`);
+    }
+
     return {
         id: entry.id,
         unitType: entry.unitType,
         baseStats: {
             maxHealth: entry.maxHealth,
             damage: entry.damage,
+            damageType: damageType ?? 'physical',
             defense: entry.defense,
             range: entry.range,
             attacksPerSecond: entry.attacksPerSecond,

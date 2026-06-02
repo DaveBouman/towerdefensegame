@@ -27,6 +27,11 @@ export class EnemyStats
         return this.resolved.damage + goldToBonusAttack(this.killGold);
     }
 
+    get damageType (): DamageType
+    {
+        return this.resolved.damageType;
+    }
+
     get defense (): number
     {
         return this.resolved.defense + this.getArmorBonus();
@@ -89,6 +94,7 @@ export class EnemyStats
         return {
             maxHealth: this.maxHealth,
             damage: this.damage,
+            damageType: this.damageType,
             defense: this.defense,
             range: this.range,
             attacksPerSecond: this.attacksPerSecond,
