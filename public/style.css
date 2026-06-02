@@ -482,6 +482,49 @@ body {
     background: #1a1a2e;
 }
 
+.race-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 200px;
+    padding: 6px 10px;
+    border: 1px solid #3a3a5c;
+    border-radius: 6px;
+    background: rgba(18, 18, 31, 0.9);
+}
+
+.race-legend__title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #9fb4ff;
+}
+
+.race-legend__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.race-legend__row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 11px;
+}
+
+.race-legend__name {
+    color: #c7cbe8;
+}
+
+.race-legend__value {
+    color: #f1c40f;
+    font-weight: 600;
+}
+
 .app-main {
     position: relative;
     flex: 1;

@@ -6,6 +6,7 @@ import type {
     TowerDraftPickState,
     UpgradePickState,
 } from './types';
+import type { TowerRace } from './towers/types';
 
 export class GameState
 {
@@ -13,6 +14,11 @@ export class GameState
     private _wave = 0;
     private _lives = 20;
     private _canStartWave = true;
+    private _raceDraftBias: Record<TowerRace, number> = {
+        'aether-dominion': 1,
+        'swarmforge-brood': 1,
+        'iron-covenant': 1,
+    };
     private _upgradePick: UpgradePickState | null = null;
     private _towerDraftPick: TowerDraftPickState | null = null;
     private _deployment: DeploymentSnapshot | null = null;
@@ -59,10 +65,17 @@ export class GameState
             wave: this._wave,
             lives: this._lives,
             canStartWave: this._canStartWave,
+            raceDraftBias: this._raceDraftBias,
             upgradePick: this._upgradePick,
             towerDraftPick: this._towerDraftPick,
             deployment: this._deployment,
         };
+    }
+
+    setRaceDraftBias (bias: Record<TowerRace, number>): void
+    {
+        this._raceDraftBias = { ...bias };
+        this.notify();
     }
 
     setDeployment (deployment: DeploymentSnapshot | null): void

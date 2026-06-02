@@ -2,7 +2,9 @@ import type { WorldPosition } from '../grid/types';
 import type { DamageType, EnemyStatsSnapshot } from './combat/types';
 import type { TowerDefinitionId } from '../config/towerCatalog';
 import type { TowerArchetype } from './towers/types';
+import type { TowerRace } from './towers/types';
 import type { TowerEquippedUpgrade } from '../config/towerUpgradeCatalog';
+import type { TowerUpgradeModifiers } from '../config/towerUpgradeCatalog';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 
 export interface UpgradePickState {
@@ -26,6 +28,7 @@ export interface GameStateSnapshot {
     wave: number;
     lives: number;
     canStartWave: boolean;
+    raceDraftBias: Record<TowerRace, number>;
     upgradePick: UpgradePickState | null;
     towerDraftPick: TowerDraftPickState | null;
     deployment: DeploymentSnapshot | null;
@@ -68,9 +71,11 @@ export interface TowerStateSnapshot {
     position: WorldPosition;
     unitType: string;
     archetype: TowerArchetype;
+    race: TowerRace;
     definitionId: TowerDefinitionId;
     range: number;
     damage: number;
+    defense: number;
     health: number;
     maxHealth: number;
     attacksPerSecond: number;
@@ -81,6 +86,8 @@ export interface TowerStateSnapshot {
     equippedUpgrades: TowerEquippedUpgrade[];
     /** Purchased between-wave stat upgrade levels keyed by catalog id. */
     statUpgradeLevels: Record<string, number>;
+    raceAuraBonus: TowerUpgradeModifiers;
+    raceAuraTags: string[];
     targetingMode: TowerTargetingMode;
 }
 

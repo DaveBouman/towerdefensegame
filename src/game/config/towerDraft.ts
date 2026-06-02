@@ -1,8 +1,11 @@
 import {
     TOWER_DEFINITIONS,
+    getTowerDefinition,
     type TowerDefinitionId,
     type TowerTier,
 } from './towerCatalog';
+import { raceDraftMultiplier } from './raceDraftWeights';
+import type { TowerRace } from '../domain/towers/types';
 
 const DRAFT_SIZE = 5;
 
@@ -67,6 +70,7 @@ export const definitionsEligibleForDraft = (wave: number) =>
 export const rollTowerDraftChoices = (
     wave: number,
     count: number = DRAFT_SIZE,
+    ownedRaceCounts: Partial<Record<TowerRace, number>> = {},
 ): TowerDefinitionId[] =>
 {
     const eligible = definitionsEligibleForDraft(wave);
@@ -78,7 +82,9 @@ export const rollTowerDraftChoices = (
     {
         const pool = eligible.map((def) => ({
             id: def.id,
-            weight: chosen.has(def.id) ? 0 : tierWeightForWave(def.tier, wave),
+            weight: chosen.has(def.id)
+                ? 0
+                : tierWeightForWave(def.tier, wave) * raceBiasMultiplier(def.id, ownedRaceCounts),
         })).filter((entry) => entry.weight > 0);
 
         const pick = weightedPickId(pool);
@@ -103,4 +109,20 @@ export const rollTowerDraftChoices = (
     }
 
     return [ ...chosen ];
+};
+
+const raceBiasMultiplier = (
+    towerId: TowerDefinitionId,
+    ownedRaceCounts: Partial<Record<TowerRace, number>>,
+): number =>
+{
+    const race = getTowerDefinition(towerId)?.profile.race;
+
+    if (!race)
+    {
+        return 1;
+    }
+
+    const ownedCount = ownedRaceCounts[race] ?? 0;
+    return raceDraftMultiplier(race, ownedCount);
 };

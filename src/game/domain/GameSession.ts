@@ -22,6 +22,9 @@ import { WaveRoundController } from './WaveRoundController';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerDefinitionId } from '../config/towerCatalog';
 import { rollTowerDraftChoices } from '../config/towerDraft';
+import type { TowerRace } from './towers/types';
+import { getTowerDefinition } from '../config/towerCatalog';
+import { raceDraftMultiplier } from '../config/raceDraftWeights';
 import {
     isEnemyNexusDefeated,
     isPlayerNexusDefeated,
@@ -30,6 +33,7 @@ import {
 import { PlayerNexusSystem } from '../systems/PlayerNexusSystem';
 import { EnemyNexusAttackSystem } from '../systems/EnemyNexusAttackSystem';
 import { PlayerNexusAttackSystem } from '../systems/PlayerNexusAttackSystem';
+import { TowerRaceBonusSystem } from '../systems/TowerRaceBonusSystem';
 
 export class GameSession
 {
@@ -47,6 +51,7 @@ export class GameSession
     readonly towerUpgrades: TowerUpgradeService;
     readonly playerNexus: PlayerNexusSystem;
     readonly deployment: DeploymentPhase;
+    readonly raceBonuses: TowerRaceBonusSystem;
 
     private readonly waveRounds: WaveRoundController;
     private readonly tickPipeline: readonly TickSystem[];
@@ -63,6 +68,7 @@ export class GameSession
         this.towerUpgrades = new TowerUpgradeService();
         this.playerNexus = new PlayerNexusSystem();
         this.deployment = new DeploymentPhase();
+        this.raceBonuses = new TowerRaceBonusSystem(this.towers, grid);
         this.enemyMovement = new EnemyMovementSystem(
             this.enemies,
             this.towers,
@@ -123,6 +129,7 @@ export class GameSession
         this.tickPipeline = [
             this.waveSpawns,
             this.enemyMovement,
+            this.raceBonuses,
             this.towerMovement,
             this.enemyAttacks,
             enemyNexusAttacks,
@@ -147,7 +154,9 @@ export class GameSession
         this.state.setTowerDraftPick({ choices: rollTowerDraftChoices(0, 5) });
         this.state.setCanStartWave(false);
         this.state.setDeployment(null);
+        this.state.setRaceDraftBias(this.computeRaceDraftBias());
         this.clock.reset();
+        this.raceBonuses.recalculate();
         this.waveRounds.showUpcomingWavePreview();
     }
 
@@ -192,7 +201,9 @@ export class GameSession
         this.towerMovement.clearAll();
         this.deployment.enqueue(definitionId);
         this.state.setCanStartWave(true);
+        this.raceBonuses.recalculate();
         this.syncDeploymentState();
+        this.state.setRaceDraftBias(this.computeRaceDraftBias());
 
         return true;
     }
@@ -226,6 +237,8 @@ export class GameSession
 
         this.towerMovement.clearTower(towerId);
         this.towerAttacks.clearTower(towerId);
+        this.raceBonuses.recalculate();
+        this.state.setRaceDraftBias(this.computeRaceDraftBias());
 
         return true;
     }
@@ -260,6 +273,8 @@ export class GameSession
 
         this.syncDeploymentState();
         this.state.setCanStartWave(true);
+        this.raceBonuses.recalculate();
+        this.state.setRaceDraftBias(this.computeRaceDraftBias());
         this.waveRounds.showUpcomingWavePreview();
 
         return true;
@@ -390,7 +405,9 @@ export class GameSession
             return;
         }
 
-        this.state.setTowerDraftPick({ choices: rollTowerDraftChoices(this.state.wave, 5) });
+        this.state.setTowerDraftPick({
+            choices: rollTowerDraftChoices(this.state.wave, 5, this.ownedRaceCounts()),
+        });
         this.state.setCanStartWave(false);
     }
 
@@ -435,6 +452,8 @@ export class GameSession
         this.towers.resetPlayerTowers();
         this.towerMovement.clearAll();
         this.towerAttacks.clearAll();
+        this.raceBonuses.recalculate();
+        this.state.setRaceDraftBias(this.computeRaceDraftBias());
         EventBus.emit(GAME_EVENTS.WAVE_COMPLETED);
     }
 
@@ -448,5 +467,44 @@ export class GameSession
         {
             this.state.setDeployment(null);
         }
+    }
+
+    private ownedRaceCounts (): Partial<Record<TowerRace, number>>
+    {
+        const counts: Partial<Record<TowerRace, number>> = {};
+        const bump = (race: TowerRace) =>
+        {
+            counts[race] = (counts[race] ?? 0) + 1;
+        };
+
+        for (const tower of this.towers.all)
+        {
+            bump(tower.race);
+        }
+
+        const queued = this.deployment.snapshot().queue;
+
+        for (const towerId of queued)
+        {
+            const race = getTowerDefinition(towerId)?.profile.race;
+
+            if (race)
+            {
+                bump(race);
+            }
+        }
+
+        return counts;
+    }
+
+    private computeRaceDraftBias (): Record<TowerRace, number>
+    {
+        const owned = this.ownedRaceCounts();
+
+        return {
+            'aether-dominion': raceDraftMultiplier('aether-dominion', owned['aether-dominion'] ?? 0),
+            'swarmforge-brood': raceDraftMultiplier('swarmforge-brood', owned['swarmforge-brood'] ?? 0),
+            'iron-covenant': raceDraftMultiplier('iron-covenant', owned['iron-covenant'] ?? 0),
+        };
     }
 }

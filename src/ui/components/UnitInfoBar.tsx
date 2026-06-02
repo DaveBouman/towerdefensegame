@@ -94,6 +94,19 @@ const EnemyDetails = ({ enemy, wave }: { enemy: EnemyStateSnapshot; wave: number
 const towerArchetypeLabel = (archetype: TowerStateSnapshot['archetype']): string =>
     archetype === 'close' ? 'Close range' : 'Long range';
 
+const towerRaceLabel = (race: TowerStateSnapshot['race']): string =>
+{
+    switch (race)
+    {
+        case 'aether-dominion':
+            return 'Aether Dominion';
+        case 'swarmforge-brood':
+            return 'Swarmforge Brood';
+        case 'iron-covenant':
+            return 'Iron Covenant';
+    }
+};
+
 const PlayerNexusDetails = ({
     nexus,
     wave,
@@ -105,7 +118,7 @@ const PlayerNexusDetails = ({
 const TowerDetails = ({ tower }: { tower: TowerStateSnapshot }) => (
     <>
         <p className="unit-info-bar__tower-id" aria-label="Selected tower">
-            {towerArchetypeLabel(tower.archetype)} · this tower only
+            {towerRaceLabel(tower.race)} · {towerArchetypeLabel(tower.archetype)} · this tower only
         </p>
         <StatList stats={getTowerStatRows(tower)} />
 
@@ -129,6 +142,7 @@ const TowerDetails = ({ tower }: { tower: TowerStateSnapshot }) => (
                 title="Weaknesses"
                 items={tower.weaknesses.map((w) => formatLabel(w))}
             />
+            <TagList title="Race links" items={tower.raceAuraTags} />
         </div>
     </>
 );

@@ -10,6 +10,8 @@ import { getTowerDefinitionOrThrow } from '../../game/config/towerCatalog';
 import type { TowerDefinitionId } from '../../game/config/towerCatalog';
 import { useGameViewModel } from '../viewmodels/useGameViewModel';
 import { TOWER_QUEUE_DRAG_MIME } from '../towerQueueDragMime';
+import { RACE_BONUS_CONFIG } from '../../game/config/raceBonusCatalog';
+import { formatTowerUpgradeStatsTooltip } from '../../game/config/towerUpgradeCatalog';
 
 type NexusHealth = {
     current: number;
@@ -246,6 +248,55 @@ const formatHp = (current: number, max: number): string =>
 const healthPercent = (current: number, max: number): number =>
     max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
 
+const formatRace = (race: TowerStateSnapshot['race']): string =>
+{
+    switch (race)
+    {
+        case 'aether-dominion':
+            return 'Aether';
+        case 'swarmforge-brood':
+            return 'Swarmforge';
+        case 'iron-covenant':
+            return 'Iron';
+    }
+};
+
+const synergyLineForTower = (
+    towerId: TowerDefinitionId,
+    race: TowerStateSnapshot['race'],
+): string =>
+{
+    const parts: string[] = [];
+    const same = RACE_BONUS_CONFIG.sameRacePerNeighborBonus[race];
+
+    if (same && Object.keys(same).length > 0)
+    {
+        parts.push(`Same race: ${formatTowerUpgradeStatsTooltip(same)}`);
+    }
+
+    const cross = RACE_BONUS_CONFIG.crossRacePerNeighborBonus
+        .filter((rule) => rule.sourceRace === race)
+        .map((rule) => `${formatRace(rule.targetRace as TowerStateSnapshot['race'])}: ${formatTowerUpgradeStatsTooltip(rule.bonus)}`);
+
+    if (cross.length > 0)
+    {
+        parts.push(`Cross race: ${cross.join(' | ')}`);
+    }
+
+    const pair = RACE_BONUS_CONFIG.specificPairBonuses
+        .filter((rule) => rule.sourceTowerId === towerId)
+        .map((rule) =>
+            `${rule.targetTowerId}${rule.sameRowOnly ? ' same-row' : ''}: ${formatTowerUpgradeStatsTooltip(rule.bonus)}`,
+        );
+
+    if (pair.length > 0)
+    {
+        parts.push(`Pair: ${pair.join(' | ')}`);
+    }
+
+    return parts.join(' || ');
+};
+
 export const TowerRosterPanel = () =>
 {
     const { deployment } = useGameViewModel();
@@ -302,11 +353,16 @@ export const TowerRosterPanel = () =>
                             <li key={tower.id} className="tower-roster__item">
                                 <span className="tower-roster__item-name">{towerLabel(tower)}</span>
                                 <span className="tower-roster__item-meta">
-                                    R{tower.range.toFixed(1)} · {tower.damage.toFixed(0)} dmg
+                                    {formatRace(tower.race)} · R{tower.range.toFixed(1)} · {tower.damage.toFixed(0)} dmg
                                 </span>
                                 <span className="tower-roster__item-meta">
                                     HP {formatHp(tower.health, tower.maxHealth)}
                                 </span>
+                                {tower.raceAuraTags.length > 0 && (
+                                    <span className="tower-roster__item-meta">
+                                        Links: {tower.raceAuraTags.join(', ')}
+                                    </span>
+                                )}
                             </li>
                         ))}
                     </ul>
@@ -344,6 +400,9 @@ export const TowerRosterPanel = () =>
                                     <span className="tower-roster__item-meta">
                                         R{def.profile.range.toFixed(1)} ·{' '}
                                         {def.profile.damage.toFixed(0)} dmg
+                                    </span>
+                                    <span className="tower-roster__item-meta">
+                                        Synergy: {synergyLineForTower(id, def.profile.race)}
                                     </span>
                                 </li>
                             );

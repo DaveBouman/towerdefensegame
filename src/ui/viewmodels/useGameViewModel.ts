@@ -8,6 +8,11 @@ const INITIAL_STATE: GameStateSnapshot = {
     wave: 0,
     lives: 20,
     canStartWave: true,
+    raceDraftBias: {
+        'aether-dominion': 1,
+        'swarmforge-brood': 1,
+        'iron-covenant': 1,
+    },
     upgradePick: null,
     towerDraftPick: null,
     deployment: null,

@@ -2,6 +2,7 @@
 export interface TowerUpgradeModifiers {
     range?: number;
     damage?: number;
+    defense?: number;
     maxHealth?: number;
     attacksPerSecond?: number;
     moveSpeedPerTick?: number;
@@ -18,7 +19,7 @@ export interface TowerUpgradeDefinition {
 export type TowerEquippedUpgrade = Pick<TowerUpgradeDefinition, 'id' | 'name' | 'description'>;
 
 const MODIFIER_KEYS: (keyof TowerUpgradeModifiers)[] = [
-    'range', 'damage', 'maxHealth', 'attacksPerSecond', 'moveSpeedPerTick', 'goldValue',
+    'range', 'damage', 'defense', 'maxHealth', 'attacksPerSecond', 'moveSpeedPerTick', 'goldValue',
 ];
 
 export const TOWER_UPGRADE_CATALOG: readonly TowerUpgradeDefinition[] = [
@@ -32,6 +33,7 @@ export const TOWER_UPGRADE_CATALOG: readonly TowerUpgradeDefinition[] = [
 const STAT_LABEL: Record<keyof TowerUpgradeModifiers, string> = {
     range: 'Range',
     damage: 'Damage',
+    defense: 'Armor',
     maxHealth: 'Max HP',
     attacksPerSecond: 'Attack speed',
     moveSpeedPerTick: 'Move speed',

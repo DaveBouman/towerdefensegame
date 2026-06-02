@@ -1,12 +1,15 @@
 import type { DamageType } from '../combat/types';
 
 export type TowerArchetype = 'close' | 'long';
+export type TowerRace = 'aether-dominion' | 'swarmforge-brood' | 'iron-covenant';
 
 export interface TowerProfile {
     archetype: TowerArchetype;
+    race: TowerRace;
     unitType: string;
     range: number;
     damage: number;
+    defense: number;
     maxHealth: number;
     isMobile: boolean;
     /** World pixels moved per simulation tick. */

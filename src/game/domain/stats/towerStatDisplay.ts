@@ -23,6 +23,11 @@ const TOWER_STAT_FIELDS: readonly StatField<TowerStateSnapshot>[] = [
         format: (tower) => String(tower.damage),
     },
     {
+        label: 'Armor',
+        show: () => true,
+        format: (tower) => String(tower.defense),
+    },
+    {
         label: 'Gold',
         show: () => true,
         format: (tower) => String(tower.goldValue),

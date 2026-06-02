@@ -4,6 +4,7 @@ import { PLAYER_PLACEMENT_ROW_COUNT } from '../../game/config/placementZone';
 import { hasWaveDefinition } from '../../game/config/waveCatalog';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
 import { useGameViewModel } from '../viewmodels/useGameViewModel';
+import { RaceLegendPanel } from './RaceLegendPanel';
 
 export const GameHud = () =>
 {
@@ -40,6 +41,7 @@ export const GameHud = () =>
             <span>Gold {gold}</span>
             <span>Wave {wave}</span>
             <span>HP {lives}</span>
+            <RaceLegendPanel />
             {deployHint && (
                 <span className="game-hud__deploy-hint">{deployHint}</span>
             )}

@@ -1,4 +1,5 @@
 import type { TowerProfile } from '../domain/towers/types';
+import type { TowerRace } from '../domain/towers/types';
 import type { DamageType } from '../domain/combat/types';
 import { parseCatalogColor } from './catalogColor';
 import towersJson from './towers.json';
@@ -17,9 +18,11 @@ interface TowerJson {
     id: string;
     tier: number;
     archetype: string;
+    race: string;
     unitType: string;
     range: number;
     damage: number;
+    defense?: number;
     maxHealth: number;
     attacksPerSecond: number;
     color: string;
@@ -54,6 +57,16 @@ const assertArchetype = (archetype: string): TowerProfile['archetype'] =>
     throw new Error(`Invalid tower archetype in towers.json: ${archetype}`);
 };
 
+const assertRace = (race: string): TowerRace =>
+{
+    if (race === 'aether-dominion' || race === 'swarmforge-brood' || race === 'iron-covenant')
+    {
+        return race;
+    }
+
+    throw new Error(`Invalid tower race in towers.json: ${race}`);
+};
+
 const parseTower = (entry: TowerJson): TowerDefinition =>
 {
     if (!entry.id)
@@ -63,12 +76,15 @@ const parseTower = (entry: TowerJson): TowerDefinition =>
 
     const tier = assertTowerTier(entry.tier);
     const archetype = assertArchetype(entry.archetype);
+    const race = assertRace(entry.race);
 
     const profile: TowerProfile = {
         archetype,
+        race,
         unitType: entry.unitType,
         range: entry.range,
         damage: entry.damage,
+        defense: entry.defense ?? 0,
         maxHealth: entry.maxHealth,
         attacksPerSecond: entry.attacksPerSecond,
         color: parseCatalogColor(entry.color),

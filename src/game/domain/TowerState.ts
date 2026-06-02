@@ -18,6 +18,7 @@ import type { GridPosition, WorldPosition } from '../grid/types';
 import { tileCenterWorld } from '../grid/worldPosition';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerStateSnapshot } from './types';
+import type { TowerRace } from './towers/types';
 
 let nextTowerId = 0;
 
@@ -39,6 +40,8 @@ export class TowerState
     private equippedUpgradeIds: string[];
     private readonly statUpgradeLevels = new Map<string, number>();
     private bonus: TowerUpgradeModifiers;
+    private auraBonus: TowerUpgradeModifiers = {};
+    private raceAuraTags: string[] = [];
     private _targetingMode: TowerTargetingMode = 'nearest';
 
     constructor (
@@ -107,32 +110,42 @@ export class TowerState
 
     get maxHealth (): number
     {
-        return this.profile.maxHealth + (this.bonus.maxHealth ?? 0);
+        return this.profile.maxHealth + this.modifier('maxHealth');
     }
 
     get range (): number
     {
-        return this.profile.range + (this.bonus.range ?? 0);
+        return this.profile.range + this.modifier('range');
     }
 
     get damage (): number
     {
-        return this.profile.damage + (this.bonus.damage ?? 0);
+        return this.profile.damage + this.modifier('damage');
+    }
+
+    get defense (): number
+    {
+        return this.profile.defense + this.modifier('defense');
     }
 
     get attacksPerSecond (): number
     {
-        return this.profile.attacksPerSecond + (this.bonus.attacksPerSecond ?? 0);
+        return this.profile.attacksPerSecond + this.modifier('attacksPerSecond');
     }
 
     get moveSpeedPerTick (): number
     {
-        return this.profile.moveSpeedPerTick + (this.bonus.moveSpeedPerTick ?? 0);
+        return this.profile.moveSpeedPerTick + this.modifier('moveSpeedPerTick');
     }
 
     get goldValue (): number
     {
-        return this.profile.goldValue + (this.bonus.goldValue ?? 0);
+        return this.profile.goldValue + this.modifier('goldValue');
+    }
+
+    get race (): TowerRace
+    {
+        return this.profile.race;
     }
 
     equipUpgrade (upgradeId: string): boolean
@@ -181,9 +194,46 @@ export class TowerState
         this._targetingMode = mode;
     }
 
+    setAuraBonus (bonus: TowerUpgradeModifiers): boolean
+    {
+        const previousMax = this.maxHealth;
+        const same = this.sameModifiers(this.auraBonus, bonus);
+
+        this.auraBonus = { ...bonus };
+
+        const nextMax = this.maxHealth;
+
+        if (nextMax > previousMax)
+        {
+            // Keep full-health towers full when an aura grants max HP.
+            this.health = Math.min(this.health + (nextMax - previousMax), nextMax);
+        }
+        else
+        {
+            this.health = Math.min(this.health, nextMax);
+        }
+
+        return !same || nextMax !== previousMax;
+    }
+
+    setRaceAuraTags (tags: readonly string[]): boolean
+    {
+        if (
+            tags.length === this.raceAuraTags.length
+            && tags.every((tag, i) => tag === this.raceAuraTags[i])
+        )
+        {
+            return false;
+        }
+
+        this.raceAuraTags = [ ...tags ];
+
+        return true;
+    }
+
     applyDamage (amount: number): number
     {
-        const damage = Math.max(0, amount);
+        const damage = Math.max(0, amount - this.defense);
 
         this.health = Math.max(0, this.health - damage);
 
@@ -210,9 +260,11 @@ export class TowerState
             position: { ...this.position },
             unitType: this.profile.unitType,
             archetype: this.profile.archetype,
+            race: this.profile.race,
             definitionId: this.definitionId,
             range: this.range,
             damage: this.damage,
+            defense: this.defense,
             health: this.health,
             maxHealth: this.maxHealth,
             attacksPerSecond: this.attacksPerSecond,
@@ -222,7 +274,32 @@ export class TowerState
             weaknesses: [ ...this.profile.weaknesses ],
             equippedUpgrades: this.equippedUpgrades,
             statUpgradeLevels: Object.fromEntries(this.statUpgradeLevels),
+            raceAuraBonus: { ...this.auraBonus },
+            raceAuraTags: [ ...this.raceAuraTags ],
             targetingMode: this._targetingMode,
         };
+    }
+
+    private modifier (key: keyof TowerUpgradeModifiers): number
+    {
+        return (this.bonus[key] ?? 0) + (this.auraBonus[key] ?? 0);
+    }
+
+    private sameModifiers (
+        a: TowerUpgradeModifiers,
+        b: TowerUpgradeModifiers,
+    ): boolean
+    {
+        const keys: (keyof TowerUpgradeModifiers)[] = [
+            'range',
+            'damage',
+            'defense',
+            'maxHealth',
+            'attacksPerSecond',
+            'moveSpeedPerTick',
+            'goldValue',
+        ];
+
+        return keys.every((key) => (a[key] ?? 0) === (b[key] ?? 0));
     }
 }

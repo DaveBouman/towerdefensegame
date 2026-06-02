@@ -1,0 +1,55 @@
+{
+    "adjacencyRadiusTiles": 1,
+    "stackMode": "perNeighbor",
+    "maxStacksPerSource": 3,
+    "sameRacePerNeighborBonus": {
+        "aether-dominion": {
+            "range": 0.1,
+            "attacksPerSecond": 0.03
+        },
+        "swarmforge-brood": {
+            "damage": 1.2,
+            "moveSpeedPerTick": 0.8
+        },
+        "iron-covenant": {
+            "damage": 1.0,
+            "attacksPerSecond": 0.02
+        }
+    },
+    "crossRacePerNeighborBonus": [
+        {
+            "sourceRace": "aether-dominion",
+            "targetRace": "iron-covenant",
+            "bonus": {
+                "range": 0.08
+            }
+        },
+        {
+            "sourceRace": "iron-covenant",
+            "targetRace": "swarmforge-brood",
+            "bonus": {
+                "damage": 0.8
+            }
+        },
+        {
+            "sourceRace": "swarmforge-brood",
+            "targetRace": "aether-dominion",
+            "bonus": {
+                "attacksPerSecond": 0.03
+            }
+        }
+    ],
+    "specificPairBonuses": [
+        {
+            "sourceTowerId": "militia",
+            "targetTowerId": "militia",
+            "sameRowOnly": true,
+            "maxStacks": 1,
+            "bonus": {
+                "maxHealth": 50,
+                "defense": 20
+            }
+        }
+    ]
+}
+
