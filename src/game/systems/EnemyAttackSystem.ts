@@ -10,6 +10,7 @@ import type { Grid } from '../grid/Grid';
 import { rangeTilesToPixels } from '../grid/rangePixels';
 import { isWithinAttackRange } from '../combat/combatRange';
 import { worldDistance } from '../grid/worldPosition';
+import { applyAreaDamage } from '../combat/areaDamage';
 import type { EnemySpawnSystem } from './EnemySpawnSystem';
 import type { KillRewardSystem } from './KillRewardSystem';
 import type { PlayerNexusSystem } from './PlayerNexusSystem';
@@ -185,14 +186,11 @@ export class EnemyAttackSystem
         }
 
         const radiusPx = rangeTilesToPixels(this.grid, enemy.kamikazeExplosionRadiusTiles);
+        const targets = livingTowers(this.towers.all).filter((tower) =>
+            isWithinAttackRange(enemy, tower, radiusPx));
 
-        for (const tower of livingTowers(this.towers.all))
+        applyAreaDamage(targets, (tower) =>
         {
-            if (!isWithinAttackRange(enemy, tower, radiusPx))
-            {
-                continue;
-            }
-
             tower.applyDamage(enemy.stats.damage);
             EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
 
@@ -201,7 +199,7 @@ export class EnemyAttackSystem
                 this.killRewards.onTowerKilled(enemy, tower);
                 this.towers.disableTower(tower.id);
             }
-        }
+        });
 
         const nexus = this.playerNexus.active;
 

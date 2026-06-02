@@ -8,6 +8,7 @@ import type { Grid } from '../grid/Grid';
 import { isPersistentEnemyNexus } from '../combat/enemyNexusPersistence';
 import { pickTowerAttackTarget } from '../combat/towerTargeting';
 import { isWithinAttackRange } from '../combat/combatRange';
+import { applyAreaDamage } from '../combat/areaDamage';
 import type { EnemySpawnSystem } from './EnemySpawnSystem';
 import type { KillRewardSystem } from './KillRewardSystem';
 import type { TowerPlacementSystem } from './TowerPlacementSystem';
@@ -136,19 +137,13 @@ export class TowerAttackSystem
         }
 
         const radiusPx = this.grid.rangeToPixels(tower.kamikazeExplosionRadiusTiles);
+        const targets = this.enemies.all.filter((enemy) =>
+            enemy.health > 0
+            && !enemy.isPreview
+            && isWithinAttackRange(tower, enemy, radiusPx));
 
-        for (const enemy of this.enemies.all)
+        applyAreaDamage(targets, (enemy) =>
         {
-            if (enemy.health <= 0 || enemy.isPreview)
-            {
-                continue;
-            }
-
-            if (!isWithinAttackRange(tower, enemy, radiusPx))
-            {
-                continue;
-            }
-
             enemy.applyDamage(tower.damage);
             const enemyDied = enemy.health <= 0;
 
@@ -165,6 +160,6 @@ export class TowerAttackSystem
             {
                 EventBus.emit(GAME_EVENTS.ENEMY_DAMAGED, enemy.snapshot());
             }
-        }
+        });
     }
 }

@@ -28,7 +28,6 @@ import { GridPlacementController } from './GridPlacementController';
 import { TowerRelocationController } from './TowerRelocationController';
 import { PlayerNexusPresenter } from './PlayerNexusPresenter';
 import { TowerLinkIndicator } from './TowerLinkIndicator';
-import { computeActiveTowerPairLinks } from '../combat/towerPairLinks';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerDefinitionId } from '../config/towerCatalog';
 import { clientPointerToWorld } from './clientPointerToWorld';
@@ -361,7 +360,7 @@ export class GameSceneController
             return;
         }
 
-        const links = computeActiveTowerPairLinks(this.session.towers.all, this.grid);
+        const links = this.session.raceBonuses.getActivePairLinks();
 
         this.towerLinkIndicator.sync(
             this.scene,

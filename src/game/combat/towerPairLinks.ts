@@ -10,6 +10,12 @@ export interface TowerPairLink {
     towerIdB: string;
 }
 
+export interface DirectedTowerPairMatch {
+    sourceTowerId: string;
+    targetTowerId: string;
+    pair: SpecificPairRule;
+}
+
 const isAdjacentWithinRadius = (
     from: GridPosition,
     to: GridPosition,
@@ -119,4 +125,68 @@ export const computeActiveTowerPairLinks = (
     }
 
     return links;
+};
+
+export interface TowerPairTopology {
+    readonly undirectedLinks: readonly TowerPairLink[];
+    readonly directedMatchesBySource: ReadonlyMap<string, readonly DirectedTowerPairMatch[]>;
+}
+
+export const buildTowerPairTopology = (
+    towers: readonly TowerState[],
+    grid: Grid,
+): TowerPairTopology =>
+{
+    const living = towers.filter((tower) => tower.health > 0);
+    const undirectedLinks: TowerPairLink[] = [];
+    const directed = new Map<string, DirectedTowerPairMatch[]>();
+    const seenUndirected = new Set<string>();
+
+    for (let i = 0; i < living.length; i++)
+    {
+        for (let j = i + 1; j < living.length; j++)
+        {
+            const a = living[i];
+            const b = living[j];
+
+            let linked = false;
+
+            for (const pair of RACE_BONUS_CONFIG.specificPairBonuses)
+            {
+                if (matchesTowerPairRule(a, b, grid, pair))
+                {
+                    const bucket = directed.get(a.id) ?? [];
+                    bucket.push({ sourceTowerId: a.id, targetTowerId: b.id, pair });
+                    directed.set(a.id, bucket);
+                    linked = true;
+                }
+
+                if (matchesTowerPairRule(b, a, grid, pair))
+                {
+                    const bucket = directed.get(b.id) ?? [];
+                    bucket.push({ sourceTowerId: b.id, targetTowerId: a.id, pair });
+                    directed.set(b.id, bucket);
+                    linked = true;
+                }
+            }
+
+            if (!linked)
+            {
+                continue;
+            }
+
+            const key = [ a.id, b.id ].sort().join('|');
+
+            if (!seenUndirected.has(key))
+            {
+                seenUndirected.add(key);
+                undirectedLinks.push({ towerIdA: a.id, towerIdB: b.id });
+            }
+        }
+    }
+
+    return {
+        undirectedLinks,
+        directedMatchesBySource: directed,
+    };
 };

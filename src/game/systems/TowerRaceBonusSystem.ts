@@ -1,6 +1,6 @@
 import { getCumulativeScalingDelta, RACE_BONUS_CONFIG } from '../config/raceBonusCatalog';
 import type { TowerUpgradeModifiers } from '../config/towerUpgradeCatalog';
-import { matchesTowerPairRule } from '../combat/towerPairLinks';
+import { buildTowerPairTopology, type TowerPairLink } from '../combat/towerPairLinks';
 import type { TowerState } from '../domain/TowerState';
 import type { Grid } from '../grid/Grid';
 import type { TowerPlacementSystem } from './TowerPlacementSystem';
@@ -51,10 +51,17 @@ const raceLabel = (race: TowerState['race']): string =>
 
 export class TowerRaceBonusSystem
 {
+    private topologyLayoutKey = '';
+    private pairTopology: ReturnType<typeof buildTowerPairTopology>;
+    private activePairLinks: TowerPairLink[] = [];
+
     constructor (
         private readonly towers: TowerPlacementSystem,
         private readonly grid: Grid,
-    ) {}
+    )
+    {
+        this.pairTopology = buildTowerPairTopology([], grid);
+    }
 
     tick (_gameTick: number): void
     {
@@ -64,6 +71,14 @@ export class TowerRaceBonusSystem
     recalculate (): void
     {
         const all = this.towers.all;
+        this.ensurePairTopology(all);
+        this.activePairLinks = this.pairTopology.undirectedLinks.filter((link) =>
+        {
+            const a = all.find((tower) => tower.id === link.towerIdA);
+            const b = all.find((tower) => tower.id === link.towerIdB);
+
+            return Boolean(a && b && a.health > 0 && b.health > 0);
+        });
 
         for (const tower of all)
         {
@@ -143,27 +158,32 @@ export class TowerRaceBonusSystem
 
             for (const pair of RACE_BONUS_CONFIG.specificPairBonuses)
             {
-                if (!matchesTowerPairRule(tower, other, this.grid, pair))
+                if (pair.sourceTowerId !== tower.definitionId)
                 {
                     continue;
                 }
 
-                const key = `pair:${pair.sourceTowerId}->${pair.targetTowerIds.join('|')}:${pair.sameRowOnly ? 'row' : 'adj'}:${pair.useSpawnTiles ? 'spawn' : 'current'}`;
-                const seen = (stackCounts.get(key) ?? 0) + 1;
+                const matches = (this.pairTopology.directedMatchesBySource.get(tower.id) ?? [])
+                    .filter((entry) =>
+                        entry.pair === pair && all.some((candidate) =>
+                            candidate.id === entry.targetTowerId && candidate.health > 0));
 
-                if (seen > pair.maxStacks)
+                if (matches.length === 0)
                 {
                     continue;
                 }
 
-                stackCounts.set(key, seen);
-                addBonus(out, pair.bonus, getCumulativeScalingDelta(pair.countScaling, seen));
+                const seen = Math.min(matches.length, pair.maxStacks);
+
+                for (let count = 1; count <= seen; count++)
+                {
+                    addBonus(out, pair.bonus, getCumulativeScalingDelta(pair.countScaling, count));
+                }
+
                 this.bumpTag(
                     tags,
                     `Pair ${pair.sourceTowerId}+${pair.targetTowerIds.join('/')}${pair.sameRowOnly ? ' (same row)' : ''}${pair.useSpawnTiles ? ' (spawn-linked)' : ''}`,
                 );
-
-                break;
             }
         }
 
@@ -187,6 +207,27 @@ export class TowerRaceBonusSystem
     private bumpTag (tags: Set<string>, tag: string): void
     {
         tags.add(tag);
+    }
+
+    getActivePairLinks (): readonly TowerPairLink[]
+    {
+        return this.activePairLinks;
+    }
+
+    private ensurePairTopology (all: readonly TowerState[]): void
+    {
+        const layoutKey = all
+            .map((tower) => `${tower.id}:${tower.definitionId}:${tower.spawnTile.col}:${tower.spawnTile.row}`)
+            .sort()
+            .join('|');
+
+        if (layoutKey === this.topologyLayoutKey)
+        {
+            return;
+        }
+
+        this.topologyLayoutKey = layoutKey;
+        this.pairTopology = buildTowerPairTopology(all, this.grid);
     }
 }
 
