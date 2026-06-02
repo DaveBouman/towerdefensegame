@@ -145,7 +145,7 @@ export class TowerRaceBonusSystem
             {
                 if (
                     pair.sourceTowerId !== tower.definitionId
-                    || pair.targetTowerId !== other.definitionId
+                    || !pair.targetTowerIds.includes(other.definitionId)
                 )
                 {
                     continue;
@@ -169,7 +169,7 @@ export class TowerRaceBonusSystem
                     continue;
                 }
 
-                const key = `pair:${pair.sourceTowerId}->${pair.targetTowerId}:${pair.sameRowOnly ? 'row' : 'adj'}:${pair.useSpawnTiles ? 'spawn' : 'current'}`;
+                const key = `pair:${pair.sourceTowerId}->${pair.targetTowerIds.join('|')}:${pair.sameRowOnly ? 'row' : 'adj'}:${pair.useSpawnTiles ? 'spawn' : 'current'}`;
                 const seen = (stackCounts.get(key) ?? 0) + 1;
 
                 if (seen > pair.maxStacks)
@@ -178,10 +178,22 @@ export class TowerRaceBonusSystem
                 }
 
                 stackCounts.set(key, seen);
-                addBonus(out, pair.bonus);
+                const scaling = pair.countScaling;
+                const scalar = scaling?.[Math.min(seen, scaling.length) - 1];
+
+                if (scaling?.length)
+                {
+                    const previousScalar = scaling[Math.min(seen - 1, scaling.length) - 1] ?? 0;
+
+                    addBonus(out, pair.bonus, Math.max(0, scalar - previousScalar));
+                }
+                else
+                {
+                    addBonus(out, pair.bonus);
+                }
                 this.bumpTag(
                     tags,
-                    `Pair ${pair.sourceTowerId}+${pair.targetTowerId}${pair.sameRowOnly ? ' (same row)' : ''}${pair.useSpawnTiles ? ' (spawn-linked)' : ''}`,
+                    `Pair ${pair.sourceTowerId}+${pair.targetTowerIds.join('/')}${pair.sameRowOnly ? ' (same row)' : ''}${pair.useSpawnTiles ? ' (spawn-linked)' : ''}`,
                 );
             }
         }

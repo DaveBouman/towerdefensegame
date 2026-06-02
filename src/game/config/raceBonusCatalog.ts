@@ -15,11 +15,13 @@ interface RaceBonusJson {
     }[];
     specificPairBonuses?: {
         sourceTowerId: string;
-        targetTowerId: string;
+        targetTowerId?: string;
+        targetTowerIds?: string[];
         sameRowOnly?: boolean;
         useSpawnTiles?: boolean;
         bonus: TowerUpgradeModifiers;
         maxStacks?: number;
+        countScaling?: number[];
     }[];
 }
 
@@ -35,11 +37,12 @@ export interface RaceBonusConfig {
     }[];
     specificPairBonuses: {
         sourceTowerId: TowerDefinitionId;
-        targetTowerId: TowerDefinitionId;
+        targetTowerIds: TowerDefinitionId[];
         sameRowOnly: boolean;
         useSpawnTiles: boolean;
         bonus: TowerUpgradeModifiers;
         maxStacks: number;
+        countScaling: number[] | null;
     }[];
 }
 
@@ -82,14 +85,27 @@ const parse = (raw: RaceBonusJson): RaceBonusConfig =>
         maxStacksPerSource: Math.max(1, Math.floor(raw.maxStacksPerSource ?? 99)),
         sameRacePerNeighborBonus: same,
         crossRacePerNeighborBonus: cross,
-        specificPairBonuses: (raw.specificPairBonuses ?? []).map((entry) => ({
-            sourceTowerId: entry.sourceTowerId,
-            targetTowerId: entry.targetTowerId,
-            sameRowOnly: entry.sameRowOnly ?? false,
-            useSpawnTiles: entry.useSpawnTiles ?? false,
-            bonus: entry.bonus ?? {},
-            maxStacks: Math.max(1, Math.floor(entry.maxStacks ?? 1)),
-        })),
+        specificPairBonuses: (raw.specificPairBonuses ?? []).map((entry) =>
+        {
+            const targetTowerIds = entry.targetTowerIds?.length
+                ? entry.targetTowerIds
+                : (entry.targetTowerId ? [ entry.targetTowerId ] : []);
+
+            if (targetTowerIds.length === 0)
+            {
+                throw new Error(`specificPairBonuses for ${entry.sourceTowerId} requires targetTowerId or targetTowerIds`);
+            }
+
+            return {
+                sourceTowerId: entry.sourceTowerId,
+                targetTowerIds,
+                sameRowOnly: entry.sameRowOnly ?? false,
+                useSpawnTiles: entry.useSpawnTiles ?? false,
+                bonus: entry.bonus ?? {},
+                maxStacks: Math.max(1, Math.floor(entry.maxStacks ?? 1)),
+                countScaling: entry.countScaling?.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0) ?? null,
+            };
+        }),
     };
 };
 

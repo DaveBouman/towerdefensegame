@@ -62,9 +62,10 @@
         },
         {
             "sourceTowerId": "juggernaut",
-            "targetTowerId": "siege",
+            "targetTowerIds": ["siege", "militia"],
             "useSpawnTiles": true,
-            "maxStacks": 1,
+            "maxStacks": 3,
+            "countScaling": [1, 1.5, 1.8],
             "bonus": {
                 "maxHealth": 80,
                 "defense": 6
