@@ -1,11 +1,11 @@
 import { getCumulativeScalingDelta, RACE_BONUS_CONFIG } from '../config/raceBonusCatalog';
 import type { TowerUpgradeModifiers } from '../config/towerUpgradeCatalog';
+import { matchesTowerPairRule } from '../combat/towerPairLinks';
 import type { TowerState } from '../domain/TowerState';
 import type { Grid } from '../grid/Grid';
 import type { TowerPlacementSystem } from './TowerPlacementSystem';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
-import type { GridPosition } from '../grid/types';
 
 const MODIFIER_KEYS: (keyof TowerUpgradeModifiers)[] = [
     'range',
@@ -143,28 +143,7 @@ export class TowerRaceBonusSystem
 
             for (const pair of RACE_BONUS_CONFIG.specificPairBonuses)
             {
-                if (
-                    pair.sourceTowerId !== tower.definitionId
-                    || !pair.targetTowerIds.includes(other.definitionId)
-                )
-                {
-                    continue;
-                }
-
-                const pairOrigin = pair.useSpawnTiles ? tower.spawnTile : originTile;
-                const pairOther = pair.useSpawnTiles ? other.spawnTile : otherTile;
-                const pairAdjacent = this.isAdjacentWithinRadius(
-                    pairOrigin,
-                    pairOther,
-                    RACE_BONUS_CONFIG.adjacencyRadiusTiles,
-                );
-
-                if (!pairAdjacent)
-                {
-                    continue;
-                }
-
-                if (pair.sameRowOnly && pairOrigin.row !== pairOther.row)
+                if (!matchesTowerPairRule(tower, other, this.grid, pair))
                 {
                     continue;
                 }
@@ -183,6 +162,8 @@ export class TowerRaceBonusSystem
                     tags,
                     `Pair ${pair.sourceTowerId}+${pair.targetTowerIds.join('/')}${pair.sameRowOnly ? ' (same row)' : ''}${pair.useSpawnTiles ? ' (spawn-linked)' : ''}`,
                 );
+
+                break;
             }
         }
 
@@ -206,18 +187,6 @@ export class TowerRaceBonusSystem
     private bumpTag (tags: Set<string>, tag: string): void
     {
         tags.add(tag);
-    }
-
-    private isAdjacentWithinRadius (
-        from: GridPosition,
-        to: GridPosition,
-        radius: number,
-    ): boolean
-    {
-        const dc = Math.abs(from.col - to.col);
-        const dr = Math.abs(from.row - to.row);
-
-        return Math.max(dc, dr) <= radius;
     }
 }
 

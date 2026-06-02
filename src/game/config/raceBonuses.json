@@ -43,7 +43,7 @@
         {
             "sourceTowerId": "militia",
             "targetTowerId": "militia",
-            "sameRowOnly": true,
+            "sameRowOnly": false,
             "useSpawnTiles": true,
             "maxStacks": 1,
             "bonus": {

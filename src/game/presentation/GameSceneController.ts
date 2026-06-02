@@ -27,6 +27,8 @@ import { TowerDropTarget } from './TowerDropTarget';
 import { GridPlacementController } from './GridPlacementController';
 import { TowerRelocationController } from './TowerRelocationController';
 import { PlayerNexusPresenter } from './PlayerNexusPresenter';
+import { TowerLinkIndicator } from './TowerLinkIndicator';
+import { computeActiveTowerPairLinks } from '../combat/towerPairLinks';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerDefinitionId } from '../config/towerCatalog';
 import { clientPointerToWorld } from './clientPointerToWorld';
@@ -34,6 +36,7 @@ import { clientPointerToWorld } from './clientPointerToWorld';
 export class GameSceneController
 {
     private readonly rangeIndicator = new RangeIndicator();
+    private readonly towerLinkIndicator = new TowerLinkIndicator();
     private readonly attackBeamEffect = new AttackBeamEffect();
     private readonly enemyPresenter: EnemyPresenter;
     private readonly towerPresenter: TowerPresenter;
@@ -308,6 +311,7 @@ export class GameSceneController
             this.towerPresenter.setHealth(tower.id, tower.health, tower.maxHealth);
         }
 
+        this.syncTowerLinks();
         this.selection.syncFrame();
     }
 
@@ -332,6 +336,7 @@ export class GameSceneController
 
         this.enemyPresenter.lerpFrame(deltaMs);
         this.towerPresenter.lerpFrame(deltaMs);
+        this.syncTowerLinks();
         this.selection.syncFrame();
     }
 
@@ -345,7 +350,26 @@ export class GameSceneController
         this.playerNexusPresenter.destroy();
         this.selection.clear();
         this.rangeIndicator.destroy();
+        this.towerLinkIndicator.destroy();
         this.attackBeamEffect.destroy();
+    }
+
+    private syncTowerLinks (): void
+    {
+        if (!canAddToScene(this.scene))
+        {
+            return;
+        }
+
+        const links = computeActiveTowerPairLinks(this.session.towers.all, this.grid);
+
+        this.towerLinkIndicator.sync(
+            this.scene,
+            links,
+            (towerId) =>
+                this.towerPresenter.getDisplayPosition(towerId)
+                ?? this.session.towers.getSnapshot(towerId)?.position,
+        );
     }
 
     private onPlaceTowerAtTile ({
@@ -425,6 +449,7 @@ export class GameSceneController
             this.towerPresenter.snapToTarget(towerId);
         }
 
+        this.syncTowerLinks();
         this.selection.syncFrame();
     }
 
@@ -473,6 +498,7 @@ export class GameSceneController
 
         this.towerPresenter.place(this.scene, this.grid, snapshot);
         this.towerPresenter.setRelocateMode(this.session.canRepositionTowers());
+        this.syncTowerLinks();
     }
 
     private onTowerRemoved ({ id }: { id: string }): void
@@ -481,6 +507,7 @@ export class GameSceneController
         this.session.towerAttacks.clearTower(id);
         this.session.towerMovement.clearTower(id);
         this.towerPresenter.remove(id);
+        this.syncTowerLinks();
         this.session.checkWaveComplete();
     }
 
@@ -512,6 +539,8 @@ export class GameSceneController
         {
             this.session.checkWaveComplete();
         }
+
+        this.syncTowerLinks();
     }
 
     private onTowerAttacked (payload: TowerAttackPayload): void
