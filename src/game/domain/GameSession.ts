@@ -27,11 +27,10 @@ import {
     isWaveRoundComplete,
 } from '../combat/roundOutcome';
 import { PlayerNexusSystem } from '../systems/PlayerNexusSystem';
-import { EnemyNexusAttackSystem } from '../systems/EnemyNexusAttackSystem';
-import { PlayerNexusAttackSystem } from '../systems/PlayerNexusAttackSystem';
 import { TowerRaceBonusSystem } from '../systems/TowerRaceBonusSystem';
 import { UnitAttackSystem } from '../systems/UnitAttackSystem';
 import { UnitMovementSystem } from '../systems/UnitMovementSystem';
+import { UnitNexusAttackSystem } from '../systems/UnitNexusAttackSystem';
 
 export class GameSession
 {
@@ -43,11 +42,7 @@ export class GameSession
     readonly enemies: EnemySpawnSystem;
     readonly towers: TowerPlacementSystem;
     readonly unitMovement: UnitMovementSystem;
-    readonly towerMovement: UnitMovementSystem;
-    readonly enemyMovement: UnitMovementSystem;
     readonly unitAttacks: UnitAttackSystem;
-    readonly enemyAttacks: UnitAttackSystem;
-    readonly towerAttacks: UnitAttackSystem;
     readonly towerUpgrades: TowerUpgradeService;
     readonly playerNexus: PlayerNexusSystem;
     readonly deployment: DeploymentPhase;
@@ -76,8 +71,6 @@ export class GameSession
             grid,
             this.collision,
         );
-        this.towerMovement = this.unitMovement;
-        this.enemyMovement = this.unitMovement;
         const killRewards = new KillRewardSystem(this.state);
 
         this.unitAttacks = new UnitAttackSystem(
@@ -87,19 +80,10 @@ export class GameSession
             grid,
             killRewards,
         );
-        this.enemyAttacks = this.unitAttacks;
-        this.towerAttacks = this.unitAttacks;
-        const enemyNexusAttacks = new EnemyNexusAttackSystem(
+        const unitNexusAttacks = new UnitNexusAttackSystem(
             this.enemies,
             this.towers,
             this.playerNexus,
-            grid,
-            killRewards,
-            () => this.state.wave,
-        );
-        const playerNexusAttacks = new PlayerNexusAttackSystem(
-            this.playerNexus,
-            this.enemies,
             grid,
             killRewards,
             () => this.state.wave,
@@ -112,9 +96,8 @@ export class GameSession
             this.waveSpawns,
             this.enemies,
             this.towers,
-            this.towerMovement,
-            this.towerAttacks,
             this.unitMovement,
+            this.unitAttacks,
             this.deployment,
         );
 
@@ -122,10 +105,8 @@ export class GameSession
             this.waveSpawns,
             this.unitMovement,
             this.raceBonuses,
-            this.unitMovement,
             this.unitAttacks,
-            enemyNexusAttacks,
-            playerNexusAttacks,
+            unitNexusAttacks,
         ];
     }
 
@@ -189,7 +170,7 @@ export class GameSession
 
         this.state.setTowerDraftPick(null);
         this.towers.snapAllToSpawnTiles();
-        this.towerMovement.clearAll();
+        this.unitMovement.clearAll();
         this.deployment.enqueue(definitionId);
         this.state.setCanStartWave(true);
         this.raceBonuses.recalculate();
@@ -226,8 +207,8 @@ export class GameSession
             return false;
         }
 
-        this.towerMovement.clearTower(towerId);
-        this.towerAttacks.clearTower(towerId);
+        this.unitMovement.clearTower(towerId);
+        this.unitAttacks.clearTower(towerId);
         this.raceBonuses.recalculate();
         this.state.setRaceDraftBias(this.computeRaceDraftBias());
 
@@ -441,8 +422,8 @@ export class GameSession
     private resetPlayerTowersAfterWave (): void
     {
         this.towers.resetPlayerTowers();
-        this.towerMovement.clearAll();
-        this.towerAttacks.clearAll();
+        this.unitMovement.clearAll();
+        this.unitAttacks.clearAll();
         this.raceBonuses.recalculate();
         this.state.setRaceDraftBias(this.computeRaceDraftBias());
         EventBus.emit(GAME_EVENTS.WAVE_COMPLETED);

@@ -24,9 +24,8 @@ export class WaveRoundController
         private readonly waveSpawns: WaveSpawnSystem,
         private readonly enemies: EnemySpawnSystem,
         private readonly towers: TowerPlacementSystem,
-        private readonly towerMovement: MovementResetPort,
-        private readonly towerAttacks: AttackResetPort,
-        private readonly enemyMovement: MovementResetPort,
+        private readonly unitMovement: MovementResetPort,
+        private readonly unitAttacks: AttackResetPort,
         private readonly deployment: DeploymentPhase,
     ) {}
 
@@ -89,9 +88,8 @@ export class WaveRoundController
         this.state.setCanStartWave(false);
         this.waves.startNextWave();
         this.towers.snapAllToSpawnTiles();
-        this.towerMovement.clearAll();
-        this.towerAttacks.clearAll();
-        this.enemyMovement.clearAll();
+        this.unitMovement.clearAll();
+        this.unitAttacks.clearAll();
         this.waveSpawns.beginCombatWave(this.state.wave, this.clock.currentTick);
 
         return true;

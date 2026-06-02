@@ -465,8 +465,8 @@ export class GameSceneController
     private onEnemyRemoved ({ id }: { id: string }): void
     {
         this.selection.onEnemyRemoved(id);
-        this.session.enemyAttacks.clearEnemy(id);
-        this.session.enemyMovement.clearEnemy(id);
+        this.session.unitAttacks.clearEnemy(id);
+        this.session.unitMovement.clearEnemy(id);
         this.enemyPresenter.remove(id);
         this.session.checkWaveComplete();
     }
@@ -503,8 +503,8 @@ export class GameSceneController
     private onTowerRemoved ({ id }: { id: string }): void
     {
         this.selection.onTowerRemoved(id);
-        this.session.towerAttacks.clearTower(id);
-        this.session.towerMovement.clearTower(id);
+        this.session.unitAttacks.clearTower(id);
+        this.session.unitMovement.clearTower(id);
         this.towerPresenter.remove(id);
         this.syncTowerLinks();
         this.session.checkWaveComplete();
