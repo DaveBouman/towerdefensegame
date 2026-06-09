@@ -5,13 +5,18 @@ import type { WorldPosition } from '../grid/types';
 import { canAddToScene } from './sceneReady';
 
 const LINK_DEPTH = 12;
-const LINK_COLOR = 0x78f0b8;
-const LINK_ALPHA = 0.9;
+const DEFAULT_LINK_COLOR = 0x78f0b8;
+const DEFAULT_LINK_ALPHA = 0.9;
 
 export class TowerLinkIndicator
 {
     private graphics: GameObjects.Graphics | null = null;
     private layer: GameObjects.Container | null = null;
+
+    constructor (
+        private readonly linkColor = DEFAULT_LINK_COLOR,
+        private readonly linkAlpha = DEFAULT_LINK_ALPHA,
+    ) {}
 
     sync (
         scene: Scene,
@@ -45,19 +50,19 @@ export class TowerLinkIndicator
                 continue;
             }
 
-            this.graphics.lineStyle(2, LINK_COLOR, LINK_ALPHA * 0.45);
+            this.graphics.lineStyle(2, this.linkColor, this.linkAlpha * 0.45);
             this.graphics.beginPath();
             this.graphics.moveTo(from.x, from.y);
             this.graphics.lineTo(to.x, to.y);
             this.graphics.strokePath();
 
-            this.graphics.lineStyle(3, LINK_COLOR, LINK_ALPHA);
+            this.graphics.lineStyle(3, this.linkColor, this.linkAlpha);
             this.graphics.beginPath();
             this.graphics.moveTo(from.x, from.y);
             this.graphics.lineTo(to.x, to.y);
             this.graphics.strokePath();
 
-            this.graphics.fillStyle(LINK_COLOR, LINK_ALPHA);
+            this.graphics.fillStyle(this.linkColor, this.linkAlpha);
             this.graphics.fillCircle(from.x, from.y, 5);
             this.graphics.fillCircle(to.x, to.y, 5);
         }

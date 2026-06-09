@@ -48,9 +48,16 @@ export const TowerDraftPick = () =>
     return (
         <div className="tower-draft-pick" role="dialog" aria-modal="true" aria-labelledby="tower-draft-title">
             <div className="tower-draft-pick__panel">
-                <h2 id="tower-draft-title" className="tower-draft-pick__title">
-                    {isRunStart ? 'Choose your tower' : 'Recruit a tower'}
-                </h2>
+                <div className="tower-draft-pick__header">
+                    <h2 id="tower-draft-title" className="tower-draft-pick__title">
+                        {isRunStart ? 'Choose your tower' : 'Recruit a tower'}
+                    </h2>
+                    {!isRunStart && (
+                        <span className="tower-draft-pick__gold" aria-label={`Gold ${gold}`}>
+                            Gold {gold}
+                        </span>
+                    )}
+                </div>
                 <p className="tower-draft-pick__hint">
                     {isRunStart
                         ? 'Pick 1 starter unit (tier 1 only). Higher tiers can appear in drafts later in the run.'

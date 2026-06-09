@@ -39,6 +39,12 @@ import { UnitAttackSystem } from '../systems/UnitAttackSystem';
 import { UnitMovementSystem } from '../systems/UnitMovementSystem';
 import { UnitNexusAttackSystem } from '../systems/UnitNexusAttackSystem';
 import { formatWaveTowerDamageLog, TowerRoundDamageLog } from './TowerRoundDamageLog';
+import type { TowerPairLink } from '../combat/towerPairLinks';
+import {
+    findTowerFusionGroups,
+    getTowerFusionPreviewLinks,
+    pickFusionAnchor,
+} from '../combat/towerFusion';
 
 export class GameSession
 {
@@ -334,9 +340,51 @@ export class GameSession
         return true;
     }
 
+    getPendingTowerFusionLinks (): TowerPairLink[]
+    {
+        if (
+            this.isRoundActive()
+            || this.state.upgradePick
+            || this.state.towerDraftPick
+        )
+        {
+            return [];
+        }
+
+        return getTowerFusionPreviewLinks(this.towers.all);
+    }
+
+    resolveTowerFusion (): void
+    {
+        const groups = findTowerFusionGroups(this.towers.all);
+
+        if (groups.length === 0)
+        {
+            return;
+        }
+
+        for (const group of groups)
+        {
+            const anchor = pickFusionAnchor(group);
+            const victims = group.filter((tower) => tower.id !== anchor.id);
+
+            for (const victim of victims)
+            {
+                this.unitMovement.clearTower(victim.id);
+                this.unitAttacks.clearTower(victim.id);
+            }
+
+            this.towers.mergeFusionGroup(anchor, victims, group.length);
+        }
+
+        this.raceBonuses.recalculate();
+        this.state.setRaceDraftBias(this.computeRaceDraftBias());
+    }
+
     startWave (): void
     {
         this.state.setPaused(false);
+        this.resolveTowerFusion();
 
         if (this.waveRounds.startCombatRound())
         {

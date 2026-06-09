@@ -153,10 +153,25 @@ body {
     font-family: monospace;
 }
 
+.tower-draft-pick__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
 .tower-draft-pick__title {
-    margin: 0 0 8px;
+    margin: 0;
     font-size: 18px;
     font-weight: 600;
+}
+
+.tower-draft-pick__gold {
+    flex-shrink: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #f1c40f;
 }
 
 .tower-draft-pick__hint {

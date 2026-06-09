@@ -18,6 +18,7 @@ import type { Grid } from '../grid/Grid';
 import type { GridPosition, WorldPosition } from '../grid/types';
 import { tileCenterWorld } from '../grid/worldPosition';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
+import { getTowerFusionStatMultiplier } from '../config/towerFusionConfig';
 import type { TowerStateSnapshot } from './types';
 import type { TowerRace } from './towers/types';
 import type { CombatSide } from './combatUnit';
@@ -48,6 +49,8 @@ export class TowerState
     private auraBonus: TowerUpgradeModifiers = {};
     private raceAuraTags: string[] = [];
     private _targetingMode: TowerTargetingMode = 'nearest';
+    private fusionStatMultiplier = 1;
+    private _fusionGroupSize = 1;
 
     constructor (
         grid: Grid,
@@ -94,6 +97,37 @@ export class TowerState
         {
             this.experience += amount;
         }
+    }
+
+    get fusionGroupSize (): number
+    {
+        return this._fusionGroupSize;
+    }
+
+    completeFusion (groupSize: number, victims: readonly TowerState[]): void
+    {
+        for (const victim of victims)
+        {
+            this.experience += victim.experience;
+            this.killCount += victim.killCount;
+        }
+
+        if (victims.length > 0)
+        {
+            this.refreshModifiers();
+        }
+
+        const previousMax = this.maxHealth;
+        const previousHealth = this.health;
+
+        this._fusionGroupSize = groupSize;
+        this.fusionStatMultiplier = getTowerFusionStatMultiplier(groupSize);
+
+        const newMax = this.maxHealth;
+
+        this.health = previousMax > 0
+            ? Math.min(previousHealth * (newMax / previousMax), newMax)
+            : newMax;
     }
 
     recordKill (killExp: number): void
@@ -155,17 +189,17 @@ export class TowerState
 
     get maxHealth (): number
     {
-        return this.profile.maxHealth + this.modifier('maxHealth');
+        return this.fusedStat('maxHealth', this.profile.maxHealth);
     }
 
     get range (): number
     {
-        return this.profile.range + this.modifier('range');
+        return this.fusedStat('range', this.profile.range);
     }
 
     get damage (): number
     {
-        return this.profile.damage + this.modifier('damage');
+        return this.fusedStat('damage', this.profile.damage);
     }
 
     get damageType (): DamageType
@@ -175,12 +209,12 @@ export class TowerState
 
     get defense (): number
     {
-        return this.profile.defense + this.modifier('defense');
+        return this.fusedStat('defense', this.profile.defense);
     }
 
     get armorByType (): ArmorByType
     {
-        const delta = this.modifier('defense');
+        const delta = this.defense - this.profile.defense;
 
         return {
             physical: Math.max(0, this.profile.armorByType.physical + delta),
@@ -198,12 +232,12 @@ export class TowerState
 
     get moveSpeedPerTick (): number
     {
-        return this.profile.moveSpeedPerTick + this.modifier('moveSpeedPerTick');
+        return this.fusedStat('moveSpeedPerTick', this.profile.moveSpeedPerTick);
     }
 
     get goldValue (): number
     {
-        return this.profile.goldValue + this.modifier('goldValue');
+        return this.fusedStat('goldValue', this.profile.goldValue);
     }
 
     get race (): TowerRace
@@ -374,6 +408,11 @@ export class TowerState
     private modifier (key: keyof TowerUpgradeModifiers): number
     {
         return (this.bonus[key] ?? 0) + (this.auraBonus[key] ?? 0);
+    }
+
+    private fusedStat (key: keyof TowerUpgradeModifiers, profileValue: number): number
+    {
+        return (profileValue + this.modifier(key)) * this.fusionStatMultiplier;
     }
 
     private sameModifiers (

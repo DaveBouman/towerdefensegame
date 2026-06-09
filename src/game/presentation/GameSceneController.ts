@@ -35,6 +35,7 @@ export class GameSceneController
 {
     private readonly rangeIndicator = new RangeIndicator();
     private readonly towerLinkIndicator = new TowerLinkIndicator();
+    private readonly towerFusionIndicator = new TowerLinkIndicator(0xe74c3c, 0.95);
     private readonly attackBeamEffect = new AttackBeamEffect();
     private readonly enemyPresenter: EnemyPresenter;
     private readonly towerPresenter: TowerPresenter;
@@ -336,6 +337,7 @@ export class GameSceneController
         this.selection.clear();
         this.rangeIndicator.destroy();
         this.towerLinkIndicator.destroy();
+        this.towerFusionIndicator.destroy();
         this.attackBeamEffect.destroy();
     }
 
@@ -348,12 +350,15 @@ export class GameSceneController
 
         const links = this.session.raceBonuses.getActivePairLinks();
 
-        this.towerLinkIndicator.sync(
+        const resolvePosition = (towerId: string) =>
+            this.towerPresenter.getDisplayPosition(towerId)
+            ?? this.session.towers.getSnapshot(towerId)?.position;
+
+        this.towerLinkIndicator.sync(this.scene, links, resolvePosition);
+        this.towerFusionIndicator.sync(
             this.scene,
-            links,
-            (towerId) =>
-                this.towerPresenter.getDisplayPosition(towerId)
-                ?? this.session.towers.getSnapshot(towerId)?.position,
+            this.session.getPendingTowerFusionLinks(),
+            resolvePosition,
         );
     }
 

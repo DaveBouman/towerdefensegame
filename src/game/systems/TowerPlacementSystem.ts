@@ -184,6 +184,22 @@ export class TowerPlacementSystem
         EventBus.emit(GAME_EVENTS.TOWER_DISABLED, { id });
     }
 
+    mergeFusionGroup (
+        anchor: TowerState,
+        victims: readonly TowerState[],
+        groupSize: number,
+    ): void
+    {
+        anchor.completeFusion(groupSize, victims);
+
+        for (const victim of victims)
+        {
+            this.remove(victim.id);
+        }
+
+        EventBus.emit(GAME_EVENTS.TOWER_UPDATED, anchor.snapshot());
+    }
+
     /** Returns towers to their placement tiles (simulation + collision). */
     snapAllToSpawnTiles (): void
     {
