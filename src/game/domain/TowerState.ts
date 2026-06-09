@@ -18,7 +18,7 @@ import type { Grid } from '../grid/Grid';
 import type { GridPosition, WorldPosition } from '../grid/types';
 import { tileCenterWorld } from '../grid/worldPosition';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
-import { getTowerFusionStatMultiplier } from '../config/towerFusionConfig';
+import { computeFusionStatMultipliers } from '../config/towerFusionConfig';
 import type { TowerStateSnapshot } from './types';
 import type { TowerRace } from './towers/types';
 import type { CombatSide } from './combatUnit';
@@ -49,7 +49,7 @@ export class TowerState
     private auraBonus: TowerUpgradeModifiers = {};
     private raceAuraTags: string[] = [];
     private _targetingMode: TowerTargetingMode = 'nearest';
-    private fusionStatMultiplier = 1;
+    private fusionStatMultipliers: Partial<Record<keyof TowerUpgradeModifiers, number>> = {};
     private _fusionGroupSize = 1;
 
     constructor (
@@ -121,7 +121,11 @@ export class TowerState
         const previousHealth = this.health;
 
         this._fusionGroupSize = groupSize;
-        this.fusionStatMultiplier = getTowerFusionStatMultiplier(groupSize);
+        this.fusionStatMultipliers = computeFusionStatMultipliers(
+            this.definitionId,
+            this.profile.archetype,
+            groupSize,
+        );
 
         const newMax = this.maxHealth;
 
@@ -227,7 +231,7 @@ export class TowerState
 
     get attacksPerSecond (): number
     {
-        return this.profile.attacksPerSecond + this.modifier('attacksPerSecond');
+        return this.fusedStat('attacksPerSecond', this.profile.attacksPerSecond);
     }
 
     get moveSpeedPerTick (): number
@@ -412,7 +416,9 @@ export class TowerState
 
     private fusedStat (key: keyof TowerUpgradeModifiers, profileValue: number): number
     {
-        return (profileValue + this.modifier(key)) * this.fusionStatMultiplier;
+        const multiplier = this.fusionStatMultipliers[key] ?? 1;
+
+        return (profileValue + this.modifier(key)) * multiplier;
     }
 
     private sameModifiers (

@@ -24,10 +24,13 @@ export interface DeploymentSnapshot {
     queue: TowerDefinitionId[];
 }
 
+export type RunOutcome = 'playing' | 'victory' | 'defeat';
+
 export interface GameStateSnapshot {
     gold: number;
     wave: number;
     lives: number;
+    runOutcome: RunOutcome;
     canStartWave: boolean;
     paused: boolean;
     raceDraftBias: Record<TowerRace, number>;

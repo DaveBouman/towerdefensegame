@@ -3,6 +3,7 @@ import { GAME_EVENTS } from '../events/gameEvents';
 import type {
     DeploymentSnapshot,
     GameStateSnapshot,
+    RunOutcome,
     TowerDraftPickState,
     UpgradePickState,
 } from './types';
@@ -13,6 +14,7 @@ export class GameState
     private _gold = 100;
     private _wave = 0;
     private _lives = 20;
+    private _runOutcome: RunOutcome = 'playing';
     private _canStartWave = true;
     private _paused = false;
     private _raceDraftBias: Record<TowerRace, number> = {
@@ -37,6 +39,11 @@ export class GameState
     get lives (): number
     {
         return this._lives;
+    }
+
+    get runOutcome (): RunOutcome
+    {
+        return this._runOutcome;
     }
 
     get canStartWave (): boolean
@@ -70,6 +77,7 @@ export class GameState
             gold: this._gold,
             wave: this._wave,
             lives: this._lives,
+            runOutcome: this._runOutcome,
             canStartWave: this._canStartWave,
             paused: this._paused,
             raceDraftBias: this._raceDraftBias,
@@ -130,6 +138,17 @@ export class GameState
     setLives (lives: number): void
     {
         this._lives = lives;
+        this.notify();
+    }
+
+    setRunOutcome (outcome: RunOutcome): void
+    {
+        if (this._runOutcome === outcome)
+        {
+            return;
+        }
+
+        this._runOutcome = outcome;
         this.notify();
     }
 

@@ -106,7 +106,12 @@ export class CollisionSystem
 
     forEachBody (
         excludeId: string,
-        visit: (center: WorldPosition, halfWidth: number, halfHeight: number) => void,
+        visit: (
+            center: WorldPosition,
+            halfWidth: number,
+            halfHeight: number,
+            kind: OccupantKind,
+        ) => void,
     ): void
     {
         for (const [ id, entry ] of this.bodies)
@@ -116,7 +121,7 @@ export class CollisionSystem
                 continue;
             }
 
-            visit(entry.center, entry.halfWidth, entry.halfHeight);
+            visit(entry.center, entry.halfWidth, entry.halfHeight, entry.kind);
         }
     }
 

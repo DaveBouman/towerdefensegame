@@ -7,6 +7,7 @@ const INITIAL_STATE: GameStateSnapshot = {
     gold: 100,
     wave: 0,
     lives: 20,
+    runOutcome: 'playing',
     canStartWave: true,
     paused: false,
     raceDraftBias: {

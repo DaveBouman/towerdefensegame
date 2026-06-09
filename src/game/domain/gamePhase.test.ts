@@ -8,6 +8,7 @@ import {
 
 const base = {
     wave: 1,
+    runOutcome: 'playing',
     canStartWave: false,
     upgradePick: null,
     towerDraftPick: null,
@@ -25,6 +26,11 @@ describe('gamePhase', () =>
     {
         expect(isCombatActive({ ...base, wave: 0, canStartWave: true })).toBe(false);
         expect(isCombatActive({ ...base, wave: 2, canStartWave: true })).toBe(false);
+    });
+
+    it('isCombatActive is false after victory', () =>
+    {
+        expect(isCombatActive({ ...base, wave: 3, runOutcome: 'victory' })).toBe(false);
     });
 
     it('isBetweenWaves requires no living enemies', () =>

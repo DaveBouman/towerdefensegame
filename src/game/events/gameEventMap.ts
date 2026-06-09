@@ -43,6 +43,7 @@ export interface GameEventMap {
     'start-wave': void;
     'toggle-pause': void;
     'wave-completed': void;
+    'game-victory': { wave: number; lives: number };
     'wave-tower-damage-log': WaveTowerDamageLog;
     'place-queued-tower-at-screen': { towerId: TowerDefinitionId; clientX: number; clientY: number };
     'sell-tower': { towerId: string };

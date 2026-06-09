@@ -85,7 +85,7 @@ describe('GameSession.checkWaveComplete', () =>
         expect(session.state.upgradePick).toBeNull();
     });
 
-    it('ends the run when the enemy nexus is finally destroyed', () =>
+    it('declares victory when the enemy nexus is destroyed', () =>
     {
         session.state.setTowerDraftPick(null);
         session.state.setWave(1);
@@ -101,7 +101,10 @@ describe('GameSession.checkWaveComplete', () =>
 
         session.checkWaveComplete();
 
-        expect(session.state.upgradePick?.choices.length).toBeGreaterThan(0);
+        expect(session.state.runOutcome).toBe('victory');
+        expect(session.state.upgradePick).toBeNull();
+        expect(session.state.towerDraftPick).toBeNull();
+        expect(session.state.paused).toBe(true);
         expect(session.enemies.getEnemyNexus()?.health).toBe(0);
     });
 

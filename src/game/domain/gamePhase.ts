@@ -2,7 +2,7 @@ import type { GameStateSnapshot } from './types';
 
 type CombatPhaseState = Pick<
     GameStateSnapshot,
-    'wave' | 'upgradePick' | 'towerDraftPick' | 'canStartWave'
+    'wave' | 'upgradePick' | 'towerDraftPick' | 'canStartWave' | 'runOutcome'
 >;
 
 type BetweenWavesState = Pick<GameStateSnapshot, 'canStartWave' | 'upgradePick'>;
@@ -13,7 +13,8 @@ type ManageTowersState = Pick<
 >;
 
 export const isCombatActive = (state: CombatPhaseState): boolean =>
-    state.wave > 0
+    state.runOutcome === 'playing'
+    && state.wave > 0
     && !state.upgradePick
     && !state.towerDraftPick
     && !state.canStartWave;

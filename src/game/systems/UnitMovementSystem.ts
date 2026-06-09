@@ -1,8 +1,9 @@
-import { buildBlockedTiles } from '../pathfinding/buildBlockedTiles';
+import { buildPathfindingBlockedTiles } from '../pathfinding/buildBlockedTiles';
 import { findPath } from '../pathfinding/aStar';
 import { pickSurroundGoalTile } from '../pathfinding/surroundGoal';
 import { tileKey } from '../pathfinding/tileKey';
-import { followPathStep, pathToWorldWaypoints, stepTowardWorldTarget } from '../movement/followPath';
+import { followPathStep, pathToWorldWaypoints } from '../movement/followPath';
+import { tryMoveWithAvoidance } from '../movement/tryMoveWithAvoidance';
 import { tileCenterWorld, worldDistance } from '../grid/worldPosition';
 import { getPlayerNexusApproachTile } from '../config/nexusConfig';
 import { canEnemiesTargetPlayerNexus, livingTowers } from '../combat/targetPriority';
@@ -25,6 +26,8 @@ interface UnitPathState {
     waypoints: WorldPosition[];
 }
 
+const MAX_PATH_REPLANS_PER_TICK = 3;
+
 export class UnitMovementSystem
 {
     private readonly paths = new Map<string, UnitPathState>();
@@ -37,24 +40,23 @@ export class UnitMovementSystem
         private readonly collision: CollisionSystem,
     ) {}
 
-    tick (_gameTick: number): void
+    tick (gameTick: number): void
     {
-        const enemies = this.enemies.all
-            .filter((enemy) => enemy.health > 0 && !enemy.isPreview && !enemy.isNexus)
-            .sort((a, b) => a.id.localeCompare(b.id));
+        const enemies = this.rotateProcessingOrder(
+            this.enemies.all.filter((enemy) => enemy.health > 0 && !enemy.isPreview && !enemy.isNexus),
+            gameTick,
+        );
 
         for (const enemy of enemies)
         {
             this.tryMoveEnemy(enemy);
         }
 
-        for (const tower of this.towers.all)
-        {
-            if (tower.health <= 0 || !tower.isMobile || tower.moveSpeedPerTick <= 0)
-            {
-                continue;
-            }
+        const mobileTowers = this.towers.all.filter((tower) =>
+            tower.health > 0 && tower.isMobile && tower.moveSpeedPerTick > 0);
 
+        for (const tower of this.rotateProcessingOrder(mobileTowers, gameTick))
+        {
             this.tryMoveTower(tower);
         }
     }
@@ -139,43 +141,64 @@ export class UnitMovementSystem
         }
 
         const goalKey = `${targetId}:${goalTile.col},${goalTile.row}`;
-        let pathState = this.paths.get(enemy.id);
 
-        if (!pathState || pathState.goalKey !== goalKey)
+        for (let attempt = 0; attempt < MAX_PATH_REPLANS_PER_TICK; attempt++)
         {
-            pathState = this.planEnemyPath(enemy, target, startTile, goalTile, goalKey, targetId);
-            this.paths.set(enemy.id, pathState);
+            let pathState = this.paths.get(enemy.id);
+
+            if (!pathState || pathState.goalKey !== goalKey)
+            {
+                pathState = this.planEnemyPath(
+                    enemy,
+                    target,
+                    startTile,
+                    goalTile,
+                    goalKey,
+                    targetId,
+                );
+                this.paths.set(enemy.id, pathState);
+            }
+
+            if (pathState.waypoints.length === 0)
+            {
+                this.chaseEnemyTarget(enemy, target, pathState.goalTile, targetId, speed);
+                return;
+            }
+
+            const step = followPathStep(
+                this.grid,
+                enemy.position,
+                pathState.waypoints,
+                speed,
+            );
+
+            if (!step)
+            {
+                this.paths.delete(enemy.id);
+                continue;
+            }
+
+            const moved = this.attemptUnitMove(enemy.id, enemy.position, step.position, speed);
+
+            if (moved)
+            {
+                enemy.position = moved;
+                pathState.waypoints = step.path;
+                return;
+            }
+
+            this.paths.delete(enemy.id);
         }
 
-        if (pathState.waypoints.length === 0)
-        {
-            this.chaseEnemyTarget(enemy, target, pathState.goalTile, targetId, speed);
-            return;
-        }
+        const fallback = this.paths.get(enemy.id);
 
-        const step = followPathStep(
-            this.grid,
-            enemy.position,
-            pathState.waypoints,
+        this.chaseEnemyTarget(
+            enemy,
+            target,
+            fallback?.goalTile ?? goalTile,
+            targetId,
             speed,
         );
-
-        if (!step)
-        {
-            this.paths.delete(enemy.id);
-            this.chaseEnemyTarget(enemy, target, pathState.goalTile, targetId, speed);
-            return;
-        }
-
-        pathState.waypoints = step.path;
-
-        if (!this.collision.tryMove(enemy.id, step.position))
-        {
-            this.paths.delete(enemy.id);
-            return;
-        }
-
-        enemy.position = step.position;
     }
 
     private planEnemyPath (
@@ -187,7 +210,7 @@ export class UnitMovementSystem
         targetId: string,
     ): UnitPathState
     {
-        const blocked = buildBlockedTiles(this.grid, this.collision, enemy.id);
+        const blocked = buildPathfindingBlockedTiles(this.grid, this.collision, enemy.id);
         blocked.add(tileKey(targetTile));
 
         const rangePx = rangeTilesToPixels(this.grid, enemy.stats.range);
@@ -238,15 +261,13 @@ export class UnitMovementSystem
         const standGoal = targetId === 'player-nexus'
             ? target.position
             : tileCenterWorld(this.grid.config, goalTile);
-        const next = stepTowardWorldTarget(enemy.position, standGoal, speed);
+        const moved = this.attemptUnitMove(enemy.id, enemy.position, standGoal, speed);
 
-        if (!this.collision.tryMove(enemy.id, next))
+        if (moved)
         {
-            this.paths.delete(enemy.id);
-            return;
+            enemy.position = moved;
         }
 
-        enemy.position = next;
         this.paths.delete(enemy.id);
     }
 
@@ -301,12 +322,6 @@ export class UnitMovementSystem
     private tryMoveTower (tower: TowerState): void
     {
         const speed = tower.moveSpeedPerTick;
-
-        if (speed <= 0)
-        {
-            return;
-        }
-
         const rangePx = this.grid.rangeToPixels(tower.range);
         const target = pickTowerMovementTarget(
             tower,
@@ -328,43 +343,56 @@ export class UnitMovementSystem
         }
 
         const goalKey = `${target.id}`;
-        let pathState = this.paths.get(tower.id);
 
-        if (!pathState || pathState.goalKey !== goalKey)
+        for (let attempt = 0; attempt < MAX_PATH_REPLANS_PER_TICK; attempt++)
         {
-            pathState = this.planTowerPath(tower, target, startTile, goalKey);
-            this.paths.set(tower.id, pathState);
+            let pathState = this.paths.get(tower.id);
+
+            if (!pathState || pathState.goalKey !== goalKey)
+            {
+                pathState = this.planTowerPath(tower, target, startTile, goalKey);
+                this.paths.set(tower.id, pathState);
+            }
+
+            if (pathState.waypoints.length === 0)
+            {
+                this.chaseTowerTarget(tower, target, pathState.goalTile, speed);
+                return;
+            }
+
+            const step = followPathStep(
+                this.grid,
+                tower.position,
+                pathState.waypoints,
+                speed,
+            );
+
+            if (!step)
+            {
+                this.paths.delete(tower.id);
+                continue;
+            }
+
+            const moved = this.attemptUnitMove(tower.id, tower.position, step.position, speed);
+
+            if (moved)
+            {
+                tower.position = moved;
+                pathState.waypoints = step.path;
+                return;
+            }
+
+            this.paths.delete(tower.id);
         }
 
-        if (pathState.waypoints.length === 0)
-        {
-            this.chaseTowerTarget(tower, target, pathState.goalTile, speed);
-            return;
-        }
+        const fallback = this.paths.get(tower.id);
 
-        const step = followPathStep(
-            this.grid,
-            tower.position,
-            pathState.waypoints,
+        this.chaseTowerTarget(
+            tower,
+            target,
+            fallback?.goalTile ?? startTile,
             speed,
         );
-
-        if (!step)
-        {
-            this.paths.delete(tower.id);
-            this.chaseTowerTarget(tower, target, pathState.goalTile, speed);
-            return;
-        }
-
-        pathState.waypoints = step.path;
-
-        if (!this.collision.tryMove(tower.id, step.position))
-        {
-            this.paths.delete(tower.id);
-            return;
-        }
-
-        tower.position = step.position;
     }
 
     private planTowerPath (
@@ -374,7 +402,7 @@ export class UnitMovementSystem
         goalKey: string,
     ): UnitPathState
     {
-        const blocked = buildBlockedTiles(this.grid, this.collision, tower.id);
+        const blocked = buildPathfindingBlockedTiles(this.grid, this.collision, tower.id);
         const rangePx = this.grid.rangeToPixels(tower.range);
         const reservedGoals = this.collectReservedGoalTiles(tower.id, target.id);
         const slotIndex = this.slotIndexForTowerTarget(tower.id, target.id);
@@ -430,15 +458,13 @@ export class UnitMovementSystem
         const standGoal = target.isNexus
             ? target.position
             : tileCenterWorld(this.grid.config, goalTile);
-        const next = stepTowardWorldTarget(tower.position, standGoal, speed);
+        const moved = this.attemptUnitMove(tower.id, tower.position, standGoal, speed);
 
-        if (!this.collision.tryMove(tower.id, next))
+        if (moved)
         {
-            this.paths.delete(tower.id);
-            return;
+            tower.position = moved;
         }
 
-        tower.position = next;
         this.paths.delete(tower.id);
     }
 
@@ -480,7 +506,74 @@ export class UnitMovementSystem
             reserved.add(tileKey(state.goalTile));
         }
 
+        for (const enemy of this.enemies.all)
+        {
+            if (
+                enemy.id === unitId
+                || enemy.health <= 0
+                || enemy.isPreview
+                || enemy.isNexus
+                || this.enemyMoveTargetId(enemy) !== targetId
+            )
+            {
+                continue;
+            }
+
+            this.reserveTileAt(reserved, enemy.position);
+        }
+
+        for (const tower of this.towers.all)
+        {
+            if (
+                tower.id === unitId
+                || tower.health <= 0
+                || !tower.isMobile
+                || this.towerMoveTargetId(tower) !== targetId
+            )
+            {
+                continue;
+            }
+
+            this.reserveTileAt(reserved, tower.position);
+        }
+
         return reserved;
+    }
+
+    private reserveTileAt (reserved: Set<string>, position: WorldPosition): void
+    {
+        const tile = this.grid.toGrid(position.x, position.y);
+
+        if (tile)
+        {
+            reserved.add(tileKey(tile));
+        }
+    }
+
+    private attemptUnitMove (
+        unitId: string,
+        from: WorldPosition,
+        preferredTo: WorldPosition,
+        speed: number,
+    ): WorldPosition | null
+    {
+        return tryMoveWithAvoidance(this.collision, unitId, from, preferredTo, speed);
+    }
+
+    private rotateProcessingOrder<T extends { id: string }> (
+        units: readonly T[],
+        gameTick: number,
+    ): T[]
+    {
+        if (units.length <= 1)
+        {
+            return [ ...units ];
+        }
+
+        const sorted = [ ...units ].sort((a, b) => a.id.localeCompare(b.id));
+        const offset = gameTick % sorted.length;
+
+        return [ ...sorted.slice(offset), ...sorted.slice(0, offset) ];
     }
 }
 

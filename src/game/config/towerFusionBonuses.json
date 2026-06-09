@@ -1,0 +1,18 @@
+{
+    "archetypeDefaults": {
+        "close": [ "damage" ],
+        "long": [ "moveSpeedPerTick" ]
+    },
+    "towers": {
+        "militia": [ "damage" ],
+        "scout": [ "moveSpeedPerTick" ],
+        "guard": [ "maxHealth", "defense" ],
+        "archer": [ "range", "attacksPerSecond" ],
+        "bruiser": [ "damage", "maxHealth" ],
+        "sharpshooter": [ "moveSpeedPerTick", "range" ],
+        "juggernaut": [ "maxHealth", "defense" ],
+        "siege": [ "damage", "range" ],
+        "champion": [ "damage", "attacksPerSecond" ],
+        "obliterator": [ "damage", "range" ]
+    }
+}

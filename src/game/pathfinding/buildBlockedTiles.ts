@@ -1,8 +1,15 @@
 import { boxFromCenter, boxesOverlap } from '../collision/aabb';
+import type { OccupantKind } from '../collision/types';
 import type { Grid } from '../grid/Grid';
 import type { GridPosition } from '../grid/types';
 import type { CollisionSystem } from '../systems/CollisionSystem';
 import { tileKey } from './tileKey';
+
+const DEFAULT_BLOCK_KINDS: ReadonlySet<OccupantKind> = new Set([ 'enemy', 'tower' ]);
+
+export interface BuildBlockedTilesOptions {
+    blockKinds?: ReadonlySet<OccupantKind>;
+}
 
 const tileWorldBox = (grid: Grid, { col, row }: GridPosition) =>
 {
@@ -46,14 +53,29 @@ export const buildBlockedTiles = (
     grid: Grid,
     collision: CollisionSystem,
     excludeId: string,
+    options: BuildBlockedTilesOptions = {},
 ): Set<string> =>
 {
+    const blockKinds = options.blockKinds ?? DEFAULT_BLOCK_KINDS;
     const blocked = new Set<string>();
 
-    collision.forEachBody(excludeId, (center, halfWidth, halfHeight) =>
+    collision.forEachBody(excludeId, (center, halfWidth, halfHeight, kind) =>
     {
+        if (!blockKinds.has(kind))
+        {
+            return;
+        }
+
         addTilesOverlappingBody(grid, blocked, center, halfWidth, halfHeight);
     });
 
     return blocked;
 };
+
+/** Tiles that block routing — towers only; enemies separate via collision at move time. */
+export const buildPathfindingBlockedTiles = (
+    grid: Grid,
+    collision: CollisionSystem,
+    excludeId: string,
+): Set<string> =>
+    buildBlockedTiles(grid, collision, excludeId, { blockKinds: new Set([ 'tower' ]) });

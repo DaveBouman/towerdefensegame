@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GRID_CONFIG } from '../config/gridConfig';
-import { getTowerFusionStatMultiplier } from '../config/towerFusionConfig';
+import { getTowerFusionGroupMultiplier } from '../config/towerFusionConfig';
 import { createTowerState } from '../domain/createTowerState';
 import { Grid } from '../grid/Grid';
 import {
@@ -64,20 +64,35 @@ describe('towerFusion', () =>
         expect(pickFusionAnchor([ a, b, c ]).id).toBe(b.id);
     });
 
-    it('uses 3.3× stats for a trio and leaves attack speed unchanged', () =>
+    it('boosts only militia damage when three fuse', () =>
     {
         const anchor = createTowerState(grid, { col: 2, row: 35 }, 'militia');
         const b = createTowerState(grid, { col: 3, row: 35 }, 'militia');
         const c = createTowerState(grid, { col: 4, row: 35 }, 'militia');
         const baseDamage = anchor.damage;
+        const baseHealth = anchor.maxHealth;
         const baseAttackSpeed = anchor.attacksPerSecond;
 
         anchor.completeFusion(3, [ b, c ]);
 
-        expect(getTowerFusionStatMultiplier(3)).toBeCloseTo(3.3);
+        expect(getTowerFusionGroupMultiplier(3)).toBeCloseTo(3.3);
         expect(anchor.damage).toBeCloseTo(baseDamage * 3.3);
-        expect(anchor.maxHealth).toBeCloseTo(anchor.profile.maxHealth * 3.3);
+        expect(anchor.maxHealth).toBeCloseTo(baseHealth);
         expect(anchor.attacksPerSecond).toBeCloseTo(baseAttackSpeed);
         expect(anchor.fusionGroupSize).toBe(3);
+    });
+
+    it('boosts scout move speed instead of damage when three fuse', () =>
+    {
+        const anchor = createTowerState(grid, { col: 2, row: 35 }, 'scout');
+        const b = createTowerState(grid, { col: 3, row: 35 }, 'scout');
+        const c = createTowerState(grid, { col: 4, row: 35 }, 'scout');
+        const baseDamage = anchor.damage;
+        const baseMoveSpeed = anchor.moveSpeedPerTick;
+
+        anchor.completeFusion(3, [ b, c ]);
+
+        expect(anchor.damage).toBeCloseTo(baseDamage);
+        expect(anchor.moveSpeedPerTick).toBeCloseTo(baseMoveSpeed * 3.3);
     });
 });

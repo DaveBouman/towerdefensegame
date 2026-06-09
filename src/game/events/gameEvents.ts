@@ -24,6 +24,7 @@ export const GAME_EVENTS = {
     START_WAVE: 'start-wave',
     TOGGLE_PAUSE: 'toggle-pause',
     WAVE_COMPLETED: 'wave-completed',
+    GAME_VICTORY: 'game-victory',
     WAVE_TOWER_DAMAGE_LOG: 'wave-tower-damage-log',
     PLACE_QUEUED_TOWER_AT_SCREEN: 'place-queued-tower-at-screen',
     SELL_TOWER: 'sell-tower',

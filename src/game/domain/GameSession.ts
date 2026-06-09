@@ -481,7 +481,7 @@ export class GameSession
 
         if (isEnemyNexusDefeated(this.enemies.getEnemyNexus()))
         {
-            this.finishWave();
+            this.finishVictory();
 
             return;
         }
@@ -519,6 +519,23 @@ export class GameSession
         {
             this.beginPostWaveTowerDraft();
         }
+    }
+
+    private finishVictory (): void
+    {
+        const damageLog = this.towerRoundDamageLog.finalizeWave(this.towers.all);
+
+        this.state.setUpgradePick(null);
+        this.state.setTowerDraftPick(null);
+        this.state.setCanStartWave(false);
+        this.state.setPaused(true);
+        this.resetPlayerTowersAfterWave();
+        this.awardWaveBonusExperience(damageLog.wave);
+        this.state.setRunOutcome('victory');
+        EventBus.emit(GAME_EVENTS.GAME_VICTORY, {
+            wave: damageLog.wave,
+            lives: this.state.lives,
+        });
     }
 
     /** After wave 1+, draft one extra tower to place before the next wave. */
