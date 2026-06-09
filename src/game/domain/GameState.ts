@@ -15,6 +15,7 @@ export class GameState
     private _wave = 0;
     private _lives = 20;
     private _runOutcome: RunOutcome = 'playing';
+    private _roundTimeRemainingSec: number | null = null;
     private _canStartWave = true;
     private _paused = false;
     private _raceDraftBias: Record<TowerRace, number> = {
@@ -44,6 +45,11 @@ export class GameState
     get runOutcome (): RunOutcome
     {
         return this._runOutcome;
+    }
+
+    get roundTimeRemainingSec (): number | null
+    {
+        return this._roundTimeRemainingSec;
     }
 
     get canStartWave (): boolean
@@ -78,6 +84,7 @@ export class GameState
             wave: this._wave,
             lives: this._lives,
             runOutcome: this._runOutcome,
+            roundTimeRemainingSec: this._roundTimeRemainingSec,
             canStartWave: this._canStartWave,
             paused: this._paused,
             raceDraftBias: this._raceDraftBias,
@@ -149,6 +156,19 @@ export class GameState
         }
 
         this._runOutcome = outcome;
+        this.notify();
+    }
+
+    setRoundTimeRemaining (seconds: number | null): void
+    {
+        const next = seconds === null ? null : Math.max(0, Math.ceil(seconds));
+
+        if (this._roundTimeRemainingSec === next)
+        {
+            return;
+        }
+
+        this._roundTimeRemainingSec = next;
         this.notify();
     }
 

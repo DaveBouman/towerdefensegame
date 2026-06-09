@@ -6,6 +6,11 @@ export const TICK_DURATION_MS = 1000 / TICKS_PER_SECOND;
 /** Prevents spiral-of-death when the tab lags; leftover time carries into the next frame. */
 export const MAX_TICKS_PER_FRAME = 8;
 
+/** Active combat rounds auto-end after this duration (no post-wave bonuses). */
+export const ROUND_MAX_DURATION_SECONDS = 90;
+
+export const ROUND_MAX_DURATION_TICKS = ROUND_MAX_DURATION_SECONDS * TICKS_PER_SECOND;
+
 export const msToTicks = (ms: number): number =>
     Math.max(0, Math.round(ms / TICK_DURATION_MS));
 

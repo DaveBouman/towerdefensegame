@@ -31,6 +31,8 @@ export interface GameStateSnapshot {
     wave: number;
     lives: number;
     runOutcome: RunOutcome;
+    /** Seconds left in the current combat round; null when not fighting. */
+    roundTimeRemainingSec: number | null;
     canStartWave: boolean;
     paused: boolean;
     raceDraftBias: Record<TowerRace, number>;

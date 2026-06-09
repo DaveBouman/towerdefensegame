@@ -38,6 +38,11 @@ import { TowerRaceBonusSystem } from '../systems/TowerRaceBonusSystem';
 import { UnitAttackSystem } from '../systems/UnitAttackSystem';
 import { UnitMovementSystem } from '../systems/UnitMovementSystem';
 import { UnitNexusAttackSystem } from '../systems/UnitNexusAttackSystem';
+import {
+    ROUND_MAX_DURATION_TICKS,
+    TICKS_PER_SECOND,
+} from '../config/gameClockConfig';
+import { hasWaveDefinition } from '../config/waveCatalog';
 import { formatWaveTowerDamageLog, TowerRoundDamageLog } from './TowerRoundDamageLog';
 import type { TowerPairLink } from '../combat/towerPairLinks';
 import {
@@ -65,6 +70,7 @@ export class GameSession
 
     private readonly waveRounds: WaveRoundController;
     private readonly tickPipeline: readonly TickSystem[];
+    private roundStartTick = 0;
 
     constructor (grid: Grid)
     {
@@ -388,7 +394,9 @@ export class GameSession
 
         if (this.waveRounds.startCombatRound())
         {
+            this.roundStartTick = this.clock.currentTick;
             this.towerRoundDamageLog.beginWave(this.state.wave);
+            this.syncRoundTimeRemaining();
         }
     }
 
@@ -500,6 +508,8 @@ export class GameSession
 
     private finishWave (): void
     {
+        this.clearRoundTimer();
+
         const damageLog = this.towerRoundDamageLog.finalizeWave(this.towers.all);
 
         this.state.setPaused(false);
@@ -523,6 +533,8 @@ export class GameSession
 
     private finishVictory (): void
     {
+        this.clearRoundTimer();
+
         const damageLog = this.towerRoundDamageLog.finalizeWave(this.towers.all);
 
         this.state.setUpgradePick(null);
@@ -565,6 +577,71 @@ export class GameSession
         {
             system.tick(gameTick);
         }
+
+        this.syncRoundTimeRemaining();
+
+        if (gameTick - this.roundStartTick >= ROUND_MAX_DURATION_TICKS)
+        {
+            this.finishWaveOnTimeout();
+        }
+    }
+
+    private finishWaveOnTimeout (): void
+    {
+        if (!this.isRoundActive())
+        {
+            return;
+        }
+
+        this.clearRoundTimer();
+        this.towerRoundDamageLog.finalizeWave(this.towers.all);
+        this.waveSpawns.clear();
+        this.state.setUpgradePick(null);
+        this.state.setTowerDraftPick(null);
+        this.state.setPaused(false);
+        this.state.setCanStartWave(true);
+        this.enemies.clearAll();
+        this.resetPlayerTowersAfterWave();
+        this.autoStartNextWaveIfAvailable();
+    }
+
+    private autoStartNextWaveIfAvailable (): void
+    {
+        const nextWave = this.state.wave + 1;
+
+        if (!hasWaveDefinition(nextWave))
+        {
+            this.waveRounds.showUpcomingWavePreview();
+            return;
+        }
+
+        this.state.setCanStartWave(true);
+        this.resolveTowerFusion();
+
+        if (this.waveRounds.startCombatRound())
+        {
+            this.roundStartTick = this.clock.currentTick;
+            this.towerRoundDamageLog.beginWave(this.state.wave);
+            this.syncRoundTimeRemaining();
+        }
+    }
+
+    private syncRoundTimeRemaining (): void
+    {
+        if (!this.isRoundActive())
+        {
+            return;
+        }
+
+        const elapsedTicks = this.clock.currentTick - this.roundStartTick;
+        const remainingTicks = Math.max(0, ROUND_MAX_DURATION_TICKS - elapsedTicks);
+
+        this.state.setRoundTimeRemaining(remainingTicks / TICKS_PER_SECOND);
+    }
+
+    private clearRoundTimer (): void
+    {
+        this.state.setRoundTimeRemaining(null);
     }
 
     reset (): void

@@ -8,6 +8,7 @@ const INITIAL_STATE: GameStateSnapshot = {
     wave: 0,
     lives: 20,
     runOutcome: 'playing',
+    roundTimeRemainingSec: null,
     canStartWave: true,
     paused: false,
     raceDraftBias: {

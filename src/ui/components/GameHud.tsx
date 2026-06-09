@@ -7,6 +7,14 @@ import { canManagePlacedTowers, isCombatActive } from '../../game/domain/gamePha
 import { useGameViewModel } from '../viewmodels/useGameViewModel';
 import { RaceLegendPanel } from './RaceLegendPanel';
 
+const formatRoundTimer = (seconds: number): string =>
+{
+    const minutes = Math.floor(seconds / 60);
+    const remainder = seconds % 60;
+
+    return `${minutes}:${String(remainder).padStart(2, '0')}`;
+};
+
 export const GameHud = () =>
 {
     const {
@@ -14,6 +22,7 @@ export const GameHud = () =>
         wave,
         lives,
         runOutcome,
+        roundTimeRemainingSec,
         canStartWave,
         paused,
         deployment,
@@ -72,6 +81,11 @@ export const GameHud = () =>
             <span>Gold {gold}</span>
             <span>Wave {wave}</span>
             <span>HP {lives}</span>
+            {combatActive && roundTimeRemainingSec !== null && (
+                <span className="game-hud__round-timer" title="Round time limit">
+                    {formatRoundTimer(roundTimeRemainingSec)}
+                </span>
+            )}
             {combatActive && (
                 <button
                     type="button"

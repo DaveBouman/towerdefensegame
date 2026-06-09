@@ -658,6 +658,12 @@ body {
     line-height: 1.35;
 }
 
+.game-hud__round-timer {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: #f5d76e;
+}
+
 .game-hud__pause {
     padding: 8px 16px;
     border: 1px solid #7f8c8d;
