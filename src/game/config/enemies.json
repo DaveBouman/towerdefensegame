@@ -52,7 +52,7 @@
       "id": "enemy-nexus",
       "unitType": "Enemy Nexus",
       "maxHealth": 2500,
-      "damage": 18,
+      "damage": 50,
       "damageType": "physical",
       "defense": 8,
       "armorByType": {
@@ -63,7 +63,7 @@
         "air": 7
       },
       "range": 8,
-      "attacksPerSecond": 0.6,
+      "attacksPerSecond": 0.8,
       "moveSpeedPerTick": 0,
       "goldValue": 0,
       "sizeScale": 1.15,

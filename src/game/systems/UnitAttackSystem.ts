@@ -153,6 +153,7 @@ export class UnitAttackSystem
         if (towerTarget)
         {
             const damage = towerTarget.applyDamage(enemy.stats.damage, enemy.stats.damageType);
+
             this.lastAttackTick.set(enemy.id, gameTick);
 
             const payload: EnemyAttackPayload = {
@@ -273,7 +274,9 @@ export class UnitAttackSystem
 
         applyAreaDamage(targets, (tower) =>
         {
-            tower.applyDamage(enemy.stats.damage, enemy.stats.damageType);
+            const damage = tower.applyDamage(enemy.stats.damage, enemy.stats.damageType);
+
+            EventBus.emit(GAME_EVENTS.TOWER_COMBAT_DAMAGE, { towerId: tower.id, taken: damage });
             EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
 
             if (tower.health <= 0)
@@ -306,7 +309,9 @@ export class UnitAttackSystem
 
         applyAreaDamage(targets, (enemy) =>
         {
-            enemy.applyDamage(tower.damage);
+            const damage = enemy.applyDamage(tower.damage);
+
+            EventBus.emit(GAME_EVENTS.TOWER_COMBAT_DAMAGE, { towerId: tower.id, dealt: damage });
             const enemyDied = enemy.health <= 0;
 
             if (enemyDied && isPersistentEnemyNexus(enemy))

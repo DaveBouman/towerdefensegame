@@ -1,4 +1,4 @@
-import { getNexusDamageForWave } from '../../config/nexusCombatScaling';
+import { getEnemyNexusDamageForWave } from '../../config/enemyNexusScaling';
 import { GRID_CONFIG } from '../../config/gridConfig';
 import { formatAttacksPerSecond } from '../../config/gameClockConfig';
 import type { EnemyStateSnapshot } from '../types';
@@ -34,7 +34,7 @@ const ENEMY_STAT_FIELDS: readonly StatField<EnemyDisplayContext>[] = [
             {
                 const effectiveWave = Math.max(1, wave);
 
-                return `${getNexusDamageForWave(effectiveWave)} (wave ${effectiveWave})`;
+                return `${getEnemyNexusDamageForWave(effectiveWave)} (wave ${effectiveWave})`;
             }
 
             return String(enemy.stats.damage);

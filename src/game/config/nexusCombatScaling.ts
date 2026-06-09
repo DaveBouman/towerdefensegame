@@ -1,7 +1,4 @@
-/**
- * Shared nexus combat scaling by wave (enemy and player nexuses).
- * Early waves are threatening but survivable; damage ramps up for later waves.
- */
+/** Player nexus damage scaling by wave (enemy nexus uses enemyNexusScaling.ts). */
 /** Nexus attack range (tiles); matches enemy-nexus in enemies.json. */
 export const ENEMY_NEXUS_RANGE_TILES = 8;
 export const NEXUS_RANGE_TILES = ENEMY_NEXUS_RANGE_TILES;

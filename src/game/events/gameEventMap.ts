@@ -10,8 +10,10 @@ import type {
     PlayerNexusAttackPayload,
     PlayerNexusStateSnapshot,
     TowerAttackPayload,
+    TowerCombatDamagePayload,
     TowerStateSnapshot,
     UnitSelection,
+    WaveTowerDamageLog,
 } from '../domain/types';
 
 export interface GameEventMap {
@@ -31,12 +33,14 @@ export interface GameEventMap {
     'tower-removed': { id: string };
     'tower-selected': TowerStateSnapshot;
     'tower-attacked': TowerAttackPayload;
+    'tower-combat-damage': TowerCombatDamagePayload;
     'tower-damaged': TowerStateSnapshot;
     'selection-changed': UnitSelection | null;
     'selection-cleared': void;
     'start-wave': void;
     'toggle-pause': void;
     'wave-completed': void;
+    'wave-tower-damage-log': WaveTowerDamageLog;
     'place-queued-tower-at-screen': { towerId: TowerDefinitionId; clientX: number; clientY: number };
     'sell-tower': { towerId: string };
     'confirm-tower-draft': { towerId: TowerDefinitionId };

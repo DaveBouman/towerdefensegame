@@ -87,6 +87,7 @@ export interface TowerStateSnapshot {
     moveSpeedPerTick: number;
     isMobile: boolean;
     goldValue: number;
+    experience: number;
     weaknesses: DamageType[];
     equippedUpgrades: TowerEquippedUpgrade[];
     /** Purchased between-wave stat upgrade levels keyed by catalog id. */
@@ -100,6 +101,25 @@ export type UnitSelection =
     | { kind: 'enemy'; data: EnemyStateSnapshot }
     | { kind: 'tower'; data: TowerStateSnapshot }
     | { kind: 'playerNexus'; data: PlayerNexusStateSnapshot };
+
+export interface TowerRoundDamageEntry {
+    towerId: string;
+    unitType: string;
+    damageDealt: number;
+    damageTaken: number;
+    expGained: number;
+}
+
+export interface WaveTowerDamageLog {
+    wave: number;
+    entries: TowerRoundDamageEntry[];
+}
+
+export interface TowerCombatDamagePayload {
+    towerId: string;
+    dealt?: number;
+    taken?: number;
+}
 
 export interface TowerAttackPayload {
     towerId: string;

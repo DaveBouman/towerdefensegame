@@ -14,6 +14,7 @@ import { isWithinAttackRange } from '../combat/combatRange';
 import { worldDistance } from '../grid/worldPosition';
 import { GAME_EVENTS } from '../events/gameEvents';
 import type { Grid } from '../grid/Grid';
+import { getEnemyNexusDamageForWave } from '../config/enemyNexusScaling';
 import { getNexusDamageForWave } from '../config/nexusCombatScaling';
 import { rangeTilesToPixels } from '../grid/rangePixels';
 import type { EnemySpawnSystem } from './EnemySpawnSystem';
@@ -40,7 +41,12 @@ export class UnitNexusAttackSystem
         this.tryPlayerNexusAttack(gameTick);
     }
 
-    private nexusDamage (): number
+    private enemyNexusDamage (): number
+    {
+        return getEnemyNexusDamageForWave(this.getCurrentWave());
+    }
+
+    private playerNexusDamage (): number
     {
         return getNexusDamageForWave(this.getCurrentWave());
     }
@@ -64,7 +70,8 @@ export class UnitNexusAttackSystem
 
         if (towerTarget)
         {
-            const damage = towerTarget.applyDamage(this.nexusDamage());
+            const damage = towerTarget.applyDamage(this.enemyNexusDamage());
+
             this.lastAttackTick.set(nexus.id, gameTick);
 
             const payload: EnemyNexusAttackPayload = {
@@ -101,7 +108,7 @@ export class UnitNexusAttackSystem
             return;
         }
 
-        const damage = this.playerNexus.applyDamage(this.nexusDamage());
+        const damage = this.playerNexus.applyDamage(this.enemyNexusDamage());
         this.lastAttackTick.set(nexus.id, gameTick);
 
         const payload: EnemyNexusAttackPayload = {
@@ -159,7 +166,7 @@ export class UnitNexusAttackSystem
         gameTick: number,
     ): void
     {
-        const damage = target.applyDamage(this.nexusDamage());
+        const damage = target.applyDamage(this.playerNexusDamage());
         this.lastAttackTick.set(nexus.id, gameTick);
 
         const enemyDied = target.health <= 0;

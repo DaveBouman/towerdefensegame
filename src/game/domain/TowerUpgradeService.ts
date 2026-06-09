@@ -5,7 +5,7 @@ import {
     getTowerUpgradeDefinition,
 } from '../config/towerUpgradeCatalog';
 import {
-    getTowerStatUpgradeCost,
+    getTowerStatUpgradeExpCost,
     getTowerStatUpgradeDefinition,
     isStatUpgradeAvailableForArchetype,
 } from '../config/towerStatUpgradeCatalog';
@@ -185,16 +185,16 @@ export class TowerUpgradeService
             return false;
         }
 
-        const cost = getTowerStatUpgradeCost(def, level);
+        const cost = getTowerStatUpgradeExpCost(def, level);
 
-        if (!state.spendGold(cost))
+        if (!tower.spendExperience(cost))
         {
             return false;
         }
 
         if (!tower.purchaseStatUpgrade(upgradeId))
         {
-            state.addGold(cost);
+            tower.grantExperience(cost);
 
             return false;
         }

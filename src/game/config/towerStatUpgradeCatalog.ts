@@ -1,7 +1,7 @@
 import type { TowerArchetype } from '../domain/towers/types';
 import type { TowerUpgradeModifiers } from './towerUpgradeCatalog';
 
-/** Stats that can be bought with gold between waves. */
+/** Stats that can be bought with tower experience between waves. */
 export type TowerPurchasableStat = 'maxHealth' | 'range' | 'damage';
 
 export interface TowerStatUpgradeDefinition {
@@ -10,8 +10,8 @@ export interface TowerStatUpgradeDefinition {
     label: string;
     /** Per purchased level. */
     modifierPerLevel: number;
-    baseGoldCost: number;
-    costIncreasePerLevel: number;
+    baseExpCost: number;
+    expCostIncreasePerLevel: number;
     maxLevel?: number;
     /** When set, only these tower archetypes can buy this upgrade. */
     archetypes?: readonly TowerArchetype[];
@@ -23,24 +23,24 @@ export const TOWER_STAT_UPGRADE_CATALOG: readonly TowerStatUpgradeDefinition[] =
         stat: 'maxHealth',
         label: 'HP',
         modifierPerLevel: 25,
-        baseGoldCost: 40,
-        costIncreasePerLevel: 15,
+        baseExpCost: 40,
+        expCostIncreasePerLevel: 15,
     },
     {
         id: 'range-boost',
         stat: 'range',
         label: 'Range',
         modifierPerLevel: 0.25,
-        baseGoldCost: 50,
-        costIncreasePerLevel: 20,
+        baseExpCost: 50,
+        expCostIncreasePerLevel: 20,
     },
     {
         id: 'strength-boost',
         stat: 'damage',
         label: 'Strength',
         modifierPerLevel: 3,
-        baseGoldCost: 45,
-        costIncreasePerLevel: 18,
+        baseExpCost: 45,
+        expCostIncreasePerLevel: 18,
     },
 ];
 
@@ -60,11 +60,11 @@ export const getTowerStatUpgradesForArchetype = (
 ): TowerStatUpgradeDefinition[] =>
     TOWER_STAT_UPGRADE_CATALOG.filter((def) => isStatUpgradeAvailableForArchetype(def, archetype));
 
-export const getTowerStatUpgradeCost = (
+export const getTowerStatUpgradeExpCost = (
     def: TowerStatUpgradeDefinition,
     currentLevel: number,
 ): number =>
-    def.baseGoldCost + currentLevel * def.costIncreasePerLevel;
+    def.baseExpCost + currentLevel * def.expCostIncreasePerLevel;
 
 export const formatTowerStatUpgradeDelta = (def: TowerStatUpgradeDefinition): string =>
 {

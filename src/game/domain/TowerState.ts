@@ -39,6 +39,7 @@ export class TowerState
     readonly bodyHalfHeight: number;
     position: WorldPosition;
     health: number;
+    experience = 0;
     private equippedUpgradeIds: string[];
     private readonly statUpgradeLevels = new Map<string, number>();
     private bonus: TowerUpgradeModifiers;
@@ -79,6 +80,26 @@ export class TowerState
     getStatUpgradeLevel (upgradeId: string): number
     {
         return this.statUpgradeLevels.get(upgradeId) ?? 0;
+    }
+
+    grantExperience (amount: number): void
+    {
+        if (amount > 0)
+        {
+            this.experience += amount;
+        }
+    }
+
+    spendExperience (amount: number): boolean
+    {
+        if (amount <= 0 || this.experience < amount)
+        {
+            return false;
+        }
+
+        this.experience -= amount;
+
+        return true;
     }
 
     purchaseStatUpgrade (upgradeId: string): boolean
@@ -316,6 +337,7 @@ export class TowerState
             moveSpeedPerTick: this.moveSpeedPerTick,
             isMobile: this.profile.isMobile,
             goldValue: this.goldValue,
+            experience: this.experience,
             weaknesses: [ ...this.profile.weaknesses ],
             equippedUpgrades: this.equippedUpgrades,
             statUpgradeLevels: Object.fromEntries(this.statUpgradeLevels),

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     computeStatUpgradeModifiers,
-    getTowerStatUpgradeCost,
+    getTowerStatUpgradeExpCost,
     getTowerStatUpgradesForArchetype,
     isStatUpgradeAvailableForArchetype,
     TOWER_STAT_UPGRADE_CATALOG,
@@ -27,12 +27,12 @@ describe('towerStatUpgradeCatalog', () =>
         expect(isStatUpgradeAvailableForArchetype(closeOnly, 'long')).toBe(false);
     });
 
-    it('scales gold cost with level', () =>
+    it('scales EXP cost with level', () =>
     {
         const def = TOWER_STAT_UPGRADE_CATALOG[0];
 
-        expect(getTowerStatUpgradeCost(def, 0)).toBe(40);
-        expect(getTowerStatUpgradeCost(def, 2)).toBe(70);
+        expect(getTowerStatUpgradeExpCost(def, 0)).toBe(40);
+        expect(getTowerStatUpgradeExpCost(def, 2)).toBe(70);
     });
 
     it('accumulates modifiers by level', () =>

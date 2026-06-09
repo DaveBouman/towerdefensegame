@@ -6,6 +6,7 @@ import {
     type TowerDefinitionId,
 } from '../../game/config/towerCatalog';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
+import { getTowerRecruitCost } from '../../game/config/towerRecruitCost';
 import { useGameViewModel } from '../viewmodels/useGameViewModel';
 
 const formatStatLine = (towerId: TowerDefinitionId): string =>
@@ -24,7 +25,7 @@ const formatStatLine = (towerId: TowerDefinitionId): string =>
 
 export const TowerDraftPick = () =>
 {
-    const { towerDraftPick, wave } = useGameViewModel();
+    const { towerDraftPick, wave, gold } = useGameViewModel();
     const [ selectedId, setSelectedId ] = useState<TowerDefinitionId | null>(null);
     const isRunStart = wave === 0;
 
@@ -53,7 +54,7 @@ export const TowerDraftPick = () =>
                 <p className="tower-draft-pick__hint">
                     {isRunStart
                         ? 'Pick 1 starter unit (tier 1 only). Higher tiers can appear in drafts later in the run.'
-                        : 'Pick 1 unit to add to your army, then place it on the green rows before starting the next wave.'}
+                        : 'Recruit 1 unit with gold, then place it on the green rows before starting the next wave.'}
                 </p>
                 <div className="tower-draft-pick__choices">
                     {towerDraftPick.choices.map((id) =>
@@ -66,12 +67,15 @@ export const TowerDraftPick = () =>
                         }
 
                         const isSelected = selectedId === id;
+                        const recruitCost = getTowerRecruitCost(id, wave);
+                        const canAfford = recruitCost === 0 || gold >= recruitCost;
 
                         return (
                             <button
                                 key={id}
                                 type="button"
-                                className={`tower-draft-pick__choice${isSelected ? ' tower-draft-pick__choice--selected' : ''}`}
+                                className={`tower-draft-pick__choice${isSelected ? ' tower-draft-pick__choice--selected' : ''}${!canAfford ? ' tower-draft-pick__choice--disabled' : ''}`}
+                                disabled={!canAfford}
                                 onClick={() => setSelectedId(id)}
                             >
                                 <span className={`tower-draft-pick__tier tower-draft-pick__tier--${def.tier}`}>
@@ -79,6 +83,9 @@ export const TowerDraftPick = () =>
                                 </span>
                                 <span className="tower-draft-pick__name">{def.profile.unitType}</span>
                                 <span className="tower-draft-pick__stats">{formatStatLine(id)}</span>
+                                <span className="tower-draft-pick__cost">
+                                    {recruitCost === 0 ? 'Free' : `${recruitCost}g`}
+                                </span>
                             </button>
                         );
                     })}

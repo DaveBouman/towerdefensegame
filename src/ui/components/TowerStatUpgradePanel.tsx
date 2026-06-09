@@ -2,7 +2,7 @@ import { EventBus } from '../../game/EventBus';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
 import {
     formatTowerStatUpgradeDelta,
-    getTowerStatUpgradeCost,
+    getTowerStatUpgradeExpCost,
     getTowerStatUpgradesForArchetype,
 } from '../../game/config/towerStatUpgradeCatalog';
 import type { TowerStateSnapshot } from '../../game/domain/types';
@@ -16,7 +16,7 @@ type Props = {
 
 export const TowerStatUpgradePanel = ({ tower }: Props) =>
 {
-    const { gold, canStartWave, upgradePick } = useGameViewModel();
+    const { canStartWave, upgradePick } = useGameViewModel();
     const canUpgrade = canUpgradeUnits({ canStartWave, upgradePick });
 
     if (!canUpgrade)
@@ -29,14 +29,16 @@ export const TowerStatUpgradePanel = ({ tower }: Props) =>
     return (
         <SidePanel.Section>
             <SidePanel.SectionTitle>Between waves</SidePanel.SectionTitle>
-            <SidePanel.Hint>Spend gold on this tower only — other towers are unchanged.</SidePanel.Hint>
+            <SidePanel.Hint>
+                Spend this unit&apos;s EXP on stats ({tower.experience} EXP available).
+            </SidePanel.Hint>
             <div className="tower-stat-upgrades__buttons">
                 {upgrades.map((def) =>
                 {
                     const level = tower.statUpgradeLevels[def.id] ?? 0;
                     const maxed = def.maxLevel !== undefined && level >= def.maxLevel;
-                    const cost = getTowerStatUpgradeCost(def, level);
-                    const canAfford = gold >= cost;
+                    const cost = getTowerStatUpgradeExpCost(def, level);
+                    const canAfford = tower.experience >= cost;
                     const disabled = maxed || !canAfford;
 
                     return (
@@ -57,7 +59,7 @@ export const TowerStatUpgradePanel = ({ tower }: Props) =>
                             <span className="tower-stat-upgrades__label">{def.label}</span>
                             <span className="tower-stat-upgrades__level">Lv {level}</span>
                             <span className="tower-stat-upgrades__cost">
-                                {maxed ? 'Max' : `${cost}g`}
+                                {maxed ? 'Max' : `${cost} EXP`}
                             </span>
                         </button>
                     );

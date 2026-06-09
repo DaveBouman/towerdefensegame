@@ -17,6 +17,7 @@ import { GAME_EVENTS } from '../../game/events/gameEvents';
 import { canManagePlacedTowers } from '../../game/domain/gamePhase';
 import { useInventoryPanel } from '../context/InventoryPanelContext';
 import { useGameViewModel } from '../viewmodels/useGameViewModel';
+import { useTowerWaveDamageLog } from '../viewmodels/useTowerWaveDamageLog';
 import { useUnitSelection } from '../viewmodels/useUnitSelection';
 import { SidePanel, SP, type SidePanelAccent } from './SidePanel';
 import { TowerControlPanel } from './TowerControlPanel';
@@ -115,15 +116,39 @@ const PlayerNexusDetails = ({
 const TowerDetails = ({
     tower,
     canSell,
+    lastWaveDamage,
 }: {
     tower: TowerStateSnapshot;
     canSell: boolean;
+    lastWaveDamage: { wave: number; damageDealt: number; damageTaken: number } | null;
 }) => (
     <>
         <p className={SP.subtitle} aria-label="Selected tower">
             {towerRaceLabel(tower.race)} · {towerArchetypeLabel(tower.archetype)} · this tower only
         </p>
         <StatList stats={getTowerStatRows(tower)} />
+
+        <SidePanel.Section>
+            <SidePanel.SectionTitle>Experience</SidePanel.SectionTitle>
+            <div className={SP.statGrid}>
+                <div className={SP.stat}>
+                    <span className={SP.statLabel}>EXP</span>
+                    <span className={SP.statValue}>{tower.experience}</span>
+                </div>
+                {lastWaveDamage && (
+                    <>
+                        <div className={SP.stat}>
+                            <span className={SP.statLabel}>W{lastWaveDamage.wave} dealt</span>
+                            <span className={SP.statValue}>{lastWaveDamage.damageDealt}</span>
+                        </div>
+                        <div className={SP.stat}>
+                            <span className={SP.statLabel}>W{lastWaveDamage.wave} taken</span>
+                            <span className={SP.statValue}>{lastWaveDamage.damageTaken}</span>
+                        </div>
+                    </>
+                )}
+            </div>
+        </SidePanel.Section>
 
         {canSell && (
             <SidePanel.ActionButton
@@ -166,7 +191,11 @@ export const UnitInfoBar = () =>
     const { selection, clear } = useUnitSelection();
     const { wave, upgradePick, towerDraftPick, canStartWave, deployment } = useGameViewModel();
     const { open: inventoryOpen, toggle: toggleInventory } = useInventoryPanel();
+    const { getTowerEntry } = useTowerWaveDamageLog();
     const canSell = canManagePlacedTowers({ upgradePick, towerDraftPick, canStartWave, deployment });
+    const towerLastWaveDamage = selection?.kind === 'tower'
+        ? getTowerEntry(selection.data.id)
+        : null;
 
     return (
         <SidePanel
@@ -188,27 +217,25 @@ export const UnitInfoBar = () =>
 
                         <SidePanel.Content>
                             {selection.kind === 'enemy' && (
-                                <EnemyDetails enemy={selection.data} wave={wave} />
+                                <>
+                                    <EnemyDetails enemy={selection.data} wave={wave} />
+                                    <EnemyControlPanel enemy={selection.data} />
+                                </>
                             )}
                             {selection.kind === 'tower' && (
-                                <TowerDetails tower={selection.data} canSell={canSell} />
+                                <>
+                                    <TowerDetails
+                                        tower={selection.data}
+                                        canSell={canSell}
+                                        lastWaveDamage={towerLastWaveDamage}
+                                    />
+                                    <TowerControlPanel tower={selection.data} />
+                                </>
                             )}
                             {selection.kind === 'playerNexus' && (
                                 <PlayerNexusDetails nexus={selection.data} wave={wave} />
                             )}
                         </SidePanel.Content>
-
-                        {selection.kind === 'tower' && (
-                            <SidePanel.Scrollable>
-                                <TowerControlPanel tower={selection.data} />
-                            </SidePanel.Scrollable>
-                        )}
-
-                        {selection.kind === 'enemy' && (
-                            <SidePanel.Scrollable>
-                                <EnemyControlPanel enemy={selection.data} />
-                            </SidePanel.Scrollable>
-                        )}
                     </>
                 )}
             </SidePanel.Body>

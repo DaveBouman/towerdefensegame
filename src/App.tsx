@@ -4,6 +4,7 @@ import { TowerRosterPanel } from './ui/components/TowerRosterPanel';
 import { UnitInfoBar } from './ui/components/UnitInfoBar';
 import { InventoryPanel } from './ui/components/InventoryPanel';
 import { TowerDraftPick } from './ui/components/TowerDraftPick';
+import { WaveDamageRecap } from './ui/components/WaveDamageRecap';
 import { InventoryPanelProvider } from './ui/context/InventoryPanelContext';
 
 function App()
@@ -12,6 +13,7 @@ function App()
         <InventoryPanelProvider>
             <div id="app">
                 <TowerDraftPick />
+                <WaveDamageRecap />
                 <GameHud />
                 <div className="app-main">
                     <TowerRosterPanel />

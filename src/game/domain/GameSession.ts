@@ -14,6 +14,7 @@ import type { GridPosition } from '../grid/types';
 import { DeploymentPhase } from './DeploymentPhase';
 import { TowerUpgradeService } from './TowerUpgradeService';
 import type { TowerUpgradeDefinition } from '../config/towerUpgradeCatalog';
+import type { WaveTowerDamageLog } from './types';
 import { WaveRoundController } from './WaveRoundController';
 import {
     canManagePlacedTowers,
@@ -25,6 +26,7 @@ import type { TowerDefinitionId } from '../config/towerCatalog';
 import { rollTowerDraftChoices } from '../config/towerDraft';
 import type { TowerRace } from './towers/types';
 import { getTowerDefinition } from '../config/towerCatalog';
+import { getTowerRecruitCost } from '../config/towerRecruitCost';
 import { raceDraftMultiplier } from '../config/raceDraftWeights';
 import {
     isEnemyNexusDefeated,
@@ -36,6 +38,7 @@ import { TowerRaceBonusSystem } from '../systems/TowerRaceBonusSystem';
 import { UnitAttackSystem } from '../systems/UnitAttackSystem';
 import { UnitMovementSystem } from '../systems/UnitMovementSystem';
 import { UnitNexusAttackSystem } from '../systems/UnitNexusAttackSystem';
+import { formatWaveTowerDamageLog, TowerRoundDamageLog } from './TowerRoundDamageLog';
 
 export class GameSession
 {
@@ -52,6 +55,7 @@ export class GameSession
     readonly playerNexus: PlayerNexusSystem;
     readonly deployment: DeploymentPhase;
     readonly raceBonuses: TowerRaceBonusSystem;
+    readonly towerRoundDamageLog: TowerRoundDamageLog;
 
     private readonly waveRounds: WaveRoundController;
     private readonly tickPipeline: readonly TickSystem[];
@@ -66,6 +70,8 @@ export class GameSession
         this.waveSpawns = new WaveSpawnSystem(this.enemies);
         this.towers = new TowerPlacementSystem(grid, this.collision);
         this.towerUpgrades = new TowerUpgradeService();
+        this.towerRoundDamageLog = new TowerRoundDamageLog();
+        this.towerRoundDamageLog.bindEventBus();
         this.playerNexus = new PlayerNexusSystem();
         this.deployment = new DeploymentPhase();
         this.raceBonuses = new TowerRaceBonusSystem(this.towers, grid);
@@ -118,6 +124,7 @@ export class GameSession
     prepare (): void
     {
         this.towerUpgrades.reset();
+        this.towerRoundDamageLog.reset();
         this.playerNexus.reset();
         this.enemies.clearAll();
         this.towers.clearAll();
@@ -184,6 +191,13 @@ export class GameSession
         const pick = this.state.towerDraftPick;
 
         if (!pick || !pick.choices.includes(definitionId))
+        {
+            return false;
+        }
+
+        const recruitCost = getTowerRecruitCost(definitionId, this.state.wave);
+
+        if (recruitCost > 0 && !this.state.spendGold(recruitCost))
         {
             return false;
         }
@@ -300,7 +314,11 @@ export class GameSession
     startWave (): void
     {
         this.state.setPaused(false);
-        this.waveRounds.startCombatRound();
+
+        if (this.waveRounds.startCombatRound())
+        {
+            this.towerRoundDamageLog.beginWave(this.state.wave);
+        }
     }
 
     claimWaveReward (upgradeId: string): boolean
@@ -411,6 +429,15 @@ export class GameSession
 
     private finishWave (): void
     {
+        const damageLog = this.towerRoundDamageLog.finalizeWave(this.towers.all);
+
+        if (damageLog.entries.length > 0)
+        {
+            this.awardWaveExperience(damageLog);
+            console.info(formatWaveTowerDamageLog(damageLog));
+            EventBus.emit(GAME_EVENTS.WAVE_TOWER_DAMAGE_LOG, damageLog);
+        }
+
         this.state.setPaused(false);
         this.resetPlayerTowersAfterWave();
         this.towerUpgrades.offerPostWaveDraft(this.state);
@@ -457,6 +484,7 @@ export class GameSession
         this.collision.clear();
         this.waveSpawns.clear();
         this.towerUpgrades.reset();
+        this.towerRoundDamageLog.reset();
         this.playerNexus.reset();
         this.deployment.reset();
         this.state.setDeployment(null);
@@ -469,6 +497,27 @@ export class GameSession
         if (nexus)
         {
             this.state.setLives(nexus.health);
+        }
+    }
+
+    private awardWaveExperience (log: WaveTowerDamageLog): void
+    {
+        for (const entry of log.entries)
+        {
+            if (entry.expGained <= 0)
+            {
+                continue;
+            }
+
+            const tower = this.towers.all.find((t) => t.id === entry.towerId);
+
+            if (!tower)
+            {
+                continue;
+            }
+
+            tower.grantExperience(entry.expGained);
+            EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
         }
     }
 
