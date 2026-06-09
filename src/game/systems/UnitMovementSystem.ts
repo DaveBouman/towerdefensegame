@@ -3,7 +3,6 @@ import { findPath } from '../pathfinding/aStar';
 import { pickSurroundGoalTile } from '../pathfinding/surroundGoal';
 import { tileKey } from '../pathfinding/tileKey';
 import { followPathStep, pathToWorldWaypoints, stepTowardWorldTarget } from '../movement/followPath';
-import { tryMoveWithAvoidance } from '../movement/tryMoveWithAvoidance';
 import { tileCenterWorld, worldDistance } from '../grid/worldPosition';
 import { getPlayerNexusApproachTile } from '../config/nexusConfig';
 import { canEnemiesTargetPlayerNexus, livingTowers } from '../combat/targetPriority';
@@ -26,7 +25,6 @@ interface UnitPathState {
     waypoints: WorldPosition[];
 }
 
-const MAX_PATH_REPLANS_PER_TICK = 3;
 const TOWER_HOLD_RANGE_BUFFER_TILES = 0.15;
 
 export class UnitMovementSystem
@@ -124,167 +122,26 @@ export class UnitMovementSystem
 
         if (isWithinAttackRange(enemy, target, rangePx))
         {
-            this.paths.delete(enemy.id);
             return;
         }
 
-        const startTile = this.grid.toGrid(enemy.position.x, enemy.position.y);
+        const goal = this.enemyMoveGoal(target, targetId);
+        const next = stepTowardWorldTarget(enemy.position, goal, speed);
 
-        if (!startTile)
+        if (this.tryDirectMove(enemy.id, next))
         {
-            return;
+            enemy.position = next;
         }
-
-        const goalTile = targetId === 'player-nexus'
-            ? getPlayerNexusApproachTile()
-            : this.grid.toGrid(target.position.x, target.position.y);
-
-        if (!goalTile)
-        {
-            return;
-        }
-
-        const goalKey = `${targetId}:${goalTile.col},${goalTile.row}`;
-
-        for (let attempt = 0; attempt < MAX_PATH_REPLANS_PER_TICK; attempt++)
-        {
-            let pathState = this.paths.get(enemy.id);
-
-            if (!pathState || pathState.goalKey !== goalKey)
-            {
-                pathState = this.planEnemyPath(
-                    enemy,
-                    target,
-                    startTile,
-                    goalTile,
-                    goalKey,
-                    targetId,
-                );
-                this.paths.set(enemy.id, pathState);
-            }
-
-            if (pathState.waypoints.length === 0)
-            {
-                this.chaseEnemyTarget(enemy, target, pathState.goalTile, targetId, speed);
-                return;
-            }
-
-            const step = followPathStep(
-                this.grid,
-                enemy.position,
-                pathState.waypoints,
-                speed,
-            );
-
-            if (!step)
-            {
-                this.paths.delete(enemy.id);
-                continue;
-            }
-
-            const moved = this.attemptUnitMove(enemy.id, enemy.position, step.position, speed);
-
-            if (moved)
-            {
-                enemy.position = moved;
-                pathState.waypoints = step.path;
-                return;
-            }
-
-            this.paths.delete(enemy.id);
-        }
-
-        const fallback = this.paths.get(enemy.id);
-
-        this.chaseEnemyTarget(
-            enemy,
-            target,
-            fallback?.goalTile ?? goalTile,
-            targetId,
-            speed,
-        );
     }
 
-    private planEnemyPath (
-        enemy: EnemyState,
-        target: CombatEntity,
-        startTile: GridPosition,
-        targetTile: GridPosition,
-        goalKey: string,
-        targetId: string,
-    ): UnitPathState
+    private enemyMoveGoal (target: CombatEntity, targetId: string): WorldPosition
     {
-        const blocked = buildPathfindingBlockedTiles(this.grid, this.collision, enemy.id);
-        blocked.add(tileKey(targetTile));
-
-        const rangePx = rangeTilesToPixels(this.grid, enemy.stats.range);
-        const reservedGoals = this.collectReservedGoalTiles(enemy.id, targetId);
-        const slotIndex = this.slotIndexForEnemyTarget(enemy.id, targetId);
-        const goalTile = pickSurroundGoalTile(
-            this.grid,
-            startTile,
-            target,
-            enemy.bodyHalfWidth,
-            enemy.bodyHalfHeight,
-            rangePx,
-            blocked,
-            reservedGoals,
-            slotIndex,
-        ) ?? targetTile;
-
-        const tilePath = findPath(this.grid, startTile, goalTile, blocked);
-
-        if (!tilePath)
+        if (targetId === 'player-nexus')
         {
-            return { goalKey, goalTile, waypoints: [] };
+            return tileCenterWorld(this.grid.config, getPlayerNexusApproachTile());
         }
 
-        return {
-            goalKey,
-            goalTile,
-            waypoints: pathToWorldWaypoints(this.grid, tilePath),
-        };
-    }
-
-    private chaseEnemyTarget (
-        enemy: EnemyState,
-        target: CombatEntity,
-        goalTile: GridPosition,
-        targetId: string,
-        speed: number,
-    ): void
-    {
-        const rangePx = rangeTilesToPixels(this.grid, enemy.stats.range);
-
-        if (isWithinAttackRange(enemy, target, rangePx))
-        {
-            this.paths.delete(enemy.id);
-            return;
-        }
-
-        const standGoal = targetId === 'player-nexus'
-            ? target.position
-            : tileCenterWorld(this.grid.config, goalTile);
-        const moved = this.attemptUnitMove(enemy.id, enemy.position, standGoal, speed);
-
-        if (moved)
-        {
-            enemy.position = moved;
-        }
-
-        this.paths.delete(enemy.id);
-    }
-
-    private slotIndexForEnemyTarget (enemyId: string, targetId: string): number
-    {
-        const squad = this.enemies.combatants
-            .filter((other) => this.enemyMoveTargetId(other) === targetId)
-            .map((other) => other.id)
-            .sort();
-
-        const index = squad.indexOf(enemyId);
-
-        return index >= 0 ? index : 0;
+        return { ...target.position };
     }
 
     private enemyMoveTargetId (enemy: EnemyState): string
@@ -575,16 +432,6 @@ export class UnitMovementSystem
     private tryDirectMove (unitId: string, position: WorldPosition): boolean
     {
         return this.collision.tryMove(unitId, position);
-    }
-
-    private attemptUnitMove (
-        unitId: string,
-        from: WorldPosition,
-        preferredTo: WorldPosition,
-        speed: number,
-    ): WorldPosition | null
-    {
-        return tryMoveWithAvoidance(this.collision, unitId, from, preferredTo, speed);
     }
 
     private rotateProcessingOrder<T extends { id: string }> (
