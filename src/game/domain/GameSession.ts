@@ -218,6 +218,25 @@ export class GameSession
         return true;
     }
 
+    /** Decline recruitment between waves and continue without buying a unit. */
+    skipTowerDraft (): boolean
+    {
+        if (!this.state.towerDraftPick)
+        {
+            return false;
+        }
+
+        if (this.state.wave < 1)
+        {
+            return false;
+        }
+
+        this.state.setTowerDraftPick(null);
+        this.state.setCanStartWave(true);
+
+        return true;
+    }
+
     canRepositionTowers (): boolean
     {
         return canManagePlacedTowers(

@@ -28,6 +28,7 @@ export const GAME_EVENTS = {
     PLACE_QUEUED_TOWER_AT_SCREEN: 'place-queued-tower-at-screen',
     SELL_TOWER: 'sell-tower',
     CONFIRM_TOWER_DRAFT: 'confirm-tower-draft',
+    SKIP_TOWER_DRAFT: 'skip-tower-draft',
     RELOCATE_TOWER_AT_TILE: 'relocate-tower-at-tile',
     CLAIM_WAVE_REWARD: 'claim-wave-reward',
     DISCARD_WAVE_REWARD: 'discard-wave-reward',

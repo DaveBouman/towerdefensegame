@@ -135,6 +135,7 @@ export class GameSceneController
         EventBus.on(GAME_EVENTS.SELL_TOWER, this.onSellTower, this);
         EventBus.on(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, this.onRelocateTowerAtTile, this);
         EventBus.on(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
+        EventBus.on(GAME_EVENTS.SKIP_TOWER_DRAFT, this.onSkipTowerDraft, this);
         EventBus.on(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.onPlayerNexusSpawned, this);
         EventBus.on(GAME_EVENTS.PLAYER_NEXUS_DAMAGED, this.onPlayerNexusDamaged, this);
         EventBus.on(GAME_EVENTS.PLAYER_NEXUS_DESTROYED, this.onPlayerNexusDestroyed, this);
@@ -177,6 +178,7 @@ export class GameSceneController
         EventBus.off(GAME_EVENTS.SELL_TOWER, this.onSellTower, this);
         EventBus.off(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, this.onRelocateTowerAtTile, this);
         EventBus.off(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
+        EventBus.off(GAME_EVENTS.SKIP_TOWER_DRAFT, this.onSkipTowerDraft, this);
         EventBus.off(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.onPlayerNexusSpawned, this);
         EventBus.off(GAME_EVENTS.PLAYER_NEXUS_DAMAGED, this.onPlayerNexusDamaged, this);
         EventBus.off(GAME_EVENTS.PLAYER_NEXUS_DESTROYED, this.onPlayerNexusDestroyed, this);
@@ -395,6 +397,11 @@ export class GameSceneController
     private onConfirmTowerDraft ({ towerId }: { towerId: TowerDefinitionId }): void
     {
         this.session.confirmTowerDraft(towerId);
+    }
+
+    private onSkipTowerDraft (): void
+    {
+        this.session.skipTowerDraft();
     }
 
     private onRelocateTowerAtTile ({

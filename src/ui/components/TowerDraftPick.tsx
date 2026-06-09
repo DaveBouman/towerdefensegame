@@ -54,7 +54,7 @@ export const TowerDraftPick = () =>
                 <p className="tower-draft-pick__hint">
                     {isRunStart
                         ? 'Pick 1 starter unit (tier 1 only). Higher tiers can appear in drafts later in the run.'
-                        : 'Recruit 1 unit with gold, then place it on the green rows before starting the next wave.'}
+                        : 'Optionally recruit 1 unit with gold, then place it on the green rows — or skip and start the next wave.'}
                 </p>
                 <div className="tower-draft-pick__choices">
                     {towerDraftPick.choices.map((id) =>
@@ -90,14 +90,25 @@ export const TowerDraftPick = () =>
                         );
                     })}
                 </div>
-                <button
-                    type="button"
-                    className="tower-draft-pick__confirm"
-                    disabled={!selectedId}
-                    onClick={confirm}
-                >
-                    Confirm and place on map
-                </button>
+                <div className="tower-draft-pick__actions">
+                    {!isRunStart && (
+                        <button
+                            type="button"
+                            className="tower-draft-pick__skip"
+                            onClick={() => EventBus.emit(GAME_EVENTS.SKIP_TOWER_DRAFT)}
+                        >
+                            Skip recruitment
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        className="tower-draft-pick__confirm"
+                        disabled={!selectedId}
+                        onClick={confirm}
+                    >
+                        {isRunStart ? 'Confirm and place on map' : 'Buy and place on map'}
+                    </button>
+                </div>
             </div>
         </div>
     );

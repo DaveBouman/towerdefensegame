@@ -243,8 +243,33 @@ body {
     border-color: #3a3a5c;
 }
 
-.tower-draft-pick__confirm {
+.tower-draft-pick__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     margin-top: 16px;
+}
+
+.tower-draft-pick__skip {
+    width: 100%;
+    padding: 10px 16px;
+    border: 1px solid #5a5a7a;
+    border-radius: 6px;
+    background: transparent;
+    color: #9aa0c8;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.tower-draft-pick__skip:hover {
+    background: #24243a;
+    border-color: #7a7a9a;
+    color: #e0e0f0;
+}
+
+.tower-draft-pick__confirm {
     width: 100%;
     padding: 12px 18px;
     border: 1px solid #2ecc71;

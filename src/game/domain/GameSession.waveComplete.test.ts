@@ -157,6 +157,28 @@ describe('GameSession.checkWaveComplete', () =>
         expect(session.state.deployment?.active).toBeFalsy();
     });
 
+    it('can skip post-wave recruitment and start the next wave', () =>
+    {
+        session.state.setWave(2);
+        session.state.setTowerDraftPick({ choices: [ 'militia', 'scout' ] });
+        session.state.setCanStartWave(false);
+
+        expect(session.skipTowerDraft()).toBe(true);
+        expect(session.state.towerDraftPick).toBeNull();
+        expect(session.state.canStartWave).toBe(true);
+        expect(session.state.deployment?.active).toBeFalsy();
+    });
+
+    it('cannot skip the wave 0 starter pick', () =>
+    {
+        session.state.setWave(0);
+        session.state.setTowerDraftPick({ choices: [ 'militia' ] });
+        session.state.setCanStartWave(false);
+
+        expect(session.skipTowerDraft()).toBe(false);
+        expect(session.state.towerDraftPick?.choices).toEqual([ 'militia' ]);
+    });
+
     it('sells a placed tower for gold between waves', () =>
     {
         session.confirmTowerDraft('militia');

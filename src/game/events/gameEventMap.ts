@@ -47,6 +47,7 @@ export interface GameEventMap {
     'place-queued-tower-at-screen': { towerId: TowerDefinitionId; clientX: number; clientY: number };
     'sell-tower': { towerId: string };
     'confirm-tower-draft': { towerId: TowerDefinitionId };
+    'skip-tower-draft': void;
     'relocate-tower-at-tile': { towerId: string; col: number; row: number };
     'claim-wave-reward': { upgradeId: string };
     'discard-wave-reward': void;
