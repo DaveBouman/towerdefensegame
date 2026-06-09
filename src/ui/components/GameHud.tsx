@@ -3,7 +3,7 @@ import { deploymentUnitLabel } from '../../game/config/deploymentConfig';
 import { PLAYER_PLACEMENT_ROW_COUNT } from '../../game/config/placementZone';
 import { hasWaveDefinition } from '../../game/config/waveCatalog';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
-import { isCombatActive } from '../isCombatActive';
+import { canManagePlacedTowers, isCombatActive } from '../../game/domain/gamePhase';
 import { useGameViewModel } from '../viewmodels/useGameViewModel';
 import { RaceLegendPanel } from './RaceLegendPanel';
 
@@ -24,7 +24,13 @@ export const GameHud = () =>
 
     const combatActive = isCombatActive({ wave, upgradePick, towerDraftPick, canStartWave });
 
-    const canReposition = !upgradePick && (deployment?.active || canStartWave);
+    const canReposition = canManagePlacedTowers({
+        wave,
+        upgradePick,
+        towerDraftPick,
+        canStartWave,
+        deployment,
+    });
     const dragHint = `Drag placed towers on the bottom ${PLAYER_PLACEMENT_ROW_COUNT} rows to reposition them`;
     const hasPlacedTowers = (deployment?.placedCount ?? 0) > 0 || (canStartWave && wave >= 0);
 

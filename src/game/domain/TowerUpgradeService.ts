@@ -11,6 +11,7 @@ import {
 } from '../config/towerStatUpgradeCatalog';
 import type { GameState } from './GameState';
 import type { TowerState } from './TowerState';
+import { isBetweenWaves } from './gamePhase';
 import { rollWaveUpgradeChoiceIds } from './waveUpgradeDraft';
 
 export class TowerUpgradeService
@@ -23,13 +24,6 @@ export class TowerUpgradeService
     {
         this.stash.length = 0;
         this.discardedCatalogIds.clear();
-    }
-
-    isBetweenWaves (state: GameState, livingEnemyCount: number): boolean
-    {
-        return state.canStartWave
-            && !state.upgradePick
-            && livingEnemyCount === 0;
     }
 
     /** Items in inventory waiting to be equipped (each tower keeps its own equipped list). */
@@ -51,11 +45,18 @@ export class TowerUpgradeService
     }
 
     equipCatalogUpgrade (
+        state: GameState,
         towers: readonly TowerState[],
         towerId: string,
         upgradeId: string,
+        livingEnemyCount: number,
     ): boolean
     {
+        if (!isBetweenWaves(state, livingEnemyCount))
+        {
+            return false;
+        }
+
         const stashIndex = this.stash.indexOf(upgradeId);
 
         if (stashIndex === -1)
@@ -158,7 +159,7 @@ export class TowerUpgradeService
         livingEnemyCount: number,
     ): boolean
     {
-        if (!this.isBetweenWaves(state, livingEnemyCount))
+        if (!isBetweenWaves(state, livingEnemyCount))
         {
             return false;
         }

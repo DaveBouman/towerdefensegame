@@ -9,11 +9,12 @@ import type {
 import { getTowerDefinitionOrThrow } from '../../game/config/towerCatalog';
 import type { TowerDefinitionId } from '../../game/config/towerCatalog';
 import { useGameViewModel } from '../viewmodels/useGameViewModel';
-import { canManagePlacedTowers } from '../canManagePlacedTowers';
+import { canManagePlacedTowers } from '../../game/domain/gamePhase';
 import { TOWER_QUEUE_DRAG_MIME } from '../towerQueueDragMime';
 import { phaserColorToCss, setTowerDragImage } from '../towerVisualColor';
 import { RACE_BONUS_CONFIG } from '../../game/config/raceBonusCatalog';
 import { formatTowerUpgradeStatsTooltip } from '../../game/config/towerUpgradeCatalog';
+import { SidePanel, SP } from './SidePanel';
 
 type NexusHealth = {
     current: number;
@@ -30,7 +31,7 @@ const useNexusHealth = () =>
 
     useEffect(() =>
     {
-        const flushIntervalMs = 50; // 20Hz UI updates max.
+        const flushIntervalMs = 50;
         let rafId: number | null = null;
         let timerId: ReturnType<typeof setTimeout> | null = null;
         let lastFlushAt = 0;
@@ -142,7 +143,7 @@ const useTowerRoster = () =>
 
     useEffect(() =>
     {
-        const flushIntervalMs = 50; // 20Hz UI updates max.
+        const flushIntervalMs = 50;
         let rafId: number | null = null;
         let timerId: ReturnType<typeof setTimeout> | null = null;
         let lastFlushAt = 0;
@@ -238,11 +239,7 @@ const useTowerRoster = () =>
 };
 
 const towerLabel = (tower: TowerStateSnapshot): string =>
-{
-    const def = getTowerDefinitionOrThrow(tower.definitionId);
-
-    return def.profile.unitType;
-};
+    getTowerDefinitionOrThrow(tower.definitionId).profile.unitType;
 
 const formatHp = (current: number, max: number): string =>
     `${Math.max(0, Math.floor(current))}/${Math.floor(max)}`;
@@ -309,133 +306,126 @@ export const TowerRosterPanel = () =>
     const queuedIds: readonly TowerDefinitionId[] = deployment?.queue ?? [];
 
     return (
-        <aside className="tower-roster">
-            <section className="tower-roster__section">
-                <h3 className="tower-roster__title">Nexuses</h3>
-                <div className="tower-roster__health-row">
-                    <span className="tower-roster__label">You</span>
-                    {player ? (
-                        <div className="tower-roster__bar">
-                            <div
-                                className="tower-roster__bar-fill tower-roster__bar-fill--player"
-                                style={{ width: `${healthPercent(player.current, player.max)}%` }}
-                            />
-                            <span className="tower-roster__bar-text">
-                                {formatHp(player.current, player.max)}
-                            </span>
-                        </div>
+        <SidePanel side="left" ariaLabel="Tower overview">
+            <SidePanel.Body>
+                <SidePanel.Section>
+                    <SidePanel.SectionTitle>Nexuses</SidePanel.SectionTitle>
+                    <div className={SP.healthRow}>
+                        <span className={SP.healthLabel}>You</span>
+                        {player ? (
+                            <div className={SP.healthBar}>
+                                <div
+                                    className={SP.healthBarFillPlayer}
+                                    style={{ width: `${healthPercent(player.current, player.max)}%` }}
+                                />
+                                <span className={SP.healthBarText}>
+                                    {formatHp(player.current, player.max)}
+                                </span>
+                            </div>
+                        ) : (
+                            <span className={SP.healthValue}>—</span>
+                        )}
+                    </div>
+                    <div className={SP.healthRow}>
+                        <span className={SP.healthLabel}>Enemy</span>
+                        {enemy ? (
+                            <div className={SP.healthBar}>
+                                <div
+                                    className={SP.healthBarFillEnemy}
+                                    style={{ width: `${healthPercent(enemy.current, enemy.max)}%` }}
+                                />
+                                <span className={SP.healthBarText}>
+                                    {formatHp(enemy.current, enemy.max)}
+                                </span>
+                            </div>
+                        ) : (
+                            <span className={SP.healthValue}>Hidden</span>
+                        )}
+                    </div>
+                </SidePanel.Section>
+
+                <SidePanel.Section>
+                    <SidePanel.SectionTitle>Placed towers</SidePanel.SectionTitle>
+                    {towers.length === 0 ? (
+                        <SidePanel.Empty>No towers placed yet.</SidePanel.Empty>
                     ) : (
-                        <span className="tower-roster__value">—</span>
+                        <SidePanel.List aria-label="Placed towers">
+                            {towers.map((tower) => (
+                                <SidePanel.ListItem key={tower.id}>
+                                    <SidePanel.ItemName>{towerLabel(tower)}</SidePanel.ItemName>
+                                    <SidePanel.ItemMeta>
+                                        {formatRace(tower.race)} · R{tower.range.toFixed(1)} · {tower.damage.toFixed(0)} dmg
+                                    </SidePanel.ItemMeta>
+                                    <SidePanel.ItemMeta>
+                                        HP {formatHp(tower.health, tower.maxHealth)}
+                                    </SidePanel.ItemMeta>
+                                    <SidePanel.ItemMeta>
+                                        Links: {tower.raceAuraTags.length > 0
+                                            ? tower.raceAuraTags.join(', ')
+                                            : 'No active links'}
+                                    </SidePanel.ItemMeta>
+                                    {canManage && (
+                                        <SidePanel.ActionButton
+                                            danger
+                                            onClick={() =>
+                                                EventBus.emit(GAME_EVENTS.SELL_TOWER, { towerId: tower.id })
+                                            }
+                                        >
+                                            Sell (+{tower.goldValue})
+                                        </SidePanel.ActionButton>
+                                    )}
+                                </SidePanel.ListItem>
+                            ))}
+                        </SidePanel.List>
                     )}
-                </div>
-                <div className="tower-roster__health-row">
-                    <span className="tower-roster__label">Enemy</span>
-                    {enemy ? (
-                        <div className="tower-roster__bar">
-                            <div
-                                className="tower-roster__bar-fill tower-roster__bar-fill--enemy"
-                                style={{ width: `${healthPercent(enemy.current, enemy.max)}%` }}
-                            />
-                            <span className="tower-roster__bar-text">
-                                {formatHp(enemy.current, enemy.max)}
-                            </span>
-                        </div>
+                </SidePanel.Section>
+
+                <SidePanel.Section>
+                    <SidePanel.SectionTitle>Upcoming towers</SidePanel.SectionTitle>
+                    <SidePanel.Hint>Drag onto the grid to place.</SidePanel.Hint>
+                    {queuedIds.length === 0 ? (
+                        <SidePanel.Empty>No towers queued.</SidePanel.Empty>
                     ) : (
-                        <span className="tower-roster__value">Hidden</span>
-                    )}
-                </div>
-            </section>
+                        <SidePanel.List aria-label="Queued towers">
+                            {queuedIds.map((id, index) =>
+                            {
+                                const def = getTowerDefinitionOrThrow(id);
 
-            <section className="tower-roster__section">
-                <h3 className="tower-roster__title">Placed towers</h3>
-                {towers.length === 0 ? (
-                    <p className="tower-roster__empty">No towers placed yet.</p>
-                ) : (
-                    <ul className="tower-roster__list" aria-label="Placed towers">
-                        {towers.map((tower) => (
-                            <li key={tower.id} className="tower-roster__item">
-                                <span className="tower-roster__item-name">{towerLabel(tower)}</span>
-                                <span className="tower-roster__item-meta">
-                                    {formatRace(tower.race)} · R{tower.range.toFixed(1)} · {tower.damage.toFixed(0)} dmg
-                                </span>
-                                <span className="tower-roster__item-meta">
-                                    HP {formatHp(tower.health, tower.maxHealth)}
-                                </span>
-                                <span className="tower-roster__item-meta">
-                                    Links: {tower.raceAuraTags.length > 0
-                                        ? tower.raceAuraTags.join(', ')
-                                        : 'No active links'}
-                                </span>
-                                {canManage && (
-                                    <button
-                                        type="button"
-                                        className="tower-roster__sell-btn"
-                                        onClick={() =>
-                                            EventBus.emit(GAME_EVENTS.SELL_TOWER, { towerId: tower.id })
-                                        }
-                                    >
-                                        Sell (+{tower.goldValue})
-                                    </button>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </section>
-
-            <section className="tower-roster__section">
-                <h3 className="tower-roster__title">Upcoming towers</h3>
-                <p className="tower-roster__hint">Drag onto the grid to place.</p>
-                {queuedIds.length === 0 ? (
-                    <p className="tower-roster__empty">No towers queued.</p>
-                ) : (
-                    <ul className="tower-roster__list" aria-label="Queued towers">
-                        {queuedIds.map((id, index) =>
-                        {
-                            const def = getTowerDefinitionOrThrow(id);
-
-                            return (
-                                <li
-                                    key={`${id}-${index}`}
-                                    className="tower-roster__item tower-roster__item--queued"
-                                    draggable
-                                    onDragStart={(e) =>
-                                    {
-                                        e.dataTransfer.effectAllowed = 'copy';
-                                        e.dataTransfer.setData(TOWER_QUEUE_DRAG_MIME, id);
-                                        e.dataTransfer.setData('text/plain', id);
-                                        setTowerDragImage(e, def.profile.color);
-                                    }}
-                                    onClick={(e) => e.preventDefault()}
-                                >
-                                    <span
-                                        className="tower-roster__unit-icon"
-                                        style={{
-                                            backgroundColor: phaserColorToCss(def.profile.color),
-                                            borderColor: phaserColorToCss(def.profile.color),
+                                return (
+                                    <SidePanel.ListItem
+                                        key={`${id}-${index}`}
+                                        queued
+                                        draggable
+                                        onDragStart={(e) =>
+                                        {
+                                            e.dataTransfer.effectAllowed = 'copy';
+                                            e.dataTransfer.setData(TOWER_QUEUE_DRAG_MIME, id);
+                                            e.dataTransfer.setData('text/plain', id);
+                                            setTowerDragImage(e, def.profile.color);
                                         }}
-                                        aria-hidden="true"
-                                    />
-                                    <span className="tower-roster__item-name">
-                                        {deployment?.nextTowerId === id && index === 0
-                                            ? 'Next: '
-                                            : null}
-                                        {def.profile.unitType}
-                                    </span>
-                                    <span className="tower-roster__item-meta">
-                                        R{def.profile.range.toFixed(1)} ·{' '}
-                                        {def.profile.damage.toFixed(0)} dmg
-                                    </span>
-                                    <span className="tower-roster__item-meta">
-                                        Synergy: {synergyLineForTower(id, def.profile.race)}
-                                    </span>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                )}
-            </section>
-        </aside>
+                                        onClick={(e) => e.preventDefault()}
+                                    >
+                                        <SidePanel.UnitIcon color={phaserColorToCss(def.profile.color)} />
+                                        <SidePanel.ItemName>
+                                            {deployment?.nextTowerId === id && index === 0
+                                                ? 'Next: '
+                                                : null}
+                                            {def.profile.unitType}
+                                        </SidePanel.ItemName>
+                                        <SidePanel.ItemMeta>
+                                            R{def.profile.range.toFixed(1)} ·{' '}
+                                            {def.profile.damage.toFixed(0)} dmg
+                                        </SidePanel.ItemMeta>
+                                        <SidePanel.ItemMeta>
+                                            Synergy: {synergyLineForTower(id, def.profile.race)}
+                                        </SidePanel.ItemMeta>
+                                    </SidePanel.ListItem>
+                                );
+                            })}
+                        </SidePanel.List>
+                    )}
+                </SidePanel.Section>
+            </SidePanel.Body>
+        </SidePanel>
     );
 };
-

@@ -6,6 +6,7 @@ import {
 } from '../../game/combat/towerTargeting';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
 import type { TowerStateSnapshot } from '../../game/domain/types';
+import { SidePanel, SP } from './SidePanel';
 
 interface TowerTargetingPanelProps {
     tower: TowerStateSnapshot;
@@ -22,12 +23,12 @@ export const TowerTargetingPanel = ({ tower }: TowerTargetingPanelProps) =>
     };
 
     return (
-        <section className="unit-info-bar__section">
-            <h3 className="unit-info-bar__section-title">Target priority</h3>
-            <p className="unit-info-bar__hint">
+        <SidePanel.Section>
+            <SidePanel.SectionTitle>Target priority</SidePanel.SectionTitle>
+            <SidePanel.Hint>
                 Applies to enemies in range. Units only move toward nearby threats.
-            </p>
-            <div className="unit-info-bar__targeting" role="radiogroup" aria-label="Target priority">
+            </SidePanel.Hint>
+            <div className={SP.targetingGrid} role="radiogroup" aria-label="Target priority">
                 {TOWER_TARGETING_MODES.map((mode) => (
                     <button
                         key={mode}
@@ -36,8 +37,8 @@ export const TowerTargetingPanel = ({ tower }: TowerTargetingPanelProps) =>
                         aria-checked={tower.targetingMode === mode}
                         className={
                             tower.targetingMode === mode
-                                ? 'unit-info-bar__targeting-btn unit-info-bar__targeting-btn--active'
-                                : 'unit-info-bar__targeting-btn'
+                                ? SP.targetingBtnActive
+                                : SP.targetingBtn
                         }
                         onClick={() => setMode(mode)}
                     >
@@ -45,6 +46,6 @@ export const TowerTargetingPanel = ({ tower }: TowerTargetingPanelProps) =>
                     </button>
                 ))}
             </div>
-        </section>
+        </SidePanel.Section>
     );
 };

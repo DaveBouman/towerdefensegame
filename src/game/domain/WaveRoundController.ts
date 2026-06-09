@@ -6,6 +6,7 @@ import type { WaveSystem } from '../systems/WaveSystem';
 import { hasWaveDefinition } from '../config/waveCatalog';
 import type { DeploymentPhase } from './DeploymentPhase';
 import type { GameState } from './GameState';
+import { isCombatActive } from './gamePhase';
 
 interface AttackResetPort {
     clearAll (): void;
@@ -31,12 +32,7 @@ export class WaveRoundController
 
     static isCombatActive (state: GameState): boolean
     {
-        if (state.wave === 0 || state.upgradePick || state.towerDraftPick || state.canStartWave)
-        {
-            return false;
-        }
-
-        return true;
+        return isCombatActive(state);
     }
 
     showUpcomingWavePreview (): void

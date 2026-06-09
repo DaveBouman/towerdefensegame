@@ -14,16 +14,17 @@ import type { DisplayStat } from '../../game/domain/stats/displayStat';
 import { getTowerUpgradeDefinition, towerUpgradeHoverText } from '../../game/config/towerUpgradeCatalog';
 import { EventBus } from '../../game/EventBus';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
-import { canManagePlacedTowers } from '../canManagePlacedTowers';
+import { canManagePlacedTowers } from '../../game/domain/gamePhase';
 import { useInventoryPanel } from '../context/InventoryPanelContext';
 import { useGameViewModel } from '../viewmodels/useGameViewModel';
 import { useUnitSelection } from '../viewmodels/useUnitSelection';
+import { SidePanel, SP, type SidePanelAccent } from './SidePanel';
 import { TowerControlPanel } from './TowerControlPanel';
 import { TowerStatUpgradePanel } from './TowerStatUpgradePanel';
 
 const InventoryIcon = () => (
     <svg
-        className="unit-info-bar__tool-icon"
+        className={SP.toolIcon}
         viewBox="0 0 24 24"
         aria-hidden="true"
         focusable="false"
@@ -35,14 +36,12 @@ const InventoryIcon = () => (
     </svg>
 );
 
-const formatLabel = (key: string) => key.charAt(0).toUpperCase() + key.slice(1);
-
 const StatList = ({ stats }: { stats: DisplayStat[] }) => (
-    <div className="unit-info-bar__stats">
+    <div className={SP.statGrid}>
         {stats.map((stat) => (
-            <div key={stat.label} className="unit-info-bar__stat">
-                <span className="unit-info-bar__stat-label">{stat.label}</span>
-                <span className="unit-info-bar__stat-value">{stat.value}</span>
+            <div key={stat.label} className={SP.stat}>
+                <span className={SP.statLabel}>{stat.label}</span>
+                <span className={SP.statValue}>{stat.value}</span>
             </div>
         ))}
     </div>
@@ -58,9 +57,9 @@ const TagList = ({ title, items }: { title: string; items: readonly TagItem[] })
     }
 
     return (
-        <section className="unit-info-bar__section">
-            <h3 className="unit-info-bar__section-title">{title}</h3>
-            <ul className="unit-info-bar__tags">
+        <SidePanel.Section>
+            <SidePanel.SectionTitle>{title}</SidePanel.SectionTitle>
+            <ul className={SP.tags}>
                 {items.map((item) =>
                 {
                     const key = typeof item === 'string' ? item : item.key;
@@ -68,17 +67,13 @@ const TagList = ({ title, items }: { title: string; items: readonly TagItem[] })
                     const tip = typeof item === 'string' ? undefined : item.title;
 
                     return (
-                        <li
-                            key={key}
-                            className="unit-info-bar__tag"
-                            title={tip}
-                        >
+                        <li key={key} className={SP.tag} title={tip}>
                             {text}
                         </li>
                     );
                 })}
             </ul>
-        </section>
+        </SidePanel.Section>
     );
 };
 
@@ -125,39 +120,46 @@ const TowerDetails = ({
     canSell: boolean;
 }) => (
     <>
-        <p className="unit-info-bar__tower-id" aria-label="Selected tower">
+        <p className={SP.subtitle} aria-label="Selected tower">
             {towerRaceLabel(tower.race)} · {towerArchetypeLabel(tower.archetype)} · this tower only
         </p>
         <StatList stats={getTowerStatRows(tower)} />
 
         {canSell && (
-            <button
-                type="button"
-                className="unit-info-bar__sell-btn"
+            <SidePanel.ActionButton
+                danger
                 onClick={() => EventBus.emit(GAME_EVENTS.SELL_TOWER, { towerId: tower.id })}
             >
                 Sell (+{tower.goldValue} gold)
-            </button>
+            </SidePanel.ActionButton>
         )}
 
-        <div className="unit-info-bar__extra">
-            <TowerStatUpgradePanel tower={tower} />
-            <TagList
-                title="Upgrades"
-                items={tower.equippedUpgrades.map((u) =>
-                {
-                    const def = getTowerUpgradeDefinition(u.id);
+        <TowerStatUpgradePanel tower={tower} />
+        <TagList
+            title="Upgrades"
+            items={tower.equippedUpgrades.map((u) =>
+            {
+                const def = getTowerUpgradeDefinition(u.id);
 
-                    return {
-                        key: u.id,
-                        text: u.name,
-                        title: def ? towerUpgradeHoverText(def) : u.name,
-                    };
-                })}
-            />
-        </div>
+                return {
+                    key: u.id,
+                    text: u.name,
+                    title: def ? towerUpgradeHoverText(def) : u.name,
+                };
+            })}
+        />
     </>
 );
+
+const selectionAccent = (selection: NonNullable<ReturnType<typeof useUnitSelection>['selection']>): SidePanelAccent =>
+{
+    if (selection.kind === 'enemy')
+    {
+        return 'enemy';
+    }
+
+    return 'tower';
+};
 
 export const UnitInfoBar = () =>
 {
@@ -166,79 +168,63 @@ export const UnitInfoBar = () =>
     const { open: inventoryOpen, toggle: toggleInventory } = useInventoryPanel();
     const canSell = canManagePlacedTowers({ upgradePick, towerDraftPick, canStartWave, deployment });
 
-    const accentClass = !selection
-        ? 'unit-info-bar--empty'
-        : selection.kind === 'enemy'
-            ? 'unit-info-bar--enemy'
-            : selection.kind === 'playerNexus'
-                ? 'unit-info-bar--tower'
-                : 'unit-info-bar--tower';
-
     return (
-        <footer
-            className={`unit-info-bar ${accentClass}`}
-            role="region"
-            aria-label="Unit information"
+        <SidePanel
+            side="right"
+            accent={selection ? selectionAccent(selection) : 'default'}
+            ariaLabel="Unit information"
         >
-            <div className="unit-info-bar__main" aria-hidden={!selection}>
-                <div className="unit-info-bar__identity">
-                    {selection && (
-                        <>
-                            <span className="unit-info-bar__kind">{selection.kind}</span>
-                            <h2 className="unit-info-bar__name">{selection.data.unitType}</h2>
-                        </>
-                    )}
-                </div>
-
-                <div className="unit-info-bar__content">
-                    {selection?.kind === 'enemy' && (
-                        <EnemyDetails enemy={selection.data} wave={wave} />
-                    )}
-                    {selection?.kind === 'tower' && (
-                        <TowerDetails tower={selection.data} canSell={canSell} />
-                    )}
-                    {selection?.kind === 'playerNexus' && (
-                        <PlayerNexusDetails nexus={selection.data} wave={wave} />
-                    )}
-                </div>
-
-                {selection?.kind === 'tower' && (
-                    <div className="unit-info-bar__controls">
-                        <TowerControlPanel tower={selection.data} />
-                    </div>
-                )}
-
-                {selection?.kind === 'enemy' && (
-                    <div className="unit-info-bar__controls">
-                        <EnemyControlPanel enemy={selection.data} />
-                    </div>
-                )}
-
+            <SidePanel.Body aria-hidden={!selection}>
                 {selection && (
-                    <button
-                        type="button"
-                        className="unit-info-bar__close"
-                        onClick={clear}
-                        aria-label="Deselect unit"
-                    >
-                        ×
-                    </button>
-                )}
-            </div>
+                    <>
+                        <SidePanel.Header>
+                            <span className={SP.kind}>{selection.kind}</span>
+                            <h2 className={SP.title}>{selection.data.unitType}</h2>
+                            <SidePanel.CloseButton
+                                onClick={clear}
+                                aria-label="Deselect unit"
+                            />
+                        </SidePanel.Header>
 
-            <nav className="unit-info-bar__tools" aria-label="Game tools">
-                <button
-                    type="button"
-                    className={`unit-info-bar__tool${inventoryOpen ? ' unit-info-bar__tool--active' : ''}`}
+                        <SidePanel.Content>
+                            {selection.kind === 'enemy' && (
+                                <EnemyDetails enemy={selection.data} wave={wave} />
+                            )}
+                            {selection.kind === 'tower' && (
+                                <TowerDetails tower={selection.data} canSell={canSell} />
+                            )}
+                            {selection.kind === 'playerNexus' && (
+                                <PlayerNexusDetails nexus={selection.data} wave={wave} />
+                            )}
+                        </SidePanel.Content>
+
+                        {selection.kind === 'tower' && (
+                            <SidePanel.Scrollable>
+                                <TowerControlPanel tower={selection.data} />
+                            </SidePanel.Scrollable>
+                        )}
+
+                        {selection.kind === 'enemy' && (
+                            <SidePanel.Scrollable>
+                                <EnemyControlPanel enemy={selection.data} />
+                            </SidePanel.Scrollable>
+                        )}
+                    </>
+                )}
+            </SidePanel.Body>
+
+            <SidePanel.Footer aria-label="Game tools">
+                <SidePanel.ToolButton
+                    active={inventoryOpen}
                     onClick={toggleInventory}
                     title="Inventory (I)"
                     aria-label="Inventory"
                     aria-pressed={inventoryOpen}
                 >
                     <InventoryIcon />
-                    <span className="unit-info-bar__tool-label">Inv</span>
-                </button>
-            </nav>
-        </footer>
+                    <span className={SP.toolLabel}>Inv</span>
+                </SidePanel.ToolButton>
+            </SidePanel.Footer>
+        </SidePanel>
     );
 };

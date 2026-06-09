@@ -6,7 +6,9 @@ import {
     getTowerStatUpgradesForArchetype,
 } from '../../game/config/towerStatUpgradeCatalog';
 import type { TowerStateSnapshot } from '../../game/domain/types';
+import { canUpgradeUnits } from '../../game/domain/gamePhase';
 import { useGameViewModel } from '../viewmodels/useGameViewModel';
+import { SidePanel } from './SidePanel';
 
 type Props = {
     tower: TowerStateSnapshot;
@@ -15,9 +17,9 @@ type Props = {
 export const TowerStatUpgradePanel = ({ tower }: Props) =>
 {
     const { gold, canStartWave, upgradePick } = useGameViewModel();
-    const betweenWaves = canStartWave && !upgradePick;
+    const canUpgrade = canUpgradeUnits({ canStartWave, upgradePick });
 
-    if (!betweenWaves)
+    if (!canUpgrade)
     {
         return null;
     }
@@ -25,9 +27,9 @@ export const TowerStatUpgradePanel = ({ tower }: Props) =>
     const upgrades = getTowerStatUpgradesForArchetype(tower.archetype);
 
     return (
-        <section className="unit-info-bar__section tower-stat-upgrades">
-            <h3 className="unit-info-bar__section-title">Between waves</h3>
-            <p className="tower-stat-upgrades__hint">Spend gold on this tower only — other towers are unchanged.</p>
+        <SidePanel.Section>
+            <SidePanel.SectionTitle>Between waves</SidePanel.SectionTitle>
+            <SidePanel.Hint>Spend gold on this tower only — other towers are unchanged.</SidePanel.Hint>
             <div className="tower-stat-upgrades__buttons">
                 {upgrades.map((def) =>
                 {
@@ -61,6 +63,6 @@ export const TowerStatUpgradePanel = ({ tower }: Props) =>
                     );
                 })}
             </div>
-        </section>
+        </SidePanel.Section>
     );
 };

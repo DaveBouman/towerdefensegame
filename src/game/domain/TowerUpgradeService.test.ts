@@ -62,17 +62,35 @@ describe('TowerUpgradeService', () =>
         claimGilded();
         claimGilded();
 
+        state.setCanStartWave(true);
+
         const towerA = createTowerState(grid, { col: 1, row: 30 }, 'militia');
         const towerB = createTowerState(grid, { col: 3, row: 30 }, 'militia');
 
         expect(
-            service.equipCatalogUpgrade([ towerA, towerB ], towerA.id, 'gilded-plating'),
+            service.equipCatalogUpgrade(state, [ towerA, towerB ], towerA.id, 'gilded-plating', 0),
         ).toBe(true);
         expect(
-            service.equipCatalogUpgrade([ towerA, towerB ], towerB.id, 'gilded-plating'),
+            service.equipCatalogUpgrade(state, [ towerA, towerB ], towerB.id, 'gilded-plating', 0),
         ).toBe(true);
         expect(towerA.equippedUpgrades.some((u) => u.id === 'gilded-plating')).toBe(true);
         expect(towerB.equippedUpgrades.some((u) => u.id === 'gilded-plating')).toBe(true);
         expect(service.getInventoryUpgrades()).toHaveLength(0);
+    });
+
+    it('rejects catalog equip during combat', () =>
+    {
+        state.setUpgradePick({ choices: [ 'gilded-plating' ] });
+        service.claimWaveReward(state, 'gilded-plating');
+        state.setWave(1);
+        state.setCanStartWave(false);
+
+        const tower = createTowerState(grid, { col: 1, row: 30 }, 'militia');
+
+        expect(
+            service.equipCatalogUpgrade(state, [ tower ], tower.id, 'gilded-plating', 2),
+        ).toBe(false);
+        expect(tower.equippedUpgrades).toHaveLength(0);
+        expect(service.getInventoryUpgrades()).toHaveLength(1);
     });
 });

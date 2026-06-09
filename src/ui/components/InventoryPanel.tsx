@@ -6,6 +6,7 @@ import {
 import { EventBus } from '../../game/EventBus';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
 import { useInventoryPanel } from '../context/InventoryPanelContext';
+import { canUpgradeUnits } from '../../game/domain/gamePhase';
 import { INVENTORY_UPGRADE_DRAG_MIME } from '../inventoryDragMime';
 import { beginInventoryDrag, endInventoryDrag } from '../inventoryDragSession';
 import { useGameViewModel } from '../viewmodels/useGameViewModel';
@@ -13,8 +14,9 @@ import { useGameViewModel } from '../viewmodels/useGameViewModel';
 export const InventoryPanel = () =>
 {
     const { open, items } = useInventoryPanel();
-    const { upgradePick } = useGameViewModel();
+    const { upgradePick, canStartWave } = useGameViewModel();
     const [ selectedRewardId, setSelectedRewardId ] = useState<string | null>(null);
+    const canUpgrade = canUpgradeUnits({ canStartWave, upgradePick });
 
     useEffect(() =>
     {
@@ -107,7 +109,9 @@ export const InventoryPanel = () =>
                     </section>
                 ) : (
                     <p className="inventory-panel__hint">
-                        Drag an upgrade onto a tower to equip it to that tower only. Press H to close.
+                        {canUpgrade
+                            ? 'Drag an upgrade onto a tower to equip it to that tower only. Press I to close.'
+                            : 'Upgrades can only be equipped between waves.'}
                     </p>
                 )}
 
@@ -124,9 +128,16 @@ export const InventoryPanel = () =>
                                     key={`${def.id}-${index}`}
                                     className="inventory-panel__item"
                                     title={stats}
-                                    draggable
+                                    draggable={canUpgrade}
                                     onDragStart={(e) =>
                                     {
+                                        if (!canUpgrade)
+                                        {
+                                            e.preventDefault();
+
+                                            return;
+                                        }
+
                                         beginInventoryDrag(def.id);
                                         e.dataTransfer.setData(INVENTORY_UPGRADE_DRAG_MIME, def.id);
                                         e.dataTransfer.setData('text/plain', def.id);

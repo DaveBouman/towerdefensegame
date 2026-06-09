@@ -15,6 +15,11 @@ import { DeploymentPhase } from './DeploymentPhase';
 import { TowerUpgradeService } from './TowerUpgradeService';
 import type { TowerUpgradeDefinition } from '../config/towerUpgradeCatalog';
 import { WaveRoundController } from './WaveRoundController';
+import {
+    canManagePlacedTowers,
+    isBetweenWaves,
+    isCombatActive,
+} from './gamePhase';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { TowerDefinitionId } from '../config/towerCatalog';
 import { rollTowerDraftChoices } from '../config/towerDraft';
@@ -150,7 +155,7 @@ export class GameSession
     /** Simulation ticks run only during an active combat round. */
     isRoundActive (): boolean
     {
-        return WaveRoundController.isCombatActive(this.state);
+        return isCombatActive(this.state);
     }
 
     get isPaused (): boolean
@@ -197,12 +202,11 @@ export class GameSession
 
     canRepositionTowers (): boolean
     {
-        if (this.state.upgradePick || this.state.towerDraftPick || this.isRoundActive())
-        {
-            return false;
-        }
-
-        return this.deployment.active || this.isBetweenWaves();
+        return canManagePlacedTowers(
+            this.state.snapshot(),
+            this.enemies.livingCombatCount,
+            this.deployment.active,
+        );
     }
 
     canRelocateTowerTo (towerId: string, tile: GridPosition): boolean
@@ -332,7 +336,13 @@ export class GameSession
 
     equipCatalogUpgradeToTower (towerId: string, upgradeId: string): boolean
     {
-        return this.towerUpgrades.equipCatalogUpgrade(this.towers.all, towerId, upgradeId);
+        return this.towerUpgrades.equipCatalogUpgrade(
+            this.state,
+            this.towers.all,
+            towerId,
+            upgradeId,
+            this.enemies.livingCombatCount,
+        );
     }
 
     setTowerTargetingMode (towerId: string, mode: TowerTargetingMode): boolean
@@ -352,7 +362,7 @@ export class GameSession
 
     isBetweenWaves (): boolean
     {
-        return this.towerUpgrades.isBetweenWaves(this.state, this.enemies.livingCombatCount);
+        return isBetweenWaves(this.state, this.enemies.livingCombatCount);
     }
 
     purchaseTowerStatUpgrade (towerId: string, upgradeId: string): boolean

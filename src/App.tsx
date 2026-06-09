@@ -18,9 +18,9 @@ function App()
                     <div className="game-stage">
                         <PhaserGame />
                     </div>
+                    <UnitInfoBar />
                 </div>
                 <InventoryPanel />
-                <UnitInfoBar />
             </div>
         </InventoryPanelProvider>
     )
