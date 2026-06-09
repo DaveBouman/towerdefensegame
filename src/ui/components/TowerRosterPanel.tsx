@@ -300,10 +300,17 @@ const synergyLineForTower = (
 
 export const TowerRosterPanel = () =>
 {
-    const { deployment, upgradePick, towerDraftPick, canStartWave } = useGameViewModel();
+    const { deployment, upgradePick, towerDraftPick, canStartWave, wave, runOutcome } = useGameViewModel();
     const { player, enemy } = useNexusHealth();
     const towers = useTowerRoster();
-    const canManage = canManagePlacedTowers({ upgradePick, towerDraftPick, canStartWave, deployment });
+    const canManage = canManagePlacedTowers({
+        wave,
+        runOutcome,
+        upgradePick,
+        towerDraftPick,
+        canStartWave,
+        deployment,
+    });
 
     const queuedIds: readonly TowerDefinitionId[] = deployment?.queue ?? [];
 

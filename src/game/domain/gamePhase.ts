@@ -9,7 +9,7 @@ type BetweenWavesState = Pick<GameStateSnapshot, 'canStartWave' | 'upgradePick'>
 
 type ManageTowersState = Pick<
     GameStateSnapshot,
-    'wave' | 'upgradePick' | 'towerDraftPick' | 'canStartWave' | 'deployment'
+    'wave' | 'upgradePick' | 'towerDraftPick' | 'canStartWave' | 'deployment' | 'runOutcome'
 >;
 
 export const isCombatActive = (state: CombatPhaseState): boolean =>

@@ -9,7 +9,17 @@ import { RaceLegendPanel } from './RaceLegendPanel';
 
 export const GameHud = () =>
 {
-    const { gold, wave, lives, canStartWave, paused, deployment, upgradePick, towerDraftPick } = useGameViewModel();
+    const {
+        gold,
+        wave,
+        lives,
+        runOutcome,
+        canStartWave,
+        paused,
+        deployment,
+        upgradePick,
+        towerDraftPick,
+    } = useGameViewModel();
     const nextWave = wave + 1;
 
     const handleStartWave = () =>
@@ -22,10 +32,17 @@ export const GameHud = () =>
         EventBus.emit(GAME_EVENTS.TOGGLE_PAUSE);
     };
 
-    const combatActive = isCombatActive({ wave, upgradePick, towerDraftPick, canStartWave });
+    const combatActive = isCombatActive({
+        wave,
+        runOutcome,
+        upgradePick,
+        towerDraftPick,
+        canStartWave,
+    });
 
     const canReposition = canManagePlacedTowers({
         wave,
+        runOutcome,
         upgradePick,
         towerDraftPick,
         canStartWave,

@@ -183,10 +183,17 @@ const selectionAccent = (selection: NonNullable<ReturnType<typeof useUnitSelecti
 export const UnitInfoBar = () =>
 {
     const { selection, clear } = useUnitSelection();
-    const { wave, upgradePick, towerDraftPick, canStartWave, deployment } = useGameViewModel();
+    const { wave, runOutcome, upgradePick, towerDraftPick, canStartWave, deployment } = useGameViewModel();
     const { open: inventoryOpen, toggle: toggleInventory } = useInventoryPanel();
     const { getTowerEntry } = useTowerWaveDamageLog();
-    const canSell = canManagePlacedTowers({ upgradePick, towerDraftPick, canStartWave, deployment });
+    const canSell = canManagePlacedTowers({
+        wave,
+        runOutcome,
+        upgradePick,
+        towerDraftPick,
+        canStartWave,
+        deployment,
+    });
     const towerLastWaveDamage = selection?.kind === 'tower'
         ? getTowerEntry(selection.data.id)
         : null;
