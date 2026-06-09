@@ -153,6 +153,21 @@ export class GameSession
         return WaveRoundController.isCombatActive(this.state);
     }
 
+    get isPaused (): boolean
+    {
+        return this.state.paused;
+    }
+
+    togglePause (): void
+    {
+        if (!this.isRoundActive())
+        {
+            return;
+        }
+
+        this.state.setPaused(!this.state.paused);
+    }
+
     /** True during deployment or between waves (not combat / reward pick). */
     isTowerDraftActive (): boolean
     {
@@ -215,34 +230,24 @@ export class GameSession
         return true;
     }
 
-    tryDeployTowerAt (tile: GridPosition, towerId?: TowerDefinitionId): boolean
+    tryDeployTowerAt (tile: GridPosition, towerId: TowerDefinitionId): boolean
     {
         if (!this.canPlaceQueuedTowers())
         {
             return false;
         }
 
-        const queuedTowerId = towerId ?? this.deployment.peekNext();
-
-        if (!queuedTowerId)
+        if (!this.deployment.snapshot().queue.includes(towerId))
         {
             return false;
         }
 
-        if (!this.towers.tryPlace(tile, queuedTowerId))
+        if (!this.towers.tryPlace(tile, towerId))
         {
             return false;
         }
 
-        if (towerId)
-        {
-            this.deployment.takeById(towerId);
-        }
-        else
-        {
-            this.deployment.takeNext();
-        }
-
+        this.deployment.takeById(towerId);
         this.syncDeploymentState();
         this.state.setCanStartWave(true);
         this.raceBonuses.recalculate();
@@ -252,8 +257,45 @@ export class GameSession
         return true;
     }
 
+    canSellTower (towerId: string): boolean
+    {
+        if (!this.canRepositionTowers())
+        {
+            return false;
+        }
+
+        return this.towers.all.some((tower) => tower.id === towerId);
+    }
+
+    sellTower (towerId: string): boolean
+    {
+        if (!this.canSellTower(towerId))
+        {
+            return false;
+        }
+
+        const tower = this.towers.all.find((t) => t.id === towerId);
+
+        if (!tower)
+        {
+            return false;
+        }
+
+        const refund = tower.goldValue;
+
+        this.unitMovement.clearTower(towerId);
+        this.unitAttacks.clearTower(towerId);
+        this.towers.remove(towerId);
+        this.state.addGold(refund);
+        this.raceBonuses.recalculate();
+        this.state.setRaceDraftBias(this.computeRaceDraftBias());
+
+        return true;
+    }
+
     startWave (): void
     {
+        this.state.setPaused(false);
         this.waveRounds.startCombatRound();
     }
 
@@ -359,6 +401,7 @@ export class GameSession
 
     private finishWave (): void
     {
+        this.state.setPaused(false);
         this.resetPlayerTowersAfterWave();
         this.towerUpgrades.offerPostWaveDraft(this.state);
         this.towerUpgrades.publishInventorySnapshot();

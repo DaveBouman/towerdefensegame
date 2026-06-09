@@ -14,6 +14,7 @@ export class GameState
     private _wave = 0;
     private _lives = 20;
     private _canStartWave = true;
+    private _paused = false;
     private _raceDraftBias: Record<TowerRace, number> = {
         'aether-dominion': 1,
         'swarmforge-brood': 1,
@@ -43,6 +44,11 @@ export class GameState
         return this._canStartWave;
     }
 
+    get paused (): boolean
+    {
+        return this._paused;
+    }
+
     get upgradePick (): UpgradePickState | null
     {
         return this._upgradePick;
@@ -65,6 +71,7 @@ export class GameState
             wave: this._wave,
             lives: this._lives,
             canStartWave: this._canStartWave,
+            paused: this._paused,
             raceDraftBias: this._raceDraftBias,
             upgradePick: this._upgradePick,
             towerDraftPick: this._towerDraftPick,
@@ -129,6 +136,17 @@ export class GameState
     setCanStartWave (canStartWave: boolean): void
     {
         this._canStartWave = canStartWave;
+        this.notify();
+    }
+
+    setPaused (paused: boolean): void
+    {
+        if (this._paused === paused)
+        {
+            return;
+        }
+
+        this._paused = paused;
         this.notify();
     }
 

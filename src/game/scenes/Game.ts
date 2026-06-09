@@ -18,6 +18,27 @@ export class Game extends Scene
     private controller!: GameSceneController;
     private cameraPan!: CameraPanController;
 
+    private readonly onPauseKeyDown = (e: KeyboardEvent): void =>
+    {
+        if (e.key !== 'h' && e.key !== 'H')
+        {
+            return;
+        }
+
+        if (this.isTypingInFormField())
+        {
+            return;
+        }
+
+        e.preventDefault();
+        this.onTogglePause();
+    };
+
+    private onTogglePause = (): void =>
+    {
+        this.session?.togglePause();
+    };
+
     constructor ()
     {
         super('Game');
@@ -34,8 +55,11 @@ export class Game extends Scene
         this.session = new GameSession(this.grid);
         this.controller = new GameSceneController(this, this.grid, this.session);
         this.controller.bind();
+        window.addEventListener('keydown', this.onPauseKeyDown);
+
         EventBus.on(GAME_EVENTS.SET_CAMERA_SCROLL_Y, this.onSetCameraScrollY, this);
         EventBus.on(GAME_EVENTS.REQUEST_CAMERA_SCROLL, this.publishCameraScroll, this);
+        EventBus.on(GAME_EVENTS.TOGGLE_PAUSE, this.onTogglePause, this);
 
         this.time.delayedCall(0, () =>
         {
@@ -56,6 +80,8 @@ export class Game extends Scene
     {
         EventBus.off(GAME_EVENTS.SET_CAMERA_SCROLL_Y, this.onSetCameraScrollY, this);
         EventBus.off(GAME_EVENTS.REQUEST_CAMERA_SCROLL, this.publishCameraScroll, this);
+        EventBus.off(GAME_EVENTS.TOGGLE_PAUSE, this.onTogglePause, this);
+        window.removeEventListener('keydown', this.onPauseKeyDown);
         this.controller?.destroy();
         this.cameraPan?.destroy();
         this.session?.reset();
@@ -120,7 +146,7 @@ export class Game extends Scene
             return;
         }
 
-        const ticksToRun = this.session.isRoundActive()
+        const ticksToRun = this.session.isRoundActive() && !this.session.isPaused
             ? this.session.clock.consumeFrame(delta)
             : 0;
 
@@ -135,5 +161,17 @@ export class Game extends Scene
         {
             this.publishCameraScroll();
         }
+    }
+
+    private isTypingInFormField (): boolean
+    {
+        const active = document.activeElement;
+
+        if (!active || !(active instanceof HTMLElement))
+        {
+            return false;
+        }
+
+        return Boolean(active.closest('input, textarea, select, [contenteditable="true"]'));
     }
 }

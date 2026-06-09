@@ -156,4 +156,19 @@ describe('GameSession.checkWaveComplete', () =>
         expect(session.state.canStartWave).toBe(false);
         expect(session.state.deployment?.active).toBeFalsy();
     });
+
+    it('sells a placed tower for gold between waves', () =>
+    {
+        session.confirmTowerDraft('militia');
+        session.tryDeployTowerAt({ col: 4, row: 35 }, 'militia');
+
+        const towerId = session.towers.all[0]?.id;
+        const goldBefore = session.state.gold;
+        const refund = session.towers.all[0]?.goldValue ?? 0;
+
+        expect(towerId).toBeDefined();
+        expect(session.sellTower(towerId!)).toBe(true);
+        expect(session.towers.all).toHaveLength(0);
+        expect(session.state.gold).toBe(goldBefore + refund);
+    });
 });

@@ -9,7 +9,9 @@ import type {
 import { getTowerDefinitionOrThrow } from '../../game/config/towerCatalog';
 import type { TowerDefinitionId } from '../../game/config/towerCatalog';
 import { useGameViewModel } from '../viewmodels/useGameViewModel';
+import { canManagePlacedTowers } from '../canManagePlacedTowers';
 import { TOWER_QUEUE_DRAG_MIME } from '../towerQueueDragMime';
+import { phaserColorToCss, setTowerDragImage } from '../towerVisualColor';
 import { RACE_BONUS_CONFIG } from '../../game/config/raceBonusCatalog';
 import { formatTowerUpgradeStatsTooltip } from '../../game/config/towerUpgradeCatalog';
 
@@ -299,9 +301,10 @@ const synergyLineForTower = (
 
 export const TowerRosterPanel = () =>
 {
-    const { deployment } = useGameViewModel();
+    const { deployment, upgradePick, towerDraftPick, canStartWave } = useGameViewModel();
     const { player, enemy } = useNexusHealth();
     const towers = useTowerRoster();
+    const canManage = canManagePlacedTowers({ upgradePick, towerDraftPick, canStartWave, deployment });
 
     const queuedIds: readonly TowerDefinitionId[] = deployment?.queue ?? [];
 
@@ -363,6 +366,17 @@ export const TowerRosterPanel = () =>
                                         ? tower.raceAuraTags.join(', ')
                                         : 'No active links'}
                                 </span>
+                                {canManage && (
+                                    <button
+                                        type="button"
+                                        className="tower-roster__sell-btn"
+                                        onClick={() =>
+                                            EventBus.emit(GAME_EVENTS.SELL_TOWER, { towerId: tower.id })
+                                        }
+                                    >
+                                        Sell (+{tower.goldValue})
+                                    </button>
+                                )}
                             </li>
                         ))}
                     </ul>
@@ -371,6 +385,7 @@ export const TowerRosterPanel = () =>
 
             <section className="tower-roster__section">
                 <h3 className="tower-roster__title">Upcoming towers</h3>
+                <p className="tower-roster__hint">Drag onto the grid to place.</p>
                 {queuedIds.length === 0 ? (
                     <p className="tower-roster__empty">No towers queued.</p>
                 ) : (
@@ -389,8 +404,18 @@ export const TowerRosterPanel = () =>
                                         e.dataTransfer.effectAllowed = 'copy';
                                         e.dataTransfer.setData(TOWER_QUEUE_DRAG_MIME, id);
                                         e.dataTransfer.setData('text/plain', id);
+                                        setTowerDragImage(e, def.profile.color);
                                     }}
+                                    onClick={(e) => e.preventDefault()}
                                 >
+                                    <span
+                                        className="tower-roster__unit-icon"
+                                        style={{
+                                            backgroundColor: phaserColorToCss(def.profile.color),
+                                            borderColor: phaserColorToCss(def.profile.color),
+                                        }}
+                                        aria-hidden="true"
+                                    />
                                     <span className="tower-roster__item-name">
                                         {deployment?.nextTowerId === id && index === 0
                                             ? 'Next: '

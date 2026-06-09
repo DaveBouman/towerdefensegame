@@ -24,7 +24,6 @@ import { SelectionController } from './SelectionController';
 import { AttackBeamEffect } from './AttackBeamEffect';
 import { TowerPresenter } from './TowerPresenter';
 import { TowerDropTarget } from './TowerDropTarget';
-import { GridPlacementController } from './GridPlacementController';
 import { TowerRelocationController } from './TowerRelocationController';
 import { PlayerNexusPresenter } from './PlayerNexusPresenter';
 import { TowerLinkIndicator } from './TowerLinkIndicator';
@@ -41,7 +40,6 @@ export class GameSceneController
     private readonly towerPresenter: TowerPresenter;
     private readonly selection: SelectionController;
     private readonly towerDropTarget: TowerDropTarget;
-    private readonly gridPlacement: GridPlacementController;
     private readonly towerRelocation: TowerRelocationController;
     private readonly playerNexusPresenter: PlayerNexusPresenter;
 
@@ -69,23 +67,6 @@ export class GameSceneController
         this.towerDropTarget = new TowerDropTarget(
             scene,
             () => this.session.towers.all,
-        );
-        this.gridPlacement = new GridPlacementController(
-            scene,
-            grid,
-            () => this.session.canPlaceQueuedTowers(),
-            (tile) =>
-            {
-                EventBus.emit(GAME_EVENTS.PLACE_TOWER_AT_TILE, {
-                    col: tile.col,
-                    row: tile.row,
-                });
-            },
-            (pointer) =>
-                this.towerDropTarget.pickTowerIdAtWorld({
-                    x: pointer.worldX,
-                    y: pointer.worldY,
-                }) !== null,
         );
         this.towerRelocation = new TowerRelocationController(
             scene,
@@ -144,12 +125,12 @@ export class GameSceneController
         );
         EventBus.on(GAME_EVENTS.PURCHASE_TOWER_STAT_UPGRADE, this.onPurchaseTowerStatUpgrade, this);
         EventBus.on(GAME_EVENTS.SET_TOWER_TARGETING_MODE, this.onSetTowerTargetingMode, this);
-        EventBus.on(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
         EventBus.on(
             GAME_EVENTS.PLACE_QUEUED_TOWER_AT_SCREEN,
             this.onPlaceQueuedTowerAtScreen,
             this,
         );
+        EventBus.on(GAME_EVENTS.SELL_TOWER, this.onSellTower, this);
         EventBus.on(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, this.onRelocateTowerAtTile, this);
         EventBus.on(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
         EventBus.on(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.onPlayerNexusSpawned, this);
@@ -184,12 +165,12 @@ export class GameSceneController
         );
         EventBus.off(GAME_EVENTS.PURCHASE_TOWER_STAT_UPGRADE, this.onPurchaseTowerStatUpgrade, this);
         EventBus.off(GAME_EVENTS.SET_TOWER_TARGETING_MODE, this.onSetTowerTargetingMode, this);
-        EventBus.off(GAME_EVENTS.PLACE_TOWER_AT_TILE, this.onPlaceTowerAtTile, this);
         EventBus.off(
             GAME_EVENTS.PLACE_QUEUED_TOWER_AT_SCREEN,
             this.onPlaceQueuedTowerAtScreen,
             this,
         );
+        EventBus.off(GAME_EVENTS.SELL_TOWER, this.onSellTower, this);
         EventBus.off(GAME_EVENTS.RELOCATE_TOWER_AT_TILE, this.onRelocateTowerAtTile, this);
         EventBus.off(GAME_EVENTS.CONFIRM_TOWER_DRAFT, this.onConfirmTowerDraft, this);
         EventBus.off(GAME_EVENTS.PLAYER_NEXUS_SPAWNED, this.onPlayerNexusSpawned, this);
@@ -342,7 +323,6 @@ export class GameSceneController
     destroy (): void
     {
         this.unbind();
-        this.gridPlacement.destroy();
         this.towerRelocation.destroy();
         this.enemyPresenter.clearAll();
         this.towerPresenter.clearAll();
@@ -369,15 +349,6 @@ export class GameSceneController
                 this.towerPresenter.getDisplayPosition(towerId)
                 ?? this.session.towers.getSnapshot(towerId)?.position,
         );
-    }
-
-    private onPlaceTowerAtTile ({
-        col,
-        row,
-        towerId,
-    }: { col: number; row: number; towerId?: TowerDefinitionId }): void
-    {
-        this.session.tryDeployTowerAt({ col, row }, towerId);
     }
 
     private onPlaceQueuedTowerAtScreen ({
@@ -410,6 +381,11 @@ export class GameSceneController
         }
 
         this.session.tryDeployTowerAt(tile, towerId);
+    }
+
+    private onSellTower ({ towerId }: { towerId: string }): void
+    {
+        this.session.sellTower(towerId);
     }
 
     private onConfirmTowerDraft ({ towerId }: { towerId: TowerDefinitionId }): void

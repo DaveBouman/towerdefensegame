@@ -12,11 +12,14 @@ import { getPlayerNexusStatRows } from '../../game/domain/stats/playerNexusStatD
 import { getTowerStatRows } from '../../game/domain/stats/towerStatDisplay';
 import type { DisplayStat } from '../../game/domain/stats/displayStat';
 import { getTowerUpgradeDefinition, towerUpgradeHoverText } from '../../game/config/towerUpgradeCatalog';
+import { EventBus } from '../../game/EventBus';
+import { GAME_EVENTS } from '../../game/events/gameEvents';
+import { canManagePlacedTowers } from '../canManagePlacedTowers';
 import { useInventoryPanel } from '../context/InventoryPanelContext';
 import { useGameViewModel } from '../viewmodels/useGameViewModel';
 import { useUnitSelection } from '../viewmodels/useUnitSelection';
+import { TowerControlPanel } from './TowerControlPanel';
 import { TowerStatUpgradePanel } from './TowerStatUpgradePanel';
-import { TowerTargetingPanel } from './TowerTargetingPanel';
 
 const InventoryIcon = () => (
     <svg
@@ -80,14 +83,13 @@ const TagList = ({ title, items }: { title: string; items: readonly TagItem[] })
 };
 
 const EnemyDetails = ({ enemy, wave }: { enemy: EnemyStateSnapshot; wave: number }) => (
-    <>
-        <StatList stats={getEnemyStatRows(enemy, wave)} />
+    <StatList stats={getEnemyStatRows(enemy, wave)} />
+);
 
-        <div className="unit-info-bar__extra">
-            <TagList title="Resistances" items={getEnemyResistanceTags(enemy)} />
-            <TagList title="Perks" items={getEnemyPerkTags(enemy)} />
-            <TagList title="Weaknesses" items={[]} />
-        </div>
+const EnemyControlPanel = ({ enemy }: { enemy: EnemyStateSnapshot }) => (
+    <>
+        <TagList title="Resistances" items={getEnemyResistanceTags(enemy)} />
+        <TagList title="Perks" items={getEnemyPerkTags(enemy)} />
     </>
 );
 
@@ -115,15 +117,30 @@ const PlayerNexusDetails = ({
     wave: number;
 }) => <StatList stats={getPlayerNexusStatRows(nexus, wave)} />;
 
-const TowerDetails = ({ tower }: { tower: TowerStateSnapshot }) => (
+const TowerDetails = ({
+    tower,
+    canSell,
+}: {
+    tower: TowerStateSnapshot;
+    canSell: boolean;
+}) => (
     <>
         <p className="unit-info-bar__tower-id" aria-label="Selected tower">
             {towerRaceLabel(tower.race)} · {towerArchetypeLabel(tower.archetype)} · this tower only
         </p>
         <StatList stats={getTowerStatRows(tower)} />
 
+        {canSell && (
+            <button
+                type="button"
+                className="unit-info-bar__sell-btn"
+                onClick={() => EventBus.emit(GAME_EVENTS.SELL_TOWER, { towerId: tower.id })}
+            >
+                Sell (+{tower.goldValue} gold)
+            </button>
+        )}
+
         <div className="unit-info-bar__extra">
-            <TowerTargetingPanel tower={tower} />
             <TowerStatUpgradePanel tower={tower} />
             <TagList
                 title="Upgrades"
@@ -138,14 +155,6 @@ const TowerDetails = ({ tower }: { tower: TowerStateSnapshot }) => (
                     };
                 })}
             />
-            <TagList
-                title="Weaknesses"
-                items={tower.weaknesses.map((w) => formatLabel(w))}
-            />
-            <TagList
-                title="Race links"
-                items={tower.raceAuraTags.length > 0 ? tower.raceAuraTags : [ 'No active links' ]}
-            />
         </div>
     </>
 );
@@ -153,8 +162,9 @@ const TowerDetails = ({ tower }: { tower: TowerStateSnapshot }) => (
 export const UnitInfoBar = () =>
 {
     const { selection, clear } = useUnitSelection();
-    const { wave } = useGameViewModel();
+    const { wave, upgradePick, towerDraftPick, canStartWave, deployment } = useGameViewModel();
     const { open: inventoryOpen, toggle: toggleInventory } = useInventoryPanel();
+    const canSell = canManagePlacedTowers({ upgradePick, towerDraftPick, canStartWave, deployment });
 
     const accentClass = !selection
         ? 'unit-info-bar--empty'
@@ -184,11 +194,25 @@ export const UnitInfoBar = () =>
                     {selection?.kind === 'enemy' && (
                         <EnemyDetails enemy={selection.data} wave={wave} />
                     )}
-                    {selection?.kind === 'tower' && <TowerDetails tower={selection.data} />}
+                    {selection?.kind === 'tower' && (
+                        <TowerDetails tower={selection.data} canSell={canSell} />
+                    )}
                     {selection?.kind === 'playerNexus' && (
                         <PlayerNexusDetails nexus={selection.data} wave={wave} />
                     )}
                 </div>
+
+                {selection?.kind === 'tower' && (
+                    <div className="unit-info-bar__controls">
+                        <TowerControlPanel tower={selection.data} />
+                    </div>
+                )}
+
+                {selection?.kind === 'enemy' && (
+                    <div className="unit-info-bar__controls">
+                        <EnemyControlPanel enemy={selection.data} />
+                    </div>
+                )}
 
                 {selection && (
                     <button
@@ -207,7 +231,7 @@ export const UnitInfoBar = () =>
                     type="button"
                     className={`unit-info-bar__tool${inventoryOpen ? ' unit-info-bar__tool--active' : ''}`}
                     onClick={toggleInventory}
-                    title="Inventory (H)"
+                    title="Inventory (I)"
                     aria-label="Inventory"
                     aria-pressed={inventoryOpen}
                 >

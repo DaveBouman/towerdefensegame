@@ -457,6 +457,30 @@ body {
     line-height: 1.35;
 }
 
+.game-hud__pause {
+    padding: 8px 16px;
+    border: 1px solid #7f8c8d;
+    border-radius: 4px;
+    background: #1a1a2e;
+    color: #e0e0f0;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.game-hud__pause:hover {
+    background: #252540;
+    border-color: #95a5a6;
+}
+
+.game-hud__pause--active {
+    border-color: #5dade2;
+    background: #1a2a3a;
+    color: #5dade2;
+}
+
 .game-hud__start-wave {
     padding: 8px 16px;
     border: 1px solid #3498db;
@@ -614,12 +638,11 @@ body {
     position: relative;
     flex: 1;
     display: flex;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 16px;
     min-width: 0;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
     padding: 12px 48px 12px 20px;
 }
 
@@ -672,6 +695,31 @@ body {
     flex-wrap: wrap;
     gap: 16px 24px;
     min-width: 0;
+    overflow: hidden;
+}
+
+.unit-info-bar__controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: min(240px, 28vw);
+    flex-shrink: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-left: 16px;
+    border-left: 1px solid #3a3a5c;
+    scrollbar-width: thin;
+    scrollbar-color: #3a5a7a #1a1a2e;
+}
+
+.unit-info-bar__controls::-webkit-scrollbar {
+    width: 8px;
+}
+
+.unit-info-bar__controls::-webkit-scrollbar-thumb {
+    background: #3a5a7a;
+    border-radius: 4px;
 }
 
 .unit-info-bar__stats {
@@ -726,6 +774,23 @@ body {
     font-size: 11px;
     font-weight: 500;
     color: #9a9ab8;
+}
+
+.unit-info-bar__sell-btn {
+    margin: 0 0 10px;
+    padding: 6px 12px;
+    border: 1px solid #c0392b;
+    border-radius: 4px;
+    background: #2a1a1a;
+    color: #f5b7b1;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.unit-info-bar__sell-btn:hover {
+    background: #3d2222;
+    border-color: #e74c3c;
 }
 
 .unit-info-bar__hint {
@@ -1029,7 +1094,53 @@ body {
 }
 
 .tower-roster__item--queued {
+    display: flex;
     cursor: grab;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 10px;
+}
+
+.tower-roster__unit-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border: 2px solid;
+    border-radius: 2px;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.tower-drag-ghost {
+    box-sizing: border-box;
+    border: 2px solid;
+    border-radius: 2px;
+    opacity: 0.92;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+.tower-roster__hint {
+    margin: 0 0 8px;
+    font-size: 11px;
+    color: #7f8c9a;
+}
+
+.tower-roster__sell-btn {
+    margin-top: 6px;
+    padding: 4px 8px;
+    border: 1px solid #c0392b;
+    border-radius: 4px;
+    background: #2a1a1a;
+    color: #f5b7b1;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    align-self: flex-start;
+}
+
+.tower-roster__sell-btn:hover {
+    background: #3d2222;
+    border-color: #e74c3c;
 }
 
 .tower-roster__item--queued:active {

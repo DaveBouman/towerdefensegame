@@ -8,6 +8,7 @@ const INITIAL_STATE: GameStateSnapshot = {
     wave: 0,
     lives: 20,
     canStartWave: true,
+    paused: false,
     raceDraftBias: {
         'aether-dominion': 1,
         'swarmforge-brood': 1,

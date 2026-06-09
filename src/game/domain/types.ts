@@ -29,6 +29,7 @@ export interface GameStateSnapshot {
     wave: number;
     lives: number;
     canStartWave: boolean;
+    paused: boolean;
     raceDraftBias: Record<TowerRace, number>;
     upgradePick: UpgradePickState | null;
     towerDraftPick: TowerDraftPickState | null;

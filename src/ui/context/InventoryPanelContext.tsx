@@ -104,7 +104,7 @@ export const InventoryPanelProvider = ({ children }: { children: ReactNode }) =>
                 return;
             }
 
-            if (e.key !== 'h' && e.key !== 'H')
+            if (e.key !== 'i' && e.key !== 'I')
             {
                 return;
             }
