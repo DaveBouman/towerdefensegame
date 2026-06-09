@@ -89,7 +89,7 @@ export class TowerRaceBonusSystem
 
                 if (auraChanged || tagsChanged)
                 {
-                    EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
+                    EventBus.emit(GAME_EVENTS.TOWER_UPDATED, tower.snapshot());
                 }
 
                 continue;
@@ -101,7 +101,7 @@ export class TowerRaceBonusSystem
 
             if (auraChanged || tagsChanged)
             {
-                EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
+                EventBus.emit(GAME_EVENTS.TOWER_UPDATED, tower.snapshot());
             }
         }
     }

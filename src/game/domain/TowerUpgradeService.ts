@@ -77,7 +77,7 @@ export class TowerUpgradeService
         }
 
         this.stash.splice(stashIndex, 1);
-        EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
+        EventBus.emit(GAME_EVENTS.TOWER_UPDATED, tower.snapshot());
         this.publishInventorySnapshot();
 
         return true;
@@ -199,7 +199,7 @@ export class TowerUpgradeService
             return false;
         }
 
-        EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
+        EventBus.emit(GAME_EVENTS.TOWER_UPDATED, tower.snapshot());
 
         return true;
     }

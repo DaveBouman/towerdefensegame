@@ -23,6 +23,8 @@ export interface TowerProfile {
     weaknesses: DamageType[];
     /** Gold awarded to the killer when this unit is destroyed. */
     goldValue: number;
+    /** Multiplier for per-kill permanent stat growth. */
+    killRating: number;
     skills: string[];
     kamikazeExplosionRadiusTiles: number;
 }

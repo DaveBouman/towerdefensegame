@@ -113,6 +113,8 @@ export class GameSceneController
         EventBus.on(GAME_EVENTS.TOWER_ATTACKED, this.onTowerAttacked, this);
         EventBus.on(GAME_EVENTS.ENEMY_ATTACKED, this.onEnemyAttacked, this);
         EventBus.on(GAME_EVENTS.TOWER_DAMAGED, this.onTowerDamaged, this);
+        EventBus.on(GAME_EVENTS.TOWER_UPDATED, this.onTowerUpdated, this);
+        EventBus.on(GAME_EVENTS.TOWER_DISABLED, this.onTowerDisabled, this);
         EventBus.on(GAME_EVENTS.START_WAVE, this.onStartWave, this);
         EventBus.on(GAME_EVENTS.WAVE_COMPLETED, this.onWaveCompleted, this);
         EventBus.on(GAME_EVENTS.CLAIM_WAVE_REWARD, this.onClaimWaveReward, this);
@@ -153,6 +155,8 @@ export class GameSceneController
         EventBus.off(GAME_EVENTS.TOWER_ATTACKED, this.onTowerAttacked, this);
         EventBus.off(GAME_EVENTS.ENEMY_ATTACKED, this.onEnemyAttacked, this);
         EventBus.off(GAME_EVENTS.TOWER_DAMAGED, this.onTowerDamaged, this);
+        EventBus.off(GAME_EVENTS.TOWER_UPDATED, this.onTowerUpdated, this);
+        EventBus.off(GAME_EVENTS.TOWER_DISABLED, this.onTowerDisabled, this);
         EventBus.off(GAME_EVENTS.START_WAVE, this.onStartWave, this);
         EventBus.off(GAME_EVENTS.WAVE_COMPLETED, this.onWaveCompleted, this);
         EventBus.off(GAME_EVENTS.CLAIM_WAVE_REWARD, this.onClaimWaveReward, this);
@@ -496,7 +500,7 @@ export class GameSceneController
         this.selection.clearFromUi();
     }
 
-    private onTowerDamaged (snapshot: TowerStateSnapshot): void
+    private refreshTowerPresentation (snapshot: TowerStateSnapshot): void
     {
         this.towerPresenter.setTargetPosition(snapshot.id, snapshot.position);
 
@@ -507,15 +511,22 @@ export class GameSceneController
 
         this.selection.onTowerDamaged(snapshot);
         this.towerPresenter.setHealth(snapshot.id, snapshot.health, snapshot.maxHealth);
-
-        // Wave-end may rely on towers being fully destroyed; when keeping dead
-        // towers around (health=0), we still need to re-check combat completion.
-        if (snapshot.health <= 0 && snapshot.maxHealth > 0)
-        {
-            this.session.checkWaveComplete();
-        }
-
         this.syncTowerLinks();
+    }
+
+    private onTowerDamaged (snapshot: TowerStateSnapshot): void
+    {
+        this.refreshTowerPresentation(snapshot);
+    }
+
+    private onTowerUpdated (snapshot: TowerStateSnapshot): void
+    {
+        this.refreshTowerPresentation(snapshot);
+    }
+
+    private onTowerDisabled (): void
+    {
+        this.session.checkWaveComplete();
     }
 
     private onTowerAttacked (payload: TowerAttackPayload): void

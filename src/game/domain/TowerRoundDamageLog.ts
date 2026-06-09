@@ -1,4 +1,4 @@
-import { damageDealtToExperience } from '../config/towerExperienceConfig';
+import { getWaveBonusExperience } from '../config/towerExperienceConfig';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
 import type {
@@ -17,6 +17,7 @@ export class TowerRoundDamageLog
     private wave = 0;
     private readonly dealt = new Map<string, number>();
     private readonly taken = new Map<string, number>();
+    private readonly killExp = new Map<string, number>();
     private readonly history: WaveTowerDamageLog[] = [];
     private bound = false;
 
@@ -32,6 +33,7 @@ export class TowerRoundDamageLog
         EventBus.on(GAME_EVENTS.ENEMY_ATTACKED, this.onEnemyAttacked);
         EventBus.on(GAME_EVENTS.ENEMY_NEXUS_ATTACKED, this.onEnemyNexusAttacked);
         EventBus.on(GAME_EVENTS.TOWER_COMBAT_DAMAGE, this.onTowerCombatDamage);
+        EventBus.on(GAME_EVENTS.TOWER_KILL_EXP, this.onTowerKillExp);
     }
 
     reset (): void
@@ -39,6 +41,7 @@ export class TowerRoundDamageLog
         this.wave = 0;
         this.dealt.clear();
         this.taken.clear();
+        this.killExp.clear();
         this.history.length = 0;
     }
 
@@ -47,6 +50,12 @@ export class TowerRoundDamageLog
         this.wave = wave;
         this.dealt.clear();
         this.taken.clear();
+        this.killExp.clear();
+    }
+
+    getWaveBonusExperience (wave: number): number
+    {
+        return getWaveBonusExperience(wave);
     }
 
     recordDealt (towerId: string, amount: number): void
@@ -71,18 +80,19 @@ export class TowerRoundDamageLog
 
     finalizeWave (towers: readonly TowerLabel[]): WaveTowerDamageLog
     {
-        const labels = new Map(towers.map((tower) => [ tower.id, tower.unitType ]));
-        const towerIds = new Set([ ...this.dealt.keys(), ...this.taken.keys() ]);
-        const entries: TowerRoundDamageEntry[] = [ ...towerIds ].map((towerId) =>
+        const waveBonusExp = getWaveBonusExperience(this.wave);
+        const entries: TowerRoundDamageEntry[] = towers.map((tower) =>
         {
-            const damageDealt = this.dealt.get(towerId) ?? 0;
+            const killExp = this.killExp.get(tower.id) ?? 0;
 
             return {
-                towerId,
-                unitType: labels.get(towerId) ?? towerId,
-                damageDealt,
-                damageTaken: this.taken.get(towerId) ?? 0,
-                expGained: damageDealtToExperience(damageDealt),
+                towerId: tower.id,
+                unitType: tower.unitType,
+                damageDealt: this.dealt.get(tower.id) ?? 0,
+                damageTaken: this.taken.get(tower.id) ?? 0,
+                killExp,
+                waveBonusExp,
+                expGained: killExp + waveBonusExp,
             };
         });
 
@@ -137,17 +147,27 @@ export class TowerRoundDamageLog
             this.recordTaken(payload.towerId, payload.taken);
         }
     };
+
+    private readonly onTowerKillExp = (payload: { towerId: string; exp: number }): void =>
+    {
+        if (payload.exp <= 0)
+        {
+            return;
+        }
+
+        this.killExp.set(payload.towerId, (this.killExp.get(payload.towerId) ?? 0) + payload.exp);
+    };
 }
 
 export const formatWaveTowerDamageLog = (log: WaveTowerDamageLog): string =>
 {
     if (log.entries.length === 0)
     {
-        return `Wave ${log.wave}: no tower damage recorded`;
+        return `Wave ${log.wave}: no tower activity recorded`;
     }
 
     const lines = log.entries.map((entry) =>
-        `  ${entry.unitType}: dealt ${entry.damageDealt}, took ${entry.damageTaken}, +${entry.expGained} EXP`);
+        `  ${entry.unitType}: +${entry.killExp} kill EXP, +${entry.waveBonusExp} wave bonus (${entry.expGained} total)`);
 
-    return [ `Wave ${log.wave} tower damage:`, ...lines ].join('\n');
+    return [ `Wave ${log.wave} tower EXP:`, ...lines ].join('\n');
 };

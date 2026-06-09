@@ -131,7 +131,7 @@ export class UnitAttackSystem
         }
         else if (enemyDied)
         {
-            this.killRewards.onEnemyKilled(target);
+            this.killRewards.onEnemyKilled(target, tower.id);
             this.enemies.remove(target.id);
         }
         else
@@ -320,7 +320,7 @@ export class UnitAttackSystem
             }
             else if (enemyDied)
             {
-                this.killRewards.onEnemyKilled(enemy);
+                this.killRewards.onEnemyKilled(enemy, tower.id);
                 this.enemies.remove(enemy.id);
             }
             else

@@ -34,7 +34,10 @@ export interface GameEventMap {
     'tower-selected': TowerStateSnapshot;
     'tower-attacked': TowerAttackPayload;
     'tower-combat-damage': TowerCombatDamagePayload;
+    'tower-kill-exp': { towerId: string; exp: number };
     'tower-damaged': TowerStateSnapshot;
+    'tower-updated': TowerStateSnapshot;
+    'tower-disabled': { id: string };
     'selection-changed': UnitSelection | null;
     'selection-cleared': void;
     'start-wave': void;

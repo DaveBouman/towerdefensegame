@@ -215,12 +215,14 @@ const useTowerRoster = () =>
 
         EventBus.on(GAME_EVENTS.TOWER_PLACED, onPlaced);
         EventBus.on(GAME_EVENTS.TOWER_DAMAGED, onDamaged);
+        EventBus.on(GAME_EVENTS.TOWER_UPDATED, onDamaged);
         EventBus.on(GAME_EVENTS.TOWER_REMOVED, onRemoved);
 
         return () =>
         {
             EventBus.off(GAME_EVENTS.TOWER_PLACED, onPlaced);
             EventBus.off(GAME_EVENTS.TOWER_DAMAGED, onDamaged);
+            EventBus.off(GAME_EVENTS.TOWER_UPDATED, onDamaged);
             EventBus.off(GAME_EVENTS.TOWER_REMOVED, onRemoved);
 
             if (rafId !== null)

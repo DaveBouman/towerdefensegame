@@ -88,6 +88,8 @@ export interface TowerStateSnapshot {
     isMobile: boolean;
     goldValue: number;
     experience: number;
+    kills: number;
+    killRating: number;
     weaknesses: DamageType[];
     equippedUpgrades: TowerEquippedUpgrade[];
     /** Purchased between-wave stat upgrade levels keyed by catalog id. */
@@ -107,6 +109,8 @@ export interface TowerRoundDamageEntry {
     unitType: string;
     damageDealt: number;
     damageTaken: number;
+    killExp: number;
+    waveBonusExp: number;
     expGained: number;
 }
 

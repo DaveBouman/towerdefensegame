@@ -32,6 +32,7 @@ interface TowerJson {
     isMobile: boolean;
     moveSpeedPerTick: number;
     goldValue: number;
+    killRating?: number;
     weaknesses: string[];
     skills?: unknown[];
     kamikazeExplosionRadiusTiles?: number;
@@ -128,6 +129,7 @@ const parseTower = (entry: TowerJson): TowerDefinition =>
         sizeScale: entry.sizeScale,
         weaknesses: entry.weaknesses as DamageType[],
         goldValue: entry.goldValue,
+        killRating: entry.killRating ?? 1,
         skills: Array.isArray(entry.skills) ? entry.skills.filter((skill): skill is string => typeof skill === 'string') : [],
         kamikazeExplosionRadiusTiles: Math.max(0, entry.kamikazeExplosionRadiusTiles ?? 0),
     };

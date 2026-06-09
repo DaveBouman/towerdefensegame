@@ -82,7 +82,11 @@ export class GameSession
             grid,
             this.collision,
         );
-        const killRewards = new KillRewardSystem(this.state);
+        const killRewards = new KillRewardSystem(
+            this.state,
+            this.towers,
+            () => this.state.wave,
+        );
 
         this.unitAttacks = new UnitAttackSystem(
             this.towers,
@@ -373,7 +377,7 @@ export class GameSession
         }
 
         tower.setTargetingMode(mode);
-        EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
+        EventBus.emit(GAME_EVENTS.TOWER_UPDATED, tower.snapshot());
 
         return true;
     }
@@ -431,15 +435,16 @@ export class GameSession
     {
         const damageLog = this.towerRoundDamageLog.finalizeWave(this.towers.all);
 
+        this.state.setPaused(false);
+        this.resetPlayerTowersAfterWave();
+        this.awardWaveBonusExperience(damageLog.wave);
+
         if (damageLog.entries.length > 0)
         {
-            this.awardWaveExperience(damageLog);
             console.info(formatWaveTowerDamageLog(damageLog));
             EventBus.emit(GAME_EVENTS.WAVE_TOWER_DAMAGE_LOG, damageLog);
         }
 
-        this.state.setPaused(false);
-        this.resetPlayerTowersAfterWave();
         this.towerUpgrades.offerPostWaveDraft(this.state);
         this.towerUpgrades.publishInventorySnapshot();
 
@@ -500,24 +505,19 @@ export class GameSession
         }
     }
 
-    private awardWaveExperience (log: WaveTowerDamageLog): void
+    private awardWaveBonusExperience (wave: number): void
     {
-        for (const entry of log.entries)
+        const bonus = this.towerRoundDamageLog.getWaveBonusExperience(wave);
+
+        if (bonus <= 0)
         {
-            if (entry.expGained <= 0)
-            {
-                continue;
-            }
+            return;
+        }
 
-            const tower = this.towers.all.find((t) => t.id === entry.towerId);
-
-            if (!tower)
-            {
-                continue;
-            }
-
-            tower.grantExperience(entry.expGained);
-            EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
+        for (const tower of this.towers.all)
+        {
+            tower.grantExperience(bonus);
+            EventBus.emit(GAME_EVENTS.TOWER_UPDATED, tower.snapshot());
         }
     }
 

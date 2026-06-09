@@ -19,7 +19,9 @@ export const useTowerWaveDamageLog = () =>
         return () => EventBus.off(GAME_EVENTS.WAVE_TOWER_DAMAGE_LOG, onWaveLog);
     }, []);
 
-    const getTowerEntry = (towerId: string): (TowerRoundDamageEntry & { wave: number }) | null =>
+    const getTowerEntry = (
+        towerId: string,
+    ): (TowerRoundDamageEntry & { wave: number }) | null =>
     {
         if (!lastWaveLog)
         {

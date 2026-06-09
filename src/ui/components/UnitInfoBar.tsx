@@ -120,7 +120,7 @@ const TowerDetails = ({
 }: {
     tower: TowerStateSnapshot;
     canSell: boolean;
-    lastWaveDamage: { wave: number; damageDealt: number; damageTaken: number } | null;
+    lastWaveDamage: { wave: number; killExp: number; waveBonusExp: number } | null;
 }) => (
     <>
         <p className={SP.subtitle} aria-label="Selected tower">
@@ -128,27 +128,21 @@ const TowerDetails = ({
         </p>
         <StatList stats={getTowerStatRows(tower)} />
 
-        <SidePanel.Section>
-            <SidePanel.SectionTitle>Experience</SidePanel.SectionTitle>
-            <div className={SP.statGrid}>
-                <div className={SP.stat}>
-                    <span className={SP.statLabel}>EXP</span>
-                    <span className={SP.statValue}>{tower.experience}</span>
+        {lastWaveDamage && (
+            <SidePanel.Section>
+                <SidePanel.SectionTitle>Wave {lastWaveDamage.wave} EXP</SidePanel.SectionTitle>
+                <div className={SP.statGrid}>
+                    <div className={SP.stat}>
+                        <span className={SP.statLabel}>Kill EXP</span>
+                        <span className={SP.statValue}>{lastWaveDamage.killExp}</span>
+                    </div>
+                    <div className={SP.stat}>
+                        <span className={SP.statLabel}>Wave bonus</span>
+                        <span className={SP.statValue}>{lastWaveDamage.waveBonusExp}</span>
+                    </div>
                 </div>
-                {lastWaveDamage && (
-                    <>
-                        <div className={SP.stat}>
-                            <span className={SP.statLabel}>W{lastWaveDamage.wave} dealt</span>
-                            <span className={SP.statValue}>{lastWaveDamage.damageDealt}</span>
-                        </div>
-                        <div className={SP.stat}>
-                            <span className={SP.statLabel}>W{lastWaveDamage.wave} taken</span>
-                            <span className={SP.statValue}>{lastWaveDamage.damageTaken}</span>
-                        </div>
-                    </>
-                )}
-            </div>
-        </SidePanel.Section>
+            </SidePanel.Section>
+        )}
 
         {canSell && (
             <SidePanel.ActionButton

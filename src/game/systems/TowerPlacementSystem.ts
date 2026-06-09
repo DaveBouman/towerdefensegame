@@ -94,7 +94,7 @@ export class TowerPlacementSystem
             return false;
         }
 
-        EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
+        EventBus.emit(GAME_EVENTS.TOWER_UPDATED, tower.snapshot());
 
         return true;
     }
@@ -181,6 +181,7 @@ export class TowerPlacementSystem
         }
 
         this.collision.unregister(id);
+        EventBus.emit(GAME_EVENTS.TOWER_DISABLED, { id });
     }
 
     /** Returns towers to their placement tiles (simulation + collision). */
@@ -201,7 +202,7 @@ export class TowerPlacementSystem
                     tower.bodyHalfHeight,
                 );
             }
-            EventBus.emit(GAME_EVENTS.TOWER_DAMAGED, tower.snapshot());
+            EventBus.emit(GAME_EVENTS.TOWER_UPDATED, tower.snapshot());
         }
     }
 }

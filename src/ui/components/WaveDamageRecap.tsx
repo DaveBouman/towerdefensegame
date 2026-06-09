@@ -36,23 +36,23 @@ export const WaveDamageRecap = () =>
                     Wave {log.wave} combat log
                 </h2>
                 <p className="wave-damage-recap__hint">
-                    Damage dealt earns EXP for that unit. Gold is spent recruiting new units between waves.
+                    Kills earn EXP during the wave; every unit also gets an exponential wave bonus so recruits catch up.
                 </p>
                 <table className="wave-damage-recap__table">
                     <thead>
                         <tr>
                             <th scope="col">Unit</th>
-                            <th scope="col">Dealt</th>
-                            <th scope="col">Taken</th>
-                            <th scope="col">+EXP</th>
+                            <th scope="col">Kill EXP</th>
+                            <th scope="col">Wave bonus</th>
+                            <th scope="col">Total</th>
                         </tr>
                     </thead>
                     <tbody>
                         {log.entries.map((entry) => (
                             <tr key={entry.towerId}>
                                 <td>{entry.unitType}</td>
-                                <td>{entry.damageDealt}</td>
-                                <td>{entry.damageTaken}</td>
+                                <td>{entry.killExp}</td>
+                                <td>{entry.waveBonusExp}</td>
                                 <td>{entry.expGained}</td>
                             </tr>
                         ))}

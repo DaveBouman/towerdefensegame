@@ -33,6 +33,21 @@ const TOWER_STAT_FIELDS: readonly StatField<TowerStateSnapshot>[] = [
         format: (tower) => String(tower.goldValue),
     },
     {
+        label: 'EXP',
+        show: () => true,
+        format: (tower) => String(tower.experience),
+    },
+    {
+        label: 'Kills',
+        show: () => true,
+        format: (tower) => String(tower.kills),
+    },
+    {
+        label: 'Kill rating',
+        show: () => true,
+        format: (tower) => `×${tower.killRating.toFixed(1)}`,
+    },
+    {
         label: 'Attack speed',
         show: () => true,
         format: (tower) => formatAttacksPerSecond(tower.attacksPerSecond),

@@ -12,6 +12,7 @@ import {
     isStatUpgradeAvailableForArchetype,
     mergeTowerUpgradeModifierMaps,
 } from '../config/towerStatUpgradeCatalog';
+import { computeKillRatingModifiers } from '../config/towerKillRating';
 import { bodyHalfExtent } from '../config/entityBodies';
 import type { Grid } from '../grid/Grid';
 import type { GridPosition, WorldPosition } from '../grid/types';
@@ -40,6 +41,7 @@ export class TowerState
     position: WorldPosition;
     health: number;
     experience = 0;
+    killCount = 0;
     private equippedUpgradeIds: string[];
     private readonly statUpgradeLevels = new Map<string, number>();
     private bonus: TowerUpgradeModifiers;
@@ -73,8 +75,12 @@ export class TowerState
     {
         const catalogBonus = mergeTowerUpgradeModifiers(this.equippedUpgradeIds);
         const statBonus = computeStatUpgradeModifiers(this.statUpgradeLevels, this.profile.archetype);
+        const killBonus = computeKillRatingModifiers(this.killCount, this.profile.killRating);
 
-        this.bonus = mergeTowerUpgradeModifierMaps(catalogBonus, statBonus);
+        this.bonus = mergeTowerUpgradeModifierMaps(
+            mergeTowerUpgradeModifierMaps(catalogBonus, statBonus),
+            killBonus,
+        );
     }
 
     getStatUpgradeLevel (upgradeId: string): number
@@ -87,6 +93,22 @@ export class TowerState
         if (amount > 0)
         {
             this.experience += amount;
+        }
+    }
+
+    recordKill (killExp: number): void
+    {
+        const previousMax = this.maxHealth;
+
+        this.killCount += 1;
+        this.grantExperience(killExp);
+        this.refreshModifiers();
+
+        const maxGain = this.maxHealth - previousMax;
+
+        if (maxGain > 0)
+        {
+            this.health = Math.min(this.health + maxGain, this.maxHealth);
         }
     }
 
@@ -338,6 +360,8 @@ export class TowerState
             isMobile: this.profile.isMobile,
             goldValue: this.goldValue,
             experience: this.experience,
+            kills: this.killCount,
+            killRating: this.profile.killRating,
             weaknesses: [ ...this.profile.weaknesses ],
             equippedUpgrades: this.equippedUpgrades,
             statUpgradeLevels: Object.fromEntries(this.statUpgradeLevels),
