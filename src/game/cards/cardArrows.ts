@@ -5,6 +5,10 @@ export const ARROW_GLYPH: Record<CardDirection, string> = {
     down: '↓',
     left: '←',
     right: '→',
+    'up-left': '↖',
+    'up-right': '↗',
+    'down-left': '↙',
+    'down-right': '↘',
 };
 
 export const arrowLabelPosition = (
@@ -23,5 +27,13 @@ export const arrowLabelPosition = (
             return { x: width * 0.16, y: height / 2 };
         case 'right':
             return { x: width * 0.84, y: height / 2 };
+        case 'up-left':
+            return { x: width * 0.18, y: height * 0.18 };
+        case 'up-right':
+            return { x: width * 0.82, y: height * 0.18 };
+        case 'down-left':
+            return { x: width * 0.18, y: height * 0.82 };
+        case 'down-right':
+            return { x: width * 0.82, y: height * 0.82 };
     }
 };

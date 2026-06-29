@@ -1,5 +1,5 @@
 import type { CardInstance } from '../cardGame/domain/types';
-import { buildCardGraphicFromDefinition } from '../cards/CardRenderer';
+import { buildCardGraphic } from '../cards/CardRenderer';
 import { HAND_CARD_GAP, HAND_CARD_HEIGHT, HAND_CARD_WIDTH } from '../cards/cardVisuals';
 import type { BoardLayout } from './boardLayout';
 
@@ -7,6 +7,8 @@ export interface CardHandDragHandlers {
     onDragMove: (worldX: number, worldY: number) => void;
     /** Returns true when the card was placed on the board. */
     onDragEnd: (handIndex: number, worldX: number, worldY: number) => boolean;
+    /** Called after a successful board placement so the hand can refresh immediately. */
+    onPlaced?: () => void;
 }
 
 export class CardHandView
@@ -23,6 +25,7 @@ export class CardHandView
         layout: BoardLayout,
         private hand: CardInstance[],
         private readonly handlers: CardHandDragHandlers,
+        private readonly canBeginDrag: () => boolean = () => true,
     )
     {
         this.container = scene.add.container(layout.handCenterX, layout.handY);
@@ -34,6 +37,18 @@ export class CardHandView
         this.cancelDrag();
         this.hand = [ ...hand ];
         this.renderHand();
+    }
+
+    containsPoint (worldX: number, worldY: number): boolean
+    {
+        const bounds = this.container.getBounds();
+
+        return bounds.contains(worldX, worldY);
+    }
+
+    isDragging (): boolean
+    {
+        return this.draggingIndex !== null;
     }
 
     destroy (): void
@@ -56,9 +71,9 @@ export class CardHandView
         {
             const x = index * (HAND_CARD_WIDTH + HAND_CARD_GAP);
             const slot = this.scene.add.container(x, 0);
-            const { container: graphic, hitArea } = buildCardGraphicFromDefinition(
+            const { container: graphic, hitArea } = buildCardGraphic(
                 this.scene,
-                card.definitionId,
+                card,
                 {
                     width: HAND_CARD_WIDTH,
                     height: HAND_CARD_HEIGHT,
@@ -79,7 +94,7 @@ export class CardHandView
 
     private beginDrag (index: number, card: CardInstance, pointer: Phaser.Input.Pointer): void
     {
-        if (this.draggingIndex !== null)
+        if (this.draggingIndex !== null || !this.canBeginDrag())
         {
             return;
         }
@@ -95,7 +110,7 @@ export class CardHandView
         this.dragOffsetY = pointer.worldY - worldY;
         slot.setAlpha(0.25);
 
-        const { container } = buildCardGraphicFromDefinition(this.scene, card.definitionId, {
+        const { container } = buildCardGraphic(this.scene, card, {
             width: HAND_CARD_WIDTH,
             height: HAND_CARD_HEIGHT,
         });
@@ -144,19 +159,26 @@ export class CardHandView
 
         const placed = this.handlers.onDragEnd(index, worldX, worldY);
 
-        if (!placed)
+        if (placed)
         {
-            this.slotContainers[index]?.setAlpha(1);
+            this.handlers.onPlaced?.();
         }
     };
 
     private cancelDrag (): void
     {
+        const index = this.draggingIndex;
+
         this.scene.input.off('pointermove', this.onPointerMove);
         this.scene.input.off('pointerup', this.onPointerUp);
         this.scene.input.off('pointerupoutside', this.onPointerUp);
         this.dragProxy?.destroy();
         this.dragProxy = undefined;
         this.draggingIndex = null;
+
+        if (index !== null)
+        {
+            this.slotContainers[index]?.setAlpha(1);
+        }
     }
 }

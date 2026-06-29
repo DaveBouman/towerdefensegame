@@ -23,6 +23,8 @@ export const GAME_EVENTS = {
     SELECTION_CLEARED: 'selection-cleared',
     START_WAVE: 'start-wave',
     ATTACK: 'attack',
+    ATTACK_REJECTED: 'attack-rejected',
+    CARD_ATTACK_READY: 'card-attack-ready',
     TOGGLE_PAUSE: 'toggle-pause',
     WAVE_COMPLETED: 'wave-completed',
     GAME_VICTORY: 'game-victory',

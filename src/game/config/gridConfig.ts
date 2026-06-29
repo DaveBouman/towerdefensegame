@@ -1,9 +1,9 @@
 import type { GridConfig, GridPixelSize } from '../grid/types';
 
-/** 3×3 card board — one card per cell. */
+/** 4×4 card board — one card per cell. */
 export const GRID_CONFIG: GridConfig = {
-    cols: 3,
-    rows: 3,
+    cols: 4,
+    rows: 4,
     tileSize: 96,
 };
 

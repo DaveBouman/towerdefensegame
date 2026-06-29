@@ -9,6 +9,7 @@ export interface SlotPosition {
 export interface CardInstance {
     instanceId: string;
     definitionId: string;
+    arrow: import('./cardDirections').CardDirection;
 }
 
 export type BoardCell = CardInstance | null;
@@ -18,6 +19,32 @@ export type BoardGrid = BoardCell[][];
 export interface EnemyState {
     health: number;
     maxHealth: number;
+    shield: number;
+}
+
+export interface PlayerState {
+    health: number;
+    maxHealth: number;
+    shield: number;
+}
+
+export interface PlayerDamageResult {
+    player: PlayerState;
+    shieldAbsorbed: number;
+    healthDamage: number;
+}
+
+export type EnemyTurnKind = 'attack' | 'shield';
+
+export interface EnemyTurnAction {
+    kind: EnemyTurnKind;
+    amount: number;
+}
+
+export interface DamageResult {
+    enemy: EnemyState;
+    shieldAbsorbed: number;
+    healthDamage: number;
 }
 
 export interface PlacedCard {
@@ -46,9 +73,22 @@ export interface ActivationStep {
     armor: number;
 }
 
+export type AttackRejectReason =
+    | 'attack-in-progress'
+    | 'enemy-turn'
+    | 'enemy-defeated'
+    | 'player-defeated'
+    | 'no-cards-on-board';
+
+export interface AttackReadiness {
+    canAttack: boolean;
+    reason: AttackRejectReason | null;
+}
+
 export interface AttackSequence {
     chain: ActivationStep[];
     steps: AttackStep[];
     totalDamage: number;
+    stepMs: number;
     durationMs: number;
 }

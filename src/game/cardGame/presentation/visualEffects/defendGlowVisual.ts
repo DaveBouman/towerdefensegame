@@ -1,8 +1,11 @@
-const DEFEND_GLOW = 0x2ecc71;
+import { addCardOverlay, clearWrapperData } from './cardOverlay';
 
-const GLOW_NAME = 'card-visual-glow';
-const TWEEN_KEY = 'defendGlowTween';
+const DEFEND_GLOW = 0x2ecc71;
+const DEFEND_STROKE = 0xa8e6cf;
+
 const GLOW_DATA_KEY = 'card-visual-glow';
+const TWEEN_KEY = 'defendGlowTween';
+const OVERLAY_TWEEN_KEY = 'defendOverlayTween';
 
 export const defendGlowVisual: import('./types').CardVisualEffect = {
     id: 'defend',
@@ -10,46 +13,59 @@ export const defendGlowVisual: import('./types').CardVisualEffect = {
     {
         defendGlowVisual.deactivate(scene, target);
 
-        const glow = scene.add.rectangle(
-            target.width / 2,
-            target.height / 2,
-            target.width + 10,
-            target.height + 10,
+        const glow = addCardOverlay(
+            scene,
+            target,
+            target.width + 18,
+            target.height + 18,
             DEFEND_GLOW,
-            0.45,
+            0.18,
+            DEFEND_STROKE,
+            5,
         );
 
-        glow.setStrokeStyle(3, 0xa8e6cf, 1);
-        glow.setName(GLOW_NAME);
-        target.wrapper.addAt(glow, 0);
+        glow.setName('card-visual-glow');
         target.wrapper.setData(GLOW_DATA_KEY, glow);
+
         scene.tweens.killTweensOf(target.wrapper);
         target.wrapper.setScale(1);
 
-        const tween = scene.tweens.add({
+        const scaleTween = scene.tweens.add({
             targets: target.wrapper,
-            scaleX: 1.06,
-            scaleY: 1.06,
-            duration: 140,
+            scaleX: 1.12,
+            scaleY: 1.12,
+            duration: 280,
             yoyo: true,
             repeat: -1,
         });
 
-        target.wrapper.setData(TWEEN_KEY, tween);
+        const overlayTween = scene.tweens.add({
+            targets: glow,
+            alpha: { from: 0.55, to: 1 },
+            duration: 280,
+            yoyo: true,
+            repeat: -1,
+        });
 
-        return tween;
+        target.wrapper.setData(TWEEN_KEY, scaleTween);
+        target.wrapper.setData(OVERLAY_TWEEN_KEY, overlayTween);
+
+        return scaleTween;
     },
     deactivate (scene, target)
     {
         const glow = target.wrapper.getData(GLOW_DATA_KEY) as Phaser.GameObjects.GameObject | undefined;
 
         glow?.destroy();
-        target.wrapper.removeData(GLOW_DATA_KEY);
+        clearWrapperData(target.wrapper, GLOW_DATA_KEY);
 
-        const tween = target.wrapper.getData(TWEEN_KEY) as Phaser.Tweens.Tween | undefined;
+        const scaleTween = target.wrapper.getData(TWEEN_KEY) as Phaser.Tweens.Tween | undefined;
+        const overlayTween = target.wrapper.getData(OVERLAY_TWEEN_KEY) as Phaser.Tweens.Tween | undefined;
 
-        tween?.stop();
-        target.wrapper.removeData(TWEEN_KEY);
+        scaleTween?.stop();
+        overlayTween?.stop();
+        clearWrapperData(target.wrapper, TWEEN_KEY);
+        clearWrapperData(target.wrapper, OVERLAY_TWEEN_KEY);
 
         scene.tweens.killTweensOf(target.wrapper);
         target.wrapper.setScale(1);

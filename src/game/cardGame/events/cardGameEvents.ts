@@ -7,4 +7,8 @@ export const CARD_GAME_EVENTS = {
     ATTACK_COMPLETED: 'card-game-attack-completed',
     ATTACK_CANCELLED: 'card-game-attack-cancelled',
     ENEMY_DEFEATED: 'card-game-enemy-defeated',
+    ENEMY_TURN_STARTED: 'card-game-enemy-turn-started',
+    ENEMY_TURN_COMPLETED: 'card-game-enemy-turn-completed',
+    ENEMY_TURN_CANCELLED: 'card-game-enemy-turn-cancelled',
+    PLAYER_DEFEATED: 'card-game-player-defeated',
 } as const;

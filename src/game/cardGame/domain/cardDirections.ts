@@ -1,14 +1,56 @@
 import type { SlotPosition } from './types';
 
-export type CardDirection = 'up' | 'down' | 'left' | 'right';
+export type CardDirection =
+    | 'up'
+    | 'down'
+    | 'left'
+    | 'right'
+    | 'up-left'
+    | 'up-right'
+    | 'down-left'
+    | 'down-right';
 
-export const CARD_DIRECTIONS: readonly CardDirection[] = [ 'up', 'down', 'left', 'right' ];
+export const CARD_DIRECTIONS: readonly CardDirection[] = [
+    'up',
+    'down',
+    'left',
+    'right',
+    'up-left',
+    'up-right',
+    'down-left',
+    'down-right',
+];
+
+export const ORTHOGONAL_DIRECTIONS: readonly CardDirection[] = [ 'up', 'down', 'left', 'right' ];
+
+export const DIAGONAL_DIRECTIONS: readonly CardDirection[] = [
+    'up-left',
+    'up-right',
+    'down-left',
+    'down-right',
+];
+
+export type ArrowPool = 'orthogonal' | 'diagonal';
 
 const OFFSETS: Record<CardDirection, { row: number; col: number }> = {
     up: { row: -1, col: 0 },
     down: { row: 1, col: 0 },
     left: { row: 0, col: -1 },
     right: { row: 0, col: 1 },
+    'up-left': { row: -1, col: -1 },
+    'up-right': { row: -1, col: 1 },
+    'down-left': { row: 1, col: -1 },
+    'down-right': { row: 1, col: 1 },
+};
+
+export const randomCardDirection = (): CardDirection =>
+    CARD_DIRECTIONS[Math.floor(Math.random() * CARD_DIRECTIONS.length)];
+
+export const randomDirectionForPool = (pool: ArrowPool): CardDirection =>
+{
+    const directions = pool === 'diagonal' ? DIAGONAL_DIRECTIONS : ORTHOGONAL_DIRECTIONS;
+
+    return directions[Math.floor(Math.random() * directions.length)];
 };
 
 export const slotKey = ({ row, col }: SlotPosition): string => `${row},${col}`;

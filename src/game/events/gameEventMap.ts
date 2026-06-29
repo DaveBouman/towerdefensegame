@@ -1,3 +1,4 @@
+import type { AttackReadiness } from '../cardGame/domain/types';
 import type { Scene } from 'phaser';
 import type { TowerDefinitionId } from '../config/towerCatalog';
 import type { TowerUpgradeDefinition } from '../config/towerUpgradeCatalog';
@@ -42,6 +43,8 @@ export interface GameEventMap {
     'selection-cleared': void;
     'start-wave': void;
     'attack': void;
+    'attack-rejected': { reason: AttackReadiness['reason'] };
+    'card-attack-ready': AttackReadiness;
     'toggle-pause': void;
     'wave-completed': void;
     'game-victory': { wave: number; lives: number };

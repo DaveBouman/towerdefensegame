@@ -26,22 +26,7 @@ const buildStepContext = (
 };
 
 const findChainStart = (board: BoardModel, preferred: SlotPosition): SlotPosition | null =>
-{
-    if (board.getCardAt(preferred))
-    {
-        return preferred;
-    }
-
-    for (const slot of board.slotsInOrder())
-    {
-        if (board.getCardAt(slot))
-        {
-            return slot;
-        }
-    }
-
-    return null;
-};
+    board.getCardAt(preferred) ? preferred : null;
 
 /** Walk the board following each card's arrow to build the activation chain. */
 export const planActivationChain = (
@@ -50,18 +35,12 @@ export const planActivationChain = (
 ): ActivationStep[] =>
 {
     const chain: ActivationStep[] = [];
-    const visited = new Set<string>();
+    const activationCounts = new Map<string, number>();
     let current: SlotPosition | null = findChainStart(board, startSlot);
 
     while (current)
     {
         const key = slotKey(current);
-
-        if (visited.has(key))
-        {
-            break;
-        }
-
         const card = board.getCardAt(current);
 
         if (!card)
@@ -69,7 +48,16 @@ export const planActivationChain = (
             break;
         }
 
-        visited.add(key);
+        const definition = getCardDefinitionOrThrow(card.definitionId);
+        const maxActivations = definition.maxChainActivations ?? 1;
+        const activations = activationCounts.get(key) ?? 0;
+
+        if (activations >= maxActivations)
+        {
+            break;
+        }
+
+        activationCounts.set(key, activations + 1);
 
         const ctx = buildStepContext(board, current, card);
         const behavior = getCardBehaviorOrThrow(ctx.definition.behaviorId);
@@ -82,12 +70,12 @@ export const planActivationChain = (
             definitionId: ctx.definition.id,
             behaviorId: ctx.definition.behaviorId,
             visualId: ctx.definition.visualId,
-            arrow: ctx.definition.arrow,
+            arrow: card.arrow,
             damage: attack.includeInSequence ? attack.damage : 0,
             armor,
         });
 
-        const next = getNextSlot(current, ctx.definition.arrow, board.rows, board.cols);
+        const next = getNextSlot(current, card.arrow, board.rows, board.cols);
 
         if (!next || !board.getCardAt(next))
         {
@@ -109,16 +97,21 @@ const toAttackStep = (step: ActivationStep): AttackStep => ({
     visualId: step.visualId,
 });
 
-export const planAttack = (board: BoardModel): AttackSequence =>
+export const planAttack = (
+    board: BoardModel,
+    startSlot: SlotPosition = GAME_RULES.activationStart,
+): AttackSequence =>
 {
-    const chain = planActivationChain(board);
+    const chain = planActivationChain(board, startSlot);
     const steps = chain.filter((step) => step.damage > 0).map(toAttackStep);
     const totalDamage = steps.reduce((sum, step) => sum + step.damage, 0);
+    const stepMs = GAME_RULES.activationStepMs;
 
     return {
         chain,
         steps,
         totalDamage,
-        durationMs: GAME_RULES.attackAnimationMs,
+        stepMs,
+        durationMs: chain.length * stepMs,
     };
 };

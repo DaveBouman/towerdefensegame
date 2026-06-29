@@ -1,15 +1,20 @@
 import { getCardDefinitionOrThrow } from '../config/cardRegistry';
+import { randomDirectionForPool, type CardDirection } from './cardDirections';
 import type { CardInstance } from './types';
 
 let instanceCounter = 0;
 
-export const createCardInstance = (definitionId: string): CardInstance =>
+export const createCardInstance = (
+    definitionId: string,
+    arrow?: CardDirection,
+): CardInstance =>
 {
-    getCardDefinitionOrThrow(definitionId);
+    const definition = getCardDefinitionOrThrow(definitionId);
 
     return {
         instanceId: `${definitionId}-${++instanceCounter}`,
         definitionId,
+        arrow: arrow ?? randomDirectionForPool(definition.arrowPool),
     };
 };
 

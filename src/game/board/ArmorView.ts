@@ -7,7 +7,7 @@ export class ArmorView
     readonly container: Phaser.GameObjects.Container;
     private readonly valueText: Phaser.GameObjects.Text;
 
-    constructor (scene: Phaser.Scene, layout: BoardLayout, armor: number)
+    constructor (private readonly scene: Phaser.Scene, layout: BoardLayout, armor: number)
     {
         const { armorX, armorY } = layout;
         const container = scene.add.container(armorX, armorY);
@@ -39,6 +39,34 @@ export class ArmorView
     {
         this.valueText.setText(String(armor));
         this.container.setVisible(armor > 0);
+    }
+
+    showShieldAbsorb (amount: number): void
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        const popup = this.scene.add.text(0, -28, `-${amount}`, {
+            fontFamily: 'monospace',
+            fontSize: '18px',
+            color: '#a8e6cf',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 3,
+        }).setOrigin(0.5, 1);
+
+        this.container.add(popup);
+
+        this.scene.tweens.add({
+            targets: popup,
+            y: -52,
+            alpha: 0,
+            duration: 700,
+            ease: 'Cubic.easeOut',
+            onComplete: () => popup.destroy(),
+        });
     }
 
     destroy (): void

@@ -1,5 +1,6 @@
 import type { CardGameSession } from '../domain/CardGameSession';
-import type { ActivationStep, AttackSequence } from '../domain/types';
+import { GAME_RULES } from '../config/cardRegistry';
+import type { ActivationStep, AttackSequence, EnemyTurnAction } from '../domain/types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
 import { getCardVisualEffectOrThrow } from './visualEffects/visualEffectRegistry';
@@ -8,6 +9,7 @@ import type { ArmorView } from '../../board/ArmorView';
 import type { CardBoardView } from '../../board/CardBoardView';
 import type { CardHandView } from '../../board/CardHandView';
 import type { EnemyTargetView } from '../../board/EnemyTargetView';
+import type { PlayerHealthView } from '../../board/PlayerHealthView';
 
 export class CardGamePresenter
 {
@@ -21,6 +23,7 @@ export class CardGamePresenter
         private readonly boardView: CardBoardView,
         private readonly handView: CardHandView,
         private readonly enemyView: EnemyTargetView,
+        private readonly playerView: PlayerHealthView,
         private readonly armorView: ArmorView,
     ) {}
 
@@ -34,14 +37,15 @@ export class CardGamePresenter
         CardGameEventBus.off(CARD_GAME_EVENTS.ATTACK_COMPLETED, this.onAttackCompleted, this);
         this.attackTimer?.remove();
         this.attackTimer = undefined;
-        this.clearActiveVisual();
-        this.setDisplayedArmor(0);
+        this.deactivateActiveVisual();
+        this.boardView.setChainStartActive(false);
     }
 
     playAttack (sequence: AttackSequence, onComplete: () => void): void
     {
         this.attackTimer?.remove();
-        this.deactivateChain(sequence.chain);
+        this.deactivateActiveVisual();
+        this.boardView.setChainStartActive(false);
         this.setDisplayedArmor(0);
 
         if (sequence.chain.length === 0)
@@ -50,7 +54,7 @@ export class CardGamePresenter
             return;
         }
 
-        const stepMs = sequence.durationMs / sequence.chain.length;
+        const stepMs = sequence.stepMs > 0 ? sequence.stepMs : GAME_RULES.activationStepMs;
         let index = 0;
         let attackStepIndex = 0;
 
@@ -78,34 +82,98 @@ export class CardGamePresenter
 
             if (step.damage > 0)
             {
+                const result = this.session.dealAttackDamage(step.damage);
+                this.enemyView.setHealth(result.enemy);
+
+                if (result.shieldAbsorbed > 0)
+                {
+                    this.enemyView.showShieldAbsorb(result.shieldAbsorbed);
+                }
+
+                if (result.healthDamage > 0)
+                {
+                    this.enemyView.playHitFlash();
+                    this.enemyView.showDamageNumber(result.healthDamage);
+                }
+
                 this.session.emitAttackStep(attackStepIndex, sequence);
                 attackStepIndex++;
             }
 
             index++;
+
+            if (index >= sequence.chain.length)
+            {
+                this.scene.time.delayedCall(stepMs, () => this.finishAttack(sequence, onComplete));
+                return;
+            }
+
             this.attackTimer = this.scene.time.delayedCall(stepMs, showNext);
         };
 
         showNext();
     }
 
+    playEnemyTurn (action: EnemyTurnAction, onComplete: () => void): void
+    {
+        const turnMs = GAME_RULES.enemyTurnMs;
+
+        if (action.kind === 'attack')
+        {
+            this.enemyView.playEnemyAttackPulse();
+
+            this.scene.time.delayedCall(turnMs, () =>
+            {
+                const result = this.session.resolveEnemyAttack(action.amount);
+                this.playerView.setHealth(result.player);
+                this.setDisplayedArmor(result.player.shield);
+
+                if (result.shieldAbsorbed > 0)
+                {
+                    this.armorView.showShieldAbsorb(result.shieldAbsorbed);
+                }
+
+                if (result.healthDamage > 0)
+                {
+                    this.playerView.playHitFlash();
+                    this.playerView.showDamageNumber(result.healthDamage);
+                }
+
+                this.session.completeEnemyTurn(action);
+                onComplete();
+            });
+
+            return;
+        }
+
+        this.scene.time.delayedCall(turnMs / 2, () =>
+        {
+            const enemy = this.session.resolveEnemyShield(action.amount);
+            this.enemyView.setHealth(enemy);
+            this.enemyView.showShieldGain(action.amount);
+        });
+
+        this.scene.time.delayedCall(turnMs, () =>
+        {
+            this.enemyView.setHealth(this.session.getEnemy());
+            this.session.completeEnemyTurn(action);
+            onComplete();
+        });
+    }
+
     private finishAttack (sequence: AttackSequence, onComplete: () => void): void
     {
         this.attackTimer?.remove();
         this.attackTimer = undefined;
-        this.deactivateChain(sequence.chain);
-        this.setDisplayedArmor(0);
-        onComplete();
-    }
 
-    private deactivateChain (chain: ActivationStep[]): void
-    {
-        for (const step of chain)
+        for (const step of sequence.chain)
         {
             this.deactivateStep(step);
         }
 
-        this.clearActiveVisual();
+        this.deactivateActiveVisual();
+        this.boardView.setChainStartActive(false);
+        onComplete();
     }
 
     private setDisplayedArmor (armor: number): void
@@ -123,6 +191,18 @@ export class CardGamePresenter
             return;
         }
 
+        const chainStart = this.boardView.getChainStartSlot();
+
+        if (step.slot.row === chainStart.row && step.slot.col === chainStart.col)
+        {
+            this.boardView.setChainStartActive(true);
+        }
+        else
+        {
+            this.boardView.setChainStartActive(false);
+        }
+
+        this.boardView.bringCardToFront(step.slot);
         getCardVisualEffectOrThrow(step.visualId).activate(this.scene, target);
         this.activeVisual = { target, visualId: step.visualId };
     }
@@ -144,7 +224,7 @@ export class CardGamePresenter
         }
     }
 
-    private clearActiveVisual (): void
+    private deactivateActiveVisual (): void
     {
         if (!this.activeVisual)
         {
@@ -158,9 +238,8 @@ export class CardGamePresenter
         this.activeVisual = null;
     }
 
-    private onAttackCompleted ({ enemy }: { enemy: import('../domain/types').EnemyState }): void
+    private onAttackCompleted (): void
     {
-        this.setDisplayedArmor(0);
-        this.enemyView.setHealth(enemy);
+        this.setDisplayedArmor(this.session.getPlayer().shield);
     }
 }

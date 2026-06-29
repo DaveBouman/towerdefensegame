@@ -1,4 +1,5 @@
 import { getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
+import type { CardInstance } from '../cardGame/domain/types';
 import { ARROW_GLYPH, arrowLabelPosition } from './cardArrows';
 import { CARD_VISUALS } from './cardVisuals';
 
@@ -13,14 +14,14 @@ export interface CardGraphic {
     hitArea: Phaser.GameObjects.Rectangle;
 }
 
-/** Builds a card graphic from a definition id. */
-export const buildCardGraphicFromDefinition = (
+/** Builds a card graphic from a card instance (arrow comes from the instance). */
+export const buildCardGraphic = (
     scene: Phaser.Scene,
-    definitionId: string,
+    card: CardInstance,
     options: CardVisualOptions,
 ): CardGraphic =>
 {
-    const definition = getCardDefinitionOrThrow(definitionId);
+    const definition = getCardDefinitionOrThrow(card.definitionId);
     const style = CARD_VISUALS[definition.behaviorId] ?? CARD_VISUALS.attack;
     const { width, height, interactive = false } = options;
     const container = scene.add.container(0, 0);
@@ -29,8 +30,8 @@ export const buildCardGraphicFromDefinition = (
 
     body.setStrokeStyle(2, style.border, 1);
 
-    const arrowPos = arrowLabelPosition(definition.arrow, width, height);
-    const arrow = scene.add.text(arrowPos.x, arrowPos.y, ARROW_GLYPH[definition.arrow], {
+    const arrowPos = arrowLabelPosition(card.arrow, width, height);
+    const arrow = scene.add.text(arrowPos.x, arrowPos.y, ARROW_GLYPH[card.arrow], {
         fontFamily: 'monospace',
         fontSize: '18px',
         color: '#ffffff',
@@ -60,3 +61,11 @@ export const buildCardGraphicFromDefinition = (
 
     return { container, hitArea: body };
 };
+
+/** @deprecated Use buildCardGraphic with a CardInstance. */
+export const buildCardGraphicFromDefinition = (
+    scene: Phaser.Scene,
+    definitionId: string,
+    options: CardVisualOptions,
+): CardGraphic =>
+    buildCardGraphic(scene, { instanceId: 'preview', definitionId, arrow: 'right' }, options);

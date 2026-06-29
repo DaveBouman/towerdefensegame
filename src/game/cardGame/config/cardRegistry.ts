@@ -1,6 +1,7 @@
 import cardsData from './cards.json';
 import gameRulesData from './gameRules.json';
-import type { CardDirection } from '../domain/cardDirections';
+
+import type { ArrowPool } from '../domain/cardDirections';
 
 export interface CardDefinition {
     id: string;
@@ -8,14 +9,20 @@ export interface CardDefinition {
     power: number;
     behaviorId: string;
     visualId: string;
-    arrow: CardDirection;
+    arrowPool: ArrowPool;
+    /** How many times this card can activate when the chain revisits its slot. */
+    maxChainActivations?: number;
 }
 
 export interface GameRules {
-    attackAnimationMs: number;
-    enemy: { maxHealth: number };
+    activationStepMs: number;
+    enemyTurnMs: number;
+    deckSize: number;
+    handSize: number;
+    player: { maxHealth: number };
+    enemy: { maxHealth: number; attackDamage: number; shieldGain: number };
     activationStart: { row: number; col: number };
-    startingHand: string[];
+    activationStartColumn: number;
 }
 
 const definitions = new Map<string, CardDefinition>(

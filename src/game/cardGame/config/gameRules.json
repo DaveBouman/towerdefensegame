@@ -1,11 +1,19 @@
 {
-  "attackAnimationMs": 1000,
+  "activationStepMs": 1500,
+  "enemyTurnMs": 1200,
+  "deckSize": 12,
+  "handSize": 6,
+  "player": {
+    "maxHealth": 20
+  },
   "enemy": {
-    "maxHealth": 30
+    "maxHealth": 30,
+    "attackDamage": 4,
+    "shieldGain": 5
   },
   "activationStart": {
     "row": 0,
     "col": 0
   },
-  "startingHand": [ "atk-right", "def-down", "atk-right" ]
+  "activationStartColumn": 0
 }
