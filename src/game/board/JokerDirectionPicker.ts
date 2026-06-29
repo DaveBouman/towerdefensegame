@@ -24,6 +24,7 @@ export class JokerDirectionPicker
 
         if (directions.length === 0)
         {
+            onChoose('right');
             return;
         }
 

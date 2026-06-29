@@ -36,7 +36,7 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getDeckSize()).toBe(GAME_RULES.deckSize - GAME_RULES.handSize);
     });
 
-    it('renews the whole hand after enemy turn', () =>
+    it('replaces the whole hand after enemy turn', () =>
     {
         const session = new CardGameSession();
         const originalHand = session.getHand().map((card) => card.instanceId);
@@ -54,9 +54,53 @@ describe('CardGameSession enemy turn', () =>
         }
 
         expect(session.getHand()).toHaveLength(GAME_RULES.handSize);
-        expect(session.getHand().map((card) => card.instanceId))
-            .not.toEqual(originalHand);
+        expect(session.getHand().map((card) => card.instanceId)).not.toEqual(originalHand);
         expect(session.getDiscardSize()).toBe(GAME_RULES.handSize);
+    });
+
+    it('reshuffles the discard pile when the deck cannot satisfy a draw', () =>
+    {
+        const session = new CardGameSession();
+        const placementSlots = [
+            { row: 0, col: 0 },
+            { row: 0, col: 1 },
+            { row: 0, col: 2 },
+            { row: 0, col: 3 },
+            { row: 1, col: 0 },
+            { row: 1, col: 1 },
+        ] as const;
+
+        for (const slot of placementSlots)
+        {
+            session.placeCardFromHand(0, slot);
+        }
+
+        session.clearBoard();
+        expect(session.getHand()).toHaveLength(0);
+        expect(session.getDiscardSize()).toBe(6);
+        expect(session.getDeckSize()).toBe(9);
+
+        session.renewHand();
+
+        expect(session.getHand()).toHaveLength(6);
+        expect(session.getDiscardSize()).toBe(6);
+        expect(session.getDeckSize()).toBe(3);
+
+        for (const slot of placementSlots)
+        {
+            session.placeCardFromHand(0, slot);
+        }
+
+        session.clearBoard();
+        expect(session.getHand()).toHaveLength(0);
+        expect(session.getDiscardSize()).toBe(12);
+        expect(session.getDeckSize()).toBe(3);
+
+        session.renewHand();
+
+        expect(session.getHand()).toHaveLength(6);
+        expect(session.getDiscardSize()).toBe(0);
+        expect(session.getDeckSize()).toBe(9);
     });
 
     it('applies defend armor as shield that blocks enemy attacks', () =>
@@ -156,7 +200,7 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getQueuedEnemyTurn()).not.toBeNull();
     });
 
-    it('clears shield when the hand is renewed', () =>
+    it('clears shield when the player turn begins', () =>
     {
         const session = new CardGameSession();
 

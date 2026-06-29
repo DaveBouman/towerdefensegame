@@ -184,6 +184,12 @@ export class CardBoardView
     {
         const directions = getJokerDirectionChoices(slot, GRID_CONFIG.rows, GRID_CONFIG.cols);
 
+        if (directions.length === 0)
+        {
+            onChoose('right');
+            return;
+        }
+
         this.jokerDirectionPicker.show(
             this.scene,
             this.layout.gridOffsetX,
@@ -447,6 +453,88 @@ export class CardBoardView
         this.bringChainStartToFront();
     }
 
+    /** Flies proxy cards to the graveyard, then resets empty slots. */
+    animateCardsToGraveyard (targetX: number, targetY: number, onComplete: () => void): void
+    {
+        this.hideJokerDirectionPicker();
+        this.clearHighlight();
+        this.setChainStartActive(false);
+
+        const { tileSize } = GRID_CONFIG;
+        const cardSize = tileSize - SLOT_INSET * 2;
+        const proxies: Phaser.GameObjects.Container[] = [];
+
+        for (let row = 0; row < GRID_CONFIG.rows; row++)
+        {
+            for (let col = 0; col < GRID_CONFIG.cols; col++)
+            {
+                const wrapper = this.cardContainers[row][col];
+                const card = this.board.getCardAt({ row, col });
+
+                if (!wrapper || !card)
+                {
+                    continue;
+                }
+
+                const matrix = wrapper.getWorldTransformMatrix();
+                const { container: graphic } = buildCardGraphic(this.scene, card, {
+                    width: cardSize,
+                    height: cardSize,
+                });
+                const proxy = this.scene.add.container(matrix.tx, matrix.ty);
+
+                proxy.setDepth(1500);
+                proxy.add(graphic);
+                proxies.push(proxy);
+            }
+        }
+
+        this.clearBoard();
+
+        if (proxies.length === 0)
+        {
+            onComplete();
+            return;
+        }
+
+        let completed = false;
+
+        const finish = (): void =>
+        {
+            if (completed)
+            {
+                return;
+            }
+
+            completed = true;
+
+            for (const proxy of proxies)
+            {
+                this.scene.tweens.killTweensOf(proxy);
+                proxy.destroy();
+            }
+
+            onComplete();
+        };
+
+        for (const proxy of proxies)
+        {
+            this.scene.tweens.add({
+                targets: proxy,
+                x: targetX,
+                y: targetY,
+                scaleX: 0.35,
+                scaleY: 0.35,
+                alpha: 0.15,
+                duration: 420,
+                ease: 'Quad.easeIn',
+                onComplete: finish,
+            });
+        }
+
+        this.scene.time.delayedCall(480, finish);
+    }
+
     clearBoard (): void
     {
         this.hideJokerDirectionPicker();
@@ -457,7 +545,16 @@ export class CardBoardView
         {
             for (let col = 0; col < cols; col++)
             {
-                this.cardContainers[row][col]?.destroy();
+                const wrapper = this.cardContainers[row][col];
+
+                if (wrapper)
+                {
+                    this.scene.tweens.killTweensOf(wrapper);
+                    wrapper.setScale(1);
+                    wrapper.setAlpha(1);
+                    wrapper.destroy();
+                }
+
                 this.cardContainers[row][col] = null;
 
                 const slotBody = this.slotBodies[row][col];

@@ -3,11 +3,14 @@ import { computeBoardLayout } from '../board/boardLayout';
 import { ArmorView } from '../board/ArmorView';
 import { CardBoardView } from '../board/CardBoardView';
 import { CardHandView } from '../board/CardHandView';
+import { CardPileView } from '../board/CardPileView';
 import { EnemyTargetView } from '../board/EnemyTargetView';
 import { PlayerHealthView } from '../board/PlayerHealthView';
 import { CardGameSession } from '../cardGame/domain/CardGameSession';
 import type { SlotPosition } from '../cardGame/domain/types';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
+import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
+import { CARD_GAME_EVENTS } from '../cardGame/events/cardGameEvents';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
 import { Scene } from 'phaser';
@@ -24,6 +27,8 @@ export class Game extends Scene
     private enemyView?: EnemyTargetView;
     private playerView?: PlayerHealthView;
     private armorView?: ArmorView;
+    private deckView?: CardPileView;
+    private graveyardView?: CardPileView;
 
     constructor ()
     {
@@ -78,6 +83,9 @@ export class Game extends Scene
         this.playerView = new PlayerHealthView(this, layout, this.session.getPlayer());
         this.enemyView = new EnemyTargetView(this, layout, this.session.getEnemy());
         this.armorView = new ArmorView(this, layout, 0);
+        this.deckView = new CardPileView(this, layout, layout.deckX, layout.deckY, 'Deck', 'deck');
+        this.graveyardView = new CardPileView(this, layout, layout.graveyardX, layout.graveyardY, 'Graveyard', 'graveyard');
+        this.syncPileViews();
 
         this.presenter = new CardGamePresenter(
             this,
@@ -98,6 +106,7 @@ export class Game extends Scene
         }
 
         EventBus.on(GAME_EVENTS.ATTACK, this.onAttack, this);
+        CardGameEventBus.on(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
         EventBus.emit(GAME_EVENTS.SCENE_READY, this);
         this.emitAttackReadiness();
     }
@@ -105,6 +114,7 @@ export class Game extends Scene
     shutdown (): void
     {
         EventBus.off(GAME_EVENTS.ATTACK, this.onAttack, this);
+        CardGameEventBus.off(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
         this.session?.cancelAttack();
         this.session?.cancelEnemyTurn();
         this.presenter?.unbind();
@@ -113,13 +123,41 @@ export class Game extends Scene
         this.enemyView?.destroy();
         this.playerView?.destroy();
         this.armorView?.destroy();
+        this.deckView?.destroy();
+        this.graveyardView?.destroy();
         this.presenter = undefined;
         this.boardView = undefined;
         this.handView = undefined;
         this.enemyView = undefined;
         this.playerView = undefined;
         this.armorView = undefined;
+        this.deckView = undefined;
+        this.graveyardView = undefined;
         this.session = undefined;
+    }
+
+    private onPilesChanged = ({ deckSize, discardSize }: { deckSize: number; discardSize: number }): void =>
+    {
+        if (!this.session)
+        {
+            return;
+        }
+
+        this.deckView?.setCount(deckSize);
+        this.graveyardView?.setCount(discardSize);
+    };
+
+    private syncPileViews (): void
+    {
+        if (!this.session)
+        {
+            return;
+        }
+
+        const { deckSize, discardSize } = this.session.getPileCounts();
+
+        this.deckView?.setCount(deckSize);
+        this.graveyardView?.setCount(discardSize);
     }
 
     private onAttack = (): void =>
@@ -159,14 +197,33 @@ export class Game extends Scene
         }
 
         this.session.completeAttack(sequence);
+
+        const graveyardTarget = this.graveyardView?.getReceivePosition() ?? { x: 0, y: 0 };
+
+        this.boardView.animateCardsToGraveyard(graveyardTarget.x, graveyardTarget.y, () =>
+        {
+            this.afterGraveyardAnimation();
+        });
+    }
+
+    private afterGraveyardAnimation (): void
+    {
+        if (!this.session || !this.boardView || !this.enemyView)
+        {
+            return;
+        }
+
         this.session.clearBoard();
-        this.boardView.clearBoard();
+        this.boardView.syncFromBoard(this.session.board);
+        this.graveyardView?.pulse();
+        this.syncPileViews();
         this.enemyView.setHealth(this.session.getEnemy());
         this.armorView?.setArmor(this.session.getPlayer().shield);
 
         if (this.session.isEnemyDefeated())
         {
             this.enemyView.clearIntent();
+            this.session.finishPlayerTurn();
             this.emitAttackReadiness();
             return;
         }
@@ -175,13 +232,14 @@ export class Game extends Scene
 
         if (!enemyTurn)
         {
+            this.session.finishPlayerTurn();
             this.emitAttackReadiness();
             return;
         }
 
         this.enemyView.showIntent(enemyTurn, 'executing');
 
-        this.presenter.playEnemyTurn(enemyTurn, () =>
+        this.presenter?.playEnemyTurn(enemyTurn, () =>
         {
             this.playerView?.setHealth(this.session!.getPlayer());
             this.enemyView?.setHealth(this.session!.getEnemy());
@@ -199,6 +257,8 @@ export class Game extends Scene
 
             this.handView?.syncHand(this.session!.getHand());
             this.armorView?.setArmor(this.session!.getPlayer().shield);
+            this.syncPileViews();
+            this.session!.finishPlayerTurn();
             this.emitAttackReadiness();
         });
     }

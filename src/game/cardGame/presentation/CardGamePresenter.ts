@@ -87,6 +87,18 @@ export class CardGamePresenter
             this.deactivateActiveVisual();
             this.boardView.setChainStartActive(false);
 
+            for (const step of chain)
+            {
+                const target = this.boardView.getCardVisualTarget(step.slot);
+
+                if (target)
+                {
+                    this.scene.tweens.killTweensOf(target.wrapper);
+                    target.wrapper.setScale(1);
+                    target.wrapper.setAlpha(1);
+                }
+            }
+
             onComplete(buildCurrentSequence());
         };
 

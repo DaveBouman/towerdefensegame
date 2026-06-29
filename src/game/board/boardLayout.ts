@@ -20,6 +20,12 @@ export interface BoardLayout {
     playerX: number;
     playerY: number;
     playerSize: number;
+    deckX: number;
+    deckY: number;
+    graveyardX: number;
+    graveyardY: number;
+    pileWidth: number;
+    pileHeight: number;
 }
 
 /** Grid sits left of center; enemy is just to the right of the board. */
@@ -39,6 +45,12 @@ export const computeBoardLayout = (
     const gridOffsetY = Math.round((canvasHeight - gridHeight - handBandHeight) / 2);
     const handY = canvasHeight - handBandHeight + 8;
     const handWidth = HAND_CARD_WIDTH * GAME_RULES.handSize + HAND_CARD_GAP * (GAME_RULES.handSize - 1);
+    const pileWidth = 64;
+    const pileHeight = 88;
+    const pileGap = 18;
+    const deckX = Math.round(gridOffsetX - pileWidth * 2 - pileGap - enemyGap);
+    const deckY = Math.round(handY + (handBandHeight - pileHeight) / 2);
+    const graveyardX = deckX + pileWidth + pileGap;
 
     return {
         canvasWidth,
@@ -58,5 +70,11 @@ export const computeBoardLayout = (
         playerX: Math.round(gridOffsetX - playerSize - enemyGap),
         playerY: Math.round(gridOffsetY + (gridHeight - playerSize) / 2),
         playerSize,
+        deckX,
+        deckY,
+        graveyardX,
+        graveyardY: deckY,
+        pileWidth,
+        pileHeight,
     };
 };

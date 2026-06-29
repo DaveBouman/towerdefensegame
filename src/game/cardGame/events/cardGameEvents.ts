@@ -2,6 +2,7 @@ export const CARD_GAME_EVENTS = {
     CARD_PLACED: 'card-game-card-placed',
     ARMOR_CHANGED: 'card-game-armor-changed',
     HAND_CHANGED: 'card-game-hand-changed',
+    PILES_CHANGED: 'card-game-piles-changed',
     ATTACK_STARTED: 'card-game-attack-started',
     ATTACK_STEP: 'card-game-attack-step',
     ATTACK_COMPLETED: 'card-game-attack-completed',

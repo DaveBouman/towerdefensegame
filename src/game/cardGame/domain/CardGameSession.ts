@@ -64,6 +64,19 @@ export class CardGameSession
         return this.discard.length;
     }
 
+    getPileCounts (): { deckSize: number; discardSize: number }
+    {
+        return {
+            deckSize: this.deck.length,
+            discardSize: this.discard.length,
+        };
+    }
+
+    private emitPilesChanged (): void
+    {
+        CardGameEventBus.emit(CARD_GAME_EVENTS.PILES_CHANGED, this.getPileCounts());
+    }
+
     private reshuffleDiscardIntoDeck (): void
     {
         if (this.discard.length === 0)
@@ -75,14 +88,28 @@ export class CardGameSession
         shuffleInPlace(this.deck);
     }
 
-    private drawCard (): CardInstance | null
+    private drawCards (count: number): CardInstance[]
     {
-        if (this.deck.length === 0)
+        const drawn: CardInstance[] = [];
+
+        for (let i = 0; i < count; i++)
         {
-            this.reshuffleDiscardIntoDeck();
+            if (this.deck.length === 0)
+            {
+                this.reshuffleDiscardIntoDeck();
+            }
+
+            const card = this.deck.pop();
+
+            if (!card)
+            {
+                break;
+            }
+
+            drawn.push(card);
         }
 
-        return this.deck.pop() ?? null;
+        return drawn;
     }
 
     /** Discards the current hand and draws a fresh one for the next player turn. */
@@ -95,20 +122,11 @@ export class CardGameSession
             this.discard.push(...this.hand.splice(0));
         }
 
-        while (this.hand.length < GAME_RULES.handSize)
-        {
-            const card = this.drawCard();
-
-            if (!card)
-            {
-                break;
-            }
-
-            this.hand.push(card);
-        }
+        this.hand.push(...this.drawCards(GAME_RULES.handSize));
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
         CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: this.player.shield });
+        this.emitPilesChanged();
     }
 
     getChainStartSlot (): SlotPosition
@@ -296,7 +314,6 @@ export class CardGameSession
 
         this.player.shield += chainArmor;
         this.damageDealtThisAttack = 0;
-        this.attackInProgress = false;
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_COMPLETED, {
             sequence,
@@ -308,6 +325,12 @@ export class CardGameSession
         {
             CardGameEventBus.emit(CARD_GAME_EVENTS.ENEMY_DEFEATED, { enemy: this.getEnemy() });
         }
+    }
+
+    /** Clears the attack lock after board cleanup and enemy turn resolve. */
+    finishPlayerTurn (): void
+    {
+        this.attackInProgress = false;
     }
 
     beginEnemyTurn (): EnemyTurnAction | null
@@ -403,6 +426,7 @@ export class CardGameSession
         }
 
         this.board.clear();
+        this.emitPilesChanged();
     }
 
     cancelAttack (): void
