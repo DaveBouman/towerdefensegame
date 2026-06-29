@@ -11,45 +11,17 @@ import { WaveSystem } from '../systems/WaveSystem';
 import { WaveSpawnSystem } from '../systems/WaveSpawnSystem';
 import type { Grid } from '../grid/Grid';
 import type { GridPosition } from '../grid/types';
-import { DeploymentPhase } from './DeploymentPhase';
-import { TowerUpgradeService } from './TowerUpgradeService';
-import type { TowerUpgradeDefinition } from '../config/towerUpgradeCatalog';
-import type { WaveTowerDamageLog } from './types';
 import { WaveRoundController } from './WaveRoundController';
-import {
-    canManagePlacedTowers,
-    isBetweenWaves,
-    isCombatActive,
-} from './gamePhase';
-import type { TowerTargetingMode } from '../combat/towerTargeting';
-import type { TowerDefinitionId } from '../config/towerCatalog';
-import { rollTowerDraftChoices } from '../config/towerDraft';
-import type { TowerRace } from './towers/types';
-import { getTowerDefinition } from '../config/towerCatalog';
-import { getTowerRecruitCost } from '../config/towerRecruitCost';
-import { raceDraftMultiplier } from '../config/raceDraftWeights';
-import {
-    isEnemyNexusDefeated,
-    isPlayerNexusDefeated,
-    isWaveRoundComplete,
-} from '../combat/roundOutcome';
-import { PlayerNexusSystem } from '../systems/PlayerNexusSystem';
-import { TowerRaceBonusSystem } from '../systems/TowerRaceBonusSystem';
+import { canPlaceTowers, isCombatActive } from './gamePhase';
 import { UnitAttackSystem } from '../systems/UnitAttackSystem';
 import { UnitMovementSystem } from '../systems/UnitMovementSystem';
-import { UnitNexusAttackSystem } from '../systems/UnitNexusAttackSystem';
-import {
-    ROUND_MAX_DURATION_TICKS,
-    TICKS_PER_SECOND,
-} from '../config/gameClockConfig';
+import { PlayerNexusSystem } from '../systems/PlayerNexusSystem';
 import { hasWaveDefinition } from '../config/waveCatalog';
-import { formatWaveTowerDamageLog, TowerRoundDamageLog } from './TowerRoundDamageLog';
-import type { TowerPairLink } from '../combat/towerPairLinks';
-import {
-    findTowerFusionGroups,
-    getTowerFusionPreviewLinks,
-    pickFusionAnchor,
-} from '../combat/towerFusion';
+import { isWaveRoundComplete } from '../combat/roundOutcome';
+import { GRID_CONFIG } from '../config/gridConfig';
+
+const TOWER_PLACE_COST = 30;
+const DEFAULT_TOWER_ID = 'militia' as const;
 
 export class GameSession
 {
@@ -62,15 +34,10 @@ export class GameSession
     readonly towers: TowerPlacementSystem;
     readonly unitMovement: UnitMovementSystem;
     readonly unitAttacks: UnitAttackSystem;
-    readonly towerUpgrades: TowerUpgradeService;
     readonly playerNexus: PlayerNexusSystem;
-    readonly deployment: DeploymentPhase;
-    readonly raceBonuses: TowerRaceBonusSystem;
-    readonly towerRoundDamageLog: TowerRoundDamageLog;
 
     private readonly waveRounds: WaveRoundController;
     private readonly tickPipeline: readonly TickSystem[];
-    private roundStartTick = 0;
 
     constructor (grid: Grid)
     {
@@ -81,24 +48,14 @@ export class GameSession
         this.enemies = new EnemySpawnSystem(this.collision);
         this.waveSpawns = new WaveSpawnSystem(this.enemies);
         this.towers = new TowerPlacementSystem(grid, this.collision);
-        this.towerUpgrades = new TowerUpgradeService();
-        this.towerRoundDamageLog = new TowerRoundDamageLog();
-        this.towerRoundDamageLog.bindEventBus();
         this.playerNexus = new PlayerNexusSystem();
-        this.deployment = new DeploymentPhase();
-        this.raceBonuses = new TowerRaceBonusSystem(this.towers, grid);
         this.unitMovement = new UnitMovementSystem(
             this.enemies,
             this.towers,
-            this.playerNexus,
             grid,
             this.collision,
         );
-        const killRewards = new KillRewardSystem(
-            this.state,
-            this.towers,
-            () => this.state.wave,
-        );
+        const killRewards = new KillRewardSystem(this.state, this.towers);
 
         this.unitAttacks = new UnitAttackSystem(
             this.towers,
@@ -106,14 +63,6 @@ export class GameSession
             this.playerNexus,
             grid,
             killRewards,
-        );
-        const unitNexusAttacks = new UnitNexusAttackSystem(
-            this.enemies,
-            this.towers,
-            this.playerNexus,
-            grid,
-            killRewards,
-            () => this.state.wave,
         );
 
         this.waveRounds = new WaveRoundController(
@@ -125,60 +74,35 @@ export class GameSession
             this.towers,
             this.unitMovement,
             this.unitAttacks,
-            this.deployment,
         );
 
         this.tickPipeline = [
             this.waveSpawns,
             this.unitMovement,
-            this.raceBonuses,
             this.unitAttacks,
-            unitNexusAttacks,
         ];
     }
 
     prepare (): void
     {
-        this.towerUpgrades.reset();
-        this.towerRoundDamageLog.reset();
-        this.playerNexus.reset();
         this.enemies.clearAll();
         this.towers.clearAll();
         this.waveSpawns.clear();
-        this.deployment.reset();
-        this.playerNexus.spawn();
-        this.enemies.resetEnemyNexus();
-        this.state.setLives(this.playerNexus.active?.maxHealth ?? this.state.lives);
+        this.unitMovement.clearAll();
+        this.unitAttacks.clearAll();
+        this.state.setGold(100);
+        this.state.setLives(10);
         this.state.setWave(0);
-        this.state.setUpgradePick(null);
-        this.state.setTowerDraftPick({ choices: rollTowerDraftChoices(0, 5) });
-        this.state.setCanStartWave(false);
-        this.state.setDeployment(null);
-        this.state.setRaceDraftBias(this.computeRaceDraftBias());
+        this.state.setRunOutcome('playing');
+        this.state.setPaused(false);
+        this.state.setCanStartWave(true);
         this.clock.reset();
-        this.raceBonuses.recalculate();
         this.waveRounds.showUpcomingWavePreview();
     }
 
-    isDeploymentActive (): boolean
-    {
-        return this.deployment.active;
-    }
-
-    canPlaceQueuedTowers (): boolean
-    {
-        if (this.isRoundActive() || this.state.upgradePick || this.state.towerDraftPick)
-        {
-            return false;
-        }
-
-        return this.deployment.active;
-    }
-
-    /** Simulation ticks run only during an active combat round. */
     isRoundActive (): boolean
     {
-        return isCombatActive(this.state);
+        return isCombatActive(this.state.snapshot());
     }
 
     get isPaused (): boolean
@@ -196,281 +120,36 @@ export class GameSession
         this.state.setPaused(!this.state.paused);
     }
 
-    /** True during deployment or between waves (not combat / reward pick). */
-    isTowerDraftActive (): boolean
+    canPlaceTowers (): boolean
     {
-        return this.state.towerDraftPick !== null;
+        return canPlaceTowers(this.state.snapshot());
     }
 
-    confirmTowerDraft (definitionId: TowerDefinitionId): boolean
+    tryPlaceTower (tile: GridPosition): boolean
     {
-        const pick = this.state.towerDraftPick;
-
-        if (!pick || !pick.choices.includes(definitionId))
+        if (!this.canPlaceTowers())
         {
             return false;
         }
 
-        const recruitCost = getTowerRecruitCost(definitionId, this.state.wave);
-
-        if (recruitCost > 0 && !this.state.spendGold(recruitCost))
+        if (!this.state.spendGold(TOWER_PLACE_COST))
         {
             return false;
         }
 
-        this.state.setTowerDraftPick(null);
-        this.towers.snapAllToSpawnTiles();
-        this.unitMovement.clearAll();
-        this.deployment.enqueue(definitionId);
-        this.state.setCanStartWave(true);
-        this.raceBonuses.recalculate();
-        this.syncDeploymentState();
-        this.state.setRaceDraftBias(this.computeRaceDraftBias());
+        if (!this.towers.tryPlace(tile, DEFAULT_TOWER_ID))
+        {
+            this.state.addGold(TOWER_PLACE_COST);
+            return false;
+        }
 
         return true;
-    }
-
-    /** Decline recruitment between waves and continue without buying a unit. */
-    skipTowerDraft (): boolean
-    {
-        if (!this.state.towerDraftPick)
-        {
-            return false;
-        }
-
-        if (this.state.wave < 1)
-        {
-            return false;
-        }
-
-        this.state.setTowerDraftPick(null);
-        this.state.setCanStartWave(true);
-
-        return true;
-    }
-
-    canRepositionTowers (): boolean
-    {
-        return canManagePlacedTowers(
-            this.state.snapshot(),
-            this.enemies.livingCombatCount,
-            this.deployment.active,
-        );
-    }
-
-    canRelocateTowerTo (towerId: string, tile: GridPosition): boolean
-    {
-        return this.towers.canRelocateTo(towerId, tile);
-    }
-
-    relocateTowerAt (tile: GridPosition, towerId: string): boolean
-    {
-        if (!this.canRepositionTowers())
-        {
-            return false;
-        }
-
-        if (!this.towers.tryRelocate(towerId, tile))
-        {
-            return false;
-        }
-
-        this.unitMovement.clearTower(towerId);
-        this.unitAttacks.clearTower(towerId);
-        this.raceBonuses.recalculate();
-        this.state.setRaceDraftBias(this.computeRaceDraftBias());
-
-        return true;
-    }
-
-    tryDeployTowerAt (tile: GridPosition, towerId: TowerDefinitionId): boolean
-    {
-        if (!this.canPlaceQueuedTowers())
-        {
-            return false;
-        }
-
-        if (!this.deployment.snapshot().queue.includes(towerId))
-        {
-            return false;
-        }
-
-        if (!this.towers.tryPlace(tile, towerId))
-        {
-            return false;
-        }
-
-        this.deployment.takeById(towerId);
-        this.syncDeploymentState();
-        this.state.setCanStartWave(true);
-        this.raceBonuses.recalculate();
-        this.state.setRaceDraftBias(this.computeRaceDraftBias());
-        this.waveRounds.showUpcomingWavePreview();
-
-        return true;
-    }
-
-    canSellTower (towerId: string): boolean
-    {
-        if (!this.canRepositionTowers())
-        {
-            return false;
-        }
-
-        return this.towers.all.some((tower) => tower.id === towerId);
-    }
-
-    sellTower (towerId: string): boolean
-    {
-        if (!this.canSellTower(towerId))
-        {
-            return false;
-        }
-
-        const tower = this.towers.all.find((t) => t.id === towerId);
-
-        if (!tower)
-        {
-            return false;
-        }
-
-        const refund = tower.goldValue;
-
-        this.unitMovement.clearTower(towerId);
-        this.unitAttacks.clearTower(towerId);
-        this.towers.remove(towerId);
-        this.state.addGold(refund);
-        this.raceBonuses.recalculate();
-        this.state.setRaceDraftBias(this.computeRaceDraftBias());
-
-        return true;
-    }
-
-    getPendingTowerFusionLinks (): TowerPairLink[]
-    {
-        if (
-            this.isRoundActive()
-            || this.state.upgradePick
-            || this.state.towerDraftPick
-        )
-        {
-            return [];
-        }
-
-        return getTowerFusionPreviewLinks(this.towers.all);
-    }
-
-    resolveTowerFusion (): void
-    {
-        const groups = findTowerFusionGroups(this.towers.all);
-
-        if (groups.length === 0)
-        {
-            return;
-        }
-
-        for (const group of groups)
-        {
-            const anchor = pickFusionAnchor(group);
-            const victims = group.filter((tower) => tower.id !== anchor.id);
-
-            for (const victim of victims)
-            {
-                this.unitMovement.clearTower(victim.id);
-                this.unitAttacks.clearTower(victim.id);
-            }
-
-            this.towers.mergeFusionGroup(anchor, victims, group.length);
-        }
-
-        this.raceBonuses.recalculate();
-        this.state.setRaceDraftBias(this.computeRaceDraftBias());
     }
 
     startWave (): void
     {
         this.state.setPaused(false);
-        this.resolveTowerFusion();
-
-        if (this.waveRounds.startCombatRound())
-        {
-            this.roundStartTick = this.clock.currentTick;
-            this.towerRoundDamageLog.beginWave(this.state.wave);
-            this.syncRoundTimeRemaining();
-        }
-    }
-
-    claimWaveReward (upgradeId: string): boolean
-    {
-        const claimed = this.towerUpgrades.claimWaveReward(this.state, upgradeId);
-
-        if (claimed)
-        {
-            this.towerUpgrades.publishInventorySnapshot();
-            this.beginPostWaveTowerDraft();
-        }
-
-        return claimed;
-    }
-
-    discardWaveReward (): boolean
-    {
-        const discarded = this.towerUpgrades.discardWaveReward(this.state);
-
-        if (discarded)
-        {
-            this.towerUpgrades.publishInventorySnapshot();
-            this.beginPostWaveTowerDraft();
-        }
-
-        return discarded;
-    }
-
-    getInventoryUpgradeDefinitions (): TowerUpgradeDefinition[]
-    {
-        return this.towerUpgrades.getInventoryUpgrades();
-    }
-
-    equipCatalogUpgradeToTower (towerId: string, upgradeId: string): boolean
-    {
-        return this.towerUpgrades.equipCatalogUpgrade(
-            this.state,
-            this.towers.all,
-            towerId,
-            upgradeId,
-            this.enemies.livingCombatCount,
-        );
-    }
-
-    setTowerTargetingMode (towerId: string, mode: TowerTargetingMode): boolean
-    {
-        const tower = this.towers.all.find((t) => t.id === towerId);
-
-        if (!tower)
-        {
-            return false;
-        }
-
-        tower.setTargetingMode(mode);
-        EventBus.emit(GAME_EVENTS.TOWER_UPDATED, tower.snapshot());
-
-        return true;
-    }
-
-    isBetweenWaves (): boolean
-    {
-        return isBetweenWaves(this.state, this.enemies.livingCombatCount);
-    }
-
-    purchaseTowerStatUpgrade (towerId: string, upgradeId: string): boolean
-    {
-        return this.towerUpgrades.purchaseStatUpgrade(
-            this.state,
-            this.towers.all,
-            towerId,
-            upgradeId,
-            this.enemies.livingCombatCount,
-        );
+        this.waveRounds.startCombatRound();
     }
 
     checkWaveComplete (): void
@@ -480,88 +159,22 @@ export class GameSession
             return;
         }
 
-        if (isPlayerNexusDefeated(this.playerNexus.active))
+        if (this.state.lives <= 0)
         {
-            this.finishWave();
-
-            return;
-        }
-
-        if (isEnemyNexusDefeated(this.enemies.getEnemyNexus()))
-        {
-            this.finishVictory();
-
+            this.finishWave(false);
             return;
         }
 
         if (
             isWaveRoundComplete(
                 this.enemies.all,
-                this.towers.all,
                 this.waveSpawns.hasPendingSpawns,
             )
         )
         {
-            this.finishWave();
+            const wonRun = !hasWaveDefinition(this.state.wave + 1);
+            this.finishWave(wonRun);
         }
-    }
-
-    private finishWave (): void
-    {
-        this.clearRoundTimer();
-
-        const damageLog = this.towerRoundDamageLog.finalizeWave(this.towers.all);
-
-        this.state.setPaused(false);
-        this.resetPlayerTowersAfterWave();
-        this.awardWaveBonusExperience(damageLog.wave);
-
-        if (damageLog.entries.length > 0)
-        {
-            console.info(formatWaveTowerDamageLog(damageLog));
-            EventBus.emit(GAME_EVENTS.WAVE_TOWER_DAMAGE_LOG, damageLog);
-        }
-
-        this.towerUpgrades.offerPostWaveDraft(this.state);
-        this.towerUpgrades.publishInventorySnapshot();
-
-        if (!this.state.upgradePick)
-        {
-            this.beginPostWaveTowerDraft();
-        }
-    }
-
-    private finishVictory (): void
-    {
-        this.clearRoundTimer();
-
-        const damageLog = this.towerRoundDamageLog.finalizeWave(this.towers.all);
-
-        this.state.setUpgradePick(null);
-        this.state.setTowerDraftPick(null);
-        this.state.setCanStartWave(false);
-        this.state.setPaused(true);
-        this.resetPlayerTowersAfterWave();
-        this.awardWaveBonusExperience(damageLog.wave);
-        this.state.setRunOutcome('victory');
-        EventBus.emit(GAME_EVENTS.GAME_VICTORY, {
-            wave: damageLog.wave,
-            lives: this.state.lives,
-        });
-    }
-
-    /** After wave 1+, draft one extra tower to place before the next wave. */
-    private beginPostWaveTowerDraft (): void
-    {
-        if (this.state.wave < 1 || this.state.towerDraftPick)
-        {
-            return;
-        }
-
-        this.state.setTowerDraftPick({
-            choices: rollTowerDraftChoices(this.state.wave, 5, this.ownedRaceCounts()),
-        });
-        this.state.setCanStartWave(false);
     }
 
     advanceTick (): void
@@ -578,70 +191,8 @@ export class GameSession
             system.tick(gameTick);
         }
 
-        this.syncRoundTimeRemaining();
-
-        if (gameTick - this.roundStartTick >= ROUND_MAX_DURATION_TICKS)
-        {
-            this.finishWaveOnTimeout();
-        }
-    }
-
-    private finishWaveOnTimeout (): void
-    {
-        if (!this.isRoundActive())
-        {
-            return;
-        }
-
-        this.clearRoundTimer();
-        this.towerRoundDamageLog.finalizeWave(this.towers.all);
-        this.waveSpawns.clear();
-        this.state.setUpgradePick(null);
-        this.state.setTowerDraftPick(null);
-        this.state.setPaused(false);
-        this.state.setCanStartWave(true);
-        this.enemies.clearAll();
-        this.resetPlayerTowersAfterWave();
-        this.autoStartNextWaveIfAvailable();
-    }
-
-    private autoStartNextWaveIfAvailable (): void
-    {
-        const nextWave = this.state.wave + 1;
-
-        if (!hasWaveDefinition(nextWave))
-        {
-            this.waveRounds.showUpcomingWavePreview();
-            return;
-        }
-
-        this.state.setCanStartWave(true);
-        this.resolveTowerFusion();
-
-        if (this.waveRounds.startCombatRound())
-        {
-            this.roundStartTick = this.clock.currentTick;
-            this.towerRoundDamageLog.beginWave(this.state.wave);
-            this.syncRoundTimeRemaining();
-        }
-    }
-
-    private syncRoundTimeRemaining (): void
-    {
-        if (!this.isRoundActive())
-        {
-            return;
-        }
-
-        const elapsedTicks = this.clock.currentTick - this.roundStartTick;
-        const remainingTicks = Math.max(0, ROUND_MAX_DURATION_TICKS - elapsedTicks);
-
-        this.state.setRoundTimeRemaining(remainingTicks / TICKS_PER_SECOND);
-    }
-
-    private clearRoundTimer (): void
-    {
-        this.state.setRoundTimeRemaining(null);
+        this.processLeaks();
+        this.checkWaveComplete();
     }
 
     reset (): void
@@ -649,97 +200,59 @@ export class GameSession
         this.clock.reset();
         this.collision.clear();
         this.waveSpawns.clear();
-        this.towerUpgrades.reset();
-        this.towerRoundDamageLog.reset();
         this.playerNexus.reset();
-        this.deployment.reset();
-        this.state.setDeployment(null);
     }
 
-    syncLivesFromPlayerNexus (): void
+    private processLeaks (): void
     {
-        const nexus = this.playerNexus.active;
+        const leakRow = GRID_CONFIG.rows - 1;
 
-        if (nexus)
+        for (const enemy of this.enemies.combatants)
         {
-            this.state.setLives(nexus.health);
+            const tile = this.unitMovement.tileAt(enemy.position);
+
+            if (!tile || tile.row < leakRow)
+            {
+                continue;
+            }
+
+            this.enemies.remove(enemy.id);
+            this.state.setLives(this.state.lives - 1);
+
+            if (this.state.lives <= 0)
+            {
+                this.state.setRunOutcome('defeat');
+            }
         }
     }
 
-    private awardWaveBonusExperience (wave: number): void
+    private finishWave (wonRun: boolean): void
     {
-        const bonus = this.towerRoundDamageLog.getWaveBonusExperience(wave);
+        this.waveSpawns.clear();
+        this.enemies.clearAll();
+        this.unitMovement.clearAll();
+        this.unitAttacks.clearAll();
+        this.state.setPaused(false);
 
-        if (bonus <= 0)
+        if (wonRun)
         {
+            this.state.setRunOutcome('victory');
+            this.state.setCanStartWave(false);
+            EventBus.emit(GAME_EVENTS.GAME_VICTORY, {
+                wave: this.state.wave,
+                lives: this.state.lives,
+            });
             return;
         }
 
-        for (const tower of this.towers.all)
+        if (this.state.runOutcome === 'defeat')
         {
-            tower.grantExperience(bonus);
-            EventBus.emit(GAME_EVENTS.TOWER_UPDATED, tower.snapshot());
+            this.state.setCanStartWave(false);
+            return;
         }
-    }
 
-    private resetPlayerTowersAfterWave (): void
-    {
-        this.towers.resetPlayerTowers();
-        this.unitMovement.clearAll();
-        this.unitAttacks.clearAll();
-        this.raceBonuses.recalculate();
-        this.state.setRaceDraftBias(this.computeRaceDraftBias());
+        this.state.setCanStartWave(true);
+        this.waveRounds.showUpcomingWavePreview();
         EventBus.emit(GAME_EVENTS.WAVE_COMPLETED);
-    }
-
-    private syncDeploymentState (): void
-    {
-        if (this.deployment.active)
-        {
-            this.state.setDeployment(this.deployment.snapshot());
-        }
-        else
-        {
-            this.state.setDeployment(null);
-        }
-    }
-
-    private ownedRaceCounts (): Partial<Record<TowerRace, number>>
-    {
-        const counts: Partial<Record<TowerRace, number>> = {};
-        const bump = (race: TowerRace) =>
-        {
-            counts[race] = (counts[race] ?? 0) + 1;
-        };
-
-        for (const tower of this.towers.all)
-        {
-            bump(tower.race);
-        }
-
-        const queued = this.deployment.snapshot().queue;
-
-        for (const towerId of queued)
-        {
-            const race = getTowerDefinition(towerId)?.profile.race;
-
-            if (race)
-            {
-                bump(race);
-            }
-        }
-
-        return counts;
-    }
-
-    private computeRaceDraftBias (): Record<TowerRace, number>
-    {
-        const owned = this.ownedRaceCounts();
-
-        return {
-            'aether-dominion': raceDraftMultiplier('aether-dominion', owned['aether-dominion'] ?? 0),
-            'swarmforge-brood': raceDraftMultiplier('swarmforge-brood', owned['swarmforge-brood'] ?? 0),
-            'iron-covenant': raceDraftMultiplier('iron-covenant', owned['iron-covenant'] ?? 0),
-        };
     }
 }

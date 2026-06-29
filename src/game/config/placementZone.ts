@@ -1,8 +1,8 @@
 import { GRID_CONFIG } from './gridConfig';
 import type { GridPosition } from '../grid/types';
 
-/** Number of rows at the bottom of the field where the player may deploy towers. */
-export const PLAYER_PLACEMENT_ROW_COUNT = 10;
+/** Bottom two rows are player placement tiles (row 0 is the enemy approach lane). */
+export const PLAYER_PLACEMENT_ROW_COUNT = 2;
 
 export const PLAYER_PLACEMENT_MIN_ROW = GRID_CONFIG.rows - PLAYER_PLACEMENT_ROW_COUNT;
 

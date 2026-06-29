@@ -7,7 +7,7 @@ import { tileCenterWorld } from './worldPosition';
 describe('Grid world offset', () =>
 {
     const grid = new Grid(GRID_CONFIG);
-    const tile = { col: 4, row: 35 };
+    const tile = { col: 1, row: 2 };
 
     it('toTileCenter matches tileCenterWorld via WorldLayout', () =>
     {
@@ -15,12 +15,10 @@ describe('Grid world offset', () =>
         expect(grid.toTileCenter(tile)).toEqual(WORLD_LAYOUT.gridTileCenter(tile));
     });
 
-    it('toWorld places tile top-left below the nexus zone', () =>
+    it('toWorld places tile top-left at row * tileSize when offset is zero', () =>
     {
         const world = grid.toWorld(tile);
 
-        expect(world.y).toBe(
-            WORLD_LAYOUT.playfieldOffsetY + tile.row * GRID_CONFIG.tileSize,
-        );
+        expect(world.y).toBe(tile.row * GRID_CONFIG.tileSize);
     });
 });

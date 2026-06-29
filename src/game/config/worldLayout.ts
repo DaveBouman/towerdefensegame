@@ -240,7 +240,7 @@ export class WorldLayout
     }
 }
 
-export const WORLD_LAYOUT = new WorldLayout(GRID_CONFIG);
+export const WORLD_LAYOUT = new WorldLayout(GRID_CONFIG, 0);
 
 export const worldLayoutFor = (config: GridConfig): WorldLayout =>
     config === GRID_CONFIG ? WORLD_LAYOUT : new WorldLayout(config);

@@ -10,18 +10,18 @@ describe('CollisionSystem', () =>
     {
         const collision = new CollisionSystem(arena);
 
-        expect(collision.register('a', 'enemy', { x: 200, y: 200 }, 16, 16)).toBe(true);
-        expect(collision.register('b', 'enemy', { x: 400, y: 400 }, 16, 16)).toBe(true);
-        expect(collision.tryMove('b', { x: 200, y: 200 })).toBe(false);
-        expect(collision.getCenter('b')).toEqual({ x: 400, y: 400 });
+        expect(collision.register('a', 'enemy', { x: 100, y: 100 }, 16, 16)).toBe(true);
+        expect(collision.register('b', 'enemy', { x: 250, y: 250 }, 16, 16)).toBe(true);
+        expect(collision.tryMove('b', { x: 100, y: 100 })).toBe(false);
+        expect(collision.getCenter('b')).toEqual({ x: 250, y: 250 });
     });
 
     it('setPositionFromPath allows overlaps (path authority for towers only)', () =>
     {
         const collision = new CollisionSystem(arena);
 
-        collision.register('a', 'tower', { x: 200, y: 200 }, 24, 24);
-        collision.register('b', 'tower', { x: 400, y: 400 }, 24, 24);
-        expect(collision.setPositionFromPath('b', { x: 200, y: 200 })).toBe(true);
+        collision.register('a', 'tower', { x: 100, y: 100 }, 24, 24);
+        collision.register('b', 'tower', { x: 250, y: 250 }, 24, 24);
+        expect(collision.setPositionFromPath('b', { x: 100, y: 100 })).toBe(true);
     });
 });

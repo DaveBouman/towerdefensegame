@@ -3,13 +3,7 @@ import { GRID_CONFIG } from '../config/gridConfig';
 import { getEnemyDefinitionOrThrow } from '../config/enemyCatalog';
 import { bodyHalfExtent } from '../config/entityBodies';
 import { EnemyState } from '../domain/EnemyState';
-import { getEnemyNexusWorldPosition } from '../config/nexusConfig';
-import {
-    isEnemyNexusDefeated,
-    isSkirmishOngoing,
-    isWaveAssaultComplete,
-    isWaveRoundComplete,
-} from './roundOutcome';
+import { isWaveRoundComplete } from './roundOutcome';
 
 describe('roundOutcome', () =>
 {
@@ -18,7 +12,7 @@ describe('roundOutcome', () =>
 
     const minion = () =>
         new EnemyState(
-            { x: 200, y: 200 },
+            { x: 64, y: 64 },
             basicDef.id,
             basicDef.unitType,
             basicDef.baseStats,
@@ -26,34 +20,10 @@ describe('roundOutcome', () =>
             half,
         );
 
-    it('skirmish continues while minions or spawns remain', () =>
+    it('wave ends when all minions are gone and no spawns remain', () =>
     {
-        expect(isSkirmishOngoing([ minion() ], false)).toBe(true);
-        expect(isSkirmishOngoing([], true)).toBe(true);
-        expect(isSkirmishOngoing([], false)).toBe(false);
-        expect(isWaveAssaultComplete([], false)).toBe(true);
-        expect(isWaveRoundComplete([], [], false)).toBe(true);
-    });
-
-    it('enemy nexus defeat is tracked at 0 HP', () =>
-    {
-        const nexusDef = getEnemyDefinitionOrThrow('enemy-nexus');
-        const nexusHalf = bodyHalfExtent(GRID_CONFIG, nexusDef.visual.sizeScale);
-        const nexus = new EnemyState(
-            getEnemyNexusWorldPosition(),
-            nexusDef.id,
-            nexusDef.unitType,
-            nexusDef.baseStats,
-            nexusHalf,
-            nexusHalf,
-            [],
-            false,
-            true,
-            'enemy-nexus',
-        );
-
-        expect(isEnemyNexusDefeated(nexus)).toBe(false);
-        nexus.health = 0;
-        expect(isEnemyNexusDefeated(nexus)).toBe(true);
+        expect(isWaveRoundComplete([ minion() ], false)).toBe(false);
+        expect(isWaveRoundComplete([], true)).toBe(false);
+        expect(isWaveRoundComplete([], false)).toBe(true);
     });
 });

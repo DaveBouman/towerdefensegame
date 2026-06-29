@@ -1,31 +1,15 @@
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
-import type {
-    DeploymentSnapshot,
-    GameStateSnapshot,
-    RunOutcome,
-    TowerDraftPickState,
-    UpgradePickState,
-} from './types';
-import type { TowerRace } from './towers/types';
+import type { GameStateSnapshot, RunOutcome } from './types';
 
 export class GameState
 {
     private _gold = 100;
     private _wave = 0;
-    private _lives = 20;
+    private _lives = 10;
     private _runOutcome: RunOutcome = 'playing';
-    private _roundTimeRemainingSec: number | null = null;
     private _canStartWave = true;
     private _paused = false;
-    private _raceDraftBias: Record<TowerRace, number> = {
-        'aether-dominion': 1,
-        'swarmforge-brood': 1,
-        'iron-covenant': 1,
-    };
-    private _upgradePick: UpgradePickState | null = null;
-    private _towerDraftPick: TowerDraftPickState | null = null;
-    private _deployment: DeploymentSnapshot | null = null;
 
     get gold (): number
     {
@@ -47,11 +31,6 @@ export class GameState
         return this._runOutcome;
     }
 
-    get roundTimeRemainingSec (): number | null
-    {
-        return this._roundTimeRemainingSec;
-    }
-
     get canStartWave (): boolean
     {
         return this._canStartWave;
@@ -62,21 +41,6 @@ export class GameState
         return this._paused;
     }
 
-    get upgradePick (): UpgradePickState | null
-    {
-        return this._upgradePick;
-    }
-
-    get deployment (): DeploymentSnapshot | null
-    {
-        return this._deployment;
-    }
-
-    get towerDraftPick (): TowerDraftPickState | null
-    {
-        return this._towerDraftPick;
-    }
-
     snapshot (): GameStateSnapshot
     {
         return {
@@ -84,26 +48,9 @@ export class GameState
             wave: this._wave,
             lives: this._lives,
             runOutcome: this._runOutcome,
-            roundTimeRemainingSec: this._roundTimeRemainingSec,
             canStartWave: this._canStartWave,
             paused: this._paused,
-            raceDraftBias: this._raceDraftBias,
-            upgradePick: this._upgradePick,
-            towerDraftPick: this._towerDraftPick,
-            deployment: this._deployment,
         };
-    }
-
-    setRaceDraftBias (bias: Record<TowerRace, number>): void
-    {
-        this._raceDraftBias = { ...bias };
-        this.notify();
-    }
-
-    setDeployment (deployment: DeploymentSnapshot | null): void
-    {
-        this._deployment = deployment;
-        this.notify();
     }
 
     setGold (gold: number): void
@@ -159,19 +106,6 @@ export class GameState
         this.notify();
     }
 
-    setRoundTimeRemaining (seconds: number | null): void
-    {
-        const next = seconds === null ? null : Math.max(0, Math.ceil(seconds));
-
-        if (this._roundTimeRemainingSec === next)
-        {
-            return;
-        }
-
-        this._roundTimeRemainingSec = next;
-        this.notify();
-    }
-
     setCanStartWave (canStartWave: boolean): void
     {
         this._canStartWave = canStartWave;
@@ -186,18 +120,6 @@ export class GameState
         }
 
         this._paused = paused;
-        this.notify();
-    }
-
-    setUpgradePick (pick: UpgradePickState | null): void
-    {
-        this._upgradePick = pick?.choices.length ? { choices: [ ...pick.choices ] } : null;
-        this.notify();
-    }
-
-    setTowerDraftPick (pick: TowerDraftPickState | null): void
-    {
-        this._towerDraftPick = pick?.choices.length ? { choices: [ ...pick.choices ] } : null;
         this.notify();
     }
 

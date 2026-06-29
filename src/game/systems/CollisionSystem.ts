@@ -10,6 +10,10 @@ interface BodyEntry {
     halfHeight: number;
 }
 
+export interface MoveOptions {
+    ignoreKinds?: ReadonlySet<OccupantKind>;
+}
+
 export class CollisionSystem
 {
     private readonly bodies = new Map<string, BodyEntry>();
@@ -45,7 +49,7 @@ export class CollisionSystem
         this.bodies.delete(id);
     }
 
-    canMove (id: string, center: WorldPosition): boolean
+    canMove (id: string, center: WorldPosition, options: MoveOptions = {}): boolean
     {
         const entry = this.bodies.get(id);
 
@@ -55,12 +59,18 @@ export class CollisionSystem
         }
 
         return this.fitsInArena(center, entry.halfWidth, entry.halfHeight)
-            && !this.overlapsOthers(id, center, entry.halfWidth, entry.halfHeight);
+            && !this.overlapsOthers(
+                id,
+                center,
+                entry.halfWidth,
+                entry.halfHeight,
+                options.ignoreKinds,
+            );
     }
 
-    tryMove (id: string, center: WorldPosition): boolean
+    tryMove (id: string, center: WorldPosition, options: MoveOptions = {}): boolean
     {
-        if (!this.canMove(id, center))
+        if (!this.canMove(id, center, options))
         {
             return false;
         }
@@ -149,6 +159,7 @@ export class CollisionSystem
         center: WorldPosition,
         halfWidth: number,
         halfHeight: number,
+        ignoreKinds?: ReadonlySet<OccupantKind>,
     ): boolean
     {
         const self = this.bodies.get(id);
@@ -163,6 +174,11 @@ export class CollisionSystem
         for (const [ otherId, other ] of this.bodies)
         {
             if (otherId === id)
+            {
+                continue;
+            }
+
+            if (ignoreKinds?.has(other.kind))
             {
                 continue;
             }

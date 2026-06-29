@@ -3,14 +3,10 @@ import { getTowerDefinition, TOWER_DEFINITIONS } from './towerCatalog';
 
 describe('towerCatalog', () =>
 {
-    it('loads towers from towers.json', () =>
+    it('loads the militia tower from towers.json', () =>
     {
-        expect(TOWER_DEFINITIONS).toHaveLength(10);
+        expect(TOWER_DEFINITIONS).toHaveLength(1);
         expect(getTowerDefinition('militia')?.tier).toBe(1);
-        expect(getTowerDefinition('champion')?.tier).toBe(5);
-        expect(getTowerDefinition('militia')?.profile.skills).toEqual([]);
-        expect(getTowerDefinition('militia')?.profile.kamikazeExplosionRadiusTiles).toBe(0);
-        expect(getTowerDefinition('militia')?.profile.armorByType.fire).toBe(3);
-        expect(getTowerDefinition('scout')?.profile.armorByType.physical).toBe(0);
+        expect(getTowerDefinition('militia')?.profile.isMobile).toBe(false);
     });
 });

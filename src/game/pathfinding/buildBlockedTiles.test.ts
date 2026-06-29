@@ -15,11 +15,11 @@ describe('buildBlockedTiles', () =>
     it('can exclude enemies from pathfinding blockers', () =>
     {
         const collision = new CollisionSystem(arena);
-        const tile = { col: 4, row: 20 };
+        const tile = { col: 1, row: 1 };
         const center = tileCenterWorld(GRID_CONFIG, tile);
 
         collision.register('enemy-a', 'enemy', center, 16, 16);
-        collision.register('enemy-b', 'enemy', { x: center.x + 80, y: center.y }, 16, 16);
+        collision.register('enemy-b', 'enemy', { x: center.x + 40, y: center.y }, 16, 16);
 
         const allBlocked = buildBlockedTiles(grid, collision, 'enemy-b');
         const pathBlocked = buildPathfindingBlockedTiles(grid, collision, 'enemy-b');
@@ -31,7 +31,7 @@ describe('buildBlockedTiles', () =>
     it('still blocks towers for pathfinding', () =>
     {
         const collision = new CollisionSystem(arena);
-        const tile = { col: 4, row: 20 };
+        const tile = { col: 1, row: 1 };
         const center = tileCenterWorld(GRID_CONFIG, tile);
 
         collision.register('tower-a', 'tower', center, 24, 24);

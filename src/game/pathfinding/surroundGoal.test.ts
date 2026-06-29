@@ -14,8 +14,8 @@ describe('surroundGoal', () =>
         GRID_CONFIG,
         getEnemyDefinitionOrThrow('basic').visual.sizeScale,
     );
-    const towerHalf = bodyHalfExtent(GRID_CONFIG, 0.75);
-    const rangePx = grid.rangeToPixels(1.25);
+    const towerHalf = bodyHalfExtent(GRID_CONFIG, 0.7);
+    const rangePx = grid.rangeToPixels(1.5);
 
     const towerAt = (col: number, row: number) => ({
         position: tileCenterWorld(GRID_CONFIG, { col, row }),
@@ -23,31 +23,29 @@ describe('surroundGoal', () =>
         bodyHalfHeight: towerHalf,
     });
 
-    it('collects multiple tiles around a tower', () =>
+    it('collects attack tiles around a tower on a small grid', () =>
     {
         const ring = collectAttackRingTiles(
             grid,
-            towerAt(5, 5),
+            towerAt(1, 1),
             enemyHalf,
             enemyHalf,
             rangePx,
             new Set(),
         );
 
-        expect(ring.length).toBeGreaterThan(4);
-        expect(ring.some((t) => t.col === 5 && t.row === 5)).toBe(false);
+        expect(ring.length).toBeGreaterThan(0);
+        expect(ring.some((t) => t.col === 1 && t.row === 1)).toBe(false);
     });
 
     it('assigns different goals for different slot indices', () =>
     {
-        const target = towerAt(5, 20);
+        const target = towerAt(1, 1);
         const blocked = new Set<string>();
-        const startA = { col: 0, row: 20 };
-        const startB = { col: 9, row: 20 };
 
         const goalA = pickSurroundGoalTile(
             grid,
-            startA,
+            { col: 0, row: 0 },
             target,
             enemyHalf,
             enemyHalf,
@@ -58,7 +56,7 @@ describe('surroundGoal', () =>
         );
         const goalB = pickSurroundGoalTile(
             grid,
-            startB,
+            { col: 2, row: 0 },
             target,
             enemyHalf,
             enemyHalf,

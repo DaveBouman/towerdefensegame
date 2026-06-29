@@ -7,68 +7,25 @@ import { tileCenterWorld } from '../grid/worldPosition';
 describe('WorldLayout', () =>
 {
     const layout = WORLD_LAYOUT;
-    const tile = { col: 4, row: 35 };
+    const tile = { col: 1, row: 2 };
 
-    it('arena height includes both nexus bands and the playfield', () =>
+    it('arena matches the playfield when nexus bands are disabled', () =>
     {
         const arena = layout.arenaPixelSize();
         const playfield = layout.playfieldPixelSize();
 
-        expect(arena.width).toBe(playfield.width);
-        expect(arena.height).toBe(playfield.height + layout.nexusZoneHeightPx * 2);
+        expect(arena).toEqual(playfield);
+        expect(layout.playfieldOffsetY).toBe(0);
     });
 
-    it('grid row 0 starts below the enemy nexus zone', () =>
+    it('grid row 0 starts at world y = 0', () =>
     {
-        const topLeft = layout.gridTileTopLeft({ col: 0, row: 0 });
-
-        expect(topLeft.y).toBe(layout.playfieldOffsetY);
+        expect(layout.gridTileTopLeft({ col: 0, row: 0 }).y).toBe(0);
     });
 
-    it('approach tiles sit on the nearest playfield row to each nexus', () =>
+    it('worldToGrid maps tile centers back to grid coordinates', () =>
     {
-        expect(layout.enemyNexusApproachTile()).toEqual({ col: 4, row: 0 });
-        expect(layout.playerNexusApproachTile()).toEqual({
-            col: 4,
-            row: GRID_CONFIG.rows - 1,
-        });
-    });
-
-    it('nexuses sit in the center of their bands', () =>
-    {
-        expect(layout.enemyNexusPosition().y).toBe(layout.nexusZoneHeightPx / 2);
-        expect(layout.playerNexusPosition().y).toBe(
-            layout.playfieldOffsetY
-            + GRID_CONFIG.rows * GRID_CONFIG.tileSize
-            + layout.nexusZoneHeightPx / 2,
-        );
-    });
-
-    it('worldToGrid returns null outside the playfield', () =>
-    {
-        expect(layout.worldToGrid(layout.enemyNexusPosition())).toBeNull();
-        expect(layout.worldToGrid(layout.playerNexusPosition())).toBeNull();
         expect(layout.worldToGrid(layout.gridTileCenter(tile))).toEqual(tile);
-    });
-
-    it('playfieldAnchorTile maps off-grid nexuses onto the nearest playfield row', () =>
-    {
-        expect(layout.playfieldAnchorTile(layout.enemyNexusPosition())).toEqual({ col: 5, row: 0 });
-        expect(layout.playfieldAnchorTile(layout.playerNexusPosition())).toEqual({
-            col: 5,
-            row: GRID_CONFIG.rows - 1,
-        });
-    });
-
-    it('zone helpers match nexus band geometry', () =>
-    {
-        const width = layout.arenaPixelSize().width;
-
-        expect(layout.isInEnemyNexusZone(layout.enemyNexusPosition())).toBe(true);
-        expect(layout.isInPlayerNexusZone(layout.playerNexusPosition())).toBe(true);
-        expect(layout.isOnPlayfield(layout.gridTileCenter(tile))).toBe(true);
-        expect(layout.enemyNexusZoneRect(width).centerY).toBe(layout.nexusZoneHeightPx / 2);
-        expect(layout.playerNexusZoneRect(width).centerY).toBe(layout.playerNexusPosition().y);
     });
 
     it('Grid delegates conversions to the same layout instance', () =>
@@ -78,9 +35,6 @@ describe('WorldLayout', () =>
         expect(grid.layout).toBe(WORLD_LAYOUT);
         expect(grid.toTileCenter(tile)).toEqual(layout.gridTileCenter(tile));
         expect(grid.toTileCenter(tile)).toEqual(tileCenterWorld(GRID_CONFIG, tile));
-        expect(grid.toWorld(tile).y).toBe(
-            layout.playfieldOffsetY + tile.row * GRID_CONFIG.tileSize,
-        );
     });
 
     it('custom configs get an isolated layout', () =>

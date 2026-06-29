@@ -10,16 +10,16 @@ describe('findPath', () =>
 
     it('finds a route around a blocked tile', () =>
     {
-        const blocked = new Set([ tileKey({ col: 2, row: 2 }) ]);
+        const blocked = new Set([ tileKey({ col: 1, row: 1 }) ]);
         const path = findPath(
             grid,
-            { col: 4, row: 4 },
             { col: 0, row: 0 },
+            { col: 2, row: 2 },
             blocked,
         );
 
         expect(path).not.toBeNull();
-        expect(path!.some((tile) => tile.col === 2 && tile.row === 2)).toBe(false);
+        expect(path!.some((tile) => tile.col === 1 && tile.row === 1)).toBe(false);
     });
 
     it('returns empty path when start equals goal', () =>

@@ -41,6 +41,7 @@ export interface GameEventMap {
     'selection-changed': UnitSelection | null;
     'selection-cleared': void;
     'start-wave': void;
+    'attack': void;
     'toggle-pause': void;
     'wave-completed': void;
     'game-victory': { wave: number; lives: number };

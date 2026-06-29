@@ -3,21 +3,20 @@ import { getWaveDefinition, hasWaveDefinition, WAVE_COUNT } from './waveCatalog'
 
 describe('waveCatalog', () =>
 {
-    it('loads 10 waves from waves.json', () =>
+    it('loads 3 waves from waves.json', () =>
     {
-        expect(WAVE_COUNT).toBe(10);
+        expect(WAVE_COUNT).toBe(3);
         expect(hasWaveDefinition(1)).toBe(true);
-        expect(hasWaveDefinition(10)).toBe(true);
-        expect(hasWaveDefinition(11)).toBe(false);
+        expect(hasWaveDefinition(3)).toBe(true);
+        expect(hasWaveDefinition(4)).toBe(false);
     });
 
-    it('wave 1 defines multiple spawns on unique tiles', () =>
+    it('wave 1 defines spawns on the top row', () =>
     {
         const spawns = getWaveDefinition(1).spawns;
-        const tileKeys = spawns.map((s) => `${s.tile.col},${s.tile.row}`);
 
-        expect(spawns).toHaveLength(5);
-        expect(new Set(tileKeys).size).toBe(tileKeys.length);
+        expect(spawns.length).toBeGreaterThan(0);
+        expect(spawns.every((spawn) => spawn.tile.row === 0)).toBe(true);
     });
 
     it('throws when a wave is missing from waves.json', () =>

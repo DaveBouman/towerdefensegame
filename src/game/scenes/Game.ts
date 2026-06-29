@@ -1,43 +1,23 @@
-import { GRID_CONFIG } from '../config/gridConfig';
-import { WORLD_LAYOUT } from '../config/worldLayout';
-import { GameSession } from '../domain/GameSession';
+import { getViewportPixelSize } from '../config/gridConfig';
+import { computeBoardLayout } from '../board/boardLayout';
+import { ArmorView } from '../board/ArmorView';
+import { CardBoardView } from '../board/CardBoardView';
+import { CardHandView } from '../board/CardHandView';
+import { EnemyTargetView } from '../board/EnemyTargetView';
+import { CardGameSession } from '../cardGame/domain/CardGameSession';
+import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
-import { Grid } from '../grid/Grid';
-import type { GridView } from '../grid/GridView';
-import { CameraPanController } from '../presentation/CameraPanController';
-import { GameSceneController } from '../presentation/GameSceneController';
-import { canAddToScene } from '../presentation/sceneReady';
 import { Scene } from 'phaser';
 
 export class Game extends Scene
 {
-    private session!: GameSession;
-    private grid!: Grid;
-    private gridView!: GridView;
-    private controller!: GameSceneController;
-    private cameraPan!: CameraPanController;
-
-    private readonly onPauseKeyDown = (e: KeyboardEvent): void =>
-    {
-        if (e.key !== 'h' && e.key !== 'H')
-        {
-            return;
-        }
-
-        if (this.isTypingInFormField())
-        {
-            return;
-        }
-
-        e.preventDefault();
-        this.onTogglePause();
-    };
-
-    private onTogglePause = (): void =>
-    {
-        this.session?.togglePause();
-    };
+    private session?: CardGameSession;
+    private presenter?: CardGamePresenter;
+    private boardView?: CardBoardView;
+    private handView?: CardHandView;
+    private enemyView?: EnemyTargetView;
+    private armorView?: ArmorView;
 
     constructor ()
     {
@@ -46,132 +26,108 @@ export class Game extends Scene
 
     create (): void
     {
-        this.grid = new Grid(GRID_CONFIG);
-        const worldSize = WORLD_LAYOUT.arenaPixelSize();
+        const { width, height } = getViewportPixelSize();
+        const layout = computeBoardLayout(width, height);
+        this.session = new CardGameSession();
 
-        this.drawNexusZones(worldSize.width);
-        this.gridView = this.grid.draw(this);
-        this.cameraPan = new CameraPanController(this, worldSize);
-        this.session = new GameSession(this.grid);
-        this.controller = new GameSceneController(this, this.grid, this.session);
-        this.controller.bind();
-        window.addEventListener('keydown', this.onPauseKeyDown);
-
-        EventBus.on(GAME_EVENTS.SET_CAMERA_SCROLL_Y, this.onSetCameraScrollY, this);
-        EventBus.on(GAME_EVENTS.REQUEST_CAMERA_SCROLL, this.publishCameraScroll, this);
-        EventBus.on(GAME_EVENTS.TOGGLE_PAUSE, this.onTogglePause, this);
-
-        this.time.delayedCall(0, () =>
-        {
-            if (!canAddToScene(this))
+        this.boardView = new CardBoardView(this, layout, this.session.board);
+        this.handView = new CardHandView(this, layout, [ ...this.session.getHand() ], {
+            onDragMove: (worldX, worldY) =>
             {
-                return;
-            }
-
-            this.cameraPan.initialize();
-            this.publishCameraScroll();
-            this.controller.startSession();
+                this.boardView?.highlightDropSlot(worldX, worldY);
+            },
+            onDragEnd: (handIndex, worldX, worldY) =>
+            {
+                return this.onCardDropped(handIndex, worldX, worldY);
+            },
         });
+        this.enemyView = new EnemyTargetView(this, layout, this.session.getEnemy());
+        this.armorView = new ArmorView(this, layout, 0);
 
-        EventBus.emit(GAME_EVENTS.SCENE_READY, this);
+        this.presenter = new CardGamePresenter(
+            this,
+            this.session,
+            this.boardView,
+            this.handView,
+            this.enemyView,
+            this.armorView,
+        );
+        this.presenter.bind();
+
+        EventBus.on(GAME_EVENTS.ATTACK, this.onAttack, this);
     }
 
     shutdown (): void
     {
-        EventBus.off(GAME_EVENTS.SET_CAMERA_SCROLL_Y, this.onSetCameraScrollY, this);
-        EventBus.off(GAME_EVENTS.REQUEST_CAMERA_SCROLL, this.publishCameraScroll, this);
-        EventBus.off(GAME_EVENTS.TOGGLE_PAUSE, this.onTogglePause, this);
-        window.removeEventListener('keydown', this.onPauseKeyDown);
-        this.controller?.destroy();
-        this.cameraPan?.destroy();
-        this.session?.reset();
+        EventBus.off(GAME_EVENTS.ATTACK, this.onAttack, this);
+        this.presenter?.unbind();
+        this.boardView?.destroy();
+        this.handView?.destroy();
+        this.enemyView?.destroy();
+        this.armorView?.destroy();
+        this.presenter = undefined;
+        this.boardView = undefined;
+        this.handView = undefined;
+        this.enemyView = undefined;
+        this.armorView = undefined;
+        this.session = undefined;
     }
 
-    private onSetCameraScrollY ({ scrollY }: { scrollY: number }): void
+    private onAttack = (): void =>
     {
-        if (!canAddToScene(this))
+        if (!this.session || !this.presenter)
         {
             return;
         }
 
-        if (this.cameraPan.setScrollY(scrollY))
-        {
-            this.publishCameraScroll();
-        }
-    }
+        const sequence = this.session.beginAttack();
 
-    private publishCameraScroll (): void
-    {
-        const scroll = this.cameraPan.tryGetScrollState();
-
-        if (!scroll)
+        if (!sequence)
         {
             return;
         }
 
-        EventBus.emit(GAME_EVENTS.CAMERA_SCROLL_CHANGED, scroll);
-    }
-
-    private drawNexusZones (arenaWidth: number): void
-    {
-        const enemyZone = WORLD_LAYOUT.enemyNexusZoneRect(arenaWidth);
-        const topZone = this.add.rectangle(
-            enemyZone.centerX,
-            enemyZone.centerY,
-            enemyZone.width,
-            enemyZone.height,
-            0x3d2a5c,
-            0.55,
-        );
-
-        topZone.setDepth(-2);
-
-        const playerZone = WORLD_LAYOUT.playerNexusZoneRect(arenaWidth);
-        const bottomZone = this.add.rectangle(
-            playerZone.centerX,
-            playerZone.centerY,
-            playerZone.width,
-            playerZone.height,
-            0x1a3a5c,
-            0.55,
-        );
-
-        bottomZone.setDepth(-2);
-    }
-
-    update (_time: number, delta: number): void
-    {
-        if (!canAddToScene(this))
+        this.presenter.playAttack(sequence, () =>
         {
-            return;
+            this.session?.completeAttack(sequence);
+
+            if (this.session && this.enemyView)
+            {
+                this.enemyView.setHealth(this.session.getEnemy());
+            }
+        });
+    };
+
+    private onCardDropped (handIndex: number, worldX: number, worldY: number): boolean
+    {
+        if (!this.session || !this.boardView || this.session.isAttackInProgress())
+        {
+            this.boardView?.clearHighlight();
+            return false;
         }
 
-        const ticksToRun = this.session.isRoundActive() && !this.session.isPaused
-            ? this.session.clock.consumeFrame(delta)
-            : 0;
+        this.boardView.clearHighlight();
 
-        for (let i = 0; i < ticksToRun; i++)
-        {
-            this.session.advanceTick();
-        }
+        const slot = this.boardView.findDropSlot(worldX, worldY);
 
-        this.controller.syncPresentation(delta);
-
-        if (this.cameraPan.update(delta))
-        {
-            this.publishCameraScroll();
-        }
-    }
-
-    private isTypingInFormField (): boolean
-    {
-        const active = document.activeElement;
-
-        if (!active || !(active instanceof HTMLElement))
+        if (!slot)
         {
             return false;
         }
 
-        return Boolean(active.closest('input, textarea, select, [contenteditable="true"]'));
+        if (!this.session.placeCardFromHand(handIndex, slot))
+        {
+            return false;
+        }
+
+        const placed = this.session.board.getCardAt(slot);
+
+        if (placed)
+        {
+            this.boardView.placeCard(slot, placed);
+            this.handView?.syncHand(this.session.getHand());
+        }
+
+        return placed !== null;
     }
 }

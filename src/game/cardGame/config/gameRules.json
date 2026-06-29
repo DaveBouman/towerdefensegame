@@ -1,0 +1,11 @@
+{
+  "attackAnimationMs": 1000,
+  "enemy": {
+    "maxHealth": 30
+  },
+  "activationStart": {
+    "row": 0,
+    "col": 0
+  },
+  "startingHand": [ "atk-right", "def-down", "atk-right" ]
+}

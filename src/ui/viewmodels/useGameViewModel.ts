@@ -6,19 +6,10 @@ import type { GameStateSnapshot } from '../../game/domain/types';
 const INITIAL_STATE: GameStateSnapshot = {
     gold: 100,
     wave: 0,
-    lives: 20,
+    lives: 10,
     runOutcome: 'playing',
-    roundTimeRemainingSec: null,
     canStartWave: true,
     paused: false,
-    raceDraftBias: {
-        'aether-dominion': 1,
-        'swarmforge-brood': 1,
-        'iron-covenant': 1,
-    },
-    upgradePick: null,
-    towerDraftPick: null,
-    deployment: null,
 };
 
 export const useGameViewModel = () =>
@@ -28,7 +19,7 @@ export const useGameViewModel = () =>
 
     useEffect(() =>
     {
-        const flushIntervalMs = 50; // 20Hz UI updates max.
+        const flushIntervalMs = 50;
         let rafId: number | null = null;
         let timerId: ReturnType<typeof setTimeout> | null = null;
         let lastFlushAt = 0;

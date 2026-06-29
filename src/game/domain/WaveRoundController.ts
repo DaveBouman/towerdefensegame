@@ -1,11 +1,10 @@
+import type { GameState } from './GameState';
 import type { GameClock } from '../systems/GameClock';
 import type { EnemySpawnSystem } from '../systems/EnemySpawnSystem';
 import type { TowerPlacementSystem } from '../systems/TowerPlacementSystem';
 import type { WaveSpawnSystem } from '../systems/WaveSpawnSystem';
 import type { WaveSystem } from '../systems/WaveSystem';
 import { hasWaveDefinition } from '../config/waveCatalog';
-import type { DeploymentPhase } from './DeploymentPhase';
-import type { GameState } from './GameState';
 import { isCombatActive } from './gamePhase';
 
 interface AttackResetPort {
@@ -27,31 +26,13 @@ export class WaveRoundController
         private readonly towers: TowerPlacementSystem,
         private readonly unitMovement: MovementResetPort,
         private readonly unitAttacks: AttackResetPort,
-        private readonly deployment: DeploymentPhase,
     ) {}
-
-    static isCombatActive (state: GameState): boolean
-    {
-        return isCombatActive(state);
-    }
 
     showUpcomingWavePreview (): void
     {
-        if (this.state.upgradePick || this.state.towerDraftPick)
-        {
-            return;
-        }
-
         const nextWave = this.state.wave + 1;
 
-        if (!hasWaveDefinition(nextWave))
-        {
-            return;
-        }
-
-        const mayPreview = this.deployment.active || this.state.canStartWave;
-
-        if (!mayPreview)
+        if (!hasWaveDefinition(nextWave) || !this.state.canStartWave)
         {
             return;
         }
@@ -62,11 +43,7 @@ export class WaveRoundController
 
     startCombatRound (): boolean
     {
-        if (
-            !this.state.canStartWave
-            || this.state.upgradePick
-            || this.state.towerDraftPick
-        )
+        if (!this.state.canStartWave)
         {
             return false;
         }
@@ -89,5 +66,10 @@ export class WaveRoundController
         this.waveSpawns.beginCombatWave(this.state.wave, this.clock.currentTick);
 
         return true;
+    }
+
+    static isCombatActive (state: GameState): boolean
+    {
+        return isCombatActive(state.snapshot());
     }
 }

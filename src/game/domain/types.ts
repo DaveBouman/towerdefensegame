@@ -8,22 +8,6 @@ import type { TowerUpgradeModifiers } from '../config/towerUpgradeCatalog';
 import type { TowerTargetingMode } from '../combat/towerTargeting';
 import type { CombatSide } from './combatUnit';
 
-export interface UpgradePickState {
-    choices: string[];
-}
-
-export interface TowerDraftPickState {
-    choices: TowerDefinitionId[];
-}
-
-export interface DeploymentSnapshot {
-    active: boolean;
-    nextTowerId: TowerDefinitionId | null;
-    placedCount: number;
-    totalCount: number;
-    queue: TowerDefinitionId[];
-}
-
 export type RunOutcome = 'playing' | 'victory' | 'defeat';
 
 export interface GameStateSnapshot {
@@ -31,14 +15,8 @@ export interface GameStateSnapshot {
     wave: number;
     lives: number;
     runOutcome: RunOutcome;
-    /** Seconds left in the current combat round; null when not fighting. */
-    roundTimeRemainingSec: number | null;
     canStartWave: boolean;
     paused: boolean;
-    raceDraftBias: Record<TowerRace, number>;
-    upgradePick: UpgradePickState | null;
-    towerDraftPick: TowerDraftPickState | null;
-    deployment: DeploymentSnapshot | null;
 }
 
 export interface EnemyStateSnapshot {

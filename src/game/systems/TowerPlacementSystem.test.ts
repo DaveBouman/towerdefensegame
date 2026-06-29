@@ -28,21 +28,21 @@ describe('TowerPlacementSystem.tryRelocate', () =>
 
     it('moves a tower to an empty placement tile', () =>
     {
-        const tower = towers.tryPlace({ col: 4, row: 35 }, 'militia');
+        const tower = towers.tryPlace({ col: 0, row: 2 }, 'militia');
 
         expect(tower).not.toBeNull();
-        expect(towers.tryRelocate(tower!.id, { col: 6, row: 37 })).toBe(true);
-        expect(tower!.spawnTile).toEqual({ col: 6, row: 37 });
+        expect(towers.tryRelocate(tower!.id, { col: 2, row: 2 })).toBe(true);
+        expect(tower!.spawnTile).toEqual({ col: 2, row: 2 });
     });
 
     it('rejects a tile occupied by another tower', () =>
     {
-        const a = towers.tryPlace({ col: 3, row: 35 }, 'militia');
-        const b = towers.tryPlace({ col: 5, row: 35 }, 'scout');
+        const a = towers.tryPlace({ col: 0, row: 2 }, 'militia');
+        const b = towers.tryPlace({ col: 2, row: 2 }, 'militia');
 
         expect(a).not.toBeNull();
         expect(b).not.toBeNull();
-        expect(towers.tryRelocate(a!.id, { col: 5, row: 35 })).toBe(false);
-        expect(a!.spawnTile).toEqual({ col: 3, row: 35 });
+        expect(towers.tryRelocate(a!.id, { col: 2, row: 2 })).toBe(false);
+        expect(a!.spawnTile).toEqual({ col: 0, row: 2 });
     });
 });

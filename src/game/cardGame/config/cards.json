@@ -1,0 +1,76 @@
+{
+  "cards": [
+    {
+      "id": "atk-right",
+      "label": "Attack",
+      "power": 5,
+      "behaviorId": "attack",
+      "visualId": "attack",
+      "arrow": "right"
+    },
+    {
+      "id": "atk-down",
+      "label": "Attack",
+      "power": 5,
+      "behaviorId": "attack",
+      "visualId": "attack",
+      "arrow": "down"
+    },
+    {
+      "id": "atk-left",
+      "label": "Attack",
+      "power": 5,
+      "behaviorId": "attack",
+      "visualId": "attack",
+      "arrow": "left"
+    },
+    {
+      "id": "atk-up",
+      "label": "Attack",
+      "power": 5,
+      "behaviorId": "attack",
+      "visualId": "attack",
+      "arrow": "up"
+    },
+    {
+      "id": "def-right",
+      "label": "Defend",
+      "power": 3,
+      "behaviorId": "defend",
+      "visualId": "defend",
+      "arrow": "right"
+    },
+    {
+      "id": "def-down",
+      "label": "Defend",
+      "power": 3,
+      "behaviorId": "defend",
+      "visualId": "defend",
+      "arrow": "down"
+    },
+    {
+      "id": "def-left",
+      "label": "Defend",
+      "power": 3,
+      "behaviorId": "defend",
+      "visualId": "defend",
+      "arrow": "left"
+    },
+    {
+      "id": "def-up",
+      "label": "Defend",
+      "power": 3,
+      "behaviorId": "defend",
+      "visualId": "defend",
+      "arrow": "up"
+    },
+    {
+      "id": "atk-right-strong",
+      "label": "Strike",
+      "power": 7,
+      "behaviorId": "attack",
+      "visualId": "attack",
+      "arrow": "right"
+    }
+  ]
+}

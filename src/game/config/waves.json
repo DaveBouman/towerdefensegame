@@ -4,10 +4,7 @@
       "wave": 1,
       "spawns": [
         { "kind": "basic", "col": 0, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 0, "delayTicks": 0 },
-        { "kind": "kamikaze", "col": 0, "row": 1, "delayTicks": 12 }
+        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 8 }
       ]
     },
     {
@@ -15,164 +12,16 @@
       "spawns": [
         { "kind": "basic", "col": 0, "row": 0, "delayTicks": 0 },
         { "kind": "basic", "col": 1, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 4, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 5, "row": 0, "delayTicks": 0 }
+        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 0 }
       ]
     },
     {
       "wave": 3,
       "spawns": [
         { "kind": "basic", "col": 0, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 0, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 1, "delayTicks": 0 }
-      ]
-    },
-    {
-      "wave": 4,
-      "spawns": [
-        { "kind": "basic", "col": 0, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 4, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 5, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 6, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 7, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 8, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 9, "row": 0, "delayTicks": 0 }
-      ]
-    },
-    {
-      "wave": 5,
-      "spawns": [
-        { "kind": "basic", "col": 0, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 4, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 0, "row": 1, "delayTicks": 20 },
-        { "kind": "basic", "col": 1, "row": 1, "delayTicks": 20 },
-        { "kind": "basic", "col": 2, "row": 1, "delayTicks": 20 },
-        { "kind": "basic", "col": 3, "row": 1, "delayTicks": 20 },
-        { "kind": "basic", "col": 4, "row": 1, "delayTicks": 20 }
-      ]
-    },
-    {
-      "wave": 6,
-      "spawns": [
-        { "kind": "basic", "col": 0, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 0, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 0, "row": 2, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 2, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 2, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 0, "delayTicks": 10 },
-        { "kind": "basic", "col": 4, "row": 0, "delayTicks": 10 },
-        { "kind": "basic", "col": 5, "row": 0, "delayTicks": 10 }
-      ]
-    },
-    {
-      "wave": 7,
-      "spawns": [
-        { "kind": "basic", "col": 0, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 4, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 0, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 4, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 0, "row": 2, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 2, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 2, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 2, "delayTicks": 0 },
-        { "kind": "basic", "col": 4, "row": 2, "delayTicks": 0 }
-      ]
-    },
-    {
-      "wave": 8,
-      "spawns": [
-        { "kind": "basic", "col": 0, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 4, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 5, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 6, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 7, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 0, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 4, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 5, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 6, "row": 1, "delayTicks": 0 },
-        { "kind": "basic", "col": 7, "row": 1, "delayTicks": 0 }
-      ]
-    },
-    {
-      "wave": 9,
-      "spawns": [
-        { "kind": "basic", "col": 0, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 4, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 5, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 0, "row": 1, "delayTicks": 20 },
-        { "kind": "basic", "col": 1, "row": 1, "delayTicks": 20 },
-        { "kind": "basic", "col": 2, "row": 1, "delayTicks": 20 },
-        { "kind": "basic", "col": 3, "row": 1, "delayTicks": 20 },
-        { "kind": "basic", "col": 4, "row": 1, "delayTicks": 20 },
-        { "kind": "basic", "col": 5, "row": 1, "delayTicks": 20 },
-        { "kind": "basic", "col": 0, "row": 2, "delayTicks": 40 },
-        { "kind": "basic", "col": 1, "row": 2, "delayTicks": 40 },
-        { "kind": "basic", "col": 2, "row": 2, "delayTicks": 40 },
-        { "kind": "basic", "col": 3, "row": 2, "delayTicks": 40 },
-        { "kind": "basic", "col": 4, "row": 2, "delayTicks": 40 },
-        { "kind": "basic", "col": 5, "row": 2, "delayTicks": 40 }
-      ]
-    },
-    {
-      "wave": 10,
-      "spawns": [
-        { "kind": "basic", "col": 0, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 1, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 3, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 4, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 5, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 6, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 7, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 8, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 9, "row": 0, "delayTicks": 0 },
-        { "kind": "basic", "col": 0, "row": 1, "delayTicks": 10 },
-        { "kind": "basic", "col": 1, "row": 1, "delayTicks": 10 },
-        { "kind": "basic", "col": 2, "row": 1, "delayTicks": 10 },
-        { "kind": "basic", "col": 3, "row": 1, "delayTicks": 10 },
-        { "kind": "basic", "col": 4, "row": 1, "delayTicks": 10 },
-        { "kind": "basic", "col": 5, "row": 1, "delayTicks": 10 },
-        { "kind": "basic", "col": 6, "row": 1, "delayTicks": 10 },
-        { "kind": "basic", "col": 7, "row": 1, "delayTicks": 10 },
-        { "kind": "basic", "col": 8, "row": 1, "delayTicks": 10 },
-        { "kind": "basic", "col": 9, "row": 1, "delayTicks": 10 },
-        { "kind": "basic", "col": 0, "row": 2, "delayTicks": 30 },
-        { "kind": "basic", "col": 1, "row": 2, "delayTicks": 30 },
-        { "kind": "basic", "col": 2, "row": 2, "delayTicks": 30 },
-        { "kind": "basic", "col": 3, "row": 2, "delayTicks": 30 },
-        { "kind": "basic", "col": 4, "row": 2, "delayTicks": 30 }
+        { "kind": "basic", "col": 1, "row": 0, "delayTicks": 4 },
+        { "kind": "basic", "col": 2, "row": 0, "delayTicks": 8 },
+        { "kind": "basic", "col": 1, "row": 0, "delayTicks": 16 }
       ]
     }
   ]

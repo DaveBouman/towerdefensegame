@@ -22,6 +22,7 @@ export const GAME_EVENTS = {
     SELECTION_CHANGED: 'selection-changed',
     SELECTION_CLEARED: 'selection-cleared',
     START_WAVE: 'start-wave',
+    ATTACK: 'attack',
     TOGGLE_PAUSE: 'toggle-pause',
     WAVE_COMPLETED: 'wave-completed',
     GAME_VICTORY: 'game-victory',
