@@ -137,15 +137,15 @@ export class Game extends Scene
             return;
         }
 
-        const sequence = this.session.beginAttack();
+        const chainStart = this.session.beginAttack();
 
-        if (!sequence)
+        if (!chainStart)
         {
             EventBus.emit(GAME_EVENTS.ATTACK_REJECTED, { reason: 'no-cards-on-board' });
             return;
         }
 
-        this.presenter.playAttack(sequence, () =>
+        this.presenter.playAttack(chainStart, (sequence) =>
         {
             this.finishPlayerRound(sequence);
         });

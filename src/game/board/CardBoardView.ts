@@ -1,10 +1,13 @@
 import { GRID_CONFIG } from '../config/gridConfig';
 import { buildCardGraphic } from '../cards/CardRenderer';
 import { ARROW_GLYPH } from '../cards/cardArrows';
+import { getJokerDirectionChoices } from '../cardGame/combat/AttackPipeline';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import type { BoardModel } from '../cardGame/domain/BoardModel';
+import type { CardDirection } from '../cardGame/domain/cardDirections';
 import type { CardInstance, SlotPosition } from '../cardGame/domain/types';
 import type { BoardLayout } from './boardLayout';
+import { JokerDirectionPicker } from './JokerDirectionPicker';
 
 const SLOT_FILL = 0x1a1a2e;
 const SLOT_BORDER = 0x4a4a72;
@@ -54,6 +57,7 @@ export class CardBoardView
     };
     private readonly chainStartIndicators: ChainStartIndicator[] = [];
     private chainStartTween?: Phaser.Tweens.Tween;
+    private readonly jokerDirectionPicker = new JokerDirectionPicker();
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -171,6 +175,28 @@ export class CardBoardView
         {
             this.container.bringToTop(wrapper);
         }
+    }
+
+    showJokerDirectionPicker (
+        slot: SlotPosition,
+        onChoose: (direction: CardDirection) => void,
+    ): void
+    {
+        const directions = getJokerDirectionChoices(slot, GRID_CONFIG.rows, GRID_CONFIG.cols);
+
+        this.jokerDirectionPicker.show(
+            this.scene,
+            this.layout.gridOffsetX,
+            this.layout.gridOffsetY,
+            slot,
+            directions,
+            onChoose,
+        );
+    }
+
+    hideJokerDirectionPicker (): void
+    {
+        this.jokerDirectionPicker.hide();
     }
 
     findSlotAt (worldX: number, worldY: number): SlotPosition | null
@@ -385,6 +411,7 @@ export class CardBoardView
     /** Rebuilds all card visuals from the board model — prevents ghost cards after moves/swaps/replaces. */
     syncFromBoard (board: BoardModel): void
     {
+        this.hideJokerDirectionPicker();
         this.clearHighlight();
 
         const { rows, cols, tileSize } = GRID_CONFIG;
@@ -422,6 +449,8 @@ export class CardBoardView
 
     clearBoard (): void
     {
+        this.hideJokerDirectionPicker();
+
         const { rows, cols } = GRID_CONFIG;
 
         for (let row = 0; row < rows; row++)
@@ -447,6 +476,7 @@ export class CardBoardView
     destroy (): void
     {
         this.cancelBoardDrag();
+        this.hideJokerDirectionPicker();
         this.chainStartTween?.stop();
         this.container.destroy();
     }

@@ -32,6 +32,14 @@
       "behaviorId": "defend",
       "visualId": "defend",
       "arrowPool": "diagonal"
+    },
+    {
+      "id": "joker",
+      "label": "Joker",
+      "power": 0,
+      "behaviorId": "joker",
+      "visualId": "joker",
+      "arrowPool": "joker"
     }
   ]
 }

@@ -17,6 +17,7 @@ export const shuffleInPlace = <T>(items: T[]): T[] =>
 const DECK_COMPOSITION: readonly { definitionId: string; count: number }[] = [
     { definitionId: 'attack', count: 6 },
     { definitionId: 'defend', count: 6 },
+    { definitionId: 'joker', count: 3 },
 ];
 
 /** Builds a shuffled deck of attack and defend cards. */

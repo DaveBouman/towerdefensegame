@@ -12,16 +12,17 @@ describe('cardRegistry', () =>
 
     it('loads card definitions from cards.json', () =>
     {
-        expect(CARD_DEFINITIONS).toHaveLength(4);
+        expect(CARD_DEFINITIONS).toHaveLength(5);
         expect(getCardDefinition('attack')?.arrowPool).toBe('orthogonal');
         expect(getCardDefinition('defend')?.arrowPool).toBe('orthogonal');
         expect(getCardDefinition('attack-special')?.maxChainActivations).toBe(2);
         expect(getCardDefinition('defend-special')?.arrowPool).toBe('diagonal');
+        expect(getCardDefinition('joker')?.behaviorId).toBe('joker');
     });
 
     it('loads game rules and deck settings', () =>
     {
-        expect(GAME_RULES.deckSize).toBe(12);
+        expect(GAME_RULES.deckSize).toBe(15);
         expect(GAME_RULES.handSize).toBe(6);
         expect(GAME_RULES.activationStartColumn).toBe(0);
         expect(GAME_RULES.enemy.maxHealth).toBeGreaterThan(0);

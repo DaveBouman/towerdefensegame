@@ -12,7 +12,7 @@ export interface CardGameEventMap {
     'card-game-card-placed': { slot: SlotPosition; card: CardInstance };
     'card-game-armor-changed': { armor: number };
     'card-game-hand-changed': { hand: CardInstance[] };
-    'card-game-attack-started': { sequence: AttackSequence };
+    'card-game-attack-started': { chainStart: SlotPosition };
     'card-game-attack-step': { step: AttackStep; stepIndex: number; sequence: AttackSequence };
     'card-game-attack-completed': { sequence: AttackSequence; enemy: EnemyState };
     'card-game-attack-cancelled': void;

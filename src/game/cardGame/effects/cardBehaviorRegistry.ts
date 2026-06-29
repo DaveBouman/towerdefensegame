@@ -1,10 +1,12 @@
 import { attackBehavior } from './attackBehavior';
 import { defendBehavior } from './defendBehavior';
+import { jokerBehavior } from './jokerBehavior';
 import type { CardBehavior } from './types';
 
 const behaviors = new Map<string, CardBehavior>([
     [ attackBehavior.id, attackBehavior ],
     [ defendBehavior.id, defendBehavior ],
+    [ jokerBehavior.id, jokerBehavior ],
 ]);
 
 export const registerCardBehavior = (behavior: CardBehavior): void =>

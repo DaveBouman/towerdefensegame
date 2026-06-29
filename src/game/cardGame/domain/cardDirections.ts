@@ -30,7 +30,10 @@ export const DIAGONAL_DIRECTIONS: readonly CardDirection[] = [
     'down-right',
 ];
 
-export type ArrowPool = 'orthogonal' | 'diagonal';
+export type ArrowPool = 'orthogonal' | 'diagonal' | 'joker';
+
+/** Placeholder arrow stored on joker instances — direction is chosen during attack. */
+export const JOKER_PLACEHOLDER_ARROW: CardDirection = 'right';
 
 const OFFSETS: Record<CardDirection, { row: number; col: number }> = {
     up: { row: -1, col: 0 },
@@ -48,10 +51,22 @@ export const randomCardDirection = (): CardDirection =>
 
 export const randomDirectionForPool = (pool: ArrowPool): CardDirection =>
 {
+    if (pool === 'joker')
+    {
+        return JOKER_PLACEHOLDER_ARROW;
+    }
+
     const directions = pool === 'diagonal' ? DIAGONAL_DIRECTIONS : ORTHOGONAL_DIRECTIONS;
 
     return directions[Math.floor(Math.random() * directions.length)];
 };
+
+export const getInBoundsDirections = (
+    slot: SlotPosition,
+    rows: number,
+    cols: number,
+): CardDirection[] =>
+    CARD_DIRECTIONS.filter((direction) => getNextSlot(slot, direction, rows, cols) !== null);
 
 export const slotKey = ({ row, col }: SlotPosition): string => `${row},${col}`;
 

@@ -1,7 +1,7 @@
 {
   "activationStepMs": 1500,
   "enemyTurnMs": 1200,
-  "deckSize": 12,
+  "deckSize": 15,
   "handSize": 6,
   "player": {
     "maxHealth": 20

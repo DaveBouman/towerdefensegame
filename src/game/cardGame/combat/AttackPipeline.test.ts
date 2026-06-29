@@ -113,4 +113,18 @@ describe('AttackPipeline', () =>
         expect(sequence.stepMs).toBe(1500);
         expect(sequence.durationMs).toBe(3000);
     });
+
+    it('stops at a joker until the player chooses a direction during attack', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('joker'));
+        board.placeCard({ row: 0, col: 2 }, createCardInstance('attack', 'left'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+
+        expect(chain).toHaveLength(2);
+        expect(chain[1].definitionId).toBe('joker');
+    });
 });

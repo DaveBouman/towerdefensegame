@@ -25,15 +25,16 @@ export const buildCardGraphic = (
     const style = CARD_VISUALS[definition.behaviorId] ?? CARD_VISUALS.attack;
     const { width, height, interactive = false } = options;
     const container = scene.add.container(0, 0);
+    const isJoker = definition.behaviorId === 'joker';
 
     const body = scene.add.rectangle(width / 2, height / 2, width, height, style.fill);
 
     body.setStrokeStyle(2, style.border, 1);
 
     const arrowPos = arrowLabelPosition(card.arrow, width, height);
-    const arrow = scene.add.text(arrowPos.x, arrowPos.y, ARROW_GLYPH[card.arrow], {
+    const arrow = scene.add.text(arrowPos.x, arrowPos.y, isJoker ? '?' : ARROW_GLYPH[card.arrow], {
         fontFamily: 'monospace',
-        fontSize: '18px',
+        fontSize: isJoker ? '22px' : '18px',
         color: '#ffffff',
         fontStyle: 'bold',
     }).setOrigin(0.5);
@@ -45,12 +46,17 @@ export const buildCardGraphic = (
         fontStyle: 'bold',
     }).setOrigin(0.5);
 
-    const power = scene.add.text(width / 2, height * 0.62, String(definition.power), {
-        fontFamily: 'monospace',
-        fontSize: '20px',
-        color: style.powerColor,
-        fontStyle: 'bold',
-    }).setOrigin(0.5);
+    const power = scene.add.text(
+        width / 2,
+        height * 0.62,
+        isJoker ? '★' : String(definition.power),
+        {
+            fontFamily: 'monospace',
+            fontSize: '20px',
+            color: style.powerColor,
+            fontStyle: 'bold',
+        },
+    ).setOrigin(0.5);
 
     container.add([ body, arrow, kindLabel, power ]);
 

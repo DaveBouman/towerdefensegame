@@ -224,25 +224,25 @@ export class CardGameSession
         return planAttack(this.board, this.chainStart);
     }
 
-    beginAttack (): AttackSequence | null
+    beginAttack (): SlotPosition | null
     {
         if (this.attackInProgress || this.enemyTurnInProgress || this.isEnemyDefeated() || this.isPlayerDefeated())
         {
             return null;
         }
 
-        const sequence = planAttack(this.board, this.chainStart);
+        const chain = planAttack(this.board, this.chainStart).chain;
 
-        if (sequence.chain.length === 0)
+        if (chain.length === 0)
         {
             return null;
         }
 
         this.attackInProgress = true;
         this.damageDealtThisAttack = 0;
-        CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_STARTED, { sequence });
+        CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_STARTED, { chainStart: { ...this.chainStart } });
 
-        return sequence;
+        return { ...this.chainStart };
     }
 
     emitAttackStep (stepIndex: number, sequence: AttackSequence): void

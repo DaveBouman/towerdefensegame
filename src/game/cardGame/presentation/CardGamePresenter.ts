@@ -1,6 +1,12 @@
 import type { CardGameSession } from '../domain/CardGameSession';
-import { GAME_RULES } from '../config/cardRegistry';
-import type { ActivationStep, AttackSequence, EnemyTurnAction } from '../domain/types';
+import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
+import {
+    buildAttackSequence,
+    getNextChainSlot,
+    isJokerDefinition,
+    tryBuildActivationStep,
+} from '../combat/AttackPipeline';
+import type { ActivationStep, AttackSequence, AttackStep, EnemyTurnAction, SlotPosition } from '../domain/types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
 import { getCardVisualEffectOrThrow } from './visualEffects/visualEffectRegistry';
@@ -37,42 +43,90 @@ export class CardGamePresenter
         CardGameEventBus.off(CARD_GAME_EVENTS.ATTACK_COMPLETED, this.onAttackCompleted, this);
         this.attackTimer?.remove();
         this.attackTimer = undefined;
+        this.boardView.hideJokerDirectionPicker();
         this.deactivateActiveVisual();
         this.boardView.setChainStartActive(false);
     }
 
-    playAttack (sequence: AttackSequence, onComplete: () => void): void
+    playAttack (chainStart: SlotPosition, onComplete: (sequence: AttackSequence) => void): void
     {
         this.attackTimer?.remove();
         this.deactivateActiveVisual();
         this.boardView.setChainStartActive(false);
+        this.boardView.hideJokerDirectionPicker();
         this.setDisplayedArmor(0);
 
-        if (sequence.chain.length === 0)
-        {
-            onComplete();
-            return;
-        }
+        const board = this.session.board;
+        const chain: ActivationStep[] = [];
+        const attackSteps: AttackStep[] = [];
+        const activationCounts = new Map<string, number>();
+        let current: SlotPosition | null = board.getCardAt(chainStart) ? chainStart : null;
+        let activeStep: ActivationStep | null = null;
+        const stepMs = GAME_RULES.activationStepMs;
 
-        const stepMs = sequence.stepMs > 0 ? sequence.stepMs : GAME_RULES.activationStepMs;
-        let index = 0;
-        let attackStepIndex = 0;
+        const buildCurrentSequence = (): AttackSequence =>
+            buildAttackSequence(chain, stepMs);
 
-        const showNext = (): void =>
+        const finalize = (): void =>
         {
-            if (index > 0)
+            this.attackTimer?.remove();
+            this.attackTimer = undefined;
+            this.boardView.hideJokerDirectionPicker();
+
+            if (activeStep)
             {
-                this.deactivateStep(sequence.chain[index - 1]);
+                this.deactivateStep(activeStep);
+                activeStep = null;
             }
 
-            if (index >= sequence.chain.length)
+            for (const step of chain)
             {
-                this.finishAttack(sequence, onComplete);
+                this.deactivateStep(step);
+            }
+
+            this.deactivateActiveVisual();
+            this.boardView.setChainStartActive(false);
+
+            onComplete(buildCurrentSequence());
+        };
+
+        const scheduleNext = (next: SlotPosition | null): void =>
+        {
+            current = next;
+
+            if (!current)
+            {
+                this.scene.time.delayedCall(stepMs, finalize);
                 return;
             }
 
-            const step = sequence.chain[index];
+            this.attackTimer = this.scene.time.delayedCall(stepMs, runStep);
+        };
 
+        const runStep = (): void =>
+        {
+            if (activeStep)
+            {
+                this.deactivateStep(activeStep);
+                activeStep = null;
+            }
+
+            if (!current)
+            {
+                finalize();
+                return;
+            }
+
+            const step = tryBuildActivationStep(board, current, activationCounts);
+
+            if (!step)
+            {
+                finalize();
+                return;
+            }
+
+            chain.push(step);
+            activeStep = step;
             this.activateStep(step);
 
             if (step.armor > 0)
@@ -96,22 +150,35 @@ export class CardGamePresenter
                     this.enemyView.showDamageNumber(result.healthDamage);
                 }
 
-                this.session.emitAttackStep(attackStepIndex, sequence);
-                attackStepIndex++;
+                attackSteps.push({
+                    slot: step.slot,
+                    card: step.card,
+                    definitionId: step.definitionId,
+                    damage: step.damage,
+                    behaviorId: step.behaviorId,
+                    visualId: step.visualId,
+                });
+                this.session.emitAttackStep(attackSteps.length - 1, buildCurrentSequence());
             }
 
-            index++;
+            const definition = getCardDefinitionOrThrow(step.definitionId);
 
-            if (index >= sequence.chain.length)
+            if (isJokerDefinition(definition))
             {
-                this.scene.time.delayedCall(stepMs, () => this.finishAttack(sequence, onComplete));
+                this.boardView.showJokerDirectionPicker(step.slot, (direction) =>
+                {
+                    step.arrow = direction;
+                    step.card.arrow = direction;
+                    scheduleNext(getNextChainSlot(board, step.slot, direction));
+                });
+
                 return;
             }
 
-            this.attackTimer = this.scene.time.delayedCall(stepMs, showNext);
+            scheduleNext(getNextChainSlot(board, step.slot, step.arrow));
         };
 
-        showNext();
+        runStep();
     }
 
     playEnemyTurn (action: EnemyTurnAction, onComplete: () => void): void
@@ -159,21 +226,6 @@ export class CardGamePresenter
             this.session.completeEnemyTurn(action);
             onComplete();
         });
-    }
-
-    private finishAttack (sequence: AttackSequence, onComplete: () => void): void
-    {
-        this.attackTimer?.remove();
-        this.attackTimer = undefined;
-
-        for (const step of sequence.chain)
-        {
-            this.deactivateStep(step);
-        }
-
-        this.deactivateActiveVisual();
-        this.boardView.setChainStartActive(false);
-        onComplete();
     }
 
     private setDisplayedArmor (armor: number): void

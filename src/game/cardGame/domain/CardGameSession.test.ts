@@ -234,7 +234,7 @@ describe('CardGameSession enemy turn', () =>
         session.board.placeCard({ row: 0, col: 0 }, createCardInstance('defend', 'right'));
 
         expect(session.getAttackReadiness().canAttack).toBe(true);
-        expect(session.beginAttack()?.totalDamage).toBe(0);
+        expect(session.beginAttack()).toEqual({ row: 0, col: 0 });
     });
 
     it('uses the selected left-column tile as the chain start', () =>
