@@ -11,6 +11,10 @@
     "attackDamage": 4,
     "shieldGain": 5
   },
+  "offChainBonus": {
+    "attackDamage": 1,
+    "defendArmor": 1
+  },
   "activationStart": {
     "row": 0,
     "col": 0

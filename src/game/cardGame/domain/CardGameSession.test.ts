@@ -17,6 +17,8 @@ const emptySequence = (): AttackSequence => ({
     chain: [],
     steps: [],
     totalDamage: 0,
+    offChainDamage: 0,
+    offChainArmor: 0,
     stepMs: 1500,
     durationMs: 0,
 });
@@ -237,6 +239,30 @@ describe('CardGameSession enemy turn', () =>
         }
 
         expect(session.getPlayer().shield).toBe(0);
+    });
+
+    it('adds off-chain armor when completing an attack', () =>
+    {
+        const session = new CardGameSession();
+
+        session.completeAttack({
+            ...emptySequence(),
+            offChainArmor: 3,
+            chain: [
+                {
+                    slot: { row: 0, col: 0 },
+                    card: createCardInstance('attack', 'right'),
+                    definitionId: 'attack',
+                    behaviorId: 'attack',
+                    visualId: 'attack',
+                    arrow: 'right',
+                    damage: 5,
+                    armor: 0,
+                },
+            ],
+        });
+
+        expect(session.getPlayer().shield).toBe(3);
     });
 
     it('replaces a board card when placing from hand onto an occupied slot', () =>

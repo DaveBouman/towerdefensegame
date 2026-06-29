@@ -89,6 +89,8 @@ export interface AttackSequence {
     chain: ActivationStep[];
     steps: AttackStep[];
     totalDamage: number;
+    offChainDamage: number;
+    offChainArmor: number;
     stepMs: number;
     durationMs: number;
 }

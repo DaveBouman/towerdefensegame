@@ -3,6 +3,7 @@ import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import {
     buildAttackSequence,
     getNextChainSlot,
+    getOffChainSlots,
     isJokerDefinition,
     tryBuildActivationStep,
 } from '../combat/AttackPipeline';
@@ -65,7 +66,7 @@ export class CardGamePresenter
         const stepMs = GAME_RULES.activationStepMs;
 
         const buildCurrentSequence = (): AttackSequence =>
-            buildAttackSequence(chain, stepMs);
+            buildAttackSequence(chain, board, stepMs);
 
         const finalize = (): void =>
         {
@@ -99,7 +100,43 @@ export class CardGamePresenter
                 }
             }
 
-            onComplete(buildCurrentSequence());
+            const sequence = buildCurrentSequence();
+            const offChainSlots = getOffChainSlots(board, chain);
+
+            if (offChainSlots.length === 0)
+            {
+                onComplete(sequence);
+                return;
+            }
+
+            for (const slot of offChainSlots)
+            {
+                this.boardView.bringCardToFront(slot);
+            }
+
+            if (sequence.offChainArmor > 0)
+            {
+                this.setDisplayedArmor(this.displayedArmor + sequence.offChainArmor);
+            }
+
+            if (sequence.offChainDamage > 0)
+            {
+                const result = this.session.dealAttackDamage(sequence.offChainDamage);
+                this.enemyView.setHealth(result.enemy);
+
+                if (result.shieldAbsorbed > 0)
+                {
+                    this.enemyView.showShieldAbsorb(result.shieldAbsorbed);
+                }
+
+                if (result.healthDamage > 0)
+                {
+                    this.enemyView.playHitFlash();
+                    this.enemyView.showDamageNumber(result.healthDamage);
+                }
+            }
+
+            this.scene.time.delayedCall(400, () => onComplete(sequence));
         };
 
         const scheduleNext = (next: SlotPosition | null): void =>

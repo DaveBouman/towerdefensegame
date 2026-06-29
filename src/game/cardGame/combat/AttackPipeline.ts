@@ -133,18 +133,83 @@ const toAttackStep = (step: ActivationStep): AttackStep => ({
     visualId: step.visualId,
 });
 
-export const buildAttackSequence = (chain: ActivationStep[], stepMs = GAME_RULES.activationStepMs): AttackSequence =>
+export const buildAttackSequence = (
+    chain: ActivationStep[],
+    board?: BoardModel,
+    stepMs = GAME_RULES.activationStepMs,
+): AttackSequence =>
 {
     const steps = chain.filter((step) => step.damage > 0).map(toAttackStep);
     const totalDamage = steps.reduce((sum, step) => sum + step.damage, 0);
+    const offChain = board ? computeOffChainBonuses(board, chain) : { damage: 0, armor: 0 };
 
     return {
         chain,
         steps,
         totalDamage,
+        offChainDamage: offChain.damage,
+        offChainArmor: offChain.armor,
         stepMs,
         durationMs: chain.length * stepMs,
     };
+};
+
+/** Cards on the board that never activated in the chain still chip in a small bonus. */
+export const computeOffChainBonuses = (
+    board: BoardModel,
+    chain: readonly ActivationStep[],
+): { damage: number; armor: number } =>
+{
+    const activated = new Set(chain.map((step) => slotKey(step.slot)));
+    let damage = 0;
+    let armor = 0;
+
+    for (const slot of board.slotsInOrder())
+    {
+        if (activated.has(slotKey(slot)))
+        {
+            continue;
+        }
+
+        const card = board.getCardAt(slot);
+
+        if (!card)
+        {
+            continue;
+        }
+
+        const definition = getCardDefinitionOrThrow(card.definitionId);
+
+        if (definition.behaviorId === 'attack')
+        {
+            damage += GAME_RULES.offChainBonus.attackDamage;
+        }
+        else if (definition.behaviorId === 'defend')
+        {
+            armor += GAME_RULES.offChainBonus.defendArmor;
+        }
+    }
+
+    return { damage, armor };
+};
+
+export const getOffChainSlots = (
+    board: BoardModel,
+    chain: readonly ActivationStep[],
+): SlotPosition[] =>
+{
+    const activated = new Set(chain.map((step) => slotKey(step.slot)));
+    const slots: SlotPosition[] = [];
+
+    for (const slot of board.slotsInOrder())
+    {
+        if (!activated.has(slotKey(slot)) && board.getCardAt(slot))
+        {
+            slots.push({ ...slot });
+        }
+    }
+
+    return slots;
 };
 
 export const planAttack = (

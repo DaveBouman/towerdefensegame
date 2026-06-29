@@ -21,6 +21,7 @@ export interface GameRules {
     handSize: number;
     player: { maxHealth: number };
     enemy: { maxHealth: number; attackDamage: number; shieldGain: number };
+    offChainBonus: { attackDamage: number; defendArmor: number };
     activationStart: { row: number; col: number };
     activationStartColumn: number;
 }

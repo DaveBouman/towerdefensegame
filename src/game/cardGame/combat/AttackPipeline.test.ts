@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { planActivationChain, planAttack } from './AttackPipeline';
+import { planActivationChain, planAttack, computeOffChainBonuses } from './AttackPipeline';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { createCardInstance, resetCardInstanceCounter } from '../domain/createCardInstance';
 
@@ -126,5 +126,21 @@ describe('AttackPipeline', () =>
 
         expect(chain).toHaveLength(2);
         expect(chain[1].definitionId).toBe('joker');
+    });
+
+    it('grants off-chain bonuses for board cards outside the activation chain', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('attack', 'left'));
+        board.placeCard({ row: 1, col: 0 }, createCardInstance('defend', 'right'));
+        board.placeCard({ row: 1, col: 1 }, createCardInstance('defend', 'left'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+        const bonuses = computeOffChainBonuses(board, chain);
+
+        expect(chain).toHaveLength(2);
+        expect(bonuses).toEqual({ damage: 0, armor: 2 });
     });
 });
