@@ -15,10 +15,12 @@ export class CardHandView
 {
     readonly container: Phaser.GameObjects.Container;
     private readonly slotContainers: Phaser.GameObjects.Container[] = [];
+    private readonly selectedIndices = new Set<number>();
     private dragProxy?: Phaser.GameObjects.Container;
     private draggingIndex: number | null = null;
     private dragOffsetX = 0;
     private dragOffsetY = 0;
+    private rerollMode = false;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -26,6 +28,7 @@ export class CardHandView
         private hand: CardInstance[],
         private readonly handlers: CardHandDragHandlers,
         private readonly canBeginDrag: () => boolean = () => true,
+        private readonly onRerollSelectionChange?: (selectedCount: number) => void,
     )
     {
         this.container = scene.add.container(layout.handCenterX, layout.handY);
@@ -35,8 +38,10 @@ export class CardHandView
     syncHand (hand: readonly CardInstance[]): void
     {
         this.cancelDrag();
+        this.selectedIndices.clear();
         this.hand = [ ...hand ];
         this.renderHand();
+        this.onRerollSelectionChange?.(0);
     }
 
     containsPoint (worldX: number, worldY: number): boolean
@@ -49,6 +54,35 @@ export class CardHandView
     isDragging (): boolean
     {
         return this.draggingIndex !== null;
+    }
+
+    isRerollMode (): boolean
+    {
+        return this.rerollMode;
+    }
+
+    setRerollMode (active: boolean): void
+    {
+        this.cancelDrag();
+        this.rerollMode = active;
+
+        if (!active)
+        {
+            this.selectedIndices.clear();
+        }
+
+        this.updateSelectionVisuals();
+        this.onRerollSelectionChange?.(this.selectedIndices.size);
+    }
+
+    getRerollSelectionCount (): number
+    {
+        return this.selectedIndices.size;
+    }
+
+    getSelectedHandIndices (): number[]
+    {
+        return [ ...this.selectedIndices ].sort((a, b) => a - b);
     }
 
     destroy (): void
@@ -83,12 +117,46 @@ export class CardHandView
 
             hitArea.on('pointerdown', (pointer: Phaser.Input.Pointer) =>
             {
+                if (this.rerollMode)
+                {
+                    this.toggleRerollSelection(index);
+                    return;
+                }
+
                 this.beginDrag(index, card, pointer);
             });
 
             slot.add(graphic);
             this.container.add(slot);
             this.slotContainers.push(slot);
+        });
+
+        this.updateSelectionVisuals();
+    }
+
+    private toggleRerollSelection (index: number): void
+    {
+        if (this.selectedIndices.has(index))
+        {
+            this.selectedIndices.delete(index);
+        }
+        else
+        {
+            this.selectedIndices.add(index);
+        }
+
+        this.updateSelectionVisuals();
+        this.onRerollSelectionChange?.(this.selectedIndices.size);
+    }
+
+    private updateSelectionVisuals (): void
+    {
+        this.slotContainers.forEach((slot, index) =>
+        {
+            const selected = this.rerollMode && this.selectedIndices.has(index);
+
+            slot.setY(selected ? -10 : 0);
+            slot.setScale(selected ? 1.06 : 1);
         });
     }
 

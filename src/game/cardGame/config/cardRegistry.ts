@@ -19,6 +19,7 @@ export interface GameRules {
     enemyTurnMs: number;
     deckSize: number;
     handSize: number;
+    fightRerollsPerFight: number;
     player: { maxHealth: number };
     enemy: { maxHealth: number; attackDamage: number; shieldGain: number };
     offChainBonus: { attackDamage: number; defendArmor: number };

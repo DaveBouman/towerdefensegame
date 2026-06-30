@@ -85,6 +85,14 @@ export interface AttackReadiness {
     reason: AttackRejectReason | null;
 }
 
+export interface RerollState {
+    rerollsRemaining: number;
+    maxRerollsPerFight: number;
+    canReroll: boolean;
+    rerollModeActive: boolean;
+    selectedCount: number;
+}
+
 export interface AttackSequence {
     chain: ActivationStep[];
     steps: AttackStep[];

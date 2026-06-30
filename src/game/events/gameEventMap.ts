@@ -1,4 +1,4 @@
-import type { AttackReadiness } from '../cardGame/domain/types';
+import type { AttackReadiness, RerollState } from '../cardGame/domain/types';
 import type { Scene } from 'phaser';
 import type { TowerDefinitionId } from '../config/towerCatalog';
 import type { TowerUpgradeDefinition } from '../config/towerUpgradeCatalog';
@@ -45,6 +45,10 @@ export interface GameEventMap {
     'attack': void;
     'attack-rejected': { reason: AttackReadiness['reason'] };
     'card-attack-ready': AttackReadiness;
+    'reroll-begin': void;
+    'reroll-confirm': void;
+    'reroll-cancel': void;
+    'reroll-state': RerollState;
     'toggle-pause': void;
     'wave-completed': void;
     'game-victory': { wave: number; lives: number };

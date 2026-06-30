@@ -333,4 +333,52 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getHand()).toHaveLength(handSize);
         expect(session.getHand().some((card) => card.instanceId === placed?.instanceId)).toBe(true);
     });
+
+    it('starts each fight with three rerolls', () =>
+    {
+        const session = new CardGameSession();
+
+        expect(session.getRerollsRemaining()).toBe(3);
+        expect(session.canReroll()).toBe(true);
+    });
+
+    it('rerolls selected hand cards and decrements remaining rerolls', () =>
+    {
+        const session = new CardGameSession();
+        const handBefore = session.getHand().map((card) => card.instanceId);
+        const { deckSize, discardSize } = session.getPileCounts();
+
+        expect(session.rerollHandCards([ 0, 2 ])).toBe(true);
+        expect(session.getRerollsRemaining()).toBe(2);
+
+        const handAfter = session.getHand().map((card) => card.instanceId);
+
+        expect(handAfter).toHaveLength(handBefore.length);
+        expect(handAfter[0]).not.toBe(handBefore[0]);
+        expect(handAfter[2]).not.toBe(handBefore[2]);
+        expect(handAfter[1]).toBe(handBefore[1]);
+        expect(session.getPileCounts()).toEqual({
+            deckSize: deckSize - 2,
+            discardSize: discardSize + 2,
+        });
+    });
+
+    it('blocks reroll during attack or when no rerolls remain', () =>
+    {
+        const session = new CardGameSession();
+
+        session.rerollHandCards([ 0 ]);
+        session.rerollHandCards([ 0 ]);
+        session.rerollHandCards([ 0 ]);
+
+        expect(session.getRerollsRemaining()).toBe(0);
+        expect(session.canReroll()).toBe(false);
+        expect(session.rerollHandCards([ 0 ])).toBe(false);
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
+        session.beginAttack();
+
+        expect(session.canReroll()).toBe(false);
+        expect(session.rerollHandCards([ 0 ])).toBe(false);
+    });
 });

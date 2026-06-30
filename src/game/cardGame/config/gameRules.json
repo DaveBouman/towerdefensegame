@@ -3,6 +3,7 @@
   "enemyTurnMs": 1200,
   "deckSize": 15,
   "handSize": 6,
+  "fightRerollsPerFight": 3,
   "player": {
     "maxHealth": 20
   },

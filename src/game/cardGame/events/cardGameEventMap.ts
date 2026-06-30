@@ -13,6 +13,7 @@ export interface CardGameEventMap {
     'card-game-armor-changed': { armor: number };
     'card-game-hand-changed': { hand: CardInstance[] };
     'card-game-piles-changed': { deckSize: number; discardSize: number };
+    'card-game-rerolls-changed': { rerollsRemaining: number; maxRerollsPerFight: number };
     'card-game-attack-started': { chainStart: SlotPosition };
     'card-game-attack-step': { step: AttackStep; stepIndex: number; sequence: AttackSequence };
     'card-game-attack-completed': { sequence: AttackSequence; enemy: EnemyState };

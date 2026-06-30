@@ -30,6 +30,7 @@ export class CardGameSession
     private enemyTurnInProgress = false;
     private damageDealtThisAttack = 0;
     private queuedEnemyTurn: EnemyTurnAction | null = null;
+    private rerollsRemaining: number;
     private chainStart: SlotPosition = {
         row: GAME_RULES.activationStart.row,
         col: GAME_RULES.activationStartColumn,
@@ -50,8 +51,10 @@ export class CardGameSession
         };
 
         this.deck.push(...buildPlayerDeck());
+        this.rerollsRemaining = GAME_RULES.fightRerollsPerFight;
         this.renewHand();
         this.queueNextEnemyTurn();
+        this.emitRerollsChanged();
     }
 
     getDeckSize (): number
@@ -75,6 +78,67 @@ export class CardGameSession
     private emitPilesChanged (): void
     {
         CardGameEventBus.emit(CARD_GAME_EVENTS.PILES_CHANGED, this.getPileCounts());
+    }
+
+    private emitRerollsChanged (): void
+    {
+        CardGameEventBus.emit(CARD_GAME_EVENTS.REROLLS_CHANGED, {
+            rerollsRemaining: this.rerollsRemaining,
+            maxRerollsPerFight: GAME_RULES.fightRerollsPerFight,
+        });
+    }
+
+    getRerollsRemaining (): number
+    {
+        return this.rerollsRemaining;
+    }
+
+    canReroll (): boolean
+    {
+        return this.canEditBoard() && this.rerollsRemaining > 0;
+    }
+
+    /** Discards selected hand cards and draws replacements. Uses one fight reroll. */
+    rerollHandCards (handIndices: number[]): boolean
+    {
+        if (!this.canReroll() || handIndices.length === 0)
+        {
+            return false;
+        }
+
+        const uniqueIndices = [ ...new Set(handIndices) ].sort((a, b) => a - b);
+
+        for (const index of uniqueIndices)
+        {
+            if (index < 0 || index >= this.hand.length)
+            {
+                return false;
+            }
+        }
+
+        const toDiscard = uniqueIndices.map((index) => this.hand[index]!);
+
+        this.discard.push(...toDiscard);
+
+        const drawn = this.drawCards(toDiscard.length);
+
+        if (drawn.length < toDiscard.length)
+        {
+            return false;
+        }
+
+        uniqueIndices.forEach((handIndex, i) =>
+        {
+            this.hand[handIndex] = drawn[i]!;
+        });
+
+        this.rerollsRemaining -= 1;
+
+        CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
+        this.emitPilesChanged();
+        this.emitRerollsChanged();
+
+        return true;
     }
 
     private reshuffleDiscardIntoDeck (): void

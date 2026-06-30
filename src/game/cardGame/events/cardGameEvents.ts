@@ -3,6 +3,7 @@ export const CARD_GAME_EVENTS = {
     ARMOR_CHANGED: 'card-game-armor-changed',
     HAND_CHANGED: 'card-game-hand-changed',
     PILES_CHANGED: 'card-game-piles-changed',
+    REROLLS_CHANGED: 'card-game-rerolls-changed',
     ATTACK_STARTED: 'card-game-attack-started',
     ATTACK_STEP: 'card-game-attack-step',
     ATTACK_COMPLETED: 'card-game-attack-completed',

@@ -7,6 +7,7 @@ import { CardPileView } from '../board/CardPileView';
 import { EnemyTargetView } from '../board/EnemyTargetView';
 import { PlayerHealthView } from '../board/PlayerHealthView';
 import { CardGameSession } from '../cardGame/domain/CardGameSession';
+import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import type { SlotPosition } from '../cardGame/domain/types';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
@@ -29,6 +30,7 @@ export class Game extends Scene
     private armorView?: ArmorView;
     private deckView?: CardPileView;
     private graveyardView?: CardPileView;
+    private rerollModeActive = false;
 
     constructor ()
     {
@@ -54,10 +56,13 @@ export class Game extends Scene
             {
                 this.handView?.syncHand(this.session!.getHand());
             },
-        }, () => !(this.boardView?.isDragging() ?? false));
+        }, () => !(this.boardView?.isDragging() ?? false) && !this.rerollModeActive, (selectedCount) =>
+        {
+            this.emitRerollState(selectedCount);
+        });
 
         this.boardView = new CardBoardView(this, layout, this.session.board, {
-            canDrag: () => !(this.handView?.isDragging() ?? false),
+            canDrag: () => !(this.handView?.isDragging() ?? false) && !this.rerollModeActive,
             onDragMove: (fromSlot, worldX, worldY) =>
             {
                 this.boardView?.highlightBoardDrag(fromSlot, worldX, worldY);
@@ -106,15 +111,24 @@ export class Game extends Scene
         }
 
         EventBus.on(GAME_EVENTS.ATTACK, this.onAttack, this);
+        EventBus.on(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
+        EventBus.on(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
+        EventBus.on(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
         CardGameEventBus.on(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
+        CardGameEventBus.on(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
         EventBus.emit(GAME_EVENTS.SCENE_READY, this);
         this.emitAttackReadiness();
+        this.emitRerollState();
     }
 
     shutdown (): void
     {
         EventBus.off(GAME_EVENTS.ATTACK, this.onAttack, this);
+        EventBus.off(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
+        EventBus.off(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
+        EventBus.off(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
         CardGameEventBus.off(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
+        CardGameEventBus.off(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
         this.session?.cancelAttack();
         this.session?.cancelEnemyTurn();
         this.presenter?.unbind();
@@ -165,6 +179,11 @@ export class Game extends Scene
         if (!this.session || !this.presenter)
         {
             return;
+        }
+
+        if (this.rerollModeActive)
+        {
+            this.onRerollCancel();
         }
 
         const readiness = this.session.getAttackReadiness();
@@ -260,6 +279,72 @@ export class Game extends Scene
             this.syncPileViews();
             this.session!.finishPlayerTurn();
             this.emitAttackReadiness();
+        });
+    }
+
+    private onRerollsChanged = (): void =>
+    {
+        this.emitRerollState();
+    };
+
+    private onRerollBegin = (): void =>
+    {
+        if (!this.session?.canReroll())
+        {
+            return;
+        }
+
+        this.rerollModeActive = true;
+        this.handView?.setRerollMode(true);
+        this.emitRerollState();
+    };
+
+    private onRerollCancel = (): void =>
+    {
+        this.rerollModeActive = false;
+        this.handView?.setRerollMode(false);
+        this.emitRerollState();
+    };
+
+    private onRerollConfirm = (): void =>
+    {
+        if (!this.session?.canReroll() || !this.handView)
+        {
+            return;
+        }
+
+        const indices = this.handView.getSelectedHandIndices();
+
+        if (indices.length === 0)
+        {
+            return;
+        }
+
+        if (this.session.rerollHandCards(indices))
+        {
+            this.rerollModeActive = false;
+            this.handView.setRerollMode(false);
+            this.handView.syncHand(this.session.getHand());
+            this.syncPileViews();
+            this.emitAttackReadiness();
+        }
+
+        this.emitRerollState();
+    };
+
+    private emitRerollState (selectedCount?: number): void
+    {
+        if (!this.session)
+        {
+            return;
+        }
+
+        EventBus.emit(GAME_EVENTS.REROLL_STATE, {
+            rerollsRemaining: this.session.getRerollsRemaining(),
+            maxRerollsPerFight: GAME_RULES.fightRerollsPerFight,
+            canReroll: this.session.canReroll(),
+            rerollModeActive: this.rerollModeActive,
+            selectedCount: selectedCount ?? this.handView?.getRerollSelectionCount() ?? 0,
         });
     }
 

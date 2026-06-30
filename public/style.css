@@ -719,6 +719,77 @@ body {
     background: #1a1a2e;
 }
 
+.game-hud__reroll {
+    padding: 8px 16px;
+    border: 1px solid #9b59b6;
+    border-radius: 4px;
+    background: #2a1a3a;
+    color: #e0e0f0;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.game-hud__reroll:hover:not(:disabled) {
+    background: #3a2452;
+    border-color: #bb8fce;
+}
+
+.game-hud__reroll:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    border-color: #3a3a5c;
+    background: #1a1a2e;
+}
+
+.game-hud__reroll-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.game-hud__reroll-confirm {
+    padding: 8px 16px;
+    border: 1px solid #9b59b6;
+    border-radius: 4px;
+    background: #2a1a3a;
+    color: #e0e0f0;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.game-hud__reroll-confirm:hover:not(:disabled) {
+    background: #3a2452;
+    border-color: #bb8fce;
+}
+
+.game-hud__reroll-confirm:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.game-hud__reroll-cancel {
+    padding: 8px 16px;
+    border: 1px solid #7f8c8d;
+    border-radius: 4px;
+    background: #1a1a2e;
+    color: #e0e0f0;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.game-hud__reroll-cancel:hover {
+    background: #252540;
+    border-color: #95a5a6;
+}
+
 .race-legend {
     display: flex;
     flex-direction: column;
