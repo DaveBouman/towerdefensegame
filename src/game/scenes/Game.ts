@@ -92,6 +92,9 @@ export class Game extends Scene
         this.graveyardView = new CardPileView(this, layout, layout.graveyardX, layout.graveyardY, 'Graveyard', 'graveyard');
         this.syncPileViews();
 
+        this.session.placeFieldBoost();
+        this.boardView.syncFromBoard(this.session.board);
+
         this.presenter = new CardGamePresenter(
             this,
             this.session,

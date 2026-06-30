@@ -410,11 +410,12 @@ describe('CardGameSession enemy turn', () =>
     it('places a field boost on a random empty slot', () =>
     {
         const session = new CardGameSession();
-        const boosts = session.board.slotsInOrder()
-            .map((slot) => session.board.getCardAt(slot))
-            .filter((card) => card?.definitionId === 'boost');
+        const slot = session.placeFieldBoost();
 
-        expect(boosts).toHaveLength(1);
-        expect(boosts[0]).toMatchObject({ owner: 'field' });
+        expect(slot).not.toBeNull();
+        expect(session.board.getCardAt(slot!)).toMatchObject({
+            definitionId: 'boost',
+            owner: 'field',
+        });
     });
 });

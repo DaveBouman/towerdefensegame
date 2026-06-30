@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, applyBoostBonuses } from './AttackPipeline';
+import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex } from './AttackPipeline';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { createCardInstance, resetCardInstanceCounter } from '../domain/createCardInstance';
 import type { ActivationStep, SlotPosition } from '../domain/types';
@@ -312,7 +312,6 @@ describe('AttackPipeline', () =>
             attackStep({ row: 0, col: 1 }, 10),
         ];
 
-        expect(applyBoostBonuses(applyChainStacking(chain))[1].damage).toBe(15);
         expect(buildAttackSequence(chain).totalDamage).toBe(15);
     });
 
