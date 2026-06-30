@@ -1,7 +1,7 @@
 import { GAME_RULES, getCardDefinitionOrThrow, getChainStepDistance, type CardDefinition } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
 import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
-import { getInBoundsDirections, getSlotAtStepDistance, slotKey } from '../domain/cardDirections';
+import { getInBoundsDirections, getInBoundsDirectionsAtDistance, getSlotAtStepDistance, slotKey } from '../domain/cardDirections';
 import type {
     ActivationStep,
     AttackSequence,
@@ -550,7 +550,20 @@ export const planAttack = (
     buildAttackSequence(planActivationChain(board, startSlot), board);
 
 export const getJokerDirectionChoices = (
+    board: BoardModel,
     slot: SlotPosition,
-    rows: number,
-    cols: number,
-): CardDirection[] => getInBoundsDirections(slot, rows, cols);
+): CardDirection[] =>
+{
+    const stepDistance = getChainStepDistance(getCardDefinitionOrThrow('joker'));
+
+    const withCard = CARD_DIRECTIONS.filter((direction) =>
+        getNextChainSlot(board, slot, direction, stepDistance) !== null,
+    );
+
+    if (withCard.length > 0)
+    {
+        return withCard;
+    }
+
+    return getInBoundsDirectionsAtDistance(slot, board.rows, board.cols, stepDistance);
+};

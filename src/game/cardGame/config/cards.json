@@ -57,7 +57,8 @@
       "power": 0,
       "behaviorId": "joker",
       "visualId": "joker",
-      "arrowPool": "joker"
+      "arrowPool": "joker",
+      "chainStepDistance": 2
     },
     {
       "id": "hazard",
