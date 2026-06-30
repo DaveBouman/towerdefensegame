@@ -37,12 +37,27 @@ export const buildCardGraphic = (
     body.setStrokeStyle(isEnemyOwnedCard(card) || isFieldOwnedCard(card) ? 3 : 2, style.border, 1);
 
     const arrowPos = arrowLabelPosition(card.arrow, width, height);
-    const arrow = scene.add.text(arrowPos.x, arrowPos.y, isJoker ? '?' : ARROW_GLYPH[card.arrow], {
+    const continueArrow = scene.add.text(arrowPos.x, arrowPos.y, ARROW_GLYPH[card.arrow], {
         fontFamily: 'monospace',
-        fontSize: isJoker ? '22px' : '18px',
+        fontSize: '18px',
         color: '#ffffff',
         fontStyle: 'bold',
     }).setOrigin(0.5);
+
+    const cardTexts: Phaser.GameObjects.Text[] = [ continueArrow ];
+
+    if (isLoopReset && card.loopArrow)
+    {
+        const loopPos = arrowLabelPosition(card.loopArrow, width, height);
+        const loopArrow = scene.add.text(loopPos.x, loopPos.y, '↺', {
+            fontFamily: 'monospace',
+            fontSize: '16px',
+            color: '#d7bde2',
+            fontStyle: 'bold',
+        }).setOrigin(0.5);
+
+        cardTexts.push(loopArrow);
+    }
 
     const kindLabel = scene.add.text(width / 2, height * 0.38, definition.label, {
         fontFamily: 'monospace',
@@ -54,7 +69,7 @@ export const buildCardGraphic = (
     const power = scene.add.text(
         width / 2,
         height * 0.62,
-        isJoker ? '★' : isBoost ? `×${GAME_RULES.fieldBoost.nextStepMultiplier}` : isLoopReset ? '↺' : isPoison ? `${definition.power}×→` : String(definition.power),
+        isJoker ? '★' : isBoost ? `×${GAME_RULES.fieldBoost.nextStepMultiplier}` : isLoopReset ? '∞' : isPoison ? `${definition.power}×→` : String(definition.power),
         {
             fontFamily: 'monospace',
             fontSize: '20px',
@@ -63,7 +78,13 @@ export const buildCardGraphic = (
         },
     ).setOrigin(0.5);
 
-    container.add([ body, arrow, kindLabel, power ]);
+    if (isJoker)
+    {
+        continueArrow.setText('?');
+        continueArrow.setFontSize('22px');
+    }
+
+    container.add([ body, ...cardTexts, kindLabel, power ]);
 
     if (leapDistance > 1)
     {

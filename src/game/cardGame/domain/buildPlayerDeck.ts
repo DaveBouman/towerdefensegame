@@ -1,6 +1,6 @@
 import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import type { ArrowPool, CardDirection } from './cardDirections';
-import { buildBalancedDirectionsForPool, DIAGONAL_DIRECTIONS, ORTHOGONAL_DIRECTIONS } from './cardDirections';
+import { buildBalancedDirectionsForPool, DIAGONAL_DIRECTIONS, ORTHOGONAL_DIRECTIONS, randomOrthogonalPair } from './cardDirections';
 import { createCardInstance } from './createCardInstance';
 import type { CardInstance } from './types';
 
@@ -38,7 +38,9 @@ const buildBalancedArrowQueues = (): Map<ArrowPool, CardDirection[]> =>
             continue;
         }
 
-        counts.set(pool, (counts.get(pool) ?? 0) + entry.count);
+        const arrowSlots = entry.definitionId === 'loop-reset' ? entry.count * 2 : entry.count;
+
+        counts.set(pool, (counts.get(pool) ?? 0) + arrowSlots);
     }
 
     const queues = new Map<ArrowPool, CardDirection[]>();
@@ -72,6 +74,28 @@ export const buildPlayerDeck = (size = GAME_RULES.deckSize): CardInstance[] =>
             if (definition.arrowPool === 'joker')
             {
                 deck.push(createCardInstance(entry.definitionId));
+                continue;
+            }
+
+            if (definition.behaviorId === 'loop-reset')
+            {
+                const arrow = takeBalancedArrow(arrowQueues, definition.arrowPool);
+                let loopArrow = takeBalancedArrow(arrowQueues, definition.arrowPool);
+
+                if (!arrow || !loopArrow || loopArrow === arrow)
+                {
+                    const pair = randomOrthogonalPair(arrow);
+
+                    deck.push(createCardInstance(
+                        entry.definitionId,
+                        pair.arrow,
+                        'player',
+                        pair.loopArrow,
+                    ));
+                    continue;
+                }
+
+                deck.push(createCardInstance(entry.definitionId, arrow, 'player', loopArrow));
                 continue;
             }
 

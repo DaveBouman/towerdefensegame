@@ -97,6 +97,12 @@ export const isBoostDefinition = (definition: CardDefinition): boolean =>
 export const isLoopResetDefinition = (definition: CardDefinition): boolean =>
     definition.behaviorId === 'loop-reset';
 
+const getLoopContinueArrow = (card: import('../domain/types').CardInstance): CardDirection =>
+    card.arrow;
+
+const getLoopReplayArrow = (card: import('../domain/types').CardInstance): CardDirection =>
+    card.loopArrow ?? card.arrow;
+
 const findChainStart = (board: BoardModel, preferred: SlotPosition): SlotPosition | null =>
     board.getCardAt(preferred) ? preferred : null;
 
@@ -143,34 +149,41 @@ export const tryBuildActivationStep = (
     }
 
     const definition = getCardDefinitionOrThrow(card.definitionId);
-
-    if (isLoopResetDefinition(definition) && state.loopResetConsumed)
-    {
-        return null;
-    }
-
+    const isLoop = isLoopResetDefinition(definition);
+    const isLoopPassThrough = isLoop && state.loopResetConsumed;
     const key = slotKey(slot);
     const maxActivations = definition.maxChainActivations ?? 1;
     const activations = state.activationCounts.get(key) ?? 0;
 
-    if (activations >= maxActivations)
+    if (!isLoopPassThrough && activations >= maxActivations)
     {
         return null;
     }
 
-    state.activationCounts.set(key, activations + 1);
-    state.activationOrder.push(key);
+    if (!isLoopPassThrough)
+    {
+        state.activationCounts.set(key, activations + 1);
+        state.activationOrder.push(key);
+    }
 
     const ctx = buildStepContext(board, slot, card);
     const behavior = getCardBehaviorOrThrow(ctx.definition.behaviorId);
-    const attack = behavior.contributeToAttack(ctx);
-    const armor = behavior.contributeArmor?.(ctx) ?? 0;
+    const attack = isLoopPassThrough
+        ? { includeInSequence: false, damage: 0 }
+        : behavior.contributeToAttack(ctx);
+    const armor = isLoopPassThrough ? 0 : behavior.contributeArmor?.(ctx) ?? 0;
 
-    if (isLoopResetDefinition(definition))
+    if (isLoop && !isLoopPassThrough)
     {
         state.loopResetConsumed = true;
         resetActivationsBeforeLoop(state, key);
     }
+
+    const exitArrow = isLoop
+        ? isLoopPassThrough
+            ? getLoopContinueArrow(card)
+            : getLoopReplayArrow(card)
+        : card.arrow;
 
     return {
         slot,
@@ -179,6 +192,7 @@ export const tryBuildActivationStep = (
         behaviorId: ctx.definition.behaviorId,
         visualId: ctx.definition.visualId,
         arrow: card.arrow,
+        exitArrow,
         damage: attack.includeInSequence ? attack.damage : 0,
         armor,
     };
@@ -232,7 +246,7 @@ export const planActivationChain = (
         current = getNextChainSlot(
             board,
             current,
-            step.arrow,
+            step.exitArrow,
             getChainStepDistance(definition),
         );
     }
@@ -445,7 +459,7 @@ export const getNextChainSlotFromStep = (
     getNextChainSlot(
         board,
         step.slot,
-        step.arrow,
+        step.exitArrow,
         getChainStepDistance(getCardDefinitionOrThrow(step.definitionId)),
     );
 

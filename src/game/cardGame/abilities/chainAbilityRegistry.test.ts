@@ -30,6 +30,7 @@ const activationStep = (
         behaviorId,
         visualId: definitionId === 'poison' ? 'poison' : behaviorId,
         arrow,
+        exitArrow: arrow,
         damage: behaviorId === 'attack' ? 5 : 0,
         armor: behaviorId === 'defend' ? 3 : 0,
     };

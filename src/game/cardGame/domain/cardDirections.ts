@@ -61,6 +61,34 @@ export const randomDirectionForPool = (pool: ArrowPool): CardDirection =>
     return directions[Math.floor(Math.random() * directions.length)];
 };
 
+/** Two distinct orthogonal directions for loop cards (continue + loop-back). */
+export const randomOrthogonalPair = (
+    continueArrow?: CardDirection,
+): { arrow: CardDirection; loopArrow: CardDirection } =>
+{
+    const shuffled = [ ...ORTHOGONAL_DIRECTIONS ];
+
+    for (let i = shuffled.length - 1; i > 0; i--)
+    {
+        const j = Math.floor(Math.random() * (i + 1));
+        [ shuffled[i], shuffled[j] ] = [ shuffled[j], shuffled[i] ];
+    }
+
+    if (continueArrow && ORTHOGONAL_DIRECTIONS.includes(continueArrow))
+    {
+        const loopArrow = shuffled.find((direction) => direction !== continueArrow)
+            ?? ORTHOGONAL_DIRECTIONS.find((direction) => direction !== continueArrow)
+            ?? 'left';
+
+        return { arrow: continueArrow, loopArrow };
+    }
+
+    return {
+        arrow: shuffled[0]!,
+        loopArrow: shuffled[1]!,
+    };
+};
+
 const directionsForPool = (pool: ArrowPool): readonly CardDirection[] =>
 {
     if (pool === 'joker')

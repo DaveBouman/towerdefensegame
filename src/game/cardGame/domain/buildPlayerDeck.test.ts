@@ -37,6 +37,13 @@ describe('buildPlayerDeck', () =>
             }
 
             expect(isOrthogonalDirection(card.arrow)).toBe(true);
+
+            if (card.definitionId === 'loop-reset')
+            {
+                expect(card.loopArrow).toBeDefined();
+                expect(isOrthogonalDirection(card.loopArrow!)).toBe(true);
+                expect(card.loopArrow).not.toBe(card.arrow);
+            }
         }
     });
 
@@ -47,9 +54,15 @@ describe('buildPlayerDeck', () =>
 
         expect(orthogonalCards).toHaveLength(18);
 
+        const countDirection = (direction: typeof ORTHOGONAL_DIRECTIONS[number]): number =>
+            orthogonalCards.reduce((count, card) =>
+                count
+                + (card.arrow === direction ? 1 : 0)
+                + (card.loopArrow === direction ? 1 : 0), 0);
+
         for (const direction of ORTHOGONAL_DIRECTIONS)
         {
-            const count = orthogonalCards.filter((card) => card.arrow === direction).length;
+            const count = countDirection(direction);
 
             expect(count).toBeGreaterThanOrEqual(4);
             expect(count).toBeLessThanOrEqual(5);

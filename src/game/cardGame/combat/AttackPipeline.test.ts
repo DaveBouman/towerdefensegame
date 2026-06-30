@@ -16,6 +16,7 @@ const attackStep = (slot: SlotPosition, damage: number): ActivationStep =>
         behaviorId: 'attack',
         visualId: 'attack',
         arrow: 'right',
+        exitArrow: 'right',
         damage,
         armor: 0,
     };
@@ -32,6 +33,7 @@ const jokerStep = (slot: SlotPosition): ActivationStep =>
         behaviorId: 'joker',
         visualId: 'joker',
         arrow: 'right',
+        exitArrow: 'right',
         damage: 0,
         armor: 0,
     };
@@ -48,6 +50,7 @@ const boostStep = (slot: SlotPosition): ActivationStep =>
         behaviorId: 'boost',
         visualId: 'boost',
         arrow: 'right',
+        exitArrow: 'right',
         damage: 0,
         armor: 0,
     };
@@ -63,6 +66,7 @@ const hazardStep = (slot: SlotPosition): ActivationStep =>
         behaviorId: 'hazard',
         visualId: 'hazard',
         arrow: 'right',
+        exitArrow: 'right',
         damage: 0,
         armor: 0,
     };
@@ -197,13 +201,13 @@ describe('AttackPipeline', () =>
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
 
         board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
-        board.placeCard({ row: 0, col: 1 }, createCardInstance('loop-reset', 'left'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('loop-reset', 'right', 'player', 'left'));
 
         const chain = planActivationChain(board, { row: 0, col: 0 });
 
         expect(chain.slice(0, 3).map((step) => step.definitionId)).toEqual([ 'attack', 'loop-reset', 'attack' ]);
         expect(chain[0]!.slot).toEqual(chain[2]!.slot);
-        expect(chain[1]!.definitionId).toBe('loop-reset');
+        expect(chain[1]!.exitArrow).toBe('left');
     });
 
     it('only resets the chain once per attack', () =>
@@ -211,12 +215,14 @@ describe('AttackPipeline', () =>
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
 
         board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
-        board.placeCard({ row: 0, col: 1 }, createCardInstance('loop-reset', 'left'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('loop-reset', 'right', 'player', 'left'));
 
         const chain = planActivationChain(board, { row: 0, col: 0 });
 
-        expect(chain).toHaveLength(3);
-        expect(chain.filter((step) => step.definitionId === 'loop-reset')).toHaveLength(1);
+        expect(chain).toHaveLength(4);
+        expect(chain.filter((step) => step.definitionId === 'loop-reset')).toHaveLength(2);
+        expect(chain[1]!.exitArrow).toBe('left');
+        expect(chain[3]!.exitArrow).toBe('right');
         expect(planAttack(board, { row: 0, col: 0 }).totalDamage).toBe(10);
     });
 
@@ -226,7 +232,7 @@ describe('AttackPipeline', () =>
 
         board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
         board.placeCard({ row: 0, col: 1 }, createCardInstance('attack', 'right'));
-        board.placeCard({ row: 0, col: 2 }, createCardInstance('loop-reset', 'down'));
+        board.placeCard({ row: 0, col: 2 }, createCardInstance('loop-reset', 'down', 'player', 'left'));
         board.placeCard({ row: 1, col: 2 }, createCardInstance('attack', 'left'));
         board.placeCard({ row: 1, col: 1 }, createCardInstance('attack', 'left'));
         board.placeCard({ row: 1, col: 0 }, createCardInstance('attack', 'up'));
@@ -238,6 +244,7 @@ describe('AttackPipeline', () =>
             'attack',
             'loop-reset',
             'attack',
+            'loop-reset',
             'attack',
             'attack',
             'attack',
@@ -246,7 +253,9 @@ describe('AttackPipeline', () =>
         expect(chain.filter((step) => step.slot.row === 0 && step.slot.col === 0)).toHaveLength(2);
         expect(chain.filter((step) => step.slot.row === 0 && step.slot.col === 1)).toHaveLength(2);
         expect(chain.filter((step) => step.slot.row === 1 && step.slot.col === 2)).toHaveLength(1);
-        expect(chain.filter((step) => step.definitionId === 'loop-reset')).toHaveLength(1);
+        expect(chain.filter((step) => step.definitionId === 'loop-reset')).toHaveLength(2);
+        expect(chain[2]!.exitArrow).toBe('left');
+        expect(chain[4]!.exitArrow).toBe('down');
     });
 
     it('plans damage from attack cards in the chain', () =>

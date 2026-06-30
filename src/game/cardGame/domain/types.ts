@@ -13,7 +13,10 @@ export type CardOwner = 'player' | 'enemy' | 'field';
 export interface CardInstance {
     instanceId: string;
     definitionId: string;
+    /** Continue arrow — where the chain goes after looping back through earlier cards. */
     arrow: import('./cardDirections').CardDirection;
+    /** Loop arrow — where the chain jumps to replay earlier cards (loop-reset only). */
+    loopArrow?: import('./cardDirections').CardDirection;
     owner?: CardOwner;
 }
 
@@ -81,6 +84,8 @@ export interface ActivationStep {
     behaviorId: string;
     visualId: string;
     arrow: CardDirection;
+    /** Direction the chain follows when leaving this step. */
+    exitArrow: CardDirection;
     damage: number;
     armor: number;
 }
