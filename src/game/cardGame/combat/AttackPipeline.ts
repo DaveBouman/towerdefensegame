@@ -10,6 +10,8 @@ import type {
     DisarmResult,
     SlotPosition,
 } from '../domain/types';
+import { getAllDefendIndicesReplacedByPoison } from '../abilities/poisonReplacement';
+import { resolveChainAbilities } from '../abilities/chainAbilityRegistry';
 import { getCardBehaviorOrThrow } from '../effects/cardBehaviorRegistry';
 
 const STACKABLE_BEHAVIORS = new Set([ 'attack', 'defend' ]);
@@ -299,6 +301,20 @@ const applyChainStacking = (chain: ActivationStep[]): ActivationStep[] =>
         return step;
     });
 
+const applyPoisonArmorReplacement = (chain: ActivationStep[]): ActivationStep[] =>
+{
+    const suppressed = getAllDefendIndicesReplacedByPoison(chain);
+
+    if (suppressed.size === 0)
+    {
+        return chain;
+    }
+
+    return chain.map((step, index) =>
+        suppressed.has(index) ? { ...step, armor: 0 } : step,
+    );
+};
+
 /** Whether a boost earlier in the chain still applies, skipping neutral skill steps. */
 export const hasBoostBeforeStep = (
     chain: readonly ActivationStep[],
@@ -395,9 +411,9 @@ export const collectDisarmResults = (
     return results;
 };
 
-/** Applies streak stacking and boost bonuses to a partial or full chain. */
+/** Applies streak stacking, boost bonuses, and poison armor replacement. */
 export const resolveChainSteps = (chain: ActivationStep[]): ActivationStep[] =>
-    applyBoostBonuses(applyChainStacking(chain));
+    applyPoisonArmorReplacement(applyBoostBonuses(applyChainStacking(chain)));
 
 export const resolveChainStep = (chain: ActivationStep[], index: number): ActivationStep =>
     resolveChainSteps(chain)[index]!;
@@ -426,6 +442,12 @@ export const buildAttackSequence = (
     const offChain = board ? computeOffChainBonuses(board, scaledChain) : { damage: 0, armor: 0 };
     const hazardDamage = board ? computeHazardDamage(board, scaledChain) : 0;
     const disarmResults = board ? collectDisarmResults(board, scaledChain) : [];
+    const abilities = board ? resolveChainAbilities(scaledChain, board) : {
+        effects: [],
+        enemyDamage: 0,
+        playerDamage: 0,
+        armorGain: 0,
+    };
 
     return {
         chain: scaledChain,
@@ -434,6 +456,10 @@ export const buildAttackSequence = (
         offChainDamage: offChain.damage,
         offChainArmor: offChain.armor,
         hazardDamage,
+        chainAbilityEffects: abilities.effects,
+        abilityEnemyDamage: abilities.enemyDamage,
+        abilityPlayerDamage: abilities.playerDamage,
+        abilityArmorGain: abilities.armorGain,
         disarmResults,
         stackMultipliers,
         stepMs,

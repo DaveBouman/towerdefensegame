@@ -17,7 +17,8 @@ describe('buildPlayerDeck', () =>
 
         expect(deck).toHaveLength(15);
         expect(deck.filter((card) => card.definitionId === 'attack')).toHaveLength(4);
-        expect(deck.filter((card) => card.definitionId === 'defend')).toHaveLength(4);
+        expect(deck.filter((card) => card.definitionId === 'defend')).toHaveLength(3);
+        expect(deck.filter((card) => card.definitionId === 'poison')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'attack-leap')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'defend-leap')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'joker')).toHaveLength(2);

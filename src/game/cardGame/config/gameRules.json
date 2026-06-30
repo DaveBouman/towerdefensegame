@@ -36,5 +36,10 @@
     "col": 0
   },
   "activationStartColumn": 0,
-  "maxChainSteps": 24
+  "maxChainSteps": 24,
+  "chainAbilities": {
+    "poisonTrail": {
+      "damagePerSubsequentCard": 1
+    }
+  }
 }

@@ -1,4 +1,5 @@
 import type { CardDirection } from './cardDirections';
+import type { ChainAbilityEffect } from '../abilities/types';
 
 export interface SlotPosition {
     row: number;
@@ -111,6 +112,10 @@ export interface AttackSequence {
     offChainDamage: number;
     offChainArmor: number;
     hazardDamage: number;
+    chainAbilityEffects: ChainAbilityEffect[];
+    abilityEnemyDamage: number;
+    abilityPlayerDamage: number;
+    abilityArmorGain: number;
     disarmResults: DisarmResult[];
     stackMultipliers: Partial<Record<string, number>>;
     stepMs: number;

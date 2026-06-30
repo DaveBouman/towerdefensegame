@@ -69,6 +69,15 @@
       "arrowPool": "orthogonal"
     },
     {
+      "id": "poison",
+      "label": "Poison",
+      "power": 1,
+      "behaviorId": "poison",
+      "visualId": "poison",
+      "arrowPool": "orthogonal",
+      "chainAbilityIds": [ "poison-trail" ]
+    },
+    {
       "id": "hazard",
       "label": "Trap",
       "power": 3,

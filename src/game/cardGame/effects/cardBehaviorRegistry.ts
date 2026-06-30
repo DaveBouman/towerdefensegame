@@ -4,6 +4,7 @@ import { defendBehavior } from './defendBehavior';
 import { hazardBehavior } from './hazardBehavior';
 import { jokerBehavior } from './jokerBehavior';
 import { loopResetBehavior } from './loopResetBehavior';
+import { poisonBehavior } from './poisonBehavior';
 import type { CardBehavior } from './types';
 
 const behaviors = new Map<string, CardBehavior>([
@@ -13,6 +14,7 @@ const behaviors = new Map<string, CardBehavior>([
     [ hazardBehavior.id, hazardBehavior ],
     [ jokerBehavior.id, jokerBehavior ],
     [ loopResetBehavior.id, loopResetBehavior ],
+    [ poisonBehavior.id, poisonBehavior ],
 ]);
 
 export const registerCardBehavior = (behavior: CardBehavior): void =>

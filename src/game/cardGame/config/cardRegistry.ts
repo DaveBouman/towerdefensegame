@@ -14,6 +14,8 @@ export interface CardDefinition {
     maxChainActivations?: number;
     /** How many grid steps the chain advances along this card's arrow. */
     chainStepDistance?: number;
+    /** Chain abilities resolved after the full activation chain is known. */
+    chainAbilityIds?: string[];
 }
 
 export interface GameRules {
@@ -32,6 +34,9 @@ export interface GameRules {
     activationStart: { row: number; col: number };
     activationStartColumn: number;
     maxChainSteps: number;
+    chainAbilities: {
+        poisonTrail: { damagePerSubsequentCard: number };
+    };
 }
 
 const definitions = new Map<string, CardDefinition>(

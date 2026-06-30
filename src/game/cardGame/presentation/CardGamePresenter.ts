@@ -1,5 +1,6 @@
 import type { CardGameSession } from '../domain/CardGameSession';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
+import { getChainAbilitySlots } from '../abilities/chainAbilityRegistry';
 import {
     buildAttackSequence,
     getNextChainSlotFromStep,
@@ -111,8 +112,10 @@ export class CardGamePresenter
             const sequence = buildCurrentSequence();
             const offChainSlots = getOffChainSlots(board, chain);
             const hazardSlots = getUnchainedHazardSlots(board, chain);
+            const abilitySlots = getChainAbilitySlots(sequence.chainAbilityEffects);
             const hasEndEffects = offChainSlots.length > 0
                 || hazardSlots.length > 0
+                || abilitySlots.length > 0
                 || sequence.disarmResults.length > 0;
 
             if (!hasEndEffects)
@@ -131,9 +134,14 @@ export class CardGamePresenter
                 this.boardView.bringCardToFront(slot);
             }
 
-            if (sequence.offChainArmor > 0)
+            for (const slot of abilitySlots)
             {
-                this.setDisplayedArmor(this.displayedArmor + sequence.offChainArmor);
+                this.boardView.bringCardToFront(slot);
+            }
+
+            if (sequence.offChainArmor > 0 || sequence.abilityArmorGain > 0)
+            {
+                this.setDisplayedArmor(this.displayedArmor + sequence.offChainArmor + sequence.abilityArmorGain);
             }
 
             if (sequence.offChainDamage > 0)
@@ -153,9 +161,28 @@ export class CardGamePresenter
                 }
             }
 
-            if (sequence.hazardDamage > 0)
+            if (sequence.abilityEnemyDamage > 0)
             {
-                const result = this.session.resolveHazardDamage(sequence.hazardDamage);
+                const result = this.session.dealAttackDamage(sequence.abilityEnemyDamage);
+                this.enemyView.setHealth(result.enemy);
+
+                if (result.shieldAbsorbed > 0)
+                {
+                    this.enemyView.showShieldAbsorb(result.shieldAbsorbed);
+                }
+
+                if (result.healthDamage > 0)
+                {
+                    this.enemyView.playHitFlash();
+                    this.enemyView.showDamageNumber(result.healthDamage);
+                }
+            }
+
+            const playerAbilityDamage = sequence.abilityPlayerDamage + sequence.hazardDamage;
+
+            if (playerAbilityDamage > 0)
+            {
+                const result = this.session.resolveHazardDamage(playerAbilityDamage);
                 this.playerView.setHealth(result.player);
                 this.setDisplayedArmor(result.player.shield);
 

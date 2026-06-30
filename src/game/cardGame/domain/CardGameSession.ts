@@ -379,7 +379,7 @@ export class CardGameSession
 
         const chainArmor = sequence.chain.reduce((sum, step) => sum + step.armor, 0);
 
-        this.player.shield += chainArmor + sequence.offChainArmor;
+        this.player.shield += chainArmor + sequence.offChainArmor + sequence.abilityArmorGain;
         this.damageDealtThisAttack = 0;
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_COMPLETED, {
