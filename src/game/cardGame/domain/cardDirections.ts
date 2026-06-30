@@ -61,6 +61,50 @@ export const randomDirectionForPool = (pool: ArrowPool): CardDirection =>
     return directions[Math.floor(Math.random() * directions.length)];
 };
 
+const directionsForPool = (pool: ArrowPool): readonly CardDirection[] =>
+{
+    if (pool === 'joker')
+    {
+        return [];
+    }
+
+    return pool === 'diagonal' ? DIAGONAL_DIRECTIONS : ORTHOGONAL_DIRECTIONS;
+};
+
+/** Evenly distributes directions for a pool, then shuffles the assignments. */
+export const buildBalancedDirectionsForPool = (
+    pool: ArrowPool,
+    count: number,
+    shuffle: <T>(items: T[]) => T[] = shuffleDirectionsInPlace,
+): CardDirection[] =>
+{
+    if (count === 0 || pool === 'joker')
+    {
+        return [];
+    }
+
+    const directions = directionsForPool(pool);
+    const assignments: CardDirection[] = [];
+
+    for (let i = 0; i < count; i++)
+    {
+        assignments.push(directions[i % directions.length]!);
+    }
+
+    return shuffle(assignments);
+};
+
+const shuffleDirectionsInPlace = <T>(items: T[]): T[] =>
+{
+    for (let i = items.length - 1; i > 0; i--)
+    {
+        const j = Math.floor(Math.random() * (i + 1));
+        [ items[i], items[j] ] = [ items[j], items[i] ];
+    }
+
+    return items;
+};
+
 /** Picks a random arrow from the pool that stays on the board from this slot. */
 export const randomInBoundsDirectionForPool = (
     slot: SlotPosition,

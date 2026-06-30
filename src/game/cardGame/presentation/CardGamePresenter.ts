@@ -2,11 +2,12 @@ import type { CardGameSession } from '../domain/CardGameSession';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import {
     buildAttackSequence,
-    getNextChainSlot,
+    getNextChainSlotFromStep,
     getOffChainSlots,
     getUnchainedHazardSlots,
     isBoostedChainStep,
     isJokerDefinition,
+    resolveChainSteps,
     tryBuildActivationStep,
 } from '../combat/AttackPipeline';
 import type { ActivationStep, AttackSequence, AttackStep, EnemyTurnAction, SlotPosition } from '../domain/types';
@@ -210,9 +211,9 @@ export class CardGamePresenter
             chain.push(step);
             activeStep = step;
             const stepIndex = chain.length - 1;
-            const sequence = buildCurrentSequence();
-            const resolvedStep = sequence.chain[stepIndex]!;
-            const boosted = isBoostedChainStep(sequence.chain, stepIndex);
+            const resolvedChain = resolveChainSteps(chain);
+            const resolvedStep = resolvedChain[stepIndex]!;
+            const boosted = isBoostedChainStep(resolvedChain, stepIndex);
 
             this.activateStep(step, boosted);
 
@@ -245,7 +246,7 @@ export class CardGamePresenter
                     behaviorId: resolvedStep.behaviorId,
                     visualId: resolvedStep.visualId,
                 });
-                this.session.emitAttackStep(attackSteps.length - 1, sequence);
+                this.session.emitAttackStep(attackSteps.length - 1, buildCurrentSequence());
             }
 
             const definition = getCardDefinitionOrThrow(step.definitionId);
@@ -256,23 +257,13 @@ export class CardGamePresenter
                 {
                     step.arrow = direction;
                     step.card.arrow = direction;
-                    scheduleNext(getNextChainSlot(
-                        board,
-                        step.slot,
-                        direction,
-                        getChainStepDistance(definition),
-                    ));
+                    scheduleNext(getNextChainSlotFromStep(board, step));
                 });
 
                 return;
             }
 
-            scheduleNext(getNextChainSlot(
-                board,
-                step.slot,
-                step.arrow,
-                getChainStepDistance(definition),
-            ));
+            scheduleNext(getNextChainSlotFromStep(board, step));
         };
 
         runStep();

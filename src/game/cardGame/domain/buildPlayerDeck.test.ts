@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GAME_RULES } from '../config/cardRegistry';
+import { ORTHOGONAL_DIRECTIONS } from './cardDirections';
 import { buildPlayerDeck, isOrthogonalDirection } from './buildPlayerDeck';
 import { resetCardInstanceCounter } from './createCardInstance';
 
@@ -34,6 +35,19 @@ describe('buildPlayerDeck', () =>
             }
 
             expect(isOrthogonalDirection(card.arrow)).toBe(true);
+        }
+    });
+
+    it('splits orthogonal arrows evenly across the deck', () =>
+    {
+        const deck = buildPlayerDeck(GAME_RULES.deckSize);
+        const orthogonalCards = deck.filter((card) => card.definitionId !== 'joker');
+
+        expect(orthogonalCards).toHaveLength(12);
+
+        for (const direction of ORTHOGONAL_DIRECTIONS)
+        {
+            expect(orthogonalCards.filter((card) => card.arrow === direction)).toHaveLength(3);
         }
     });
 });

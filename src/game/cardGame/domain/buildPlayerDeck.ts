@@ -1,5 +1,6 @@
-import { GAME_RULES } from '../config/cardRegistry';
-import { DIAGONAL_DIRECTIONS, ORTHOGONAL_DIRECTIONS } from './cardDirections';
+import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
+import type { ArrowPool, CardDirection } from './cardDirections';
+import { buildBalancedDirectionsForPool, DIAGONAL_DIRECTIONS, ORTHOGONAL_DIRECTIONS } from './cardDirections';
 import { createCardInstance } from './createCardInstance';
 import type { CardInstance } from './types';
 
@@ -22,16 +23,59 @@ const DECK_COMPOSITION: readonly { definitionId: string; count: number }[] = [
     { definitionId: 'joker', count: 3 },
 ];
 
-/** Builds a shuffled deck of attack and defend cards. */
+const buildBalancedArrowQueues = (): Map<ArrowPool, CardDirection[]> =>
+{
+    const counts = new Map<ArrowPool, number>();
+
+    for (const entry of DECK_COMPOSITION)
+    {
+        const pool = getCardDefinitionOrThrow(entry.definitionId).arrowPool;
+
+        if (pool === 'joker')
+        {
+            continue;
+        }
+
+        counts.set(pool, (counts.get(pool) ?? 0) + entry.count);
+    }
+
+    const queues = new Map<ArrowPool, CardDirection[]>();
+
+    for (const [ pool, count ] of counts)
+    {
+        queues.set(pool, buildBalancedDirectionsForPool(pool, count, shuffleInPlace));
+    }
+
+    return queues;
+};
+
+const takeBalancedArrow = (
+    queues: Map<ArrowPool, CardDirection[]>,
+    pool: ArrowPool,
+): CardDirection | undefined =>
+    queues.get(pool)?.shift();
+
+/** Builds a shuffled deck with evenly distributed arrows per arrow pool. */
 export const buildPlayerDeck = (size = GAME_RULES.deckSize): CardInstance[] =>
 {
+    const arrowQueues = buildBalancedArrowQueues();
     const deck: CardInstance[] = [];
 
     for (const entry of DECK_COMPOSITION)
     {
+        const definition = getCardDefinitionOrThrow(entry.definitionId);
+
         for (let i = 0; i < entry.count; i++)
         {
-            deck.push(createCardInstance(entry.definitionId));
+            if (definition.arrowPool === 'joker')
+            {
+                deck.push(createCardInstance(entry.definitionId));
+                continue;
+            }
+
+            const arrow = takeBalancedArrow(arrowQueues, definition.arrowPool);
+
+            deck.push(createCardInstance(entry.definitionId, arrow));
         }
     }
 

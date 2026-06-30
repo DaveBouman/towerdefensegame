@@ -370,6 +370,24 @@ export const collectDisarmResults = (
     return results;
 };
 
+/** Applies streak stacking and boost bonuses to a partial or full chain. */
+export const resolveChainSteps = (chain: ActivationStep[]): ActivationStep[] =>
+    applyBoostBonuses(applyChainStacking(chain));
+
+export const resolveChainStep = (chain: ActivationStep[], index: number): ActivationStep =>
+    resolveChainSteps(chain)[index]!;
+
+export const getNextChainSlotFromStep = (
+    board: BoardModel,
+    step: ActivationStep,
+): SlotPosition | null =>
+    getNextChainSlot(
+        board,
+        step.slot,
+        step.arrow,
+        getChainStepDistance(getCardDefinitionOrThrow(step.definitionId)),
+    );
+
 export const buildAttackSequence = (
     chain: ActivationStep[],
     board?: BoardModel,
@@ -377,7 +395,7 @@ export const buildAttackSequence = (
 ): AttackSequence =>
 {
     const stackMultipliers = computeChainTypeMultipliers(chain);
-    const scaledChain = applyBoostBonuses(applyChainStacking(chain));
+    const scaledChain = resolveChainSteps(chain);
     const steps = scaledChain.filter((step) => step.damage > 0).map(toAttackStep);
     const totalDamage = steps.reduce((sum, step) => sum + step.damage, 0);
     const offChain = board ? computeOffChainBonuses(board, scaledChain) : { damage: 0, armor: 0 };
