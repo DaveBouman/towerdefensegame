@@ -1,14 +1,18 @@
 import { GAME_RULES, getCardDefinitionOrThrow, type CardDefinition } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
+import { isEnemyOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
 import { getInBoundsDirections, getNextSlot, slotKey } from '../domain/cardDirections';
 import type {
     ActivationStep,
     AttackSequence,
     AttackStep,
     CardDirection,
+    DisarmResult,
     SlotPosition,
 } from '../domain/types';
 import { getCardBehaviorOrThrow } from '../effects/cardBehaviorRegistry';
+
+const STACKABLE_BEHAVIORS = new Set([ 'attack', 'defend' ]);
 
 const buildStepContext = (
     board: BoardModel,
@@ -28,6 +32,9 @@ const buildStepContext = (
 
 export const isJokerDefinition = (definition: CardDefinition): boolean =>
     definition.behaviorId === 'joker';
+
+export const isHazardDefinition = (definition: CardDefinition): boolean =>
+    definition.behaviorId === 'hazard';
 
 const findChainStart = (board: BoardModel, preferred: SlotPosition): SlotPosition | null =>
     board.getCardAt(preferred) ? preferred : null;
@@ -133,24 +140,121 @@ const toAttackStep = (step: ActivationStep): AttackStep => ({
     visualId: step.visualId,
 });
 
+/** Multiplier per behavior based on how many times it appears in the chain. */
+export const computeChainTypeMultipliers = (
+    chain: readonly ActivationStep[],
+): Partial<Record<string, number>> =>
+{
+    const counts = new Map<string, number>();
+
+    for (const step of chain)
+    {
+        if (!STACKABLE_BEHAVIORS.has(step.behaviorId))
+        {
+            continue;
+        }
+
+        counts.set(step.behaviorId, (counts.get(step.behaviorId) ?? 0) + 1);
+    }
+
+    const multipliers: Partial<Record<string, number>> = {};
+    const { perDuplicate } = GAME_RULES.typeStackBonus;
+
+    for (const [ behaviorId, count ] of counts)
+    {
+        if (count > 1)
+        {
+            multipliers[behaviorId] = 1 + (count - 1) * perDuplicate;
+        }
+    }
+
+    return multipliers;
+};
+
+const applyChainStacking = (
+    chain: ActivationStep[],
+    multipliers: Partial<Record<string, number>>,
+): ActivationStep[] =>
+    chain.map((step) =>
+    {
+        const multiplier = multipliers[step.behaviorId];
+
+        if (!multiplier)
+        {
+            return step;
+        }
+
+        if (step.behaviorId === 'attack' && step.damage > 0)
+        {
+            return {
+                ...step,
+                damage: Math.round(step.damage * multiplier),
+            };
+        }
+
+        if (step.behaviorId === 'defend' && step.armor > 0)
+        {
+            return {
+                ...step,
+                armor: Math.round(step.armor * multiplier),
+            };
+        }
+
+        return step;
+    });
+
+export const collectDisarmResults = (
+    board: BoardModel,
+    chain: readonly ActivationStep[],
+): DisarmResult[] =>
+{
+    const results: DisarmResult[] = [];
+
+    for (const step of chain)
+    {
+        if (!isHazardDefinition(getCardDefinitionOrThrow(step.definitionId)))
+        {
+            continue;
+        }
+
+        const ctx = buildStepContext(board, step.slot, step.card);
+        const behavior = getCardBehaviorOrThrow(ctx.definition.behaviorId);
+        const result = behavior.onDisarmed?.(ctx);
+
+        if (result)
+        {
+            results.push(result);
+        }
+    }
+
+    return results;
+};
+
 export const buildAttackSequence = (
     chain: ActivationStep[],
     board?: BoardModel,
     stepMs = GAME_RULES.activationStepMs,
 ): AttackSequence =>
 {
-    const steps = chain.filter((step) => step.damage > 0).map(toAttackStep);
+    const stackMultipliers = computeChainTypeMultipliers(chain);
+    const scaledChain = applyChainStacking(chain, stackMultipliers);
+    const steps = scaledChain.filter((step) => step.damage > 0).map(toAttackStep);
     const totalDamage = steps.reduce((sum, step) => sum + step.damage, 0);
-    const offChain = board ? computeOffChainBonuses(board, chain) : { damage: 0, armor: 0 };
+    const offChain = board ? computeOffChainBonuses(board, scaledChain) : { damage: 0, armor: 0 };
+    const hazardDamage = board ? computeHazardDamage(board, scaledChain) : 0;
+    const disarmResults = board ? collectDisarmResults(board, scaledChain) : [];
 
     return {
-        chain,
+        chain: scaledChain,
         steps,
         totalDamage,
         offChainDamage: offChain.damage,
         offChainArmor: offChain.armor,
+        hazardDamage,
+        disarmResults,
+        stackMultipliers,
         stepMs,
-        durationMs: chain.length * stepMs,
+        durationMs: scaledChain.length * stepMs,
     };
 };
 
@@ -173,7 +277,7 @@ export const computeOffChainBonuses = (
 
         const card = board.getCardAt(slot);
 
-        if (!card)
+        if (!card || isEnemyOwnedCard(card))
         {
             continue;
         }
@@ -193,6 +297,40 @@ export const computeOffChainBonuses = (
     return { damage, armor };
 };
 
+/** Enemy traps that were not disarmed in the chain explode for their power. */
+export const computeHazardDamage = (
+    board: BoardModel,
+    chain: readonly ActivationStep[],
+): number =>
+{
+    const activated = new Set(chain.map((step) => slotKey(step.slot)));
+    let damage = 0;
+
+    for (const slot of board.slotsInOrder())
+    {
+        if (activated.has(slotKey(slot)))
+        {
+            continue;
+        }
+
+        const card = board.getCardAt(slot);
+
+        if (!card || !isEnemyOwnedCard(card))
+        {
+            continue;
+        }
+
+        const definition = getCardDefinitionOrThrow(card.definitionId);
+
+        if (isHazardDefinition(definition))
+        {
+            damage += definition.power;
+        }
+    }
+
+    return damage;
+};
+
 export const getOffChainSlots = (
     board: BoardModel,
     chain: readonly ActivationStep[],
@@ -203,7 +341,42 @@ export const getOffChainSlots = (
 
     for (const slot of board.slotsInOrder())
     {
-        if (!activated.has(slotKey(slot)) && board.getCardAt(slot))
+        const card = board.getCardAt(slot);
+
+        if (!activated.has(slotKey(slot)) && card && isPlayerOwnedCard(card))
+        {
+            slots.push({ ...slot });
+        }
+    }
+
+    return slots;
+};
+
+export const getUnchainedHazardSlots = (
+    board: BoardModel,
+    chain: readonly ActivationStep[],
+): SlotPosition[] =>
+{
+    const activated = new Set(chain.map((step) => slotKey(step.slot)));
+    const slots: SlotPosition[] = [];
+
+    for (const slot of board.slotsInOrder())
+    {
+        if (activated.has(slotKey(slot)))
+        {
+            continue;
+        }
+
+        const card = board.getCardAt(slot);
+
+        if (!card || !isEnemyOwnedCard(card))
+        {
+            continue;
+        }
+
+        const definition = getCardDefinitionOrThrow(card.definitionId);
+
+        if (isHazardDefinition(definition))
         {
             slots.push({ ...slot });
         }
@@ -216,7 +389,7 @@ export const planAttack = (
     board: BoardModel,
     startSlot: SlotPosition = GAME_RULES.activationStart,
 ): AttackSequence =>
-    buildAttackSequence(planActivationChain(board, startSlot));
+    buildAttackSequence(planActivationChain(board, startSlot), board);
 
 export const getJokerDirectionChoices = (
     slot: SlotPosition,

@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { planActivationChain, planAttack, computeOffChainBonuses } from './AttackPipeline';
+import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeChainTypeMultipliers } from './AttackPipeline';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { createCardInstance, resetCardInstanceCounter } from '../domain/createCardInstance';
 
@@ -84,7 +84,7 @@ describe('AttackPipeline', () =>
         expect(chain[0].definitionId).toBe('attack-special');
         expect(chain[2].definitionId).toBe('attack-special');
         expect(chain[0].slot).toEqual(chain[2].slot);
-        expect(planAttack(board, { row: 0, col: 0 }).totalDamage).toBe(19);
+        expect(planAttack(board, { row: 0, col: 0 }).totalDamage).toBe(22);
     });
 
     it('stops revisiting regular attack cards after the first activation', () =>
@@ -142,5 +142,60 @@ describe('AttackPipeline', () =>
 
         expect(chain).toHaveLength(2);
         expect(bonuses).toEqual({ damage: 0, armor: 2 });
+    });
+
+    it('applies chain stacking to repeated attack behaviors', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 2 }, createCardInstance('attack', 'left'));
+
+        const sequence = planAttack(board, { row: 0, col: 0 });
+
+        expect(computeChainTypeMultipliers(sequence.chain)).toEqual({ attack: 1.16 });
+        expect(sequence.chain).toHaveLength(3);
+        expect(sequence.totalDamage).toBe(18);
+    });
+
+    it('explodes unchained enemy hazards for their power', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 1, col: 0 }, createCardInstance('hazard', 'right', 'enemy'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+
+        expect(computeHazardDamage(board, chain)).toBe(3);
+        expect(planAttack(board, { row: 0, col: 0 }).hazardDamage).toBe(3);
+    });
+
+    it('disarms hazards that were included in the chain', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('hazard', 'left', 'enemy'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+
+        expect(chain).toHaveLength(2);
+        expect(computeHazardDamage(board, chain)).toBe(0);
+    });
+
+    it('ignores enemy hazards for off-chain player bonuses', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 1, col: 0 }, createCardInstance('defend', 'right'));
+        board.placeCard({ row: 1, col: 1 }, createCardInstance('hazard', 'left', 'enemy'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+        const bonuses = computeOffChainBonuses(board, chain);
+
+        expect(bonuses).toEqual({ damage: 0, armor: 1 });
     });
 });

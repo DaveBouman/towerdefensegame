@@ -5,11 +5,15 @@ export interface SlotPosition {
     col: number;
 }
 
+/** Who placed the card on the board. Enemy cards cannot be dragged or returned to hand. */
+export type CardOwner = 'player' | 'enemy';
+
 /** Runtime card on the board or in hand. */
 export interface CardInstance {
     instanceId: string;
     definitionId: string;
     arrow: import('./cardDirections').CardDirection;
+    owner?: CardOwner;
 }
 
 export type BoardCell = CardInstance | null;
@@ -34,11 +38,18 @@ export interface PlayerDamageResult {
     healthDamage: number;
 }
 
-export type EnemyTurnKind = 'attack' | 'shield';
+export type EnemyTurnKind = 'attack' | 'shield' | 'place-hazard';
 
 export interface EnemyTurnAction {
     kind: EnemyTurnKind;
-    amount: number;
+    amount?: number;
+}
+
+export interface DisarmResult {
+    playerDamage?: number;
+    enemyDamage?: number;
+    armorGain?: number;
+    message?: string;
 }
 
 export interface DamageResult {
@@ -99,6 +110,9 @@ export interface AttackSequence {
     totalDamage: number;
     offChainDamage: number;
     offChainArmor: number;
+    hazardDamage: number;
+    disarmResults: DisarmResult[];
+    stackMultipliers: Partial<Record<string, number>>;
     stepMs: number;
     durationMs: number;
 }

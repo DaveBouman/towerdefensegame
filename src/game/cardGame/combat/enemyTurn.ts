@@ -1,10 +1,13 @@
 import { GAME_RULES } from '../config/cardRegistry';
 import type { EnemyTurnAction } from '../domain/types';
 
-/** Enemy either attacks the player or gains shield for the next player round. */
+/** Enemy attacks, gains shield, or places a trap on the board. */
 export const planEnemyTurn = (): EnemyTurnAction =>
 {
-    if (Math.random() < 0.5)
+    const { attack, shield, placeHazard } = GAME_RULES.enemyTurnWeights;
+    const roll = Math.random();
+
+    if (roll < attack)
     {
         return {
             kind: 'attack',
@@ -12,10 +15,15 @@ export const planEnemyTurn = (): EnemyTurnAction =>
         };
     }
 
-    return {
-        kind: 'shield',
-        amount: GAME_RULES.enemy.shieldGain,
-    };
+    if (roll < attack + shield)
+    {
+        return {
+            kind: 'shield',
+            amount: GAME_RULES.enemy.shieldGain,
+        };
+    }
+
+    return { kind: 'place-hazard' };
 };
 
 export const describeEnemyIntent = (
@@ -23,6 +31,13 @@ export const describeEnemyIntent = (
     phase: 'upcoming' | 'executing',
 ): { title: string; color: string } =>
 {
+    if (action.kind === 'place-hazard')
+    {
+        return phase === 'executing'
+            ? { title: 'Placing trap!', color: '#ff6b6b' }
+            : { title: 'After round: Place trap', color: '#ff9f43' };
+    }
+
     if (phase === 'executing')
     {
         return action.kind === 'attack'

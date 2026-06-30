@@ -40,6 +40,14 @@
       "behaviorId": "joker",
       "visualId": "joker",
       "arrowPool": "joker"
+    },
+    {
+      "id": "hazard",
+      "label": "Trap",
+      "power": 3,
+      "behaviorId": "hazard",
+      "visualId": "hazard",
+      "arrowPool": "orthogonal"
     }
   ]
 }

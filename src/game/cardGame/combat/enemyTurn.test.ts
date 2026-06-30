@@ -18,4 +18,12 @@ describe('describeEnemyIntent', () =>
         expect(describeEnemyIntent({ kind: 'shield', amount: 5 }, 'executing').title)
             .toBe('Shield +5!');
     });
+
+    it('labels hazard placement intents', () =>
+    {
+        expect(describeEnemyIntent({ kind: 'place-hazard' }, 'upcoming').title)
+            .toBe('After round: Place trap');
+        expect(describeEnemyIntent({ kind: 'place-hazard' }, 'executing').title)
+            .toBe('Placing trap!');
+    });
 });

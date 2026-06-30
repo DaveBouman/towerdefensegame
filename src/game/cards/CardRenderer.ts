@@ -1,5 +1,6 @@
 import { getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
 import type { CardInstance } from '../cardGame/domain/types';
+import { isEnemyOwnedCard } from '../cardGame/domain/cardOwnership';
 import { ARROW_GLYPH, arrowLabelPosition } from './cardArrows';
 import { CARD_VISUALS } from './cardVisuals';
 
@@ -29,7 +30,7 @@ export const buildCardGraphic = (
 
     const body = scene.add.rectangle(width / 2, height / 2, width, height, style.fill);
 
-    body.setStrokeStyle(2, style.border, 1);
+    body.setStrokeStyle(isEnemyOwnedCard(card) ? 3 : 2, style.border, 1);
 
     const arrowPos = arrowLabelPosition(card.arrow, width, height);
     const arrow = scene.add.text(arrowPos.x, arrowPos.y, isJoker ? '?' : ARROW_GLYPH[card.arrow], {

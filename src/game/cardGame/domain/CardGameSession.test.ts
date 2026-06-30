@@ -19,6 +19,9 @@ const emptySequence = (): AttackSequence => ({
     totalDamage: 0,
     offChainDamage: 0,
     offChainArmor: 0,
+    hazardDamage: 0,
+    disarmResults: [],
+    stackMultipliers: {},
     stepMs: 1500,
     durationMs: 0,
 });
@@ -380,5 +383,27 @@ describe('CardGameSession enemy turn', () =>
 
         expect(session.canReroll()).toBe(false);
         expect(session.rerollHandCards([ 0 ])).toBe(false);
+    });
+
+    it('places enemy hazards on empty board slots', () =>
+    {
+        const session = new CardGameSession();
+
+        const slot = session.placeEnemyHazard();
+
+        expect(slot).not.toBeNull();
+        expect(session.board.getCardAt(slot!)).toMatchObject({
+            definitionId: 'hazard',
+            owner: 'enemy',
+        });
+    });
+
+    it('prevents moving or removing enemy hazards', () =>
+    {
+        const session = new CardGameSession();
+        const slot = session.placeEnemyHazard()!;
+
+        expect(session.removeCardFromBoard(slot)).toBe(false);
+        expect(session.moveCardOnBoard(slot, { row: 0, col: 3 })).toBe(false);
     });
 });

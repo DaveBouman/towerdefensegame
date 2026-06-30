@@ -1,11 +1,13 @@
 import { attackBehavior } from './attackBehavior';
 import { defendBehavior } from './defendBehavior';
+import { hazardBehavior } from './hazardBehavior';
 import { jokerBehavior } from './jokerBehavior';
 import type { CardBehavior } from './types';
 
 const behaviors = new Map<string, CardBehavior>([
     [ attackBehavior.id, attackBehavior ],
     [ defendBehavior.id, defendBehavior ],
+    [ hazardBehavior.id, hazardBehavior ],
     [ jokerBehavior.id, jokerBehavior ],
 ]);
 

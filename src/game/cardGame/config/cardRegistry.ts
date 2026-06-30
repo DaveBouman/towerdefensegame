@@ -23,6 +23,9 @@ export interface GameRules {
     player: { maxHealth: number };
     enemy: { maxHealth: number; attackDamage: number; shieldGain: number };
     offChainBonus: { attackDamage: number; defendArmor: number };
+    hazard: { definitionId: string };
+    enemyTurnWeights: { attack: number; shield: number; placeHazard: number };
+    typeStackBonus: { perDuplicate: number };
     activationStart: { row: number; col: number };
     activationStartColumn: number;
 }

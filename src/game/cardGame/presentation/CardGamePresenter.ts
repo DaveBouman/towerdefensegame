@@ -4,6 +4,8 @@ import {
     buildAttackSequence,
     getNextChainSlot,
     getOffChainSlots,
+    getUnchainedHazardSlots,
+    isHazardDefinition,
     isJokerDefinition,
     tryBuildActivationStep,
 } from '../combat/AttackPipeline';
@@ -102,14 +104,23 @@ export class CardGamePresenter
 
             const sequence = buildCurrentSequence();
             const offChainSlots = getOffChainSlots(board, chain);
+            const hazardSlots = getUnchainedHazardSlots(board, chain);
+            const hasEndEffects = offChainSlots.length > 0
+                || hazardSlots.length > 0
+                || sequence.disarmResults.length > 0;
 
-            if (offChainSlots.length === 0)
+            if (!hasEndEffects)
             {
                 onComplete(sequence);
                 return;
             }
 
             for (const slot of offChainSlots)
+            {
+                this.boardView.bringCardToFront(slot);
+            }
+
+            for (const slot of hazardSlots)
             {
                 this.boardView.bringCardToFront(slot);
             }
@@ -133,6 +144,24 @@ export class CardGamePresenter
                 {
                     this.enemyView.playHitFlash();
                     this.enemyView.showDamageNumber(result.healthDamage);
+                }
+            }
+
+            if (sequence.hazardDamage > 0)
+            {
+                const result = this.session.resolveHazardDamage(sequence.hazardDamage);
+                this.playerView.setHealth(result.player);
+                this.setDisplayedArmor(result.player.shield);
+
+                if (result.shieldAbsorbed > 0)
+                {
+                    this.armorView.showShieldAbsorb(result.shieldAbsorbed);
+                }
+
+                if (result.healthDamage > 0)
+                {
+                    this.playerView.playHitFlash();
+                    this.playerView.showDamageNumber(result.healthDamage);
                 }
             }
 
@@ -240,7 +269,7 @@ export class CardGamePresenter
 
             this.scene.time.delayedCall(turnMs, () =>
             {
-                const result = this.session.resolveEnemyAttack(action.amount);
+                const result = this.session.resolveEnemyAttack(action.amount ?? 0);
                 this.playerView.setHealth(result.player);
                 this.setDisplayedArmor(result.player.shield);
 
@@ -262,11 +291,31 @@ export class CardGamePresenter
             return;
         }
 
+        if (action.kind === 'place-hazard')
+        {
+            this.enemyView.playEnemyAttackPulse();
+
+            this.scene.time.delayedCall(turnMs, () =>
+            {
+                const slot = this.session.placeEnemyHazard();
+
+                if (slot)
+                {
+                    this.boardView.syncFromBoard(this.session.board);
+                }
+
+                this.session.completeEnemyTurn(action);
+                onComplete();
+            });
+
+            return;
+        }
+
         this.scene.time.delayedCall(turnMs / 2, () =>
         {
-            const enemy = this.session.resolveEnemyShield(action.amount);
+            const enemy = this.session.resolveEnemyShield(action.amount ?? 0);
             this.enemyView.setHealth(enemy);
-            this.enemyView.showShieldGain(action.amount);
+            this.enemyView.showShieldGain(action.amount ?? 0);
         });
 
         this.scene.time.delayedCall(turnMs, () =>

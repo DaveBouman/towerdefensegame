@@ -4,6 +4,8 @@ import { planAttack } from '../combat/AttackPipeline';
 import { planEnemyTurn } from '../combat/enemyTurn';
 import { buildPlayerDeck, shuffleInPlace } from '../domain/buildPlayerDeck';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
+import { isEnemyOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
+import { createCardInstance } from '../domain/createCardInstance';
 import type {
     AttackReadiness,
     AttackSequence,
@@ -449,6 +451,38 @@ export class CardGameSession
         return this.getEnemy();
     }
 
+    /** Places an enemy trap on a random empty board slot. */
+    placeEnemyHazard (): SlotPosition | null
+    {
+        const emptySlots: SlotPosition[] = [];
+
+        for (const slot of this.board.slotsInOrder())
+        {
+            if (this.board.isEmpty(slot))
+            {
+                emptySlots.push({ ...slot });
+            }
+        }
+
+        if (emptySlots.length === 0)
+        {
+            return null;
+        }
+
+        const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)]!;
+        const card = createCardInstance(GAME_RULES.hazard.definitionId, undefined, 'enemy');
+
+        this.board.placeCard(slot, card);
+
+        return slot;
+    }
+
+    /** Trap explosions hit the player after the chain resolves. */
+    resolveHazardDamage (damage: number): PlayerDamageResult
+    {
+        return this.resolveEnemyAttack(damage);
+    }
+
     completeEnemyTurn (action: EnemyTurnAction): void
     {
         this.enemyTurnInProgress = false;
@@ -483,7 +517,7 @@ export class CardGameSession
         {
             const card = this.board.getCardAt(slot);
 
-            if (card)
+            if (card && isPlayerOwnedCard(card))
             {
                 this.discard.push(card);
             }
@@ -522,6 +556,11 @@ export class CardGameSession
 
         const existing = this.board.getCardAt(slot);
 
+        if (existing && isEnemyOwnedCard(existing))
+        {
+            return false;
+        }
+
         if (!existing)
         {
             if (!this.board.placeCard(slot, card))
@@ -554,8 +593,13 @@ export class CardGameSession
 
         const card = this.board.removeCard(slot);
 
-        if (!card)
+        if (!card || isEnemyOwnedCard(card))
         {
+            if (card)
+            {
+                this.board.placeCard(slot, card);
+            }
+
             return false;
         }
 
@@ -572,6 +616,20 @@ export class CardGameSession
             return false;
         }
 
+        const card = this.board.getCardAt(from);
+
+        if (!card || isEnemyOwnedCard(card))
+        {
+            return false;
+        }
+
+        const target = this.board.getCardAt(to);
+
+        if (target && isEnemyOwnedCard(target))
+        {
+            return false;
+        }
+
         if (!this.board.moveCard(from, to))
         {
             return false;
@@ -583,6 +641,14 @@ export class CardGameSession
     swapCardsOnBoard (a: SlotPosition, b: SlotPosition): boolean
     {
         if (this.attackInProgress || this.enemyTurnInProgress)
+        {
+            return false;
+        }
+
+        const cardA = this.board.getCardAt(a);
+        const cardB = this.board.getCardAt(b);
+
+        if (!cardA || isEnemyOwnedCard(cardA) || (cardB && isEnemyOwnedCard(cardB)))
         {
             return false;
         }

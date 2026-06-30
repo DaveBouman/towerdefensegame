@@ -1,11 +1,13 @@
 import { attackGlowVisual } from './attackGlowVisual';
 import { defendGlowVisual } from './defendGlowVisual';
+import { hazardGlowVisual } from './hazardGlowVisual';
 import { jokerGlowVisual } from './jokerGlowVisual';
 import type { CardVisualEffect } from './types';
 
 const effects = new Map<string, CardVisualEffect>([
     [ attackGlowVisual.id, attackGlowVisual ],
     [ defendGlowVisual.id, defendGlowVisual ],
+    [ hazardGlowVisual.id, hazardGlowVisual ],
     [ jokerGlowVisual.id, jokerGlowVisual ],
 ]);
 

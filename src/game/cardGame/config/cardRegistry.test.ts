@@ -12,12 +12,13 @@ describe('cardRegistry', () =>
 
     it('loads card definitions from cards.json', () =>
     {
-        expect(CARD_DEFINITIONS).toHaveLength(5);
+        expect(CARD_DEFINITIONS).toHaveLength(6);
         expect(getCardDefinition('attack')?.arrowPool).toBe('orthogonal');
         expect(getCardDefinition('defend')?.arrowPool).toBe('orthogonal');
         expect(getCardDefinition('attack-special')?.maxChainActivations).toBe(2);
         expect(getCardDefinition('defend-special')?.arrowPool).toBe('diagonal');
         expect(getCardDefinition('joker')?.behaviorId).toBe('joker');
+        expect(getCardDefinition('hazard')?.behaviorId).toBe('hazard');
     });
 
     it('loads game rules and deck settings', () =>
