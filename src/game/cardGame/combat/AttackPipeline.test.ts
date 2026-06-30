@@ -72,6 +72,40 @@ const hazardStep = (slot: SlotPosition): ActivationStep =>
     };
 };
 
+const fireStep = (slot: SlotPosition, damage = 5): ActivationStep =>
+{
+    const card = createCardInstance('fire', 'right');
+
+    return {
+        slot,
+        card,
+        definitionId: 'fire',
+        behaviorId: 'fire',
+        visualId: 'fire',
+        arrow: 'right',
+        exitArrow: 'right',
+        damage,
+        armor: 0,
+    };
+};
+
+const defendStep = (slot: SlotPosition, armor = 3): ActivationStep =>
+{
+    const card = createCardInstance('defend', 'right');
+
+    return {
+        slot,
+        card,
+        definitionId: 'defend',
+        behaviorId: 'defend',
+        visualId: 'defend',
+        arrow: 'right',
+        exitArrow: 'right',
+        damage: 0,
+        armor,
+    };
+};
+
 describe('AttackPipeline', () =>
 {
     beforeEach(() =>
@@ -458,5 +492,37 @@ describe('AttackPipeline', () =>
 
         expect(sequence.chain.map((step) => step.behaviorId)).toEqual([ 'attack', 'boost', 'attack' ]);
         expect(sequence.totalDamage).toBe(15);
+    });
+
+    it('doubles fire damage and alternation bonus on the boosted special step only', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+        const chain = [
+            boostStep({ row: 0, col: 0 }),
+            fireStep({ row: 0, col: 1 }),
+            attackStep({ row: 0, col: 2 }, 5),
+            defendStep({ row: 0, col: 3 }, 3),
+        ];
+
+        const sequence = buildAttackSequence(chain, board);
+
+        expect(sequence.chain[1]?.damage).toBe(10);
+        expect(sequence.chain[2]?.damage).toBe(5);
+        expect(sequence.totalDamage).toBe(15);
+        expect(sequence.abilityEnemyDamage).toBe(6);
+    });
+
+    it('doubles poison trail damage when poison is the boosted step', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('boost', 'right', 'field'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('poison', 'right'));
+        board.placeCard({ row: 0, col: 2 }, createCardInstance('defend', 'right'));
+        board.placeCard({ row: 0, col: 3 }, createCardInstance('defend', 'left'));
+
+        const sequence = planAttack(board, { row: 0, col: 0 });
+
+        expect(sequence.abilityEnemyDamage).toBe(4);
     });
 });

@@ -13,12 +13,16 @@ import type {
 import { getAllDefendIndicesReplacedByPoison } from '../abilities/poisonReplacement';
 import { resolveChainAbilities } from '../abilities/chainAbilityRegistry';
 import { getCardBehaviorOrThrow } from '../effects/cardBehaviorRegistry';
+import {
+    getBoostMultiplierForStep,
+    hasBoostBeforeStep,
+    isStreakNeutralBehavior,
+    scaleBoostedValue,
+} from './chainBoost';
+
+export { isStreakNeutralBehavior } from './chainBoost';
 
 const STACKABLE_BEHAVIORS = new Set([ 'attack', 'defend' ]);
-
-/** Skills, jokers, hazards, and other non-stackable cards do not break type streaks. */
-export const isStreakNeutralBehavior = (behaviorId: string): boolean =>
-    !STACKABLE_BEHAVIORS.has(behaviorId);
 
 const streakToMultiplier = (streak: number): number =>
 {
@@ -349,38 +353,13 @@ const applyPoisonArmorReplacement = (chain: ActivationStep[]): ActivationStep[] 
     );
 };
 
-/** Whether a boost earlier in the chain still applies, skipping neutral skill steps. */
-export const hasBoostBeforeStep = (
-    chain: readonly ActivationStep[],
-    index: number,
-): boolean =>
-{
-    for (let i = index - 1; i >= 0; i--)
-    {
-        const previous = chain[i]!;
-
-        if (previous.behaviorId === 'boost')
-        {
-            return true;
-        }
-
-        if (!isStreakNeutralBehavior(previous.behaviorId))
-        {
-            return false;
-        }
-    }
-
-    return false;
-};
-
-/** Buffs the next attack/defend step after a field boost, propagating through skills. */
+/** Buffs the next chain step after a field boost, propagating through jokers only. */
 export const applyBoostBonuses = (chain: ActivationStep[]): ActivationStep[] =>
-{
-    const multiplier = GAME_RULES.fieldBoost.nextStepMultiplier;
-
-    return chain.map((step, index) =>
+    chain.map((step, index) =>
     {
-        if (!hasBoostBeforeStep(chain, index))
+        const multiplier = getBoostMultiplierForStep(chain, index);
+
+        if (multiplier <= 1)
         {
             return step;
         }
@@ -390,12 +369,12 @@ export const applyBoostBonuses = (chain: ActivationStep[]): ActivationStep[] =>
 
         if (damage > 0)
         {
-            damage = Math.round(damage * multiplier);
+            damage = scaleBoostedValue(damage, multiplier);
         }
 
         if (armor > 0)
         {
-            armor = Math.round(armor * multiplier);
+            armor = scaleBoostedValue(armor, multiplier);
         }
 
         if (damage === step.damage && armor === step.armor)
@@ -409,14 +388,28 @@ export const applyBoostBonuses = (chain: ActivationStep[]): ActivationStep[] =>
             armor,
         };
     });
-};
 
 export const isBoostedChainStep = (
     chain: readonly ActivationStep[],
     index: number,
 ): boolean =>
-    hasBoostBeforeStep(chain, index)
-    && (chain[index]?.damage ?? 0) + (chain[index]?.armor ?? 0) > 0;
+{
+    if (!hasBoostBeforeStep(chain, index))
+    {
+        return false;
+    }
+
+    const step = chain[index];
+
+    if ((step?.damage ?? 0) + (step?.armor ?? 0) > 0)
+    {
+        return true;
+    }
+
+    const definition = step ? getCardDefinitionOrThrow(step.definitionId) : undefined;
+
+    return (definition?.chainAbilityIds?.length ?? 0) > 0;
+};
 
 export const collectDisarmResults = (
     board: BoardModel,

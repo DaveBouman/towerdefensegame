@@ -1,6 +1,7 @@
 import { getCardDefinitionOrThrow } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
 import type { ActivationStep } from '../domain/types';
+import { getBoostMultiplierForStep, scaleBoostedValue } from '../combat/chainBoost';
 import { fireAlternationAbility } from './fireAlternationAbility';
 import { poisonTrailAbility } from './poisonTrailAbility';
 import type {
@@ -84,14 +85,21 @@ export const resolveChainAbilities = (
                 continue;
             }
 
+            const multiplier = getBoostMultiplierForStep(chain, stepIndex);
+            const scaledResult = {
+                enemyDamage: scaleBoostedValue(result.enemyDamage, multiplier),
+                playerDamage: scaleBoostedValue(result.playerDamage, multiplier),
+                armorGain: scaleBoostedValue(result.armorGain, multiplier),
+            };
+
             effects.push({
                 abilityId,
                 stepIndex,
                 slot: step.slot,
                 visualId: step.visualId,
-                ...result,
+                ...scaledResult,
             });
-            totals = mergeDamage(totals, result);
+            totals = mergeDamage(totals, scaledResult);
         }
     });
 

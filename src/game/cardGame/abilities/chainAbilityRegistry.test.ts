@@ -192,4 +192,19 @@ describe('chain abilities', () =>
         expect(sequence.totalDamage).toBe(10);
         expect(sequence.abilityEnemyDamage).toBe(3);
     });
+
+    it('doubles poison trail damage when poison is boosted', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+        const chain = [
+            activationStep('boost', 0, 0, 'right'),
+            activationStep('poison', 0, 1, 'right'),
+            activationStep('defend', 0, 2),
+            activationStep('defend', 0, 3, 'right'),
+        ];
+
+        const resolved = resolveChainAbilities(chain, board);
+
+        expect(resolved.enemyDamage).toBe(4);
+    });
 });
