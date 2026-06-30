@@ -48,6 +48,14 @@
       "behaviorId": "hazard",
       "visualId": "hazard",
       "arrowPool": "orthogonal"
+    },
+    {
+      "id": "boost",
+      "label": "Boost",
+      "power": 0,
+      "behaviorId": "boost",
+      "visualId": "boost",
+      "arrowPool": "orthogonal"
     }
   ]
 }

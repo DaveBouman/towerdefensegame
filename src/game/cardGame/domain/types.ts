@@ -5,8 +5,8 @@ export interface SlotPosition {
     col: number;
 }
 
-/** Who placed the card on the board. Enemy cards cannot be dragged or returned to hand. */
-export type CardOwner = 'player' | 'enemy';
+/** Who placed the card on the board. Field cards are ambient modifiers (boosts). */
+export type CardOwner = 'player' | 'enemy' | 'field';
 
 /** Runtime card on the board or in hand. */
 export interface CardInstance {

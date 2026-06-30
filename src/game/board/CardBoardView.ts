@@ -4,7 +4,7 @@ import { ARROW_GLYPH } from '../cards/cardArrows';
 import { getJokerDirectionChoices } from '../cardGame/combat/AttackPipeline';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import type { BoardModel } from '../cardGame/domain/BoardModel';
-import { isEnemyOwnedCard } from '../cardGame/domain/cardOwnership';
+import { isEnemyOwnedCard, isFieldOwnedCard } from '../cardGame/domain/cardOwnership';
 import type { CardDirection } from '../cardGame/domain/cardDirections';
 import type { CardInstance, SlotPosition } from '../cardGame/domain/types';
 import type { BoardLayout } from './boardLayout';
@@ -732,7 +732,7 @@ export class CardBoardView
                 const currentSlot = { row, col };
                 const currentCard = this.board.getCardAt(currentSlot);
 
-                if (!currentCard || isEnemyOwnedCard(currentCard))
+                if (!currentCard || isEnemyOwnedCard(currentCard) || isFieldOwnedCard(currentCard))
                 {
                     return;
                 }

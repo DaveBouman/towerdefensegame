@@ -4,7 +4,7 @@ import { planAttack } from '../combat/AttackPipeline';
 import { planEnemyTurn } from '../combat/enemyTurn';
 import { buildPlayerDeck, shuffleInPlace } from '../domain/buildPlayerDeck';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
-import { isEnemyOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
+import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
 import { createCardInstance } from '../domain/createCardInstance';
 import type {
     AttackReadiness,
@@ -477,6 +477,32 @@ export class CardGameSession
         return slot;
     }
 
+    /** Places a field boost on a random empty board slot for the next player round. */
+    placeFieldBoost (): SlotPosition | null
+    {
+        const emptySlots: SlotPosition[] = [];
+
+        for (const slot of this.board.slotsInOrder())
+        {
+            if (this.board.isEmpty(slot))
+            {
+                emptySlots.push({ ...slot });
+            }
+        }
+
+        if (emptySlots.length === 0)
+        {
+            return null;
+        }
+
+        const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)]!;
+        const card = createCardInstance(GAME_RULES.fieldBoost.definitionId, undefined, 'field');
+
+        this.board.placeCard(slot, card);
+
+        return slot;
+    }
+
     /** Trap explosions hit the player after the chain resolves. */
     resolveHazardDamage (damage: number): PlayerDamageResult
     {
@@ -556,7 +582,7 @@ export class CardGameSession
 
         const existing = this.board.getCardAt(slot);
 
-        if (existing && isEnemyOwnedCard(existing))
+        if (existing && (isEnemyOwnedCard(existing) || isFieldOwnedCard(existing)))
         {
             return false;
         }
@@ -593,7 +619,7 @@ export class CardGameSession
 
         const card = this.board.removeCard(slot);
 
-        if (!card || isEnemyOwnedCard(card))
+        if (!card || isEnemyOwnedCard(card) || isFieldOwnedCard(card))
         {
             if (card)
             {
@@ -618,14 +644,14 @@ export class CardGameSession
 
         const card = this.board.getCardAt(from);
 
-        if (!card || isEnemyOwnedCard(card))
+        if (!card || isEnemyOwnedCard(card) || isFieldOwnedCard(card))
         {
             return false;
         }
 
         const target = this.board.getCardAt(to);
 
-        if (target && isEnemyOwnedCard(target))
+        if (target && (isEnemyOwnedCard(target) || isFieldOwnedCard(target)))
         {
             return false;
         }
@@ -648,7 +674,8 @@ export class CardGameSession
         const cardA = this.board.getCardAt(a);
         const cardB = this.board.getCardAt(b);
 
-        if (!cardA || isEnemyOwnedCard(cardA) || (cardB && isEnemyOwnedCard(cardB)))
+        if (!cardA || isEnemyOwnedCard(cardA) || isFieldOwnedCard(cardA)
+            || (cardB && (isEnemyOwnedCard(cardB) || isFieldOwnedCard(cardB))))
         {
             return false;
         }

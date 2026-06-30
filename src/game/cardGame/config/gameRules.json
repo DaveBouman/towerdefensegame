@@ -27,6 +27,10 @@
   "typeStackBonus": {
     "perDuplicate": 0.08
   },
+  "fieldBoost": {
+    "definitionId": "boost",
+    "nextStepMultiplier": 1.5
+  },
   "activationStart": {
     "row": 0,
     "col": 0

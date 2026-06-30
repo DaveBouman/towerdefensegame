@@ -233,6 +233,7 @@ export class Game extends Scene
         }
 
         this.session.clearBoard();
+        this.session.placeFieldBoost();
         this.boardView.syncFromBoard(this.session.board);
         this.graveyardView?.pulse();
         this.syncPileViews();

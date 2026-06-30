@@ -1,6 +1,6 @@
-import { getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
+import { getCardDefinitionOrThrow, GAME_RULES } from '../cardGame/config/cardRegistry';
 import type { CardInstance } from '../cardGame/domain/types';
-import { isEnemyOwnedCard } from '../cardGame/domain/cardOwnership';
+import { isEnemyOwnedCard, isFieldOwnedCard } from '../cardGame/domain/cardOwnership';
 import { ARROW_GLYPH, arrowLabelPosition } from './cardArrows';
 import { CARD_VISUALS } from './cardVisuals';
 
@@ -27,10 +27,11 @@ export const buildCardGraphic = (
     const { width, height, interactive = false } = options;
     const container = scene.add.container(0, 0);
     const isJoker = definition.behaviorId === 'joker';
+    const isBoost = definition.behaviorId === 'boost';
 
     const body = scene.add.rectangle(width / 2, height / 2, width, height, style.fill);
 
-    body.setStrokeStyle(isEnemyOwnedCard(card) ? 3 : 2, style.border, 1);
+    body.setStrokeStyle(isEnemyOwnedCard(card) || isFieldOwnedCard(card) ? 3 : 2, style.border, 1);
 
     const arrowPos = arrowLabelPosition(card.arrow, width, height);
     const arrow = scene.add.text(arrowPos.x, arrowPos.y, isJoker ? '?' : ARROW_GLYPH[card.arrow], {
@@ -50,7 +51,7 @@ export const buildCardGraphic = (
     const power = scene.add.text(
         width / 2,
         height * 0.62,
-        isJoker ? '★' : String(definition.power),
+        isJoker ? '★' : isBoost ? `×${GAME_RULES.fieldBoost.nextStepMultiplier}` : String(definition.power),
         {
             fontFamily: 'monospace',
             fontSize: '20px',

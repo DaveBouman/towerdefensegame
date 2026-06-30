@@ -406,4 +406,15 @@ describe('CardGameSession enemy turn', () =>
         expect(session.removeCardFromBoard(slot)).toBe(false);
         expect(session.moveCardOnBoard(slot, { row: 0, col: 3 })).toBe(false);
     });
+
+    it('places a field boost on a random empty slot', () =>
+    {
+        const session = new CardGameSession();
+        const boosts = session.board.slotsInOrder()
+            .map((slot) => session.board.getCardAt(slot))
+            .filter((card) => card?.definitionId === 'boost');
+
+        expect(boosts).toHaveLength(1);
+        expect(boosts[0]).toMatchObject({ owner: 'field' });
+    });
 });

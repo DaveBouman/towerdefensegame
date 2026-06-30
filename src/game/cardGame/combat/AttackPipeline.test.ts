@@ -1,8 +1,72 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeChainTypeMultipliers } from './AttackPipeline';
+import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, applyBoostBonuses } from './AttackPipeline';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { createCardInstance, resetCardInstanceCounter } from '../domain/createCardInstance';
+import type { ActivationStep, SlotPosition } from '../domain/types';
+
+const attackStep = (slot: SlotPosition, damage: number): ActivationStep =>
+{
+    const card = createCardInstance('attack', 'right');
+
+    return {
+        slot,
+        card,
+        definitionId: 'attack',
+        behaviorId: 'attack',
+        visualId: 'attack',
+        arrow: 'right',
+        damage,
+        armor: 0,
+    };
+};
+
+const jokerStep = (slot: SlotPosition): ActivationStep =>
+{
+    const card = createCardInstance('joker');
+
+    return {
+        slot,
+        card,
+        definitionId: 'joker',
+        behaviorId: 'joker',
+        visualId: 'joker',
+        arrow: 'right',
+        damage: 0,
+        armor: 0,
+    };
+};
+
+const boostStep = (slot: SlotPosition): ActivationStep =>
+{
+    const card = createCardInstance('boost', 'right', 'field');
+
+    return {
+        slot,
+        card,
+        definitionId: 'boost',
+        behaviorId: 'boost',
+        visualId: 'boost',
+        arrow: 'right',
+        damage: 0,
+        armor: 0,
+    };
+};
+const hazardStep = (slot: SlotPosition): ActivationStep =>
+{
+    const card = createCardInstance('hazard', 'right', 'enemy');
+
+    return {
+        slot,
+        card,
+        definitionId: 'hazard',
+        behaviorId: 'hazard',
+        visualId: 'hazard',
+        arrow: 'right',
+        damage: 0,
+        armor: 0,
+    };
+};
 
 describe('AttackPipeline', () =>
 {
@@ -84,7 +148,7 @@ describe('AttackPipeline', () =>
         expect(chain[0].definitionId).toBe('attack-special');
         expect(chain[2].definitionId).toBe('attack-special');
         expect(chain[0].slot).toEqual(chain[2].slot);
-        expect(planAttack(board, { row: 0, col: 0 }).totalDamage).toBe(22);
+        expect(planAttack(board, { row: 0, col: 0 }).totalDamage).toBe(20);
     });
 
     it('stops revisiting regular attack cards after the first activation', () =>
@@ -156,7 +220,49 @@ describe('AttackPipeline', () =>
 
         expect(computeChainTypeMultipliers(sequence.chain)).toEqual({ attack: 1.16 });
         expect(sequence.chain).toHaveLength(3);
-        expect(sequence.totalDamage).toBe(18);
+        expect(sequence.totalDamage).toBe(16);
+    });
+
+    it('does not reset attack streak across jokers and other skills', () =>
+    {
+        const chain = [
+            attackStep({ row: 0, col: 0 }, 5),
+            jokerStep({ row: 0, col: 1 }),
+            attackStep({ row: 0, col: 2 }, 5),
+            hazardStep({ row: 0, col: 3 }),
+            attackStep({ row: 1, col: 0 }, 5),
+        ];
+
+        expect(computeStreakAtIndex(chain, 0)).toBe(1);
+        expect(computeStreakAtIndex(chain, 2)).toBe(2);
+        expect(computeStreakAtIndex(chain, 4)).toBe(3);
+
+        const sequence = buildAttackSequence(chain);
+
+        expect(sequence.totalDamage).toBe(16);
+        expect(sequence.stackMultipliers).toEqual({ attack: 1.16 });
+    });
+
+    it('resets the streak when the stackable behavior changes', () =>
+    {
+        const chain = [
+            attackStep({ row: 0, col: 0 }, 5),
+            {
+                ...attackStep({ row: 0, col: 1 }, 0),
+                behaviorId: 'defend',
+                visualId: 'defend',
+                definitionId: 'defend',
+                armor: 3,
+                damage: 0,
+            },
+            attackStep({ row: 0, col: 2 }, 5),
+        ];
+
+        expect(computeStreakAtIndex(chain, 2)).toBe(1);
+
+        const sequence = buildAttackSequence(chain);
+
+        expect(sequence.totalDamage).toBe(10);
     });
 
     it('explodes unchained enemy hazards for their power', () =>
@@ -197,5 +303,41 @@ describe('AttackPipeline', () =>
         const bonuses = computeOffChainBonuses(board, chain);
 
         expect(bonuses).toEqual({ damage: 0, armor: 1 });
+    });
+
+    it('multiplies the next chain step after a field boost', () =>
+    {
+        const chain = [
+            boostStep({ row: 0, col: 0 }),
+            attackStep({ row: 0, col: 1 }, 10),
+        ];
+
+        expect(applyBoostBonuses(applyChainStacking(chain))[1].damage).toBe(15);
+        expect(buildAttackSequence(chain).totalDamage).toBe(15);
+    });
+
+    it('applies boost after streak stacking on the buffed step', () =>
+    {
+        const chain = [
+            attackStep({ row: 0, col: 0 }, 5),
+            boostStep({ row: 0, col: 1 }),
+            attackStep({ row: 0, col: 2 }, 5),
+        ];
+
+        expect(buildAttackSequence(chain).totalDamage).toBe(13);
+    });
+
+    it('routes through a field boost on the board', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('boost', 'right', 'field'));
+        board.placeCard({ row: 0, col: 2 }, createCardInstance('attack', 'left'));
+
+        const sequence = planAttack(board, { row: 0, col: 0 });
+
+        expect(sequence.chain.map((step) => step.behaviorId)).toEqual([ 'attack', 'boost', 'attack' ]);
+        expect(sequence.totalDamage).toBe(13);
     });
 });

@@ -1,6 +1,6 @@
 import { GAME_RULES, getCardDefinitionOrThrow, type CardDefinition } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
-import { isEnemyOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
+import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
 import { getInBoundsDirections, getNextSlot, slotKey } from '../domain/cardDirections';
 import type {
     ActivationStep,
@@ -13,6 +13,59 @@ import type {
 import { getCardBehaviorOrThrow } from '../effects/cardBehaviorRegistry';
 
 const STACKABLE_BEHAVIORS = new Set([ 'attack', 'defend' ]);
+
+/** Skills, jokers, hazards, and other non-stackable cards do not break type streaks. */
+export const isStreakNeutralBehavior = (behaviorId: string): boolean =>
+    !STACKABLE_BEHAVIORS.has(behaviorId);
+
+const streakToMultiplier = (streak: number): number =>
+{
+    if (streak <= 1)
+    {
+        return 1;
+    }
+
+    return 1 + (streak - 1) * GAME_RULES.typeStackBonus.perDuplicate;
+};
+
+/** Consecutive streak length for a stackable step; skills in between do not reset it. */
+export const computeStreakAtIndex = (
+    chain: readonly ActivationStep[],
+    index: number,
+): number =>
+{
+    const step = chain[index];
+
+    if (!step || isStreakNeutralBehavior(step.behaviorId))
+    {
+        return 0;
+    }
+
+    let streakBehavior: string | null = null;
+    let streak = 0;
+
+    for (let i = 0; i <= index; i++)
+    {
+        const current = chain[i]!;
+
+        if (isStreakNeutralBehavior(current.behaviorId))
+        {
+            continue;
+        }
+
+        if (current.behaviorId === streakBehavior)
+        {
+            streak += 1;
+        }
+        else
+        {
+            streakBehavior = current.behaviorId;
+            streak = 1;
+        }
+    }
+
+    return streak;
+};
 
 const buildStepContext = (
     board: BoardModel,
@@ -35,6 +88,9 @@ export const isJokerDefinition = (definition: CardDefinition): boolean =>
 
 export const isHazardDefinition = (definition: CardDefinition): boolean =>
     definition.behaviorId === 'hazard';
+
+export const isBoostDefinition = (definition: CardDefinition): boolean =>
+    definition.behaviorId === 'boost';
 
 const findChainStart = (board: BoardModel, preferred: SlotPosition): SlotPosition | null =>
     board.getCardAt(preferred) ? preferred : null;
@@ -140,46 +196,55 @@ const toAttackStep = (step: ActivationStep): AttackStep => ({
     visualId: step.visualId,
 });
 
-/** Multiplier per behavior based on how many times it appears in the chain. */
+/** Peak streak multiplier per behavior — for HUD / sequence metadata. */
 export const computeChainTypeMultipliers = (
     chain: readonly ActivationStep[],
 ): Partial<Record<string, number>> =>
 {
-    const counts = new Map<string, number>();
+    const peakStreak = new Map<string, number>();
 
-    for (const step of chain)
+    chain.forEach((step, index) =>
     {
         if (!STACKABLE_BEHAVIORS.has(step.behaviorId))
         {
-            continue;
+            return;
         }
 
-        counts.set(step.behaviorId, (counts.get(step.behaviorId) ?? 0) + 1);
-    }
+        const streak = computeStreakAtIndex(chain, index);
+        const currentPeak = peakStreak.get(step.behaviorId) ?? 0;
+
+        if (streak > currentPeak)
+        {
+            peakStreak.set(step.behaviorId, streak);
+        }
+    });
 
     const multipliers: Partial<Record<string, number>> = {};
-    const { perDuplicate } = GAME_RULES.typeStackBonus;
 
-    for (const [ behaviorId, count ] of counts)
+    for (const [ behaviorId, streak ] of peakStreak)
     {
-        if (count > 1)
+        const multiplier = streakToMultiplier(streak);
+
+        if (multiplier > 1)
         {
-            multipliers[behaviorId] = 1 + (count - 1) * perDuplicate;
+            multipliers[behaviorId] = multiplier;
         }
     }
 
     return multipliers;
 };
 
-const applyChainStacking = (
-    chain: ActivationStep[],
-    multipliers: Partial<Record<string, number>>,
-): ActivationStep[] =>
-    chain.map((step) =>
+const applyChainStacking = (chain: ActivationStep[]): ActivationStep[] =>
+    chain.map((step, index) =>
     {
-        const multiplier = multipliers[step.behaviorId];
+        if (!STACKABLE_BEHAVIORS.has(step.behaviorId))
+        {
+            return step;
+        }
 
-        if (!multiplier)
+        const multiplier = streakToMultiplier(computeStreakAtIndex(chain, index));
+
+        if (multiplier <= 1)
         {
             return step;
         }
@@ -202,6 +267,50 @@ const applyChainStacking = (
 
         return step;
     });
+
+/** Buffs the step immediately after a field boost in the chain. */
+export const applyBoostBonuses = (chain: ActivationStep[]): ActivationStep[] =>
+{
+    const multiplier = GAME_RULES.fieldBoost.nextStepMultiplier;
+
+    return chain.map((step, index) =>
+    {
+        if (index === 0 || chain[index - 1]?.behaviorId !== 'boost')
+        {
+            return step;
+        }
+
+        let damage = step.damage;
+        let armor = step.armor;
+
+        if (damage > 0)
+        {
+            damage = Math.round(damage * multiplier);
+        }
+
+        if (armor > 0)
+        {
+            armor = Math.round(armor * multiplier);
+        }
+
+        if (damage === step.damage && armor === step.armor)
+        {
+            return step;
+        }
+
+        return {
+            ...step,
+            damage,
+            armor,
+        };
+    });
+};
+
+export const isBoostedChainStep = (
+    chain: readonly ActivationStep[],
+    index: number,
+): boolean =>
+    index > 0 && chain[index - 1]?.behaviorId === 'boost';
 
 export const collectDisarmResults = (
     board: BoardModel,
@@ -237,7 +346,7 @@ export const buildAttackSequence = (
 ): AttackSequence =>
 {
     const stackMultipliers = computeChainTypeMultipliers(chain);
-    const scaledChain = applyChainStacking(chain, stackMultipliers);
+    const scaledChain = applyBoostBonuses(applyChainStacking(chain));
     const steps = scaledChain.filter((step) => step.damage > 0).map(toAttackStep);
     const totalDamage = steps.reduce((sum, step) => sum + step.damage, 0);
     const offChain = board ? computeOffChainBonuses(board, scaledChain) : { damage: 0, armor: 0 };
@@ -277,7 +386,7 @@ export const computeOffChainBonuses = (
 
         const card = board.getCardAt(slot);
 
-        if (!card || isEnemyOwnedCard(card))
+        if (!card || isEnemyOwnedCard(card) || isFieldOwnedCard(card))
         {
             continue;
         }

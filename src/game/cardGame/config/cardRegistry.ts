@@ -26,6 +26,7 @@ export interface GameRules {
     hazard: { definitionId: string };
     enemyTurnWeights: { attack: number; shield: number; placeHazard: number };
     typeStackBonus: { perDuplicate: number };
+    fieldBoost: { definitionId: string; nextStepMultiplier: number };
     activationStart: { row: number; col: number };
     activationStartColumn: number;
 }
