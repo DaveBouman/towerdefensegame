@@ -268,14 +268,38 @@ const applyChainStacking = (chain: ActivationStep[]): ActivationStep[] =>
         return step;
     });
 
-/** Buffs the step immediately after a field boost in the chain. */
+/** Whether a boost earlier in the chain still applies, skipping neutral skill steps. */
+export const hasBoostBeforeStep = (
+    chain: readonly ActivationStep[],
+    index: number,
+): boolean =>
+{
+    for (let i = index - 1; i >= 0; i--)
+    {
+        const previous = chain[i]!;
+
+        if (previous.behaviorId === 'boost')
+        {
+            return true;
+        }
+
+        if (!isStreakNeutralBehavior(previous.behaviorId))
+        {
+            return false;
+        }
+    }
+
+    return false;
+};
+
+/** Buffs the next attack/defend step after a field boost, propagating through skills. */
 export const applyBoostBonuses = (chain: ActivationStep[]): ActivationStep[] =>
 {
     const multiplier = GAME_RULES.fieldBoost.nextStepMultiplier;
 
     return chain.map((step, index) =>
     {
-        if (index === 0 || chain[index - 1]?.behaviorId !== 'boost')
+        if (!hasBoostBeforeStep(chain, index))
         {
             return step;
         }
@@ -310,7 +334,8 @@ export const isBoostedChainStep = (
     chain: readonly ActivationStep[],
     index: number,
 ): boolean =>
-    index > 0 && chain[index - 1]?.behaviorId === 'boost';
+    hasBoostBeforeStep(chain, index)
+    && (chain[index]?.damage ?? 0) + (chain[index]?.armor ?? 0) > 0;
 
 export const collectDisarmResults = (
     board: BoardModel,

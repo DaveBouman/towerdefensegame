@@ -61,6 +61,26 @@ export const randomDirectionForPool = (pool: ArrowPool): CardDirection =>
     return directions[Math.floor(Math.random() * directions.length)];
 };
 
+/** Picks a random arrow from the pool that stays on the board from this slot. */
+export const randomInBoundsDirectionForPool = (
+    slot: SlotPosition,
+    rows: number,
+    cols: number,
+    pool: ArrowPool,
+): CardDirection =>
+{
+    const poolDirections = pool === 'diagonal' ? DIAGONAL_DIRECTIONS : ORTHOGONAL_DIRECTIONS;
+    const valid = getInBoundsDirections(slot, rows, cols)
+        .filter((direction) => poolDirections.includes(direction));
+
+    if (valid.length === 0)
+    {
+        return poolDirections[0] ?? 'right';
+    }
+
+    return valid[Math.floor(Math.random() * valid.length)];
+};
+
 export const getInBoundsDirections = (
     slot: SlotPosition,
     rows: number,

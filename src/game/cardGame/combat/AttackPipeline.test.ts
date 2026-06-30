@@ -315,6 +315,17 @@ describe('AttackPipeline', () =>
         expect(buildAttackSequence(chain).totalDamage).toBe(15);
     });
 
+    it('propagates boost through jokers to the next attack', () =>
+    {
+        const chain = [
+            boostStep({ row: 0, col: 0 }),
+            jokerStep({ row: 0, col: 1 }),
+            attackStep({ row: 0, col: 2 }, 10),
+        ];
+
+        expect(buildAttackSequence(chain).totalDamage).toBe(15);
+    });
+
     it('applies boost after streak stacking on the buffed step', () =>
     {
         const chain = [

@@ -11,6 +11,8 @@ vi.mock('../events/CardGameEventBus', () => ({
 import { GAME_RULES } from '../config/cardRegistry';
 import { CardGameSession } from './CardGameSession';
 import { createCardInstance, resetCardInstanceCounter } from './createCardInstance';
+import { getInBoundsDirections, randomInBoundsDirectionForPool } from './cardDirections';
+import { GRID_CONFIG } from '../../config/gridConfig';
 import type { AttackSequence } from './types';
 
 const emptySequence = (): AttackSequence => ({
@@ -417,5 +419,25 @@ describe('CardGameSession enemy turn', () =>
             definitionId: 'boost',
             owner: 'field',
         });
+        expect(getInBoundsDirections(slot!, GRID_CONFIG.rows, GRID_CONFIG.cols))
+            .toContain(session.board.getCardAt(slot!)!.arrow);
+    });
+
+    it('never assigns off-board arrows to field boosts on corner slots', () =>
+    {
+        const slot = { row: 0, col: 0 };
+
+        for (let i = 0; i < 50; i++)
+        {
+            const arrow = randomInBoundsDirectionForPool(
+                slot,
+                GRID_CONFIG.rows,
+                GRID_CONFIG.cols,
+                'orthogonal',
+            );
+
+            expect(getInBoundsDirections(slot, GRID_CONFIG.rows, GRID_CONFIG.cols)).toContain(arrow);
+            expect([ 'up', 'left', 'up-left' ]).not.toContain(arrow);
+        }
     });
 });

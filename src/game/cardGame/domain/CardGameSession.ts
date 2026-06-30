@@ -1,10 +1,11 @@
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { GAME_RULES } from '../config/cardRegistry';
+import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import { planAttack } from '../combat/AttackPipeline';
 import { planEnemyTurn } from '../combat/enemyTurn';
 import { buildPlayerDeck, shuffleInPlace } from '../domain/buildPlayerDeck';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
+import { randomInBoundsDirectionForPool } from '../domain/cardDirections';
 import { createCardInstance } from '../domain/createCardInstance';
 import type {
     AttackReadiness,
@@ -470,7 +471,14 @@ export class CardGameSession
         }
 
         const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)]!;
-        const card = createCardInstance(GAME_RULES.hazard.definitionId, undefined, 'enemy');
+        const hazardDefinition = getCardDefinitionOrThrow(GAME_RULES.hazard.definitionId);
+        const hazardArrow = randomInBoundsDirectionForPool(
+            slot,
+            GRID_CONFIG.rows,
+            GRID_CONFIG.cols,
+            hazardDefinition.arrowPool,
+        );
+        const card = createCardInstance(GAME_RULES.hazard.definitionId, hazardArrow, 'enemy');
 
         this.board.placeCard(slot, card);
 
@@ -496,7 +504,14 @@ export class CardGameSession
         }
 
         const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)]!;
-        const card = createCardInstance(GAME_RULES.fieldBoost.definitionId, undefined, 'field');
+        const boostDefinition = getCardDefinitionOrThrow(GAME_RULES.fieldBoost.definitionId);
+        const boostArrow = randomInBoundsDirectionForPool(
+            slot,
+            GRID_CONFIG.rows,
+            GRID_CONFIG.cols,
+            boostDefinition.arrowPool,
+        );
+        const card = createCardInstance(GAME_RULES.fieldBoost.definitionId, boostArrow, 'field');
 
         this.board.placeCard(slot, card);
 
