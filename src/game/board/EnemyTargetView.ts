@@ -1,9 +1,9 @@
+import { ENEMY_PASSIVE_TEXTURE_KEY } from '../../ui/icons/enemyPassiveIcons';
 import { uiTextStyle } from '../config/uiTypography';
 import type { EnemyState, EnemyTurnAction } from '../cardGame/domain/types';
 import { describeEnemyIntent, getPrimaryCombatStep } from '../cardGame/combat/enemyTurn';
 import type { EnemyPassiveConfig } from '../cardGame/enemyPassives/types';
 import { attachEnemyPassiveTooltip } from '../cardGame/presentation/tooltips/EnemyPassiveTooltipController';
-import { ENEMY_PASSIVE_GLYPH } from '../cardGame/presentation/tooltips/enemyPassiveTooltipRegistry';
 import type { BoardLayout } from './boardLayout';
 
 const PASSIVE_ICON_SIZE = 26;
@@ -200,16 +200,29 @@ export class EnemyTargetView
             background.setStrokeStyle(2, PASSIVE_ROW_COLORS[passive.id], 1);
             background.setInteractive({ useHandCursor: true });
 
-            const glyph = this.scene.add.text(x, y, ENEMY_PASSIVE_GLYPH[passive.id], {
-                ...uiTextStyle(15, '#ffffff'),
-            }).setOrigin(0.5);
+            const textureKey = ENEMY_PASSIVE_TEXTURE_KEY[passive.id];
+            const icon = this.scene.textures.exists(textureKey)
+                ? this.scene.add.image(x, y, textureKey)
+                : null;
+
+            if (icon)
+            {
+                icon.setDisplaySize(18, 18);
+                icon.setOrigin(0.5);
+                icon.setTint(PASSIVE_ROW_COLORS[passive.id]);
+            }
 
             attachEnemyPassiveTooltip(this.scene, background, passive);
 
             background.on('pointerover', () => background.setFillStyle(0x24243a, 1));
             background.on('pointerout', () => background.setFillStyle(0x141425, 0.95));
 
-            icons.push(background, glyph);
+            icons.push(background);
+
+            if (icon)
+            {
+                icons.push(icon);
+            }
         });
 
         this.passiveIconsContainer = this.scene.add.container(0, 0, icons);

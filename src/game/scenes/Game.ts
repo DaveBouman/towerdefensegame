@@ -10,6 +10,7 @@ import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import type { SlotPosition } from '../cardGame/domain/types';
 import { destroyCardTooltipController } from '../cardGame/presentation/tooltips/CardTooltipController';
 import { destroyEnemyPassiveTooltipController } from '../cardGame/presentation/tooltips/EnemyPassiveTooltipController';
+import { preloadEnemyPassiveIcons } from '../cardGame/presentation/icons/preloadEnemyPassiveIcons';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../cardGame/events/cardGameEvents';
@@ -37,6 +38,11 @@ export class Game extends Scene
     constructor ()
     {
         super('Game');
+    }
+
+    preload (): void
+    {
+        preloadEnemyPassiveIcons(this);
     }
 
     create (): void

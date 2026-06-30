@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { ENEMY_PASSIVE_TEXTURE_KEY } from '../../../../ui/icons/enemyPassiveIcons';
 import { normalizeEnemyPassives } from '../../enemyPassives/defaults';
-import { ENEMY_PASSIVE_GLYPH, resolveEnemyPassiveTooltip } from './enemyPassiveTooltipRegistry';
+import { resolveEnemyPassiveTooltip } from './enemyPassiveTooltipRegistry';
 
 describe('enemyPassiveTooltipRegistry', () =>
 {
-    it('defines a glyph for every passive id', () =>
+    it('defines an icon texture for every passive id', () =>
     {
         const passives = normalizeEnemyPassives([
             'thorns',
@@ -19,7 +20,7 @@ describe('enemyPassiveTooltipRegistry', () =>
 
         for (const passive of passives)
         {
-            expect(ENEMY_PASSIVE_GLYPH[passive.id].length).toBeGreaterThan(0);
+            expect(ENEMY_PASSIVE_TEXTURE_KEY[passive.id].length).toBeGreaterThan(0);
         }
     });
 

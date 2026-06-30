@@ -5,17 +5,6 @@ export interface EnemyPassiveTooltipContent {
     lines: string[];
 }
 
-export const ENEMY_PASSIVE_GLYPH: Record<EnemyPassiveConfig['id'], string> = {
-    thorns: '⚡',
-    enrage: '💢',
-    lastStand: '☠',
-    smoke: '💨',
-    wetBlanket: '💧',
-    silenceTile: '🔇',
-    loopHunter: '↺',
-    jammer: '📡',
-};
-
 const percent = (ratio: number): string => `${Math.round(ratio * 100)}%`;
 
 export const resolveEnemyPassiveTooltip = (
