@@ -1,7 +1,7 @@
-import { GAME_RULES, getCardDefinitionOrThrow, type CardDefinition } from '../config/cardRegistry';
+import { GAME_RULES, getCardDefinitionOrThrow, getChainStepDistance, type CardDefinition } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
 import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
-import { getInBoundsDirections, getNextSlot, slotKey } from '../domain/cardDirections';
+import { getInBoundsDirections, getSlotAtStepDistance, slotKey } from '../domain/cardDirections';
 import type {
     ActivationStep,
     AttackSequence,
@@ -141,16 +141,17 @@ export const getNextChainSlot = (
     board: BoardModel,
     from: SlotPosition,
     direction: CardDirection,
+    stepDistance = 1,
 ): SlotPosition | null =>
 {
-    const next = getNextSlot(from, direction, board.rows, board.cols);
+    const landing = getSlotAtStepDistance(from, direction, board.rows, board.cols, stepDistance);
 
-    if (!next || !board.getCardAt(next))
+    if (!landing || !board.getCardAt(landing))
     {
         return null;
     }
 
-    return next;
+    return landing;
 };
 
 /** Walk the board following each card's arrow to build the activation chain. */
@@ -181,7 +182,12 @@ export const planActivationChain = (
             break;
         }
 
-        current = getNextChainSlot(board, current, step.arrow);
+        current = getNextChainSlot(
+            board,
+            current,
+            step.arrow,
+            getChainStepDistance(definition),
+        );
     }
 
     return chain;

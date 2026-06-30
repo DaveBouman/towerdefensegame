@@ -256,13 +256,23 @@ export class CardGamePresenter
                 {
                     step.arrow = direction;
                     step.card.arrow = direction;
-                    scheduleNext(getNextChainSlot(board, step.slot, direction));
+                    scheduleNext(getNextChainSlot(
+                        board,
+                        step.slot,
+                        direction,
+                        getChainStepDistance(definition),
+                    ));
                 });
 
                 return;
             }
 
-            scheduleNext(getNextChainSlot(board, step.slot, step.arrow));
+            scheduleNext(getNextChainSlot(
+                board,
+                step.slot,
+                step.arrow,
+                getChainStepDistance(definition),
+            ));
         };
 
         runStep();

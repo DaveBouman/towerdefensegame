@@ -107,3 +107,37 @@ export const getNextSlot = (
 
     return next;
 };
+
+/** Slot reached after moving `distance` steps in one direction (skips intermediate tiles). */
+export const getSlotAtStepDistance = (
+    from: SlotPosition,
+    direction: CardDirection,
+    rows: number,
+    cols: number,
+    distance: number,
+): SlotPosition | null =>
+{
+    let slot: SlotPosition | null = from;
+
+    for (let step = 0; step < distance; step++)
+    {
+        if (!slot)
+        {
+            return null;
+        }
+
+        slot = getNextSlot(slot, direction, rows, cols);
+    }
+
+    return slot;
+};
+
+export const getInBoundsDirectionsAtDistance = (
+    slot: SlotPosition,
+    rows: number,
+    cols: number,
+    distance: number,
+): CardDirection[] =>
+    CARD_DIRECTIONS.filter((direction) =>
+        getSlotAtStepDistance(slot, direction, rows, cols, distance) !== null,
+    );

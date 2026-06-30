@@ -10,13 +10,15 @@ describe('buildPlayerDeck', () =>
         resetCardInstanceCounter();
     });
 
-    it('builds a deck with 6 attack, 6 defend, and 3 joker cards', () =>
+    it('builds a deck with attack, defend, leap, and joker cards', () =>
     {
         const deck = buildPlayerDeck(15);
 
         expect(deck).toHaveLength(15);
-        expect(deck.filter((card) => card.definitionId === 'attack')).toHaveLength(6);
-        expect(deck.filter((card) => card.definitionId === 'defend')).toHaveLength(6);
+        expect(deck.filter((card) => card.definitionId === 'attack')).toHaveLength(4);
+        expect(deck.filter((card) => card.definitionId === 'defend')).toHaveLength(4);
+        expect(deck.filter((card) => card.definitionId === 'attack-leap')).toHaveLength(2);
+        expect(deck.filter((card) => card.definitionId === 'defend-leap')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'joker')).toHaveLength(3);
     });
 

@@ -26,12 +26,30 @@
       "maxChainActivations": 2
     },
     {
+      "id": "attack-leap",
+      "label": "Lunge",
+      "power": 5,
+      "behaviorId": "attack",
+      "visualId": "attack",
+      "arrowPool": "orthogonal",
+      "chainStepDistance": 2
+    },
+    {
       "id": "defend-special",
       "label": "Ward",
       "power": 5,
       "behaviorId": "defend",
       "visualId": "defend",
       "arrowPool": "diagonal"
+    },
+    {
+      "id": "defend-leap",
+      "label": "Bastion",
+      "power": 3,
+      "behaviorId": "defend",
+      "visualId": "defend",
+      "arrowPool": "orthogonal",
+      "chainStepDistance": 2
     },
     {
       "id": "joker",

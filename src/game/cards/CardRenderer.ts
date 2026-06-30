@@ -1,4 +1,4 @@
-import { getCardDefinitionOrThrow, GAME_RULES } from '../cardGame/config/cardRegistry';
+import { getCardDefinitionOrThrow, GAME_RULES, getChainStepDistance } from '../cardGame/config/cardRegistry';
 import type { CardInstance } from '../cardGame/domain/types';
 import { isEnemyOwnedCard, isFieldOwnedCard } from '../cardGame/domain/cardOwnership';
 import { ARROW_GLYPH, arrowLabelPosition } from './cardArrows';
@@ -28,6 +28,7 @@ export const buildCardGraphic = (
     const container = scene.add.container(0, 0);
     const isJoker = definition.behaviorId === 'joker';
     const isBoost = definition.behaviorId === 'boost';
+    const leapDistance = getChainStepDistance(definition);
 
     const body = scene.add.rectangle(width / 2, height / 2, width, height, style.fill);
 
@@ -61,6 +62,20 @@ export const buildCardGraphic = (
     ).setOrigin(0.5);
 
     container.add([ body, arrow, kindLabel, power ]);
+
+    if (leapDistance > 1)
+    {
+        const leapBadge = scene.add.text(width - 6, 6, String(leapDistance), {
+            fontFamily: 'monospace',
+            fontSize: '11px',
+            color: '#ffffff',
+            fontStyle: 'bold',
+            backgroundColor: '#00000088',
+            padding: { x: 3, y: 1 },
+        }).setOrigin(1, 0);
+
+        container.add(leapBadge);
+    }
 
     if (interactive)
     {

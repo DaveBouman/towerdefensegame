@@ -15,8 +15,10 @@ export const shuffleInPlace = <T>(items: T[]): T[] =>
 };
 
 const DECK_COMPOSITION: readonly { definitionId: string; count: number }[] = [
-    { definitionId: 'attack', count: 6 },
-    { definitionId: 'defend', count: 6 },
+    { definitionId: 'attack', count: 4 },
+    { definitionId: 'defend', count: 4 },
+    { definitionId: 'attack-leap', count: 2 },
+    { definitionId: 'defend-leap', count: 2 },
     { definitionId: 'joker', count: 3 },
 ];
 

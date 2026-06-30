@@ -110,6 +110,35 @@ describe('AttackPipeline', () =>
         expect(chain[1].arrow).toBe('left');
     });
 
+    it('jumps two spaces when leaving a leap card', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack-leap', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 2 }, createCardInstance('attack', 'up'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+
+        expect(chain.map((step) => step.slot)).toEqual([
+            { row: 0, col: 0 },
+            { row: 0, col: 2 },
+        ]);
+        expect(chain).toHaveLength(2);
+    });
+
+    it('stops when a leap card has no card two spaces away', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack-leap', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('attack', 'left'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+
+        expect(chain).toHaveLength(1);
+    });
+
     it('stops when the arrow points to an empty cell', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));

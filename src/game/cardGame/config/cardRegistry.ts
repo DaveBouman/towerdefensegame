@@ -12,6 +12,8 @@ export interface CardDefinition {
     arrowPool: ArrowPool;
     /** How many times this card can activate when the chain revisits its slot. */
     maxChainActivations?: number;
+    /** How many grid steps the chain advances along this card's arrow. */
+    chainStepDistance?: number;
 }
 
 export interface GameRules {
@@ -53,3 +55,6 @@ export const getCardDefinitionOrThrow = (id: string): CardDefinition =>
 };
 
 export const CARD_DEFINITIONS: readonly CardDefinition[] = cardsData.cards;
+
+export const getChainStepDistance = (definition: CardDefinition): number =>
+    Math.max(1, definition.chainStepDistance ?? 1);
