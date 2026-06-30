@@ -42,6 +42,3 @@ export const ENEMY_PASSIVE_ICON_ENTRIES = (Object.keys(ENEMY_PASSIVE_TEXTURE_KEY
     textureKey: ENEMY_PASSIVE_TEXTURE_KEY[id],
     svg: ENEMY_PASSIVE_SVG_RAW[id],
 }));
-
-export const enemyPassiveIconDataUri = (id: EnemyPassiveId): string =>
-    `data:image/svg+xml;charset=utf-8,${encodeURIComponent(ENEMY_PASSIVE_SVG_RAW[id])}`;

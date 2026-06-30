@@ -40,12 +40,12 @@ export class Game extends Scene
         super('Game');
     }
 
-    preload (): void
+    create (): void
     {
-        preloadEnemyPassiveIcons(this);
+        void preloadEnemyPassiveIcons(this).then(() => this.initializeGame());
     }
 
-    create (): void
+    private initializeGame (): void
     {
         const { width, height } = this.scale;
         this.layout = computeBoardLayout(width, height);
