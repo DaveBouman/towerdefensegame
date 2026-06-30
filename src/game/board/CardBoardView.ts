@@ -183,7 +183,7 @@ export class CardBoardView
         onChoose: (direction: CardDirection) => void,
     ): void
     {
-        const directions = getJokerDirectionChoices(slot, GRID_CONFIG.rows, GRID_CONFIG.cols);
+        const directions = getJokerDirectionChoices(this.board, slot);
 
         if (directions.length === 0)
         {

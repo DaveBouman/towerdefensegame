@@ -35,5 +35,6 @@
     "row": 0,
     "col": 0
   },
-  "activationStartColumn": 0
+  "activationStartColumn": 0,
+  "maxChainSteps": 24
 }

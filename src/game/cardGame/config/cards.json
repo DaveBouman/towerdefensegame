@@ -61,6 +61,14 @@
       "chainStepDistance": 2
     },
     {
+      "id": "loop-reset",
+      "label": "Loop",
+      "power": 0,
+      "behaviorId": "loop-reset",
+      "visualId": "loop-reset",
+      "arrowPool": "orthogonal"
+    },
+    {
       "id": "hazard",
       "label": "Trap",
       "power": 3,

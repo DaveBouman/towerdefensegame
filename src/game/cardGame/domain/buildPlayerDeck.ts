@@ -20,7 +20,8 @@ const DECK_COMPOSITION: readonly { definitionId: string; count: number }[] = [
     { definitionId: 'defend', count: 4 },
     { definitionId: 'attack-leap', count: 2 },
     { definitionId: 'defend-leap', count: 2 },
-    { definitionId: 'joker', count: 3 },
+    { definitionId: 'joker', count: 2 },
+    { definitionId: 'loop-reset', count: 1 },
 ];
 
 const buildBalancedArrowQueues = (): Map<ArrowPool, CardDirection[]> =>

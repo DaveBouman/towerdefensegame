@@ -20,7 +20,8 @@ describe('buildPlayerDeck', () =>
         expect(deck.filter((card) => card.definitionId === 'defend')).toHaveLength(4);
         expect(deck.filter((card) => card.definitionId === 'attack-leap')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'defend-leap')).toHaveLength(2);
-        expect(deck.filter((card) => card.definitionId === 'joker')).toHaveLength(3);
+        expect(deck.filter((card) => card.definitionId === 'joker')).toHaveLength(2);
+        expect(deck.filter((card) => card.definitionId === 'loop-reset')).toHaveLength(1);
     });
 
     it('uses orthogonal arrows for attack and defend deck cards', () =>
@@ -43,11 +44,14 @@ describe('buildPlayerDeck', () =>
         const deck = buildPlayerDeck(GAME_RULES.deckSize);
         const orthogonalCards = deck.filter((card) => card.definitionId !== 'joker');
 
-        expect(orthogonalCards).toHaveLength(12);
+        expect(orthogonalCards).toHaveLength(13);
 
         for (const direction of ORTHOGONAL_DIRECTIONS)
         {
-            expect(orthogonalCards.filter((card) => card.arrow === direction)).toHaveLength(3);
+            const count = orthogonalCards.filter((card) => card.arrow === direction).length;
+
+            expect(count).toBeGreaterThanOrEqual(3);
+            expect(count).toBeLessThanOrEqual(4);
         }
     });
 });

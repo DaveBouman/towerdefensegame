@@ -1,7 +1,7 @@
 import { GAME_RULES, getCardDefinitionOrThrow, getChainStepDistance, type CardDefinition } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
 import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
-import { getInBoundsDirections, getInBoundsDirectionsAtDistance, getSlotAtStepDistance, slotKey } from '../domain/cardDirections';
+import { getInBoundsDirectionsAtDistance, getSlotAtStepDistance, slotKey } from '../domain/cardDirections';
 import type {
     ActivationStep,
     AttackSequence,
@@ -92,13 +92,26 @@ export const isHazardDefinition = (definition: CardDefinition): boolean =>
 export const isBoostDefinition = (definition: CardDefinition): boolean =>
     definition.behaviorId === 'boost';
 
+export const isLoopResetDefinition = (definition: CardDefinition): boolean =>
+    definition.behaviorId === 'loop-reset';
+
 const findChainStart = (board: BoardModel, preferred: SlotPosition): SlotPosition | null =>
     board.getCardAt(preferred) ? preferred : null;
+
+export interface ChainWalkState {
+    activationCounts: Map<string, number>;
+    loopResetConsumed: boolean;
+}
+
+export const createChainWalkState = (): ChainWalkState => ({
+    activationCounts: new Map(),
+    loopResetConsumed: false,
+});
 
 export const tryBuildActivationStep = (
     board: BoardModel,
     slot: SlotPosition,
-    activationCounts: Map<string, number>,
+    state: ChainWalkState,
 ): ActivationStep | null =>
 {
     const card = board.getCardAt(slot);
@@ -109,21 +122,33 @@ export const tryBuildActivationStep = (
     }
 
     const definition = getCardDefinitionOrThrow(card.definitionId);
+
+    if (isLoopResetDefinition(definition) && state.loopResetConsumed)
+    {
+        return null;
+    }
+
     const key = slotKey(slot);
     const maxActivations = definition.maxChainActivations ?? 1;
-    const activations = activationCounts.get(key) ?? 0;
+    const activations = state.activationCounts.get(key) ?? 0;
 
     if (activations >= maxActivations)
     {
         return null;
     }
 
-    activationCounts.set(key, activations + 1);
+    state.activationCounts.set(key, activations + 1);
 
     const ctx = buildStepContext(board, slot, card);
     const behavior = getCardBehaviorOrThrow(ctx.definition.behaviorId);
     const attack = behavior.contributeToAttack(ctx);
     const armor = behavior.contributeArmor?.(ctx) ?? 0;
+
+    if (isLoopResetDefinition(definition))
+    {
+        state.loopResetConsumed = true;
+        state.activationCounts.clear();
+    }
 
     return {
         slot,
@@ -161,12 +186,12 @@ export const planActivationChain = (
 ): ActivationStep[] =>
 {
     const chain: ActivationStep[] = [];
-    const activationCounts = new Map<string, number>();
+    const walkState = createChainWalkState();
     let current: SlotPosition | null = findChainStart(board, startSlot);
 
-    while (current)
+    while (current && chain.length < GAME_RULES.maxChainSteps)
     {
-        const step = tryBuildActivationStep(board, current, activationCounts);
+        const step = tryBuildActivationStep(board, current, walkState);
 
         if (!step)
         {
@@ -555,15 +580,11 @@ export const getJokerDirectionChoices = (
 ): CardDirection[] =>
 {
     const stepDistance = getChainStepDistance(getCardDefinitionOrThrow('joker'));
+    const inBounds = getInBoundsDirectionsAtDistance(slot, board.rows, board.cols, stepDistance);
 
-    const withCard = CARD_DIRECTIONS.filter((direction) =>
+    const withCard = inBounds.filter((direction) =>
         getNextChainSlot(board, slot, direction, stepDistance) !== null,
     );
 
-    if (withCard.length > 0)
-    {
-        return withCard;
-    }
-
-    return getInBoundsDirectionsAtDistance(slot, board.rows, board.cols, stepDistance);
+    return withCard.length > 0 ? withCard : inBounds;
 };

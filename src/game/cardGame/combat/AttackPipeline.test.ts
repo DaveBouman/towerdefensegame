@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex } from './AttackPipeline';
+import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, getJokerDirectionChoices, getNextChainSlot } from './AttackPipeline';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { createCardInstance, resetCardInstanceCounter } from '../domain/createCardInstance';
 import type { ActivationStep, SlotPosition } from '../domain/types';
@@ -192,6 +192,34 @@ describe('AttackPipeline', () =>
         expect(chain).toHaveLength(2);
     });
 
+    it('lets loop-reset reopen earlier slots in the chain', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('loop-reset', 'left'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+
+        expect(chain.slice(0, 3).map((step) => step.definitionId)).toEqual([ 'attack', 'loop-reset', 'attack' ]);
+        expect(chain[0]!.slot).toEqual(chain[2]!.slot);
+        expect(chain[1]!.definitionId).toBe('loop-reset');
+    });
+
+    it('only resets the chain once per attack', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('loop-reset', 'left'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+
+        expect(chain).toHaveLength(3);
+        expect(chain.filter((step) => step.definitionId === 'loop-reset')).toHaveLength(1);
+        expect(planAttack(board, { row: 0, col: 0 }).totalDamage).toBe(10);
+    });
+
     it('plans damage from attack cards in the chain', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
@@ -219,6 +247,20 @@ describe('AttackPipeline', () =>
 
         expect(chain).toHaveLength(2);
         expect(chain[1].definitionId).toBe('joker');
+    });
+
+    it('lets the joker jump two spaces when a direction is chosen', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('joker', 'right'));
+        board.placeCard({ row: 0, col: 3 }, createCardInstance('attack', 'left'));
+
+        const choices = getJokerDirectionChoices(board, { row: 0, col: 1 });
+
+        expect(choices).toContain('right');
+        expect(getNextChainSlot(board, { row: 0, col: 1 }, 'right', 2)).toEqual({ row: 0, col: 3 });
     });
 
     it('grants off-chain bonuses for board cards outside the activation chain', () =>

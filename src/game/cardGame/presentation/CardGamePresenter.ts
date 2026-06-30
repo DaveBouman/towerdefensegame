@@ -9,6 +9,7 @@ import {
     isJokerDefinition,
     resolveChainSteps,
     tryBuildActivationStep,
+    createChainWalkState,
 } from '../combat/AttackPipeline';
 import type { ActivationStep, AttackSequence, AttackStep, EnemyTurnAction, SlotPosition } from '../domain/types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
@@ -67,7 +68,7 @@ export class CardGamePresenter
         const board = this.session.board;
         const chain: ActivationStep[] = [];
         const attackSteps: AttackStep[] = [];
-        const activationCounts = new Map<string, number>();
+        const walkState = createChainWalkState();
         let current: SlotPosition | null = board.getCardAt(chainStart) ? chainStart : null;
         let activeStep: ActivationStep | null = null;
         const stepMs = GAME_RULES.activationStepMs;
@@ -200,7 +201,7 @@ export class CardGamePresenter
                 return;
             }
 
-            const step = tryBuildActivationStep(board, current, activationCounts);
+            const step = tryBuildActivationStep(board, current, walkState);
 
             if (!step)
             {
@@ -260,6 +261,12 @@ export class CardGamePresenter
                     scheduleNext(getNextChainSlotFromStep(board, step));
                 });
 
+                return;
+            }
+
+            if (chain.length >= GAME_RULES.maxChainSteps)
+            {
+                finalize();
                 return;
             }
 

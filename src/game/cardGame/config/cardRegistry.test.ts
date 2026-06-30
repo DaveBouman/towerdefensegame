@@ -12,12 +12,14 @@ describe('cardRegistry', () =>
 
     it('loads card definitions from cards.json', () =>
     {
-        expect(CARD_DEFINITIONS).toHaveLength(9);
+        expect(CARD_DEFINITIONS).toHaveLength(10);
         expect(getCardDefinition('attack')?.arrowPool).toBe('orthogonal');
         expect(getCardDefinition('defend')?.arrowPool).toBe('orthogonal');
         expect(getCardDefinition('attack-special')?.maxChainActivations).toBe(2);
         expect(getCardDefinition('defend-special')?.arrowPool).toBe('diagonal');
         expect(getCardDefinition('joker')?.behaviorId).toBe('joker');
+        expect(getCardDefinition('joker')?.chainStepDistance).toBe(2);
+        expect(getCardDefinition('loop-reset')?.behaviorId).toBe('loop-reset');
         expect(getCardDefinition('hazard')?.behaviorId).toBe('hazard');
         expect(getCardDefinition('boost')?.behaviorId).toBe('boost');
         expect(getCardDefinition('attack-leap')?.chainStepDistance).toBe(2);
@@ -29,6 +31,7 @@ describe('cardRegistry', () =>
         expect(GAME_RULES.deckSize).toBe(15);
         expect(GAME_RULES.handSize).toBe(6);
         expect(GAME_RULES.activationStartColumn).toBe(0);
+        expect(GAME_RULES.maxChainSteps).toBe(24);
         expect(GAME_RULES.enemy.maxHealth).toBeGreaterThan(0);
     });
 

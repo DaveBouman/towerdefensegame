@@ -31,6 +31,7 @@ export interface GameRules {
     fieldBoost: { definitionId: string; nextStepMultiplier: number };
     activationStart: { row: number; col: number };
     activationStartColumn: number;
+    maxChainSteps: number;
 }
 
 const definitions = new Map<string, CardDefinition>(
