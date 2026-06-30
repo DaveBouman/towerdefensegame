@@ -94,7 +94,8 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: [
             `Defend cards after this lose armor and deal ${ctx.definition.power} poison damage each.`,
-            'Stops when an attack card appears later in the chain.',
+            'Stops on defends that follow an attack; works alongside Fire and other specials.',
+            'Fire and Poison between this card and a defend do not cancel the trail.',
         ],
     })),
     provider('fire', (ctx) => ({
@@ -102,6 +103,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         lines: [
             `Deals ${ctx.definition.power} damage when activated in the chain.`,
             `+${GAME_RULES.chainAbilities.fireAlternation.bonusDamagePerAlternatingStep} bonus damage per alternating attack/defend step after this (needs 2+).`,
+            'Runs in parallel with Poison — both trails stay active until their own rule ends.',
         ],
     })),
     provider('hazard', (ctx) => ({

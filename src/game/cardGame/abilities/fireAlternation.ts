@@ -1,4 +1,5 @@
 import type { ActivationStep } from '../domain/types';
+import { hasAttackBetween, isTrailNeutralBehavior } from './chainTrailNeutrals';
 
 const ALTERNATING_BEHAVIORS = new Set([ 'attack', 'defend' ]);
 

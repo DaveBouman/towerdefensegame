@@ -1,11 +1,11 @@
 import type { ActivationStep } from '../domain/types';
+import { hasAttackBetween, isTrailNeutralBehavior } from './chainTrailNeutrals';
 
-const STACKABLE_BEHAVIORS = new Set([ 'attack', 'defend' ]);
-
-const isStreakNeutralBehavior = (behaviorId: string): boolean =>
-    !STACKABLE_BEHAVIORS.has(behaviorId);
-
-/** Defend steps after poison that lose armor until the next attack in the chain. */
+/**
+ * Defend steps poisoned by a poison card — each defend is evaluated independently so
+ * fire/poison/joker cards between poison and the defend do not end the poison trail.
+ * A defend is poisoned when no attack appears between poison and that defend.
+ */
 export const getDefendIndicesReplacedByPoison = (
     chain: readonly ActivationStep[],
     poisonIndex: number,
@@ -17,18 +17,20 @@ export const getDefendIndicesReplacedByPoison = (
     {
         const step = chain[i]!;
 
-        if (isStreakNeutralBehavior(step.behaviorId))
+        if (isTrailNeutralBehavior(step.behaviorId))
         {
             continue;
         }
 
-        if (step.behaviorId === 'defend')
+        if (step.behaviorId !== 'defend')
+        {
+            continue;
+        }
+
+        if (!hasAttackBetween(chain, poisonIndex, i))
         {
             replaced.push(i);
-            continue;
         }
-
-        break;
     }
 
     return replaced;

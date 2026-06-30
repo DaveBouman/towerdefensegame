@@ -207,4 +207,57 @@ describe('chain abilities', () =>
 
         expect(resolved.enemyDamage).toBe(4);
     });
+
+    it('stacks fire alternation and poison trail when both are in the chain', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+        const chain = [
+            activationStep('fire', 0, 0, 'right'),
+            activationStep('poison', 0, 1, 'right'),
+            activationStep('defend', 0, 2),
+            activationStep('attack', 0, 3),
+        ];
+
+        const resolved = resolveChainAbilities(chain, board);
+        const scaled = resolveChainSteps(chain);
+
+        expect(resolved.effects).toHaveLength(2);
+        expect(resolved.enemyDamage).toBe(4);
+        expect(scaled[2]?.armor).toBe(0);
+    });
+
+    it('keeps fire counting after poison and poison counting after fire', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+        const chain = [
+            activationStep('poison', 0, 0, 'right'),
+            activationStep('fire', 0, 1, 'right'),
+            activationStep('defend', 0, 2),
+            activationStep('attack', 0, 3),
+            activationStep('defend', 0, 4),
+        ];
+
+        const resolved = resolveChainAbilities(chain, board);
+        const scaled = resolveChainSteps(chain);
+
+        expect(resolved.enemyDamage).toBe(7);
+        expect(scaled[2]?.armor).toBe(0);
+        expect(scaled[4]?.armor).toBe(3);
+    });
+
+    it('lets fire alternation continue after an attack that ends poison', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+        const chain = [
+            activationStep('fire', 0, 0, 'right'),
+            activationStep('poison', 0, 1, 'right'),
+            activationStep('defend', 0, 2),
+            activationStep('attack', 0, 3),
+            activationStep('defend', 0, 4),
+        ];
+
+        const resolved = resolveChainAbilities(chain, board);
+
+        expect(resolved.enemyDamage).toBe(7);
+    });
 });
