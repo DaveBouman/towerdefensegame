@@ -34,6 +34,9 @@ describe('cardRegistry', () =>
         expect(GAME_RULES.activationStartColumn).toBe(0);
         expect(GAME_RULES.maxChainSteps).toBe(24);
         expect(GAME_RULES.enemy.maxHealth).toBe(80);
+        expect(GAME_RULES.player.maxHealth).toBe(80);
+        expect(GAME_RULES.enemy.attackDamage).toBe(8);
+        expect(GAME_RULES.enemy.shieldGain).toBe(10);
     });
 
     it('creates unique card instances with pool-based arrows', () =>

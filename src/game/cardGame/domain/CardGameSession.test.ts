@@ -149,7 +149,7 @@ describe('CardGameSession enemy turn', () =>
         expect(result.shieldAbsorbed).toBe(3);
         expect(result.healthDamage).toBe(1);
         expect(session.getPlayer().shield).toBe(0);
-        expect(session.getPlayer().health).toBe(19);
+        expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth - 1);
     });
 
     it('absorbs player damage with enemy shield first', () =>

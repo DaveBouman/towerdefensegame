@@ -5,12 +5,12 @@
   "handSize": 10,
   "fightRerollsPerFight": 3,
   "player": {
-    "maxHealth": 20
+    "maxHealth": 80
   },
   "enemy": {
     "maxHealth": 80,
-    "attackDamage": 4,
-    "shieldGain": 5
+    "attackDamage": 8,
+    "shieldGain": 10
   },
   "offChainBonus": {
     "attackDamage": 1,
