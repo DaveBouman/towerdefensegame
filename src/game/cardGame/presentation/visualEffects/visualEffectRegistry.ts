@@ -2,6 +2,7 @@ import { attackGlowVisual } from './attackGlowVisual';
 import { boostGlowVisual } from './boostGlowVisual';
 import { defendGlowVisual } from './defendGlowVisual';
 import { hazardGlowVisual } from './hazardGlowVisual';
+import { jokerGlowVisual } from './jokerGlowVisual';
 import { loopResetGlowVisual } from './loopResetGlowVisual';
 import type { CardVisualEffect } from './types';
 

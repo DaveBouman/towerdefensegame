@@ -1,4 +1,4 @@
-import { GRID_CONFIG } from './config/gridConfig';
+import { GRID_CONFIG } from '../config/gridConfig';
 
 const TILE_EVEN = 0x1e1e32;
 const TILE_ODD = 0x232342;
