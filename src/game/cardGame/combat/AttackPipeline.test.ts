@@ -220,6 +220,35 @@ describe('AttackPipeline', () =>
         expect(planAttack(board, { row: 0, col: 0 }).totalDamage).toBe(10);
     });
 
+    it('reopens every card before the loop but not cards after it on the return path', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 2 }, createCardInstance('loop-reset', 'down'));
+        board.placeCard({ row: 1, col: 2 }, createCardInstance('attack', 'left'));
+        board.placeCard({ row: 1, col: 1 }, createCardInstance('attack', 'left'));
+        board.placeCard({ row: 1, col: 0 }, createCardInstance('attack', 'up'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+
+        expect(chain.map((step) => step.definitionId)).toEqual([
+            'attack',
+            'attack',
+            'loop-reset',
+            'attack',
+            'attack',
+            'attack',
+            'attack',
+            'attack',
+        ]);
+        expect(chain.filter((step) => step.slot.row === 0 && step.slot.col === 0)).toHaveLength(2);
+        expect(chain.filter((step) => step.slot.row === 0 && step.slot.col === 1)).toHaveLength(2);
+        expect(chain.filter((step) => step.slot.row === 1 && step.slot.col === 2)).toHaveLength(1);
+        expect(chain.filter((step) => step.definitionId === 'loop-reset')).toHaveLength(1);
+    });
+
     it('plans damage from attack cards in the chain', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));

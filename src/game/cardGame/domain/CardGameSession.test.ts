@@ -79,6 +79,10 @@ describe('CardGameSession enemy turn', () =>
             { row: 0, col: 3 },
             { row: 1, col: 0 },
             { row: 1, col: 1 },
+            { row: 1, col: 2 },
+            { row: 1, col: 3 },
+            { row: 2, col: 0 },
+            { row: 2, col: 1 },
         ] as const;
 
         for (const slot of placementSlots)
@@ -88,14 +92,14 @@ describe('CardGameSession enemy turn', () =>
 
         session.clearBoard();
         expect(session.getHand()).toHaveLength(0);
-        expect(session.getDiscardSize()).toBe(6);
-        expect(session.getDeckSize()).toBe(9);
+        expect(session.getDiscardSize()).toBe(GAME_RULES.handSize);
+        expect(session.getDeckSize()).toBe(GAME_RULES.deckSize - GAME_RULES.handSize);
 
         session.renewHand();
 
-        expect(session.getHand()).toHaveLength(6);
-        expect(session.getDiscardSize()).toBe(6);
-        expect(session.getDeckSize()).toBe(3);
+        expect(session.getHand()).toHaveLength(GAME_RULES.handSize);
+        expect(session.getDiscardSize()).toBe(GAME_RULES.handSize);
+        expect(session.getDeckSize()).toBe(GAME_RULES.deckSize - GAME_RULES.handSize * 2);
 
         for (const slot of placementSlots)
         {
@@ -104,14 +108,14 @@ describe('CardGameSession enemy turn', () =>
 
         session.clearBoard();
         expect(session.getHand()).toHaveLength(0);
-        expect(session.getDiscardSize()).toBe(12);
-        expect(session.getDeckSize()).toBe(3);
+        expect(session.getDiscardSize()).toBe(GAME_RULES.handSize * 2);
+        expect(session.getDeckSize()).toBe(GAME_RULES.deckSize - GAME_RULES.handSize * 2);
 
         session.renewHand();
 
-        expect(session.getHand()).toHaveLength(6);
+        expect(session.getHand()).toHaveLength(GAME_RULES.handSize);
         expect(session.getDiscardSize()).toBe(0);
-        expect(session.getDeckSize()).toBe(9);
+        expect(session.getDeckSize()).toBe(GAME_RULES.deckSize - GAME_RULES.handSize);
     });
 
     it('applies defend armor as shield that blocks enemy attacks', () =>
@@ -158,7 +162,7 @@ describe('CardGameSession enemy turn', () =>
         expect(result.shieldAbsorbed).toBe(5);
         expect(result.healthDamage).toBe(3);
         expect(result.enemy.shield).toBe(0);
-        expect(result.enemy.health).toBe(27);
+        expect(result.enemy.health).toBe(GAME_RULES.enemy.maxHealth - 3);
     });
 
     it('keeps enemy shield until the next enemy turn begins', () =>

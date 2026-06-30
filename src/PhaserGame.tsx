@@ -42,5 +42,5 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame
         };
     }, [ ref ]);
 
-    return <div id="game-container" ref={containerRef} />;
+    return <div id="game-container" className="game-canvas-host" ref={containerRef} />;
 });

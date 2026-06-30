@@ -28,6 +28,40 @@ export interface BoardLayout {
     pileHeight: number;
 }
 
+export interface LayoutPositionable {
+    setPosition (x: number, y: number): void;
+}
+
+export interface BoardLayoutViews {
+    board: LayoutPositionable & { applyLayout?: (layout: BoardLayout) => void };
+    hand: LayoutPositionable;
+    enemy: LayoutPositionable;
+    player: LayoutPositionable;
+    armor: LayoutPositionable;
+    deck: LayoutPositionable;
+    graveyard: LayoutPositionable;
+}
+
+/** Repositions scene containers after a canvas resize. */
+export const applyBoardLayout = (layout: BoardLayout, views: BoardLayoutViews): void =>
+{
+    if (views.board.applyLayout)
+    {
+        views.board.applyLayout(layout);
+    }
+    else
+    {
+        views.board.setPosition(layout.gridOffsetX, layout.gridOffsetY);
+    }
+
+    views.hand.setPosition(layout.handCenterX, layout.handY);
+    views.enemy.setPosition(layout.enemyX, layout.enemyY);
+    views.player.setPosition(layout.playerX, layout.playerY);
+    views.armor.setPosition(layout.armorX, layout.armorY);
+    views.deck.setPosition(layout.deckX, layout.deckY);
+    views.graveyard.setPosition(layout.graveyardX, layout.graveyardY);
+};
+
 /** Grid sits left of center; enemy is just to the right of the board. */
 export const computeBoardLayout = (
     canvasWidth: number,
@@ -40,17 +74,20 @@ export const computeBoardLayout = (
     const playerSize = enemySize;
     const enemyGap = Math.round(tileSize * 0.45);
     const handBandHeight = HAND_CARD_HEIGHT + 36;
+    const hudTopInset = 56;
     const contentWidth = gridWidth + enemyGap + enemySize;
-    const gridOffsetX = Math.round((canvasWidth - contentWidth) / 2 - tileSize * 0.35);
-    const gridOffsetY = Math.round((canvasHeight - gridHeight - handBandHeight) / 2);
     const handY = canvasHeight - handBandHeight + 8;
+    const availableHeight = canvasHeight - hudTopInset - handBandHeight;
+    const gridOffsetX = Math.round((canvasWidth - contentWidth) / 2 - tileSize * 0.35);
+    const gridOffsetY = hudTopInset + Math.round(Math.max(0, availableHeight - gridHeight) / 2);
     const handWidth = HAND_CARD_WIDTH * GAME_RULES.handSize + HAND_CARD_GAP * (GAME_RULES.handSize - 1);
     const pileWidth = 64;
     const pileHeight = 88;
-    const pileGap = 18;
-    const deckX = Math.round(gridOffsetX - pileWidth * 2 - pileGap - enemyGap);
-    const deckY = Math.round(handY + (handBandHeight - pileHeight) / 2);
-    const graveyardX = deckX + pileWidth + pileGap;
+    const pileMargin = 16;
+    const pileFrameWidth = pileWidth + 12;
+    const pileY = Math.round(handY + (handBandHeight - pileHeight) / 2);
+    const deckX = pileMargin;
+    const graveyardX = canvasWidth - pileFrameWidth - pileMargin;
 
     return {
         canvasWidth,
@@ -71,9 +108,9 @@ export const computeBoardLayout = (
         playerY: Math.round(gridOffsetY + (gridHeight - playerSize) / 2),
         playerSize,
         deckX,
-        deckY,
+        deckY: pileY,
         graveyardX,
-        graveyardY: deckY,
+        graveyardY: pileY,
         pileWidth,
         pileHeight,
     };

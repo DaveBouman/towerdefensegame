@@ -62,7 +62,7 @@ export class CardBoardView
 
     constructor (
         private readonly scene: Phaser.Scene,
-        private readonly layout: BoardLayout,
+        private layout: BoardLayout,
         private readonly board: BoardModel,
         private readonly boardDragHandlers?: BoardCardDragHandlers,
         private readonly chainStartHandlers?: ChainStartHandlers,
@@ -176,6 +176,12 @@ export class CardBoardView
         {
             this.container.bringToTop(wrapper);
         }
+    }
+
+    applyLayout (layout: BoardLayout): void
+    {
+        this.layout = layout;
+        this.container.setPosition(layout.gridOffsetX, layout.gridOffsetY);
     }
 
     showJokerDirectionPicker (

@@ -29,11 +29,11 @@ describe('cardRegistry', () =>
 
     it('loads game rules and deck settings', () =>
     {
-        expect(GAME_RULES.deckSize).toBe(15);
-        expect(GAME_RULES.handSize).toBe(6);
+        expect(GAME_RULES.deckSize).toBe(20);
+        expect(GAME_RULES.handSize).toBe(10);
         expect(GAME_RULES.activationStartColumn).toBe(0);
         expect(GAME_RULES.maxChainSteps).toBe(24);
-        expect(GAME_RULES.enemy.maxHealth).toBeGreaterThan(0);
+        expect(GAME_RULES.enemy.maxHealth).toBe(80);
     });
 
     it('creates unique card instances with pool-based arrows', () =>

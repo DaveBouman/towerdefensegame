@@ -1,14 +1,14 @@
 {
   "activationStepMs": 1500,
   "enemyTurnMs": 1200,
-  "deckSize": 15,
-  "handSize": 6,
+  "deckSize": 20,
+  "handSize": 10,
   "fightRerollsPerFight": 3,
   "player": {
     "maxHealth": 20
   },
   "enemy": {
-    "maxHealth": 30,
+    "maxHealth": 80,
     "attackDamage": 4,
     "shieldGain": 5
   },

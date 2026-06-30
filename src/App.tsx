@@ -5,8 +5,8 @@ function App()
 {
     return (
         <div id="app">
-            <GameHud />
             <PhaserGame />
+            <GameHud />
         </div>
     );
 }

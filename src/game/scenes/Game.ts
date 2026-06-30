@@ -1,5 +1,4 @@
-import { getViewportPixelSize } from '../config/gridConfig';
-import { computeBoardLayout } from '../board/boardLayout';
+import { applyBoardLayout, computeBoardLayout, type BoardLayout } from '../board/boardLayout';
 import { ArmorView } from '../board/ArmorView';
 import { CardBoardView } from '../board/CardBoardView';
 import { CardHandView } from '../board/CardHandView';
@@ -31,6 +30,7 @@ export class Game extends Scene
     private deckView?: CardPileView;
     private graveyardView?: CardPileView;
     private rerollModeActive = false;
+    private layout?: BoardLayout;
 
     constructor ()
     {
@@ -39,8 +39,9 @@ export class Game extends Scene
 
     create (): void
     {
-        const { width, height } = getViewportPixelSize();
-        const layout = computeBoardLayout(width, height);
+        const { width, height } = this.scale;
+        this.layout = computeBoardLayout(width, height);
+        const layout = this.layout;
         this.session = new CardGameSession();
 
         this.handView = new CardHandView(this, layout, [ ...this.session.getHand() ], {
@@ -122,10 +123,32 @@ export class Game extends Scene
         EventBus.emit(GAME_EVENTS.SCENE_READY, this);
         this.emitAttackReadiness();
         this.emitRerollState();
+        this.scale.on('resize', this.onResize, this);
     }
+
+    private onResize = (gameSize: Phaser.Structs.Size): void =>
+    {
+        if (!this.layout || !this.boardView || !this.handView || !this.enemyView
+            || !this.playerView || !this.armorView || !this.deckView || !this.graveyardView)
+        {
+            return;
+        }
+
+        this.layout = computeBoardLayout(gameSize.width, gameSize.height);
+        applyBoardLayout(this.layout, {
+            board: this.boardView,
+            hand: this.handView.container,
+            enemy: this.enemyView.container,
+            player: this.playerView.container,
+            armor: this.armorView.container,
+            deck: this.deckView.container,
+            graveyard: this.graveyardView.container,
+        });
+    };
 
     shutdown (): void
     {
+        this.scale.off('resize', this.onResize, this);
         EventBus.off(GAME_EVENTS.ATTACK, this.onAttack, this);
         EventBus.off(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
         EventBus.off(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);

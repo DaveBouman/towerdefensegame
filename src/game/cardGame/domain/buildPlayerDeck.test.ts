@@ -13,14 +13,14 @@ describe('buildPlayerDeck', () =>
 
     it('builds a deck with attack, defend, leap, and joker cards', () =>
     {
-        const deck = buildPlayerDeck(15);
+        const deck = buildPlayerDeck(GAME_RULES.deckSize);
 
-        expect(deck).toHaveLength(15);
-        expect(deck.filter((card) => card.definitionId === 'attack')).toHaveLength(4);
-        expect(deck.filter((card) => card.definitionId === 'defend')).toHaveLength(3);
-        expect(deck.filter((card) => card.definitionId === 'poison')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'attack-leap')).toHaveLength(2);
-        expect(deck.filter((card) => card.definitionId === 'defend-leap')).toHaveLength(2);
+        expect(deck).toHaveLength(20);
+        expect(deck.filter((card) => card.definitionId === 'attack')).toHaveLength(5);
+        expect(deck.filter((card) => card.definitionId === 'defend')).toHaveLength(4);
+        expect(deck.filter((card) => card.definitionId === 'poison')).toHaveLength(2);
+        expect(deck.filter((card) => card.definitionId === 'attack-leap')).toHaveLength(3);
+        expect(deck.filter((card) => card.definitionId === 'defend-leap')).toHaveLength(3);
         expect(deck.filter((card) => card.definitionId === 'joker')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'loop-reset')).toHaveLength(1);
     });
@@ -45,14 +45,14 @@ describe('buildPlayerDeck', () =>
         const deck = buildPlayerDeck(GAME_RULES.deckSize);
         const orthogonalCards = deck.filter((card) => card.definitionId !== 'joker');
 
-        expect(orthogonalCards).toHaveLength(13);
+        expect(orthogonalCards).toHaveLength(18);
 
         for (const direction of ORTHOGONAL_DIRECTIONS)
         {
             const count = orthogonalCards.filter((card) => card.arrow === direction).length;
 
-            expect(count).toBeGreaterThanOrEqual(3);
-            expect(count).toBeLessThanOrEqual(4);
+            expect(count).toBeGreaterThanOrEqual(4);
+            expect(count).toBeLessThanOrEqual(5);
         }
     });
 });

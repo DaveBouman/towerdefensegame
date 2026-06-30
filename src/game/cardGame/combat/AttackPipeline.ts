@@ -103,12 +103,31 @@ const findChainStart = (board: BoardModel, preferred: SlotPosition): SlotPositio
 export interface ChainWalkState {
     activationCounts: Map<string, number>;
     loopResetConsumed: boolean;
+    /** Slot keys in activation order — used to reopen only pre-loop cards. */
+    activationOrder: string[];
 }
 
 export const createChainWalkState = (): ChainWalkState => ({
     activationCounts: new Map(),
     loopResetConsumed: false,
+    activationOrder: [],
 });
+
+/** Clears visit limits for every card that activated before the loop step. */
+export const resetActivationsBeforeLoop = (state: ChainWalkState, loopKey: string): void =>
+{
+    const loopIndex = state.activationOrder.lastIndexOf(loopKey);
+
+    if (loopIndex <= 0)
+    {
+        return;
+    }
+
+    for (const key of state.activationOrder.slice(0, loopIndex))
+    {
+        state.activationCounts.delete(key);
+    }
+};
 
 export const tryBuildActivationStep = (
     board: BoardModel,
@@ -140,6 +159,7 @@ export const tryBuildActivationStep = (
     }
 
     state.activationCounts.set(key, activations + 1);
+    state.activationOrder.push(key);
 
     const ctx = buildStepContext(board, slot, card);
     const behavior = getCardBehaviorOrThrow(ctx.definition.behaviorId);
@@ -149,7 +169,7 @@ export const tryBuildActivationStep = (
     if (isLoopResetDefinition(definition))
     {
         state.loopResetConsumed = true;
-        state.activationCounts.clear();
+        resetActivationsBeforeLoop(state, key);
     }
 
     return {

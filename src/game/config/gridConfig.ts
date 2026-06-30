@@ -14,7 +14,15 @@ export const getGridPixelSize = (config: GridConfig = GRID_CONFIG): GridPixelSiz
     height: config.rows * config.tileSize,
 });
 
-export const getViewportPixelSize = (_config: GridConfig = VIEWPORT_CONFIG): GridPixelSize => ({
-    width: 960,
-    height: 540,
-});
+export const getViewportPixelSize = (_config: GridConfig = VIEWPORT_CONFIG): GridPixelSize =>
+{
+    if (typeof window === 'undefined')
+    {
+        return { width: 960, height: 540 };
+    }
+
+    return {
+        width: window.innerWidth,
+        height: window.innerHeight,
+    };
+};
