@@ -8,6 +8,7 @@ import { PlayerHealthView } from '../board/PlayerHealthView';
 import { CardGameSession } from '../cardGame/domain/CardGameSession';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import type { SlotPosition } from '../cardGame/domain/types';
+import { destroyCardTooltipController } from '../cardGame/presentation/tooltips/CardTooltipController';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../cardGame/events/cardGameEvents';
@@ -165,6 +166,7 @@ export class Game extends Scene
         this.armorView?.destroy();
         this.deckView?.destroy();
         this.graveyardView?.destroy();
+        destroyCardTooltipController();
         this.presenter = undefined;
         this.boardView = undefined;
         this.handView = undefined;

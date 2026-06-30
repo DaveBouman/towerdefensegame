@@ -1,5 +1,6 @@
 import { GRID_CONFIG } from '../config/gridConfig';
 import { buildCardGraphic } from '../cards/CardRenderer';
+import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
 import { ARROW_GLYPH } from '../cards/cardArrows';
 import { getJokerDirectionChoices } from '../cardGame/combat/AttackPipeline';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
@@ -717,7 +718,7 @@ export class CardBoardView
             {
                 width: size,
                 height: size,
-                interactive: Boolean(this.boardDragHandlers),
+                interactive: true,
             },
         );
         const wrapper = this.scene.add.container(x - size / 2, y - size / 2);
@@ -746,6 +747,8 @@ export class CardBoardView
                 this.beginBoardDrag(currentSlot, currentCard, pointer, size);
             });
         }
+
+        attachCardTooltip(this.scene, hitArea, card);
 
         return wrapper;
     }

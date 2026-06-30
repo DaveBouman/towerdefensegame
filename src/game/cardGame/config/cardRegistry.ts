@@ -2,6 +2,7 @@ import cardsData from './cards.json';
 import gameRulesData from './gameRules.json';
 
 import type { ArrowPool } from '../domain/cardDirections';
+import type { CardTooltipOverride } from '../presentation/tooltips/types';
 
 export interface CardDefinition {
     id: string;
@@ -16,6 +17,10 @@ export interface CardDefinition {
     chainStepDistance?: number;
     /** Chain abilities resolved after the full activation chain is known. */
     chainAbilityIds?: string[];
+    /** Optional tooltip provider id — defaults to card id, then behavior id. */
+    tooltipProviderId?: string;
+    /** Optional static tooltip lines merged over the resolved provider copy. */
+    tooltip?: CardTooltipOverride;
 }
 
 export interface GameRules {
@@ -36,6 +41,7 @@ export interface GameRules {
     maxChainSteps: number;
     chainAbilities: {
         poisonTrail: { damagePerSubsequentCard: number };
+        fireAlternation: { bonusDamagePerAlternatingStep: number };
     };
 }
 

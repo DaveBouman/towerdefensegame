@@ -1,0 +1,129 @@
+import { GAME_RULES, getChainStepDistance } from '../../config/cardRegistry';
+import { isEnemyOwnedCard } from '../../domain/cardOwnership';
+import type { CardTooltipContent, CardTooltipContext, CardTooltipProvider } from './types';
+
+const titleFromDefinition = ({ definition }: CardTooltipContext): string =>
+    definition.label;
+
+const attackLines = ({ definition }: CardTooltipContext): string[] =>
+{
+    const lines = [ `Deals ${definition.power} damage when activated in the chain.` ];
+
+    if (definition.maxChainActivations && definition.maxChainActivations > 1)
+    {
+        lines.push(`Can activate up to ${definition.maxChainActivations} times per attack.`);
+    }
+
+    const stepDistance = getChainStepDistance(definition);
+
+    if (stepDistance > 1)
+    {
+        lines.push(`Chain advances ${stepDistance} tiles along the arrow.`);
+    }
+
+    if (definition.arrowPool === 'diagonal')
+    {
+        lines.push('Uses diagonal arrows.');
+    }
+
+    return lines;
+};
+
+const defendLines = ({ definition }: CardTooltipContext): string[] =>
+{
+    const lines = [ `Grants ${definition.power} armor when activated in the chain.` ];
+
+    const stepDistance = getChainStepDistance(definition);
+
+    if (stepDistance > 1)
+    {
+        lines.push(`Chain advances ${stepDistance} tiles along the arrow.`);
+    }
+
+    if (definition.arrowPool === 'diagonal')
+    {
+        lines.push('Uses diagonal arrows.');
+    }
+
+    return lines;
+};
+
+const provider = (id: string, getTooltip: (ctx: CardTooltipContext) => CardTooltipContent): CardTooltipProvider =>
+    ({ id, getTooltip });
+
+export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
+    provider('attack', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: attackLines(ctx),
+    })),
+    provider('defend', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: defendLines(ctx),
+    })),
+    provider('attack-special', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: attackLines(ctx),
+    })),
+    provider('attack-leap', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: attackLines(ctx),
+    })),
+    provider('defend-special', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: defendLines(ctx),
+    })),
+    provider('defend-leap', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: defendLines(ctx),
+    })),
+    provider('joker', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            'Pauses the chain until you pick a direction.',
+            `Chain jumps ${getChainStepDistance(ctx.definition)} tiles in that direction.`,
+        ],
+    })),
+    provider('loop-reset', () => ({
+        title: 'Loop',
+        lines: [
+            'Resets once per attack so earlier chain cards can activate again.',
+            '↺ loop arrow replays earlier cards; continue arrow moves forward after looping.',
+        ],
+    })),
+    provider('poison', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Defend cards after this lose armor and deal ${ctx.definition.power} poison damage each.`,
+            'Stops when an attack card appears later in the chain.',
+        ],
+    })),
+    provider('fire', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Deals ${ctx.definition.power} damage when activated in the chain.`,
+            `+${GAME_RULES.chainAbilities.fireAlternation.bonusDamagePerAlternatingStep} bonus damage per alternating attack/defend step after this (needs 2+).`,
+        ],
+    })),
+    provider('hazard', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: isEnemyOwnedCard(ctx.card)
+            ? [
+                `Enemy trap — deals ${ctx.definition.power} damage to you if not activated in your chain.`,
+                'Disarm it by including it in your attack chain.',
+            ]
+            : [
+                `Deals ${ctx.definition.power} damage when activated in the chain.`,
+            ],
+    })),
+    provider('boost', () => ({
+        title: 'Boost',
+        lines: [
+            `Multiplies the next attack or defend step by ×${GAME_RULES.fieldBoost.nextStepMultiplier}.`,
+            'Field card — placed automatically on the board.',
+        ],
+    })),
+    provider('default', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [ 'Follow the arrow to continue the chain.' ],
+    })),
+];

@@ -16,13 +16,14 @@ export const shuffleInPlace = <T>(items: T[]): T[] =>
 };
 
 const DECK_COMPOSITION: readonly { definitionId: string; count: number }[] = [
-    { definitionId: 'attack', count: 5 },
-    { definitionId: 'defend', count: 4 },
+    { definitionId: 'attack', count: 4 },
+    { definitionId: 'defend', count: 3 },
     { definitionId: 'attack-leap', count: 3 },
     { definitionId: 'defend-leap', count: 3 },
     { definitionId: 'joker', count: 2 },
     { definitionId: 'loop-reset', count: 1 },
     { definitionId: 'poison', count: 2 },
+    { definitionId: 'fire', count: 2 },
 ];
 
 const buildBalancedArrowQueues = (): Map<ArrowPool, CardDirection[]> =>

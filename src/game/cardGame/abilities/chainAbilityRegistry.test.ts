@@ -17,21 +17,23 @@ const activationStep = (
     const card = createCardInstance(definitionId, arrow);
     const behaviorId = definitionId === 'poison'
         ? 'poison'
-        : definitionId.startsWith('attack')
-            ? 'attack'
-            : definitionId.startsWith('defend')
-                ? 'defend'
-                : definitionId;
+        : definitionId === 'fire'
+            ? 'fire'
+            : definitionId.startsWith('attack')
+                ? 'attack'
+                : definitionId.startsWith('defend')
+                    ? 'defend'
+                    : definitionId;
 
     return {
         slot: { row, col },
         card,
         definitionId,
         behaviorId,
-        visualId: definitionId === 'poison' ? 'poison' : behaviorId,
+        visualId: definitionId === 'poison' ? 'poison' : definitionId === 'fire' ? 'fire' : behaviorId,
         arrow,
         exitArrow: arrow,
-        damage: behaviorId === 'attack' ? 5 : 0,
+        damage: behaviorId === 'attack' || behaviorId === 'fire' ? 5 : 0,
         armor: behaviorId === 'defend' ? 3 : 0,
     };
 };
@@ -145,5 +147,49 @@ describe('chain abilities', () =>
 
         expect(chain.map((step) => step.definitionId)).toEqual([ 'poison', 'defend', 'defend' ]);
         expect(planAttack(board, { row: 0, col: 0 }).abilityEnemyDamage).toBe(2);
+    });
+
+    it('adds bonus fire damage when attack and defend alternate after fire', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+        const chain = [
+            activationStep('fire', 0, 0, 'right'),
+            activationStep('attack', 0, 1),
+            activationStep('defend', 0, 2, 'right'),
+            activationStep('attack', 1, 2, 'left'),
+        ];
+
+        const resolved = resolveChainAbilities(chain, board);
+
+        expect(resolved.enemyDamage).toBe(6);
+        expect(resolved.effects[0]?.abilityId).toBe('fire-alternation');
+    });
+
+    it('deals no fire bonus when the chain does not alternate after fire', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+        const chain = [
+            activationStep('fire', 0, 0, 'right'),
+            activationStep('attack', 0, 1),
+            activationStep('attack', 0, 2, 'right'),
+        ];
+
+        const resolved = resolveChainAbilities(chain, board);
+
+        expect(resolved.enemyDamage).toBe(0);
+    });
+
+    it('includes fire bonus damage in the attack sequence', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('fire', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 2 }, createCardInstance('defend', 'left'));
+
+        const sequence = planAttack(board, { row: 0, col: 0 });
+
+        expect(sequence.totalDamage).toBe(10);
+        expect(sequence.abilityEnemyDamage).toBe(3);
     });
 });

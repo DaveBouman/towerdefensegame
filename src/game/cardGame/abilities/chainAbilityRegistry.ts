@@ -1,6 +1,7 @@
 import { getCardDefinitionOrThrow } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
 import type { ActivationStep } from '../domain/types';
+import { fireAlternationAbility } from './fireAlternationAbility';
 import { poisonTrailAbility } from './poisonTrailAbility';
 import type {
     ChainAbility,
@@ -12,6 +13,7 @@ import type {
 
 const abilities = new Map<string, ChainAbility>([
     [ poisonTrailAbility.id, poisonTrailAbility ],
+    [ fireAlternationAbility.id, fireAlternationAbility ],
 ]);
 
 export const registerChainAbility = (ability: ChainAbility): void =>

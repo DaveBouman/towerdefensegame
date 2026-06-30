@@ -30,6 +30,7 @@ export const buildCardGraphic = (
     const isBoost = definition.behaviorId === 'boost';
     const isLoopReset = definition.behaviorId === 'loop-reset';
     const isPoison = definition.behaviorId === 'poison';
+    const isFire = definition.behaviorId === 'fire';
     const leapDistance = getChainStepDistance(definition);
 
     const body = scene.add.rectangle(width / 2, height / 2, width, height, style.fill);
@@ -69,7 +70,7 @@ export const buildCardGraphic = (
     const power = scene.add.text(
         width / 2,
         height * 0.62,
-        isJoker ? '★' : isBoost ? `×${GAME_RULES.fieldBoost.nextStepMultiplier}` : isLoopReset ? '∞' : isPoison ? `${definition.power}×→` : String(definition.power),
+        isJoker ? '★' : isBoost ? `×${GAME_RULES.fieldBoost.nextStepMultiplier}` : isLoopReset ? '∞' : isPoison ? `${definition.power}×→` : isFire ? `${definition.power}↔` : String(definition.power),
         {
             fontFamily: 'monospace',
             fontSize: '20px',

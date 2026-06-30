@@ -12,7 +12,7 @@ describe('cardRegistry', () =>
 
     it('loads card definitions from cards.json', () =>
     {
-        expect(CARD_DEFINITIONS).toHaveLength(11);
+        expect(CARD_DEFINITIONS).toHaveLength(12);
         expect(getCardDefinition('attack')?.arrowPool).toBe('orthogonal');
         expect(getCardDefinition('defend')?.arrowPool).toBe('orthogonal');
         expect(getCardDefinition('attack-special')?.maxChainActivations).toBe(2);
@@ -21,6 +21,7 @@ describe('cardRegistry', () =>
         expect(getCardDefinition('joker')?.chainStepDistance).toBe(2);
         expect(getCardDefinition('loop-reset')?.behaviorId).toBe('loop-reset');
         expect(getCardDefinition('poison')?.chainAbilityIds).toEqual([ 'poison-trail' ]);
+        expect(getCardDefinition('fire')?.chainAbilityIds).toEqual([ 'fire-alternation' ]);
         expect(getCardDefinition('hazard')?.behaviorId).toBe('hazard');
         expect(getCardDefinition('boost')?.behaviorId).toBe('boost');
         expect(getCardDefinition('attack-leap')?.chainStepDistance).toBe(2);

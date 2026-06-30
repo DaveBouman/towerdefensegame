@@ -664,6 +664,40 @@ html, body, #root {
     margin-top: 2px;
 }
 
+.card-tooltip {
+    position: fixed;
+    z-index: 200;
+    max-width: 280px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #4a4a72;
+    background: linear-gradient(180deg, #1e1e36 0%, #141425 100%);
+    color: #e0e0f0;
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    pointer-events: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.card-tooltip__title {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.card-tooltip__body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.card-tooltip__line {
+    margin: 0;
+    color: #b8b8d8;
+}
+
 .game-hud {
     position: fixed;
     top: 0;

@@ -78,6 +78,15 @@
       "chainAbilityIds": [ "poison-trail" ]
     },
     {
+      "id": "fire",
+      "label": "Fire",
+      "power": 5,
+      "behaviorId": "fire",
+      "visualId": "fire",
+      "arrowPool": "orthogonal",
+      "chainAbilityIds": [ "fire-alternation" ]
+    },
+    {
       "id": "hazard",
       "label": "Trap",
       "power": 3,
