@@ -641,3 +641,14 @@ export const getJokerDirectionChoices = (
 
     return withCard.length > 0 ? withCard : inBounds;
 };
+
+/** Applies the player's joker pick to both display arrow and chain exit direction. */
+export const applyJokerChosenDirection = (
+    step: ActivationStep,
+    direction: CardDirection,
+): void =>
+{
+    step.arrow = direction;
+    step.exitArrow = direction;
+    step.card.arrow = direction;
+};

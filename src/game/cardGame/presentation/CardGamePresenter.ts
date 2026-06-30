@@ -2,6 +2,7 @@ import type { CardGameSession } from '../domain/CardGameSession';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import { getChainAbilitySlots } from '../abilities/chainAbilityRegistry';
 import {
+    applyJokerChosenDirection,
     buildAttackSequence,
     getNextChainSlotFromStep,
     getOffChainSlots,
@@ -283,8 +284,7 @@ export class CardGamePresenter
             {
                 this.boardView.showJokerDirectionPicker(step.slot, (direction) =>
                 {
-                    step.arrow = direction;
-                    step.card.arrow = direction;
+                    applyJokerChosenDirection(step, direction);
                     scheduleNext(getNextChainSlotFromStep(board, step));
                 });
 

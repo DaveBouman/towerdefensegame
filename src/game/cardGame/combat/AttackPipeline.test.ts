@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, getJokerDirectionChoices, getNextChainSlot } from './AttackPipeline';
+import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, getJokerDirectionChoices, getNextChainSlot, applyJokerChosenDirection, getNextChainSlotFromStep } from './AttackPipeline';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { createCardInstance, resetCardInstanceCounter } from '../domain/createCardInstance';
 import type { ActivationStep, SlotPosition } from '../domain/types';
@@ -333,6 +333,24 @@ describe('AttackPipeline', () =>
 
         expect(choices).toContain('right');
         expect(getNextChainSlot(board, { row: 0, col: 1 }, 'right', 2)).toEqual({ row: 0, col: 3 });
+    });
+
+    it('follows the chosen joker exit arrow, not the placeholder right arrow', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 2, col: 1 }, createCardInstance('joker', 'right'));
+        board.placeCard({ row: 2, col: 3 }, createCardInstance('attack', 'left'));
+        board.placeCard({ row: 0, col: 3 }, createCardInstance('attack', 'left'));
+
+        const step = jokerStep({ row: 2, col: 1 });
+
+        expect(getNextChainSlotFromStep(board, step)).toEqual({ row: 2, col: 3 });
+
+        applyJokerChosenDirection(step, 'up-right');
+
+        expect(step.exitArrow).toBe('up-right');
+        expect(getNextChainSlotFromStep(board, step)).toEqual({ row: 0, col: 3 });
     });
 
     it('grants off-chain bonuses for board cards outside the activation chain', () =>
