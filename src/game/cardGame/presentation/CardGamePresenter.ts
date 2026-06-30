@@ -5,13 +5,14 @@ import {
     getNextChainSlot,
     getOffChainSlots,
     getUnchainedHazardSlots,
-    isHazardDefinition,
+    isBoostedChainStep,
     isJokerDefinition,
     tryBuildActivationStep,
 } from '../combat/AttackPipeline';
 import type { ActivationStep, AttackSequence, AttackStep, EnemyTurnAction, SlotPosition } from '../domain/types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
+import { boostedBuffVisual } from './visualEffects/boostedBuffVisual';
 import { getCardVisualEffectOrThrow } from './visualEffects/visualEffectRegistry';
 import type { CardVisualTarget } from './visualEffects/types';
 import type { ArmorView } from '../../board/ArmorView';
@@ -23,6 +24,7 @@ import type { PlayerHealthView } from '../../board/PlayerHealthView';
 export class CardGamePresenter
 {
     private activeVisual: { target: CardVisualTarget; visualId: string } | null = null;
+    private activeBoostBuff: CardVisualTarget | null = null;
     private attackTimer?: Phaser.Time.TimerEvent;
     private displayedArmor = 0;
 
@@ -48,6 +50,7 @@ export class CardGamePresenter
         this.attackTimer = undefined;
         this.boardView.hideJokerDirectionPicker();
         this.deactivateActiveVisual();
+        this.deactivateBoostBuff();
         this.boardView.setChainStartActive(false);
     }
 
@@ -55,6 +58,7 @@ export class CardGamePresenter
     {
         this.attackTimer?.remove();
         this.deactivateActiveVisual();
+        this.deactivateBoostBuff();
         this.boardView.setChainStartActive(false);
         this.boardView.hideJokerDirectionPicker();
         this.setDisplayedArmor(0);
@@ -205,16 +209,21 @@ export class CardGamePresenter
 
             chain.push(step);
             activeStep = step;
-            this.activateStep(step);
+            const stepIndex = chain.length - 1;
+            const sequence = buildCurrentSequence();
+            const resolvedStep = sequence.chain[stepIndex]!;
+            const boosted = isBoostedChainStep(sequence.chain, stepIndex);
 
-            if (step.armor > 0)
+            this.activateStep(step, boosted);
+
+            if (resolvedStep.armor > 0)
             {
-                this.setDisplayedArmor(this.displayedArmor + step.armor);
+                this.setDisplayedArmor(this.displayedArmor + resolvedStep.armor);
             }
 
-            if (step.damage > 0)
+            if (resolvedStep.damage > 0)
             {
-                const result = this.session.dealAttackDamage(step.damage);
+                const result = this.session.dealAttackDamage(resolvedStep.damage);
                 this.enemyView.setHealth(result.enemy);
 
                 if (result.shieldAbsorbed > 0)
@@ -229,14 +238,14 @@ export class CardGamePresenter
                 }
 
                 attackSteps.push({
-                    slot: step.slot,
-                    card: step.card,
-                    definitionId: step.definitionId,
-                    damage: step.damage,
-                    behaviorId: step.behaviorId,
-                    visualId: step.visualId,
+                    slot: resolvedStep.slot,
+                    card: resolvedStep.card,
+                    definitionId: resolvedStep.definitionId,
+                    damage: resolvedStep.damage,
+                    behaviorId: resolvedStep.behaviorId,
+                    visualId: resolvedStep.visualId,
                 });
-                this.session.emitAttackStep(attackSteps.length - 1, buildCurrentSequence());
+                this.session.emitAttackStep(attackSteps.length - 1, sequence);
             }
 
             const definition = getCardDefinitionOrThrow(step.definitionId);
@@ -332,7 +341,7 @@ export class CardGamePresenter
         this.armorView.setArmor(armor);
     }
 
-    private activateStep (step: ActivationStep): void
+    private activateStep (step: ActivationStep, boosted = false): void
     {
         const target = this.boardView.getCardVisualTarget(step.slot);
 
@@ -355,6 +364,23 @@ export class CardGamePresenter
         this.boardView.bringCardToFront(step.slot);
         getCardVisualEffectOrThrow(step.visualId).activate(this.scene, target);
         this.activeVisual = { target, visualId: step.visualId };
+
+        if (boosted)
+        {
+            boostedBuffVisual.activate(this.scene, target);
+            this.activeBoostBuff = target;
+        }
+    }
+
+    private deactivateBoostBuff (): void
+    {
+        if (!this.activeBoostBuff)
+        {
+            return;
+        }
+
+        boostedBuffVisual.deactivate(this.scene, this.activeBoostBuff);
+        this.activeBoostBuff = null;
     }
 
     private deactivateStep (step: ActivationStep): void
@@ -371,6 +397,11 @@ export class CardGamePresenter
         if (this.activeVisual?.target === target)
         {
             this.activeVisual = null;
+        }
+
+        if (this.activeBoostBuff === target)
+        {
+            this.deactivateBoostBuff();
         }
     }
 

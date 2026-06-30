@@ -312,7 +312,7 @@ describe('AttackPipeline', () =>
             attackStep({ row: 0, col: 1 }, 10),
         ];
 
-        expect(buildAttackSequence(chain).totalDamage).toBe(15);
+        expect(buildAttackSequence(chain).totalDamage).toBe(20);
     });
 
     it('propagates boost through jokers to the next attack', () =>
@@ -323,7 +323,7 @@ describe('AttackPipeline', () =>
             attackStep({ row: 0, col: 2 }, 10),
         ];
 
-        expect(buildAttackSequence(chain).totalDamage).toBe(15);
+        expect(buildAttackSequence(chain).totalDamage).toBe(20);
     });
 
     it('applies boost after streak stacking on the buffed step', () =>
@@ -334,7 +334,7 @@ describe('AttackPipeline', () =>
             attackStep({ row: 0, col: 2 }, 5),
         ];
 
-        expect(buildAttackSequence(chain).totalDamage).toBe(13);
+        expect(buildAttackSequence(chain).totalDamage).toBe(15);
     });
 
     it('routes through a field boost on the board', () =>
@@ -348,6 +348,6 @@ describe('AttackPipeline', () =>
         const sequence = planAttack(board, { row: 0, col: 0 });
 
         expect(sequence.chain.map((step) => step.behaviorId)).toEqual([ 'attack', 'boost', 'attack' ]);
-        expect(sequence.totalDamage).toBe(13);
+        expect(sequence.totalDamage).toBe(15);
     });
 });

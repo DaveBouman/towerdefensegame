@@ -29,7 +29,7 @@
   },
   "fieldBoost": {
     "definitionId": "boost",
-    "nextStepMultiplier": 1.5
+    "nextStepMultiplier": 2
   },
   "activationStart": {
     "row": 0,
