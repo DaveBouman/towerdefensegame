@@ -13,7 +13,7 @@ import {
     tryBuildActivationStep,
     createChainWalkState,
 } from '../combat/AttackPipeline';
-import type { ActivationStep, AttackSequence, AttackStep, EnemyTurnAction, SlotPosition } from '../domain/types';
+import type { ActivationStep, AttackSequence, AttackStep, EnemyTurnAction, EnemyTurnStep, SlotPosition } from '../domain/types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
 import { boostedBuffVisual } from './visualEffects/boostedBuffVisual';
@@ -306,14 +306,43 @@ export class CardGamePresenter
     playEnemyTurn (action: EnemyTurnAction, onComplete: () => void): void
     {
         const turnMs = GAME_RULES.enemyTurnMs;
+        const steps = [ ...action.steps ];
 
-        if (action.kind === 'attack')
+        const finishTurn = (): void =>
+        {
+            this.session.completeEnemyTurn(action);
+            onComplete();
+        };
+
+        const playStep = (): void =>
+        {
+            const step = steps.shift();
+
+            if (!step)
+            {
+                finishTurn();
+                return;
+            }
+
+            this.playEnemyTurnStep(step, turnMs, playStep);
+        };
+
+        playStep();
+    }
+
+    private playEnemyTurnStep (
+        step: EnemyTurnStep,
+        turnMs: number,
+        onComplete: () => void,
+    ): void
+    {
+        if (step.kind === 'attack')
         {
             this.enemyView.playEnemyAttackPulse();
 
             this.scene.time.delayedCall(turnMs, () =>
             {
-                const result = this.session.resolveEnemyAttack(action.amount ?? 0);
+                const result = this.session.resolveEnemyAttack(step.amount ?? 0);
                 this.playerView.setHealth(result.player);
                 this.setDisplayedArmor(result.player.shield);
 
@@ -328,14 +357,13 @@ export class CardGamePresenter
                     this.playerView.showDamageNumber(result.healthDamage);
                 }
 
-                this.session.completeEnemyTurn(action);
                 onComplete();
             });
 
             return;
         }
 
-        if (action.kind === 'place-hazard')
+        if (step.kind === 'place-hazard')
         {
             this.enemyView.playEnemyAttackPulse();
 
@@ -348,7 +376,6 @@ export class CardGamePresenter
                     this.boardView.syncFromBoard(this.session.board);
                 }
 
-                this.session.completeEnemyTurn(action);
                 onComplete();
             });
 
@@ -357,15 +384,14 @@ export class CardGamePresenter
 
         this.scene.time.delayedCall(turnMs / 2, () =>
         {
-            const enemy = this.session.resolveEnemyShield(action.amount ?? 0);
+            const enemy = this.session.resolveEnemyShield(step.amount ?? 0);
             this.enemyView.setHealth(enemy);
-            this.enemyView.showShieldGain(action.amount ?? 0);
+            this.enemyView.showShieldGain(step.amount ?? 0);
         });
 
         this.scene.time.delayedCall(turnMs, () =>
         {
             this.enemyView.setHealth(this.session.getEnemy());
-            this.session.completeEnemyTurn(action);
             onComplete();
         });
     }

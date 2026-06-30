@@ -1,5 +1,9 @@
 import { GRID_CONFIG } from '../../config/gridConfig';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
+import {
+    type CardGameEnemyDefinition,
+    getCardGameEnemyDefinitionOrThrow,
+} from '../config/enemyCatalog';
 import { planAttack } from '../combat/AttackPipeline';
 import { planEnemyTurn } from '../combat/enemyTurn';
 import { buildPlayerDeck, shuffleInPlace } from '../domain/buildPlayerDeck';
@@ -27,6 +31,7 @@ export class CardGameSession
     private readonly hand: CardInstance[] = [];
     private readonly deck: CardInstance[] = [];
     private readonly discard: CardInstance[] = [];
+    private readonly enemyDefinition: CardGameEnemyDefinition;
     private enemy: EnemyState;
     private player: PlayerState;
     private attackInProgress = false;
@@ -39,12 +44,13 @@ export class CardGameSession
         col: GAME_RULES.activationStartColumn,
     };
 
-    constructor ()
+    constructor (enemyId: string = GAME_RULES.defaultEnemyId)
     {
+        this.enemyDefinition = getCardGameEnemyDefinitionOrThrow(enemyId);
         this.board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
         this.enemy = {
-            health: GAME_RULES.enemy.maxHealth,
-            maxHealth: GAME_RULES.enemy.maxHealth,
+            health: this.enemyDefinition.maxHealth,
+            maxHealth: this.enemyDefinition.maxHealth,
             shield: 0,
         };
         this.player = {
@@ -228,6 +234,11 @@ export class CardGameSession
         return { ...this.enemy };
     }
 
+    getEnemyDefinition (): CardGameEnemyDefinition
+    {
+        return this.enemyDefinition;
+    }
+
     getPlayer (): PlayerState
     {
         return { ...this.player };
@@ -260,7 +271,7 @@ export class CardGameSession
 
     queueNextEnemyTurn (): EnemyTurnAction
     {
-        this.queuedEnemyTurn = planEnemyTurn();
+        this.queuedEnemyTurn = planEnemyTurn(this.enemyDefinition);
 
         return { ...this.queuedEnemyTurn };
     }

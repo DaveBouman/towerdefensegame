@@ -1,0 +1,13 @@
+{
+  "enemies": [
+    {
+      "id": "basic",
+      "label": "Raider",
+      "maxHealth": 80,
+      "attackDamage": 8,
+      "shieldGain": 10,
+      "attackChance": 0.5,
+      "hazardsPerTurn": 1
+    }
+  ]
+}

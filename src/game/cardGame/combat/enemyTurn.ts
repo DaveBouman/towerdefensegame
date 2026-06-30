@@ -1,29 +1,65 @@
-import { GAME_RULES } from '../config/cardRegistry';
-import type { EnemyTurnAction } from '../domain/types';
+import type { CardGameEnemyDefinition } from '../config/enemyCatalog';
+import type { EnemyTurnAction, EnemyTurnStep } from '../domain/types';
 
-/** Enemy attacks, gains shield, or places a trap on the board. */
-export const planEnemyTurn = (): EnemyTurnAction =>
+const planCombatStep = (enemy: CardGameEnemyDefinition): EnemyTurnStep =>
 {
-    const { attack, shield, placeHazard } = GAME_RULES.enemyTurnWeights;
-    const roll = Math.random();
-
-    if (roll < attack)
+    if (Math.random() < enemy.attackChance)
     {
         return {
             kind: 'attack',
-            amount: GAME_RULES.enemy.attackDamage,
+            amount: enemy.attackDamage,
         };
     }
 
-    if (roll < attack + shield)
+    return {
+        kind: 'shield',
+        amount: enemy.shieldGain,
+    };
+};
+
+/** Plans one enemy turn from a card-game enemy definition. */
+export const planEnemyTurn = (enemy: CardGameEnemyDefinition): EnemyTurnAction =>
+{
+    const steps: EnemyTurnStep[] = [ planCombatStep(enemy) ];
+
+    for (let i = 0; i < enemy.hazardsPerTurn; i++)
     {
-        return {
-            kind: 'shield',
-            amount: GAME_RULES.enemy.shieldGain,
-        };
+        steps.push({ kind: 'place-hazard' });
     }
 
-    return { kind: 'place-hazard' };
+    return {
+        enemyId: enemy.id,
+        steps,
+    };
+};
+
+export const getPrimaryCombatStep = (
+    action: EnemyTurnAction,
+): EnemyTurnStep | undefined =>
+    action.steps.find((step) => step.kind === 'attack' || step.kind === 'shield');
+
+export const describeEnemyStep = (
+    step: EnemyTurnStep,
+    phase: 'upcoming' | 'executing',
+): { title: string; color: string } =>
+{
+    if (step.kind === 'place-hazard')
+    {
+        return phase === 'executing'
+            ? { title: 'Trap', color: '#ff6b6b' }
+            : { title: 'Trap', color: '#ff9f43' };
+    }
+
+    if (phase === 'executing')
+    {
+        return step.kind === 'attack'
+            ? { title: `Attack ${step.amount}`, color: '#ff7675' }
+            : { title: `Shield +${step.amount}`, color: '#aed6f1' };
+    }
+
+    return step.kind === 'attack'
+        ? { title: `Attack ${step.amount}`, color: '#ff9f43' }
+        : { title: `Shield +${step.amount}`, color: '#5dade2' };
 };
 
 export const describeEnemyIntent = (
@@ -31,21 +67,13 @@ export const describeEnemyIntent = (
     phase: 'upcoming' | 'executing',
 ): { title: string; color: string } =>
 {
-    if (action.kind === 'place-hazard')
-    {
-        return phase === 'executing'
-            ? { title: 'Placing trap!', color: '#ff6b6b' }
-            : { title: 'After round: Place trap', color: '#ff9f43' };
-    }
+    const parts = action.steps.map((step) => describeEnemyStep(step, phase).title);
+    const primary = getPrimaryCombatStep(action);
+    const prefix = phase === 'executing' ? '' : 'After round: ';
+    const suffix = phase === 'executing' ? '!' : '';
 
-    if (phase === 'executing')
-    {
-        return action.kind === 'attack'
-            ? { title: `Attacking ${action.amount}!`, color: '#ff7675' }
-            : { title: `Shield +${action.amount}!`, color: '#aed6f1' };
-    }
-
-    return action.kind === 'attack'
-        ? { title: `After round: Attack ${action.amount}`, color: '#ff9f43' }
-        : { title: `After round: Shield +${action.amount}`, color: '#5dade2' };
+    return {
+        title: `${prefix}${parts.join(' + ')}${suffix}`,
+        color: primary?.kind === 'attack' ? '#ff9f43' : '#5dade2',
+    };
 };

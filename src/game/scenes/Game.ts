@@ -89,6 +89,7 @@ export class Game extends Scene
 
         this.playerView = new PlayerHealthView(this, layout, this.session.getPlayer());
         this.enemyView = new EnemyTargetView(this, layout, this.session.getEnemy());
+        this.enemyView.setEnemyLabel(this.session.getEnemyDefinition().label);
         this.armorView = new ArmorView(this, layout, 0);
         this.deckView = new CardPileView(this, layout, layout.deckX, layout.deckY, 'Deck', 'deck');
         this.graveyardView = new CardPileView(this, layout, layout.graveyardX, layout.graveyardY, 'Graveyard', 'graveyard');

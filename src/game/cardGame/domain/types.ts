@@ -44,9 +44,14 @@ export interface PlayerDamageResult {
 
 export type EnemyTurnKind = 'attack' | 'shield' | 'place-hazard';
 
-export interface EnemyTurnAction {
+export interface EnemyTurnStep {
     kind: EnemyTurnKind;
     amount?: number;
+}
+
+export interface EnemyTurnAction {
+    enemyId: string;
+    steps: EnemyTurnStep[];
 }
 
 export interface DisarmResult {

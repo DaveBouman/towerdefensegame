@@ -30,10 +30,9 @@ export interface GameRules {
     handSize: number;
     fightRerollsPerFight: number;
     player: { maxHealth: number };
-    enemy: { maxHealth: number; attackDamage: number; shieldGain: number };
+    defaultEnemyId: string;
     offChainBonus: { attackDamage: number; defendArmor: number };
     hazard: { definitionId: string };
-    enemyTurnWeights: { attack: number; shield: number; placeHazard: number };
     typeStackBonus: { perDuplicate: number };
     fieldBoost: { definitionId: string; nextStepMultiplier: number };
     activationStart: { row: number; col: number };

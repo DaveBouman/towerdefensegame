@@ -1,5 +1,5 @@
 import type { EnemyState, EnemyTurnAction } from '../cardGame/domain/types';
-import { describeEnemyIntent } from '../cardGame/combat/enemyTurn';
+import { describeEnemyIntent, getPrimaryCombatStep } from '../cardGame/combat/enemyTurn';
 import type { BoardLayout } from './boardLayout';
 
 const ENEMY_COLOR = 0xe74c3c;
@@ -22,6 +22,7 @@ export class EnemyTargetView
     private readonly healthBarHeight: number;
     private readonly shieldBadge: Phaser.GameObjects.Container;
     private readonly shieldValueText: Phaser.GameObjects.Text;
+    private readonly enemyLabel: Phaser.GameObjects.Text;
     private intentContainer?: Phaser.GameObjects.Container;
     private intentTween?: Phaser.Tweens.Tween;
     private shieldTween?: Phaser.Tweens.Tween;
@@ -118,6 +119,8 @@ export class EnemyTargetView
             color: '#f5b7b1',
         }).setOrigin(0.5, 0);
 
+        this.enemyLabel = label;
+
         const badgeBg = scene.add.rectangle(0, 0, 108, 30, 0x152535);
 
         badgeBg.setStrokeStyle(2, ENEMY_SHIELD_COLOR, 0.95);
@@ -155,16 +158,22 @@ export class EnemyTargetView
         this.setHealth(enemy);
     }
 
+    setEnemyLabel (label: string): void
+    {
+        this.enemyLabel.setText(label);
+    }
+
     showIntent (action: EnemyTurnAction, phase: 'upcoming' | 'executing' = 'upcoming'): void
     {
         this.clearIntent();
 
         const { title, color } = describeEnemyIntent(action, phase);
         const intentY = -58;
-        const intentWidth = this.enemySize + 24;
-        const strokeColor = action.kind === 'attack'
+        const primary = getPrimaryCombatStep(action);
+        const strokeColor = primary?.kind === 'attack'
             ? (phase === 'executing' ? 0xff7675 : 0xff9f43)
             : 0x5dade2;
+        const intentWidth = Math.max(this.enemySize + 24, title.length * 7 + 24);
 
         const badge = this.scene.add.rectangle(
             this.enemySize / 2,

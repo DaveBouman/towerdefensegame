@@ -9,6 +9,7 @@ vi.mock('../events/CardGameEventBus', () => ({
 }));
 
 import { GAME_RULES } from '../config/cardRegistry';
+import { getDefaultCardGameEnemy } from '../config/enemyCatalog';
 import { CardGameSession } from './CardGameSession';
 import { createCardInstance, resetCardInstanceCounter } from './createCardInstance';
 import { getInBoundsDirections, randomInBoundsDirectionForPool } from './cardDirections';
@@ -162,7 +163,7 @@ describe('CardGameSession enemy turn', () =>
         expect(result.shieldAbsorbed).toBe(5);
         expect(result.healthDamage).toBe(3);
         expect(result.enemy.shield).toBe(0);
-        expect(result.enemy.health).toBe(GAME_RULES.enemy.maxHealth - 3);
+        expect(result.enemy.health).toBe(getDefaultCardGameEnemy().maxHealth - 3);
     });
 
     it('keeps enemy shield until the next enemy turn begins', () =>
@@ -241,7 +242,7 @@ describe('CardGameSession enemy turn', () =>
 
         const action = session.beginEnemyTurn();
 
-        if (action?.kind === 'shield')
+        if (action?.steps.some((step) => step.kind === 'shield'))
         {
             session.completeEnemyTurn(action);
         }

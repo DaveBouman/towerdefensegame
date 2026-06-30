@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { CARD_DEFINITIONS, GAME_RULES, getCardDefinition } from './cardRegistry';
+import { getDefaultCardGameEnemy } from './enemyCatalog';
 import { createCardInstance, resetCardInstanceCounter } from '../domain/createCardInstance';
 import { CARD_DIRECTIONS } from '../domain/cardDirections';
 
@@ -34,10 +35,11 @@ describe('cardRegistry', () =>
         expect(GAME_RULES.handSize).toBe(10);
         expect(GAME_RULES.activationStartColumn).toBe(0);
         expect(GAME_RULES.maxChainSteps).toBe(24);
-        expect(GAME_RULES.enemy.maxHealth).toBe(80);
+        expect(GAME_RULES.defaultEnemyId).toBe('basic');
         expect(GAME_RULES.player.maxHealth).toBe(80);
-        expect(GAME_RULES.enemy.attackDamage).toBe(8);
-        expect(GAME_RULES.enemy.shieldGain).toBe(10);
+        expect(getDefaultCardGameEnemy().maxHealth).toBe(80);
+        expect(getDefaultCardGameEnemy().attackDamage).toBe(8);
+        expect(getDefaultCardGameEnemy().shieldGain).toBe(10);
     });
 
     it('creates unique card instances with pool-based arrows', () =>

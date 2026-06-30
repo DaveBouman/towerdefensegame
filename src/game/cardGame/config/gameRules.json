@@ -7,22 +7,13 @@
   "player": {
     "maxHealth": 80
   },
-  "enemy": {
-    "maxHealth": 80,
-    "attackDamage": 8,
-    "shieldGain": 10
-  },
+  "defaultEnemyId": "basic",
   "offChainBonus": {
     "attackDamage": 1,
     "defendArmor": 1
   },
   "hazard": {
     "definitionId": "hazard"
-  },
-  "enemyTurnWeights": {
-    "attack": 0.4,
-    "shield": 0.35,
-    "placeHazard": 0.25
   },
   "typeStackBonus": {
     "perDuplicate": 0.08
