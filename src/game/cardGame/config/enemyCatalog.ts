@@ -1,5 +1,7 @@
 import { GAME_RULES } from './cardRegistry';
 import enemiesData from './enemies.json';
+import { normalizeEnemyPassives } from '../enemyPassives/defaults';
+import type { EnemyPassiveConfig, EnemyPassiveInput } from '../enemyPassives/types';
 
 export interface CardGameEnemyDefinition {
     id: string;
@@ -11,18 +13,29 @@ export interface CardGameEnemyDefinition {
     attackChance: number;
     /** Traps placed on the board every enemy turn. */
     hazardsPerTurn: number;
+    passives?: EnemyPassiveInput[];
 }
 
-const definitions = new Map<string, CardGameEnemyDefinition>(
-    enemiesData.enemies.map((enemy) => [ enemy.id, enemy ]),
+export interface LoadedCardGameEnemyDefinition extends Omit<CardGameEnemyDefinition, 'passives'> {
+    passives: EnemyPassiveConfig[];
+}
+
+const loadEnemy = (enemy: CardGameEnemyDefinition): LoadedCardGameEnemyDefinition => ({
+    ...enemy,
+    passives: normalizeEnemyPassives(enemy.passives),
+});
+
+const definitions = new Map<string, LoadedCardGameEnemyDefinition>(
+    enemiesData.enemies.map((enemy) => [ enemy.id, loadEnemy(enemy) ]),
 );
 
-export const CARD_GAME_ENEMY_DEFINITIONS: readonly CardGameEnemyDefinition[] = enemiesData.enemies;
+export const CARD_GAME_ENEMY_DEFINITIONS: readonly LoadedCardGameEnemyDefinition[] =
+    enemiesData.enemies.map(loadEnemy);
 
-export const getCardGameEnemyDefinition = (id: string): CardGameEnemyDefinition | undefined =>
+export const getCardGameEnemyDefinition = (id: string): LoadedCardGameEnemyDefinition | undefined =>
     definitions.get(id);
 
-export const getCardGameEnemyDefinitionOrThrow = (id: string): CardGameEnemyDefinition =>
+export const getCardGameEnemyDefinitionOrThrow = (id: string): LoadedCardGameEnemyDefinition =>
 {
     const definition = getCardGameEnemyDefinition(id);
 
@@ -34,5 +47,5 @@ export const getCardGameEnemyDefinitionOrThrow = (id: string): CardGameEnemyDefi
     return definition;
 };
 
-export const getDefaultCardGameEnemy = (): CardGameEnemyDefinition =>
+export const getDefaultCardGameEnemy = (): LoadedCardGameEnemyDefinition =>
     getCardGameEnemyDefinitionOrThrow(GAME_RULES.defaultEnemyId);

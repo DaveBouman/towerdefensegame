@@ -1,4 +1,5 @@
 import { forwardRef, useLayoutEffect, useRef } from 'react';
+import { loadUIFont } from './game/config/uiTypography';
 import StartGame from './game/main';
 
 export interface IRefPhaserGame
@@ -24,19 +25,30 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame
             return;
         }
 
-        game.current = StartGame(containerRef.current);
+        let cancelled = false;
 
-        if (typeof ref === 'function')
+        void loadUIFont().then(() =>
         {
-            ref({ game: game.current, scene: null });
-        }
-        else if (ref)
-        {
-            ref.current = { game: game.current, scene: null };
-        }
+            if (cancelled || containerRef.current === null)
+            {
+                return;
+            }
+
+            game.current = StartGame(containerRef.current);
+
+            if (typeof ref === 'function')
+            {
+                ref({ game: game.current, scene: null });
+            }
+            else if (ref)
+            {
+                ref.current = { game: game.current, scene: null };
+            }
+        });
 
         return () =>
         {
+            cancelled = true;
             game.current?.destroy(true);
             game.current = null;
         };

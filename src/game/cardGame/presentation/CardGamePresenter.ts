@@ -3,7 +3,6 @@ import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import { getChainAbilitySlots } from '../abilities/chainAbilityRegistry';
 import {
     applyJokerChosenDirection,
-    buildAttackSequence,
     getNextChainSlotFromStep,
     getOffChainSlots,
     getUnchainedHazardSlots,
@@ -76,7 +75,7 @@ export class CardGamePresenter
         const stepMs = GAME_RULES.activationStepMs;
 
         const buildCurrentSequence = (): AttackSequence =>
-            buildAttackSequence(chain, board, stepMs);
+            this.session.buildAttackSequence(chain, stepMs);
 
         const finalize = (): void =>
         {
@@ -147,36 +146,12 @@ export class CardGamePresenter
 
             if (sequence.offChainDamage > 0)
             {
-                const result = this.session.dealAttackDamage(sequence.offChainDamage);
-                this.enemyView.setHealth(result.enemy);
-
-                if (result.shieldAbsorbed > 0)
-                {
-                    this.enemyView.showShieldAbsorb(result.shieldAbsorbed);
-                }
-
-                if (result.healthDamage > 0)
-                {
-                    this.enemyView.playHitFlash();
-                    this.enemyView.showDamageNumber(result.healthDamage);
-                }
+                this.applyEnemyHitResult(this.session.dealAttackDamage(sequence.offChainDamage));
             }
 
             if (sequence.abilityEnemyDamage > 0)
             {
-                const result = this.session.dealAttackDamage(sequence.abilityEnemyDamage);
-                this.enemyView.setHealth(result.enemy);
-
-                if (result.shieldAbsorbed > 0)
-                {
-                    this.enemyView.showShieldAbsorb(result.shieldAbsorbed);
-                }
-
-                if (result.healthDamage > 0)
-                {
-                    this.enemyView.playHitFlash();
-                    this.enemyView.showDamageNumber(result.healthDamage);
-                }
+                this.applyEnemyHitResult(this.session.dealAttackDamage(sequence.abilityEnemyDamage));
             }
 
             const playerAbilityDamage = sequence.abilityPlayerDamage + sequence.hazardDamage;
@@ -254,18 +229,7 @@ export class CardGamePresenter
             if (resolvedStep.damage > 0)
             {
                 const result = this.session.dealAttackDamage(resolvedStep.damage);
-                this.enemyView.setHealth(result.enemy);
-
-                if (result.shieldAbsorbed > 0)
-                {
-                    this.enemyView.showShieldAbsorb(result.shieldAbsorbed);
-                }
-
-                if (result.healthDamage > 0)
-                {
-                    this.enemyView.playHitFlash();
-                    this.enemyView.showDamageNumber(result.healthDamage);
-                }
+                this.applyEnemyHitResult(result);
 
                 attackSteps.push({
                     slot: resolvedStep.slot,
@@ -400,6 +364,31 @@ export class CardGamePresenter
     {
         this.displayedArmor = armor;
         this.armorView.setArmor(armor);
+    }
+
+    private applyEnemyHitResult (result: import('../domain/types').DamageResult): void
+    {
+        this.enemyView.setHealth(result.enemy);
+
+        if (result.shieldAbsorbed > 0)
+        {
+            this.enemyView.showShieldAbsorb(result.shieldAbsorbed);
+        }
+
+        if (result.healthDamage > 0)
+        {
+            this.enemyView.playHitFlash();
+            this.enemyView.showDamageNumber(result.healthDamage);
+        }
+
+        if ((result.thornsDamage ?? 0) > 0)
+        {
+            const player = this.session.getPlayer();
+            this.playerView.setHealth(player);
+            this.setDisplayedArmor(player.shield);
+            this.playerView.playHitFlash();
+            this.playerView.showDamageNumber(result.thornsDamage!);
+        }
     }
 
     private activateStep (step: ActivationStep, boosted = false): void

@@ -1,11 +1,18 @@
 import { GRID_CONFIG } from '../../config/gridConfig';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import {
-    type CardGameEnemyDefinition,
+    type LoadedCardGameEnemyDefinition,
     getCardGameEnemyDefinitionOrThrow,
 } from '../config/enemyCatalog';
-import { planAttack } from '../combat/AttackPipeline';
+import { buildAttackSequence as buildRawAttackSequence, getUnchainedHazardSlots, planAttack } from '../combat/AttackPipeline';
 import { planEnemyTurn } from '../combat/enemyTurn';
+import {
+    applyEnemyPassivesToSequence,
+    computeThornsReflectDamage,
+    placeSilenceTiles,
+    resolvePostAttackPassives,
+} from '../enemyPassives/applyEnemyPassives';
+import { slotKey } from '../domain/cardDirections';
 import { buildPlayerDeck, shuffleInPlace } from '../domain/buildPlayerDeck';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
@@ -31,8 +38,11 @@ export class CardGameSession
     private readonly hand: CardInstance[] = [];
     private readonly deck: CardInstance[] = [];
     private readonly discard: CardInstance[] = [];
-    private readonly enemyDefinition: CardGameEnemyDefinition;
+    private readonly enemyDefinition: LoadedCardGameEnemyDefinition;
     private enemy: EnemyState;
+    private enrageStacks = 0;
+    private readonly silencedSlots = new Set<string>();
+    private readonly bombDisabledSlots = new Set<string>();
     private player: PlayerState;
     private attackInProgress = false;
     private enemyTurnInProgress = false;
@@ -234,9 +244,48 @@ export class CardGameSession
         return { ...this.enemy };
     }
 
-    getEnemyDefinition (): CardGameEnemyDefinition
+    getEnemyDefinition (): LoadedCardGameEnemyDefinition
     {
         return this.enemyDefinition;
+    }
+
+    getSilencedSlots (): SlotPosition[]
+    {
+        return this.board.slotsInOrder().filter((slot) => this.silencedSlots.has(slotKey(slot)));
+    }
+
+    getBombDisabledSlots (): SlotPosition[]
+    {
+        return this.board.slotsInOrder().filter((slot) => this.bombDisabledSlots.has(slotKey(slot)));
+    }
+
+    isSlotSilenced (slot: SlotPosition): boolean
+    {
+        return this.silencedSlots.has(slotKey(slot));
+    }
+
+    isSlotBombDisabled (slot: SlotPosition): boolean
+    {
+        return this.bombDisabledSlots.has(slotKey(slot));
+    }
+
+    isSlotBlockedForPlayer (slot: SlotPosition): boolean
+    {
+        return this.isSlotSilenced(slot) || this.isSlotBombDisabled(slot);
+    }
+
+    buildAttackSequence (
+        chain: import('../domain/types').ActivationStep[],
+        stepMs = GAME_RULES.activationStepMs,
+    ): AttackSequence
+    {
+        const sequence = buildRawAttackSequence(chain, this.board, stepMs);
+
+        return applyEnemyPassivesToSequence(
+            sequence,
+            this.getEnemy(),
+            this.enemyDefinition.passives,
+        );
     }
 
     getPlayer (): PlayerState
@@ -271,7 +320,11 @@ export class CardGameSession
 
     queueNextEnemyTurn (): EnemyTurnAction
     {
-        this.queuedEnemyTurn = planEnemyTurn(this.enemyDefinition);
+        this.queuedEnemyTurn = planEnemyTurn({
+            enemy: this.enemyDefinition,
+            enemyState: this.getEnemy(),
+            enrageStacks: this.enrageStacks,
+        });
 
         return { ...this.queuedEnemyTurn };
     }
@@ -365,12 +418,31 @@ export class CardGameSession
             };
         }
 
+        const shieldBefore = this.enemy.shield;
         const shieldAbsorbed = Math.min(this.enemy.shield, damage);
         const healthDamage = damage - shieldAbsorbed;
 
         this.enemy.shield -= shieldAbsorbed;
         this.enemy.health = Math.max(0, this.enemy.health - healthDamage);
         this.damageDealtThisAttack += damage;
+
+        const thornsDamage = computeThornsReflectDamage(
+            this.enemyDefinition.passives,
+            shieldBefore,
+            damage,
+        );
+
+        if (thornsDamage > 0)
+        {
+            const reflect = this.resolveEnemyAttack(thornsDamage);
+
+            return {
+                enemy: this.getEnemy(),
+                shieldAbsorbed,
+                healthDamage,
+                thornsDamage: reflect.healthDamage + reflect.shieldAbsorbed,
+            };
+        }
 
         return {
             enemy: this.getEnemy(),
@@ -386,6 +458,30 @@ export class CardGameSession
         if (remainingDamage > 0)
         {
             this.dealAttackDamage(remainingDamage);
+        }
+
+        const postAttack = resolvePostAttackPassives(
+            this.board,
+            sequence,
+            this.enemyDefinition.passives,
+        );
+
+        this.enrageStacks = postAttack.enrageStacks;
+
+        if (postAttack.jammerShield > 0)
+        {
+            this.resolveEnemyShield(postAttack.jammerShield);
+        }
+
+        if (postAttack.loopHunterDamage > 0)
+        {
+            this.resolveEnemyAttack(postAttack.loopHunterDamage);
+        }
+
+        this.bombDisabledSlots.clear();
+        for (const slot of getUnchainedHazardSlots(this.board, sequence.chain))
+        {
+            this.bombDisabledSlots.add(slotKey(slot));
         }
 
         const chainArmor = sequence.chain.reduce((sum, step) => sum + step.armor, 0);
@@ -503,7 +599,7 @@ export class CardGameSession
 
         for (const slot of this.board.slotsInOrder())
         {
-            if (this.board.isEmpty(slot))
+            if (this.board.isEmpty(slot) && !this.isSlotBlockedForPlayer(slot))
             {
                 emptySlots.push({ ...slot });
             }
@@ -537,6 +633,8 @@ export class CardGameSession
 
     completeEnemyTurn (action: EnemyTurnAction): void
     {
+        placeSilenceTiles(this.board, this.silencedSlots, this.enemyDefinition.passives);
+        this.enrageStacks = 0;
         this.enemyTurnInProgress = false;
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ENEMY_TURN_COMPLETED, {
@@ -615,6 +713,11 @@ export class CardGameSession
 
         if (!existing)
         {
+            if (this.isSlotBlockedForPlayer(slot))
+            {
+                return false;
+            }
+
             if (!this.board.placeCard(slot, card))
             {
                 return false;
@@ -678,6 +781,11 @@ export class CardGameSession
         const target = this.board.getCardAt(to);
 
         if (target && (isEnemyOwnedCard(target) || isFieldOwnedCard(target)))
+        {
+            return false;
+        }
+
+        if (!target && this.isSlotBlockedForPlayer(to))
         {
             return false;
         }

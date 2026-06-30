@@ -1,3 +1,4 @@
+import { uiTextStyle } from '../config/uiTypography';
 import type { BoardLayout } from './boardLayout';
 
 const DECK_FILL = 0x243b55;
@@ -59,17 +60,11 @@ export class CardPileView
         }
 
         this.countText = scene.add.text(pileWidth / 2 + 6, pileHeight + 16, '0', {
-            fontFamily: 'monospace',
-            fontSize: '18px',
-            color: '#ffffff',
-            fontStyle: 'bold',
+            ...uiTextStyle(20, '#ffffff', { bold: true }),
         }).setOrigin(0.5, 0);
 
         const title = scene.add.text(pileWidth / 2 + 6, pileHeight + 36, label, {
-            fontFamily: 'monospace',
-            fontSize: '11px',
-            color: kind === 'deck' ? '#aed6f1' : '#f5cba7',
-            fontStyle: 'bold',
+            ...uiTextStyle(13, kind === 'deck' ? '#c8e6ff' : '#ffd9b8', { bold: true }),
         }).setOrigin(0.5, 0);
 
         this.container.add([ frame, this.stackContainer, this.countText, title ]);

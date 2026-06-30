@@ -1,3 +1,4 @@
+import { uiTextStyle } from '../config/uiTypography';
 import { GRID_CONFIG } from '../config/gridConfig';
 import { buildCardGraphic } from '../cards/CardRenderer';
 import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
@@ -17,6 +18,10 @@ const SLOT_DROP = 0x3d5a80;
 const SLOT_REPLACE = 0x6b4a2a;
 const SLOT_MOVE = 0x2d5a3d;
 const SLOT_SWAP = 0x5a3d6b;
+const SLOT_SILENCED = 0x2a2038;
+const SLOT_SILENCED_BORDER = 0x8e44ad;
+const SLOT_BOMB_DISABLED = 0x3a2418;
+const SLOT_BOMB_DISABLED_BORDER = 0xe67e22;
 const SLOT_INSET = 4;
 
 export interface BoardCardDragHandlers {
@@ -47,6 +52,8 @@ export class CardBoardView
 {
     readonly container: Phaser.GameObjects.Container;
     private readonly slotBodies: Phaser.GameObjects.Rectangle[][] = [];
+    private readonly silencedOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
+    private readonly bombDisabledOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
     private readonly cardContainers: (Phaser.GameObjects.Container | null)[][] = [];
     private highlightedSlot: SlotPosition | null = null;
     private highlightMode: BoardHighlightMode = null;
@@ -75,6 +82,8 @@ export class CardBoardView
         for (let row = 0; row < rows; row++)
         {
             this.slotBodies[row] = [];
+            this.silencedOverlays[row] = [];
+            this.bombDisabledOverlays[row] = [];
             this.cardContainers[row] = [];
 
             for (let col = 0; col < cols; col++)
@@ -88,6 +97,8 @@ export class CardBoardView
                 slot.setDepth(0);
                 this.container.add(slot);
                 this.slotBodies[row][col] = slot;
+                this.silencedOverlays[row][col] = null;
+                this.bombDisabledOverlays[row][col] = null;
                 this.cardContainers[row][col] = null;
 
                 const card = board.getCardAt({ row, col });
@@ -422,6 +433,81 @@ export class CardBoardView
         this.setSlotCard(slot, card);
     }
 
+    /** Marks board slots the player cannot place cards on. */
+    setBlockedSlots (
+        silenced: readonly SlotPosition[],
+        bombDisabled: readonly SlotPosition[],
+    ): void
+    {
+        this.setSlotOverlays(
+            silenced,
+            this.silencedOverlays,
+            SLOT_SILENCED,
+            SLOT_SILENCED_BORDER,
+        );
+        this.setSlotOverlays(
+            bombDisabled,
+            this.bombDisabledOverlays,
+            SLOT_BOMB_DISABLED,
+            SLOT_BOMB_DISABLED_BORDER,
+        );
+    }
+
+    /** @deprecated Use setBlockedSlots */
+    setSilencedSlots (slots: readonly SlotPosition[]): void
+    {
+        this.setBlockedSlots(slots, []);
+    }
+
+    private setSlotOverlays (
+        slots: readonly SlotPosition[],
+        overlays: (Phaser.GameObjects.Rectangle | null)[][],
+        fill: number,
+        border: number,
+    ): void
+    {
+        const active = new Set(slots.map((slot) => `${slot.row},${slot.col}`));
+        const { rows, cols, tileSize } = GRID_CONFIG;
+
+        for (let row = 0; row < rows; row++)
+        {
+            for (let col = 0; col < cols; col++)
+            {
+                const key = `${row},${col}`;
+                const existing = overlays[row][col];
+
+                if (!active.has(key))
+                {
+                    existing?.destroy();
+                    overlays[row][col] = null;
+                    continue;
+                }
+
+                if (existing)
+                {
+                    continue;
+                }
+
+                const x = col * tileSize + tileSize / 2;
+                const y = row * tileSize + tileSize / 2;
+                const slotSize = tileSize - SLOT_INSET * 2;
+                const overlay = this.scene.add.rectangle(
+                    x,
+                    y,
+                    slotSize,
+                    slotSize,
+                    fill,
+                    0.55,
+                );
+
+                overlay.setStrokeStyle(2, border, 0.95);
+                overlay.setDepth(1);
+                this.container.add(overlay);
+                overlays[row][col] = overlay;
+            }
+        }
+    }
+
     /** Rebuilds all card visuals from the board model — prevents ghost cards after moves/swaps/replaces. */
     syncFromBoard (board: BoardModel): void
     {
@@ -609,17 +695,11 @@ export class CardBoardView
             );
 
             const arrow = this.scene.add.text(cellLeftX - 10, centerY, ARROW_GLYPH.right, {
-                fontFamily: 'monospace',
-                fontSize: '30px',
-                color: '#5a5a78',
-                fontStyle: 'bold',
+                ...uiTextStyle(32, '#7a7a9a', { bold: true }),
             }).setOrigin(1, 0.5);
 
             const label = this.scene.add.text(cellLeftX - 10, centerY - 24, 'START', {
-                fontFamily: 'monospace',
-                fontSize: '11px',
-                color: '#8a8aa8',
-                fontStyle: 'bold',
+                ...uiTextStyle(13, '#a8a8c8', { bold: true }),
             }).setOrigin(1, 0.5);
 
             const hitArea = this.scene.add.rectangle(cellLeftX - 28, centerY, 36, slotSize + 12, 0x000000, 0);

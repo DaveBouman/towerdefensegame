@@ -1,3 +1,4 @@
+import { uiTextStyle } from '../config/uiTypography';
 import { GRID_CONFIG } from '../config/gridConfig';
 import { ARROW_GLYPH, arrowLabelPosition } from '../cards/cardArrows';
 import type { CardDirection } from '../cardGame/domain/cardDirections';
@@ -49,10 +50,7 @@ export class JokerDirectionPicker
         this.overlay.add(backdrop);
 
         const prompt = scene.add.text(centerX, centerY - cardSize * 0.62, 'Choose direction', {
-            fontFamily: 'monospace',
-            fontSize: '12px',
-            color: '#fff3c4',
-            fontStyle: 'bold',
+            ...uiTextStyle(14, '#fff3c4', { bold: true }),
         }).setOrigin(0.5);
 
         this.overlay.add(prompt);
@@ -69,10 +67,7 @@ export class JokerDirectionPicker
             button.setInteractive({ useHandCursor: true });
 
             const label = scene.add.text(x, y, ARROW_GLYPH[direction], {
-                fontFamily: 'monospace',
-                fontSize: '18px',
-                color: '#ffffff',
-                fontStyle: 'bold',
+                ...uiTextStyle(20, '#ffffff', { bold: true }),
             }).setOrigin(0.5);
 
             button.on('pointerover', () => button.setFillStyle(0x4a4a72, 1));

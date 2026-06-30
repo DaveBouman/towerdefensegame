@@ -123,6 +123,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             ? [
                 `Enemy trap — deals ${ctx.definition.power} damage to you if not activated in your chain.`,
                 'Disarm it by including it in your attack chain.',
+                'If it explodes, that tile is scorched and you cannot place cards there next turn.',
             ]
             : [
                 `Deals ${ctx.definition.power} damage when activated in the chain.`,

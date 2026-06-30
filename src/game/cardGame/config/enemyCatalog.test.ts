@@ -19,6 +19,16 @@ describe('enemyCatalog', () =>
         });
     });
 
+    it('normalizes passive configs from json', () =>
+    {
+        expect(getCardGameEnemyDefinition('thornward')?.passives[0]).toEqual({
+            id: 'thorns',
+            reflectDamage: 2,
+        });
+        expect(getCardGameEnemyDefinition('smokebinder')?.passives.map((passive) => passive.id))
+            .toEqual([ 'smoke', 'loopHunter' ]);
+    });
+
     it('uses the default enemy from game rules', () =>
     {
         expect(getDefaultCardGameEnemy().id).toBe('basic');

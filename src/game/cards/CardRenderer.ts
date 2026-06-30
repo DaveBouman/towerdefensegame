@@ -1,6 +1,7 @@
 import { getCardDefinitionOrThrow, GAME_RULES, getChainStepDistance } from '../cardGame/config/cardRegistry';
 import type { CardInstance } from '../cardGame/domain/types';
 import { isEnemyOwnedCard, isFieldOwnedCard } from '../cardGame/domain/cardOwnership';
+import { uiTextStyle } from '../config/uiTypography';
 import { ARROW_GLYPH, arrowLabelPosition } from './cardArrows';
 import { CARD_VISUALS } from './cardVisuals';
 
@@ -39,10 +40,7 @@ export const buildCardGraphic = (
 
     const arrowPos = arrowLabelPosition(card.arrow, width, height);
     const continueArrow = scene.add.text(arrowPos.x, arrowPos.y, ARROW_GLYPH[card.arrow], {
-        fontFamily: 'monospace',
-        fontSize: '18px',
-        color: isLoopReset ? '#f1c40f' : '#ffffff',
-        fontStyle: 'bold',
+        ...uiTextStyle(20, isLoopReset ? '#f1c40f' : '#ffffff', { bold: true }),
     }).setOrigin(0.5);
 
     const cardTexts: Phaser.GameObjects.Text[] = [ continueArrow ];
@@ -52,20 +50,14 @@ export const buildCardGraphic = (
         const loopDirection = card.loopArrow;
         const loopPos = arrowLabelPosition(loopDirection, width, height);
         const loopArrow = scene.add.text(loopPos.x, loopPos.y, `↺${ARROW_GLYPH[loopDirection]}`, {
-            fontFamily: 'monospace',
-            fontSize: '15px',
-            color: '#d7bde2',
-            fontStyle: 'bold',
+            ...uiTextStyle(17, '#e8daef', { bold: true }),
         }).setOrigin(0.5);
 
         cardTexts.push(loopArrow);
     }
 
     const kindLabel = scene.add.text(width / 2, height * 0.38, definition.label, {
-        fontFamily: 'monospace',
-        fontSize: '11px',
-        color: style.labelColor,
-        fontStyle: 'bold',
+        ...uiTextStyle(14, style.labelColor, { bold: true }),
     }).setOrigin(0.5);
 
     const power = scene.add.text(
@@ -73,17 +65,14 @@ export const buildCardGraphic = (
         height * 0.62,
         isJoker ? '★' : isBoost ? `×${GAME_RULES.fieldBoost.nextStepMultiplier}` : isLoopReset ? '↺1' : isPoison ? `${definition.power}×→` : isFire ? `${definition.power}↔` : String(definition.power),
         {
-            fontFamily: 'monospace',
-            fontSize: '20px',
-            color: style.powerColor,
-            fontStyle: 'bold',
+            ...uiTextStyle(22, style.powerColor, { bold: true }),
         },
     ).setOrigin(0.5);
 
     if (isJoker)
     {
         continueArrow.setText('?');
-        continueArrow.setFontSize('22px');
+        continueArrow.setFontSize(24);
     }
 
     container.add([ body, ...cardTexts, kindLabel, power ]);
@@ -91,12 +80,11 @@ export const buildCardGraphic = (
     if (leapDistance > 1)
     {
         const leapBadge = scene.add.text(width - 6, 6, String(leapDistance), {
-            fontFamily: 'monospace',
-            fontSize: '11px',
-            color: '#ffffff',
-            fontStyle: 'bold',
-            backgroundColor: '#00000088',
-            padding: { x: 3, y: 1 },
+            ...uiTextStyle(12, '#ffffff', {
+                bold: true,
+                backgroundColor: '#000000aa',
+                padding: { x: 4, y: 2 },
+            }),
         }).setOrigin(1, 0);
 
         container.add(leapBadge);

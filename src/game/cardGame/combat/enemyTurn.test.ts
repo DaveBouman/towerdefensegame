@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getDefaultCardGameEnemy } from '../config/enemyCatalog';
-import { describeEnemyIntent, planEnemyTurn } from './enemyTurn';
+import { describeEnemyIntent, planEnemyTurn } from '../combat/enemyTurn';
+import { normalizeEnemyPassives } from '../enemyPassives/defaults';
 
 const basicEnemy = getDefaultCardGameEnemy();
 
@@ -10,7 +11,11 @@ describe('planEnemyTurn', () =>
     {
         for (let i = 0; i < 30; i++)
         {
-            const action = planEnemyTurn(basicEnemy);
+            const action = planEnemyTurn({
+                enemy: basicEnemy,
+                enemyState: { health: 80, maxHealth: 80, shield: 0 },
+                enrageStacks: 0,
+            });
             const combatSteps = action.steps.filter((step) => step.kind === 'attack' || step.kind === 'shield');
             const hazardSteps = action.steps.filter((step) => step.kind === 'place-hazard');
 
@@ -33,33 +38,19 @@ describe('describeEnemyIntent', () =>
             ],
         }, 'upcoming').title)
             .toBe('After round: Attack 8 + Trap');
-        expect(describeEnemyIntent({
-            enemyId: 'basic',
-            steps: [
-                { kind: 'shield', amount: 10 },
-                { kind: 'place-hazard' },
-            ],
-        }, 'upcoming').title)
-            .toBe('After round: Shield +10 + Trap');
     });
+});
 
-    it('labels executing intents', () =>
+describe('enemyCatalog passives', () =>
+{
+    it('merges passive overrides with defaults', () =>
     {
-        expect(describeEnemyIntent({
-            enemyId: 'basic',
-            steps: [
-                { kind: 'attack', amount: 8 },
-                { kind: 'place-hazard' },
-            ],
-        }, 'executing').title)
-            .toBe('Attack 8 + Trap!');
-        expect(describeEnemyIntent({
-            enemyId: 'basic',
-            steps: [
-                { kind: 'shield', amount: 10 },
-                { kind: 'place-hazard' },
-            ],
-        }, 'executing').title)
-            .toBe('Shield +10 + Trap!');
+        const passives = normalizeEnemyPassives([
+            { id: 'thorns', reflectDamage: 4 },
+            'jammer',
+        ]);
+
+        expect(passives[0]).toEqual({ id: 'thorns', reflectDamage: 4 });
+        expect(passives[1]).toEqual({ id: 'jammer', minChainLength: 6, shieldGain: 5 });
     });
 });

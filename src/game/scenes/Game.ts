@@ -9,6 +9,7 @@ import { CardGameSession } from '../cardGame/domain/CardGameSession';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import type { SlotPosition } from '../cardGame/domain/types';
 import { destroyCardTooltipController } from '../cardGame/presentation/tooltips/CardTooltipController';
+import { destroyEnemyPassiveTooltipController } from '../cardGame/presentation/tooltips/EnemyPassiveTooltipController';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../cardGame/events/cardGameEvents';
@@ -90,6 +91,7 @@ export class Game extends Scene
         this.playerView = new PlayerHealthView(this, layout, this.session.getPlayer());
         this.enemyView = new EnemyTargetView(this, layout, this.session.getEnemy());
         this.enemyView.setEnemyLabel(this.session.getEnemyDefinition().label);
+        this.enemyView.setEnemyPassives(this.session.getEnemyDefinition().passives);
         this.armorView = new ArmorView(this, layout, 0);
         this.deckView = new CardPileView(this, layout, layout.deckX, layout.deckY, 'Deck', 'deck');
         this.graveyardView = new CardPileView(this, layout, layout.graveyardX, layout.graveyardY, 'Graveyard', 'graveyard');
@@ -97,6 +99,10 @@ export class Game extends Scene
 
         this.session.placeFieldBoost();
         this.boardView.syncFromBoard(this.session.board);
+        this.boardView.setBlockedSlots(
+            this.session.getSilencedSlots(),
+            this.session.getBombDisabledSlots(),
+        );
 
         this.presenter = new CardGamePresenter(
             this,
@@ -168,6 +174,7 @@ export class Game extends Scene
         this.deckView?.destroy();
         this.graveyardView?.destroy();
         destroyCardTooltipController();
+        destroyEnemyPassiveTooltipController();
         this.presenter = undefined;
         this.boardView = undefined;
         this.handView = undefined;
@@ -264,6 +271,10 @@ export class Game extends Scene
         this.session.clearBoard();
         this.session.placeFieldBoost();
         this.boardView.syncFromBoard(this.session.board);
+        this.boardView.setBlockedSlots(
+            this.session.getSilencedSlots(),
+            this.session.getBombDisabledSlots(),
+        );
         this.graveyardView?.pulse();
         this.syncPileViews();
         this.enemyView.setHealth(this.session.getEnemy());
@@ -306,6 +317,10 @@ export class Game extends Scene
 
             this.handView?.syncHand(this.session!.getHand());
             this.armorView?.setArmor(this.session!.getPlayer().shield);
+            this.boardView?.setBlockedSlots(
+                this.session!.getSilencedSlots(),
+                this.session!.getBombDisabledSlots(),
+            );
             this.syncPileViews();
             this.session!.finishPlayerTurn();
             this.emitAttackReadiness();

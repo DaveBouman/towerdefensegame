@@ -8,6 +8,58 @@
       "shieldGain": 10,
       "attackChance": 0.5,
       "hazardsPerTurn": 1
+    },
+    {
+      "id": "thornward",
+      "label": "Thornward",
+      "maxHealth": 70,
+      "attackDamage": 7,
+      "shieldGain": 12,
+      "attackChance": 0.4,
+      "hazardsPerTurn": 1,
+      "passives": [
+        { "id": "thorns", "reflectDamage": 2 }
+      ]
+    },
+    {
+      "id": "saboteur",
+      "label": "Saboteur",
+      "maxHealth": 60,
+      "attackDamage": 6,
+      "shieldGain": 8,
+      "attackChance": 0.35,
+      "hazardsPerTurn": 1,
+      "passives": [
+        { "id": "enrage", "attackBonusPerTrap": 2, "extraTrapsPerTrap": 1 },
+        "silenceTile"
+      ]
+    },
+    {
+      "id": "warden",
+      "label": "Warden",
+      "maxHealth": 90,
+      "attackDamage": 7,
+      "shieldGain": 12,
+      "attackChance": 0.45,
+      "hazardsPerTurn": 1,
+      "passives": [
+        "wetBlanket",
+        "jammer",
+        "lastStand"
+      ]
+    },
+    {
+      "id": "smokebinder",
+      "label": "Smokebinder",
+      "maxHealth": 75,
+      "attackDamage": 8,
+      "shieldGain": 10,
+      "attackChance": 0.5,
+      "hazardsPerTurn": 1,
+      "passives": [
+        "smoke",
+        "loopHunter"
+      ]
     }
   ]
 }

@@ -30,7 +30,8 @@ const config: Phaser.Types.Core.GameConfig = {
         autoCenter: Scale.CENTER_BOTH,
     },
     render: {
-        antialias: false,
+        antialias: true,
+        roundPixels: false,
         powerPreference: 'high-performance',
     },
 };

@@ -1,3 +1,4 @@
+import { uiTextStyle } from '../config/uiTypography';
 import type { BoardLayout } from './boardLayout';
 
 const ARMOR_COLOR = 0x2ecc71;
@@ -17,17 +18,11 @@ export class ArmorView
         badge.setStrokeStyle(2, ARMOR_COLOR, 0.9);
 
         const label = scene.add.text(-52, 0, 'Armor', {
-            fontFamily: 'monospace',
-            fontSize: '14px',
-            color: '#a8e6cf',
-            fontStyle: 'bold',
+            ...uiTextStyle(15, '#c8f5e0', { bold: true }),
         }).setOrigin(0, 0.5);
 
         this.valueText = scene.add.text(52, 0, String(armor), {
-            fontFamily: 'monospace',
-            fontSize: '18px',
-            color: '#ffffff',
-            fontStyle: 'bold',
+            ...uiTextStyle(20, '#ffffff', { bold: true }),
         }).setOrigin(1, 0.5);
 
         container.add([ badge, label, this.valueText ]);
@@ -49,12 +44,7 @@ export class ArmorView
         }
 
         const popup = this.scene.add.text(0, -28, `-${amount}`, {
-            fontFamily: 'monospace',
-            fontSize: '18px',
-            color: '#a8e6cf',
-            fontStyle: 'bold',
-            stroke: '#000000',
-            strokeThickness: 3,
+            ...uiTextStyle(20, '#c8f5e0', { bold: true }),
         }).setOrigin(0.5, 1);
 
         this.container.add(popup);

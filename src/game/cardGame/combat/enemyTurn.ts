@@ -1,37 +1,15 @@
-import type { CardGameEnemyDefinition } from '../config/enemyCatalog';
+import type { LoadedCardGameEnemyDefinition } from '../config/enemyCatalog';
+import {
+    planEnemyTurnWithPassives,
+    type EnemyTurnPlanningContext,
+} from '../enemyPassives/applyEnemyPassives';
 import type { EnemyTurnAction, EnemyTurnStep } from '../domain/types';
 
-const planCombatStep = (enemy: CardGameEnemyDefinition): EnemyTurnStep =>
-{
-    if (Math.random() < enemy.attackChance)
-    {
-        return {
-            kind: 'attack',
-            amount: enemy.attackDamage,
-        };
-    }
+export type { EnemyTurnPlanningContext };
 
-    return {
-        kind: 'shield',
-        amount: enemy.shieldGain,
-    };
-};
-
-/** Plans one enemy turn from a card-game enemy definition. */
-export const planEnemyTurn = (enemy: CardGameEnemyDefinition): EnemyTurnAction =>
-{
-    const steps: EnemyTurnStep[] = [ planCombatStep(enemy) ];
-
-    for (let i = 0; i < enemy.hazardsPerTurn; i++)
-    {
-        steps.push({ kind: 'place-hazard' });
-    }
-
-    return {
-        enemyId: enemy.id,
-        steps,
-    };
-};
+/** Plans one enemy turn from a card-game enemy definition and passive state. */
+export const planEnemyTurn = (context: EnemyTurnPlanningContext): EnemyTurnAction =>
+    planEnemyTurnWithPassives(context);
 
 export const getPrimaryCombatStep = (
     action: EnemyTurnAction,
@@ -76,4 +54,22 @@ export const describeEnemyIntent = (
         title: `${prefix}${parts.join(' + ')}${suffix}`,
         color: primary?.kind === 'attack' ? '#ff9f43' : '#5dade2',
     };
+};
+
+export const describeEnemyPassives = (
+    enemy: LoadedCardGameEnemyDefinition,
+): string[] =>
+{
+    const labels: Record<string, string> = {
+        thorns: 'Thorns',
+        enrage: 'Enrage',
+        lastStand: 'Last Stand',
+        smoke: 'Smoke',
+        wetBlanket: 'Wet Blanket',
+        silenceTile: 'Silence Tile',
+        loopHunter: 'Loop Hunter',
+        jammer: 'Jammer',
+    };
+
+    return enemy.passives.map((passive) => labels[passive.id] ?? passive.id);
 };

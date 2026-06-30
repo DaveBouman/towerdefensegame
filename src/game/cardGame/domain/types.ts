@@ -65,6 +65,7 @@ export interface DamageResult {
     enemy: EnemyState;
     shieldAbsorbed: number;
     healthDamage: number;
+    thornsDamage?: number;
 }
 
 export interface PlacedCard {

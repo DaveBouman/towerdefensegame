@@ -1,6 +1,23 @@
+import { uiTextStyle } from '../config/uiTypography';
 import type { EnemyState, EnemyTurnAction } from '../cardGame/domain/types';
 import { describeEnemyIntent, getPrimaryCombatStep } from '../cardGame/combat/enemyTurn';
+import type { EnemyPassiveConfig } from '../cardGame/enemyPassives/types';
+import { attachEnemyPassiveTooltip } from '../cardGame/presentation/tooltips/EnemyPassiveTooltipController';
+import { ENEMY_PASSIVE_GLYPH } from '../cardGame/presentation/tooltips/enemyPassiveTooltipRegistry';
 import type { BoardLayout } from './boardLayout';
+
+const PASSIVE_ICON_SIZE = 26;
+const PASSIVE_ICON_GAP = 4;
+const PASSIVE_ROW_COLORS: Record<EnemyPassiveConfig['id'], number> = {
+    thorns: 0xf39c12,
+    enrage: 0xe74c3c,
+    lastStand: 0x8e44ad,
+    smoke: 0x95a5a6,
+    wetBlanket: 0x3498db,
+    silenceTile: 0x9b59b6,
+    loopHunter: 0xe67e22,
+    jammer: 0x5dade2,
+};
 
 const ENEMY_COLOR = 0xe74c3c;
 const ENEMY_BAR_BG = 0x3a1520;
@@ -23,6 +40,7 @@ export class EnemyTargetView
     private readonly shieldBadge: Phaser.GameObjects.Container;
     private readonly shieldValueText: Phaser.GameObjects.Text;
     private readonly enemyLabel: Phaser.GameObjects.Text;
+    private passiveIconsContainer?: Phaser.GameObjects.Container;
     private intentContainer?: Phaser.GameObjects.Container;
     private intentTween?: Phaser.Tweens.Tween;
     private shieldTween?: Phaser.Tweens.Tween;
@@ -107,16 +125,11 @@ export class EnemyTargetView
         this.shieldBarBg.setVisible(false);
 
         this.healthText = scene.add.text(enemySize / 2, enemySize / 2 - 4, '', {
-            fontFamily: 'monospace',
-            fontSize: '18px',
-            color: '#ffffff',
-            fontStyle: 'bold',
+            ...uiTextStyle(20, '#ffffff', { bold: true }),
         }).setOrigin(0.5);
 
         const label = scene.add.text(enemySize / 2, enemySize + 14, 'Enemy', {
-            fontFamily: 'monospace',
-            fontSize: '14px',
-            color: '#f5b7b1',
+            ...uiTextStyle(16, '#ffc8c2'),
         }).setOrigin(0.5, 0);
 
         this.enemyLabel = label;
@@ -126,17 +139,11 @@ export class EnemyTargetView
         badgeBg.setStrokeStyle(2, ENEMY_SHIELD_COLOR, 0.95);
 
         const badgeLabel = scene.add.text(-46, 0, 'Shield', {
-            fontFamily: 'monospace',
-            fontSize: '13px',
-            color: '#aed6f1',
-            fontStyle: 'bold',
+            ...uiTextStyle(14, '#c8e6ff', { bold: true }),
         }).setOrigin(0, 0.5);
 
         this.shieldValueText = scene.add.text(46, 0, '0', {
-            fontFamily: 'monospace',
-            fontSize: '17px',
-            color: '#ffffff',
-            fontStyle: 'bold',
+            ...uiTextStyle(19, '#ffffff', { bold: true }),
         }).setOrigin(1, 0.5);
 
         this.shieldBadge = scene.add.container(enemySize / 2, -22, [ badgeBg, badgeLabel, this.shieldValueText ]);
@@ -163,6 +170,52 @@ export class EnemyTargetView
         this.enemyLabel.setText(label);
     }
 
+    setEnemyPassives (passives: readonly EnemyPassiveConfig[]): void
+    {
+        this.passiveIconsContainer?.destroy();
+        this.passiveIconsContainer = undefined;
+
+        if (passives.length === 0)
+        {
+            return;
+        }
+
+        const rowWidth = passives.length * PASSIVE_ICON_SIZE + (passives.length - 1) * PASSIVE_ICON_GAP;
+        const startX = this.enemySize / 2 - rowWidth / 2 + PASSIVE_ICON_SIZE / 2;
+        const y = this.enemySize + 34;
+        const icons: Phaser.GameObjects.GameObject[] = [];
+
+        passives.forEach((passive, index) =>
+        {
+            const x = startX + index * (PASSIVE_ICON_SIZE + PASSIVE_ICON_GAP);
+            const background = this.scene.add.rectangle(
+                x,
+                y,
+                PASSIVE_ICON_SIZE,
+                PASSIVE_ICON_SIZE,
+                0x141425,
+                0.95,
+            );
+
+            background.setStrokeStyle(2, PASSIVE_ROW_COLORS[passive.id], 1);
+            background.setInteractive({ useHandCursor: true });
+
+            const glyph = this.scene.add.text(x, y, ENEMY_PASSIVE_GLYPH[passive.id], {
+                ...uiTextStyle(15, '#ffffff'),
+            }).setOrigin(0.5);
+
+            attachEnemyPassiveTooltip(this.scene, background, passive);
+
+            background.on('pointerover', () => background.setFillStyle(0x24243a, 1));
+            background.on('pointerout', () => background.setFillStyle(0x141425, 0.95));
+
+            icons.push(background, glyph);
+        });
+
+        this.passiveIconsContainer = this.scene.add.container(0, 0, icons);
+        this.container.add(this.passiveIconsContainer);
+    }
+
     showIntent (action: EnemyTurnAction, phase: 'upcoming' | 'executing' = 'upcoming'): void
     {
         this.clearIntent();
@@ -173,7 +226,7 @@ export class EnemyTargetView
         const strokeColor = primary?.kind === 'attack'
             ? (phase === 'executing' ? 0xff7675 : 0xff9f43)
             : 0x5dade2;
-        const intentWidth = Math.max(this.enemySize + 24, title.length * 7 + 24);
+        const intentWidth = Math.max(this.enemySize + 24, title.length * 8 + 28);
 
         const badge = this.scene.add.rectangle(
             this.enemySize / 2,
@@ -186,10 +239,7 @@ export class EnemyTargetView
         badge.setStrokeStyle(2, strokeColor, 1);
 
         const text = this.scene.add.text(this.enemySize / 2, intentY, title, {
-            fontFamily: 'monospace',
-            fontSize: '12px',
-            color,
-            fontStyle: 'bold',
+            ...uiTextStyle(15, color, { bold: true }),
         }).setOrigin(0.5);
 
         this.intentContainer = this.scene.add.container(0, 0, [ badge, text ]);
@@ -326,6 +376,8 @@ export class EnemyTargetView
     destroy (): void
     {
         this.clearIntent();
+        this.passiveIconsContainer?.destroy();
+        this.passiveIconsContainer = undefined;
         this.shieldTween?.stop();
         this.container.destroy();
     }
@@ -369,12 +421,7 @@ export class EnemyTargetView
     private showFloatingNumber (text: string, color: string): void
     {
         const popup = this.scene.add.text(this.body.width / 2, -8, text, {
-            fontFamily: 'monospace',
-            fontSize: '22px',
-            color,
-            fontStyle: 'bold',
-            stroke: '#000000',
-            strokeThickness: 3,
+            ...uiTextStyle(24, color, { bold: true }),
         }).setOrigin(0.5, 1);
 
         this.container.add(popup);

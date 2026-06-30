@@ -1,4 +1,5 @@
 import type { PlayerState } from '../cardGame/domain/types';
+import { uiTextStyle } from '../config/uiTypography';
 import type { BoardLayout } from './boardLayout';
 
 const PLAYER_COLOR = 0x3498db;
@@ -57,16 +58,11 @@ export class PlayerHealthView
         ).setOrigin(0, 0);
 
         this.healthText = scene.add.text(playerSize / 2, playerSize / 2 - 4, '', {
-            fontFamily: 'monospace',
-            fontSize: '18px',
-            color: '#ffffff',
-            fontStyle: 'bold',
+            ...uiTextStyle(20, '#ffffff', { bold: true }),
         }).setOrigin(0.5);
 
         const label = scene.add.text(playerSize / 2, playerSize + 14, 'You', {
-            fontFamily: 'monospace',
-            fontSize: '14px',
-            color: '#aed6f1',
+            ...uiTextStyle(16, '#c8e6ff'),
         }).setOrigin(0.5, 0);
 
         container.add([ outline, body, healthBarBg, this.healthBarFill, this.healthText, label ]);
@@ -118,12 +114,7 @@ export class PlayerHealthView
         }
 
         const popup = this.scene.add.text(this.body.width / 2, -8, `-${damage}`, {
-            fontFamily: 'monospace',
-            fontSize: '22px',
-            color: '#ff7675',
-            fontStyle: 'bold',
-            stroke: '#000000',
-            strokeThickness: 3,
+            ...uiTextStyle(24, '#ff8a84', { bold: true }),
         }).setOrigin(0.5, 1);
 
         this.container.add(popup);

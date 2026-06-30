@@ -1,4 +1,5 @@
 import { GAME_RULES } from '../../config/cardRegistry';
+import { uiTextStyle } from '../../../config/uiTypography';
 import { addCardOverlay, clearWrapperData } from './cardOverlay';
 
 const BUFF_GLOW = 0xf1c40f;
@@ -33,12 +34,7 @@ export const boostedBuffVisual: import('./types').CardVisualEffect = {
             target.height * 0.18,
             `×${GAME_RULES.fieldBoost.nextStepMultiplier}`,
             {
-                fontFamily: 'monospace',
-                fontSize: '16px',
-                color: '#fff3c4',
-                fontStyle: 'bold',
-                stroke: '#6b4a00',
-                strokeThickness: 3,
+                ...uiTextStyle(18, '#fff3c4', { bold: true, strokeColor: '#6b4a00' }),
             },
         ).setOrigin(0.5);
 
