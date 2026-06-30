@@ -41,7 +41,7 @@ export const buildCardGraphic = (
     const continueArrow = scene.add.text(arrowPos.x, arrowPos.y, ARROW_GLYPH[card.arrow], {
         fontFamily: 'monospace',
         fontSize: '18px',
-        color: '#ffffff',
+        color: isLoopReset ? '#f1c40f' : '#ffffff',
         fontStyle: 'bold',
     }).setOrigin(0.5);
 
@@ -49,10 +49,11 @@ export const buildCardGraphic = (
 
     if (isLoopReset && card.loopArrow)
     {
-        const loopPos = arrowLabelPosition(card.loopArrow, width, height);
-        const loopArrow = scene.add.text(loopPos.x, loopPos.y, '↺', {
+        const loopDirection = card.loopArrow;
+        const loopPos = arrowLabelPosition(loopDirection, width, height);
+        const loopArrow = scene.add.text(loopPos.x, loopPos.y, `↺${ARROW_GLYPH[loopDirection]}`, {
             fontFamily: 'monospace',
-            fontSize: '16px',
+            fontSize: '15px',
             color: '#d7bde2',
             fontStyle: 'bold',
         }).setOrigin(0.5);
@@ -70,7 +71,7 @@ export const buildCardGraphic = (
     const power = scene.add.text(
         width / 2,
         height * 0.62,
-        isJoker ? '★' : isBoost ? `×${GAME_RULES.fieldBoost.nextStepMultiplier}` : isLoopReset ? '∞' : isPoison ? `${definition.power}×→` : isFire ? `${definition.power}↔` : String(definition.power),
+        isJoker ? '★' : isBoost ? `×${GAME_RULES.fieldBoost.nextStepMultiplier}` : isLoopReset ? '↺1' : isPoison ? `${definition.power}×→` : isFire ? `${definition.power}↔` : String(definition.power),
         {
             fontFamily: 'monospace',
             fontSize: '20px',

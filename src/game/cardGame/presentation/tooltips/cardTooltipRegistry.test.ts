@@ -41,6 +41,15 @@ describe('cardTooltipRegistry', () =>
         expect(lunge.lines.some((line) => line.includes('2 tiles'))).toBe(true);
     });
 
+    it('describes loop arrows using this card instance', () =>
+    {
+        const tooltip = resolveCardTooltip(createCardInstance('loop-reset', 'right', 'player', 'left'));
+
+        expect(tooltip.title).toBe('Loop');
+        expect(tooltip.lines[1]).toContain('↺←');
+        expect(tooltip.lines[2]).toContain('→');
+    });
+
     it('allows registering custom tooltip providers', () =>
     {
         const previous = getCardTooltipProvider('fire');

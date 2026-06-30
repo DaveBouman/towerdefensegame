@@ -80,10 +80,16 @@ export const buildPlayerDeck = (size = GAME_RULES.deckSize): CardInstance[] =>
 
             if (definition.behaviorId === 'loop-reset')
             {
+                const pool = arrowQueues.get(definition.arrowPool) ?? [];
                 const arrow = takeBalancedArrow(arrowQueues, definition.arrowPool);
-                let loopArrow = takeBalancedArrow(arrowQueues, definition.arrowPool);
+                const loopArrowIndex = pool.findIndex((direction) => direction !== arrow);
+                const loopArrow = loopArrowIndex >= 0
+                    ? pool.splice(loopArrowIndex, 1)[0]
+                    : arrow
+                        ? randomOrthogonalPair(arrow).loopArrow
+                        : undefined;
 
-                if (!arrow || !loopArrow || loopArrow === arrow)
+                if (!arrow || !loopArrow)
                 {
                     const pair = randomOrthogonalPair(arrow);
 

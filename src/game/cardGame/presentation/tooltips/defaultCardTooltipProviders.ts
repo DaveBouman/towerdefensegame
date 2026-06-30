@@ -1,4 +1,5 @@
 import { GAME_RULES, getChainStepDistance } from '../../config/cardRegistry';
+import { ARROW_GLYPH } from '../../../cards/cardArrows';
 import { isEnemyOwnedCard } from '../../domain/cardOwnership';
 import type { CardTooltipContent, CardTooltipContext, CardTooltipProvider } from './types';
 
@@ -83,13 +84,23 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             `Chain jumps ${getChainStepDistance(ctx.definition)} tiles in that direction.`,
         ],
     })),
-    provider('loop-reset', () => ({
-        title: 'Loop',
-        lines: [
-            'Resets once per attack so earlier chain cards can activate again.',
-            '↺ loop arrow replays earlier cards; continue arrow moves forward after looping.',
-        ],
-    })),
+    provider('loop-reset', (ctx) =>
+    {
+        const loopArrow = ctx.card.loopArrow ?? ctx.card.arrow;
+        const continueArrow = ctx.card.arrow;
+        const loopGlyph = ARROW_GLYPH[loopArrow];
+        const continueGlyph = ARROW_GLYPH[continueArrow];
+
+        return {
+            title: 'Loop',
+            lines: [
+                'Two exits — the chain uses each once per attack.',
+                `First visit: follow ↺${loopGlyph} (loop arrow). Jump that way and re-activate every card you already passed before this Loop.`,
+                `Second visit: follow ${continueGlyph} (continue arrow). Chain moves forward normally.`,
+                'Cards placed after the Loop on the board are not reopened.',
+            ],
+        };
+    }),
     provider('poison', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: [
