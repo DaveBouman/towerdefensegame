@@ -592,14 +592,14 @@ export class CardGameSession
         return slot;
     }
 
-    /** Places a field boost on a random empty board slot for the next player round. */
+    /** Places a field boost on a random empty board slot (any row/column). */
     placeFieldBoost (): SlotPosition | null
     {
         const emptySlots: SlotPosition[] = [];
 
         for (const slot of this.board.slotsInOrder())
         {
-            if (this.board.isEmpty(slot) && !this.isSlotBlockedForPlayer(slot))
+            if (this.board.isEmpty(slot))
             {
                 emptySlots.push({ ...slot });
             }

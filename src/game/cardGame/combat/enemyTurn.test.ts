@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { getEnemyIntentStepVisuals } from '../presentation/enemyIntentVisuals';
+import { ENEMY_INTENT_TEXTURE_KEY } from '../../../ui/icons/enemyIntentIcons';
+import { planEnemyTurn } from './enemyTurn';
 import { getDefaultCardGameEnemy } from '../config/enemyCatalog';
-import { describeEnemyIntent, planEnemyTurn } from '../combat/enemyTurn';
 import { normalizeEnemyPassives } from '../enemyPassives/defaults';
 
 const basicEnemy = getDefaultCardGameEnemy();
@@ -26,18 +28,41 @@ describe('planEnemyTurn', () =>
     });
 });
 
-describe('describeEnemyIntent', () =>
+describe('getEnemyIntentStepVisuals', () =>
 {
-    it('labels upcoming attack and shield intents with traps', () =>
+    it('maps attack and trap steps to icon textures with damage labels', () =>
     {
-        expect(describeEnemyIntent({
+        const visuals = getEnemyIntentStepVisuals({
             enemyId: 'basic',
             steps: [
                 { kind: 'attack', amount: 8 },
                 { kind: 'place-hazard' },
             ],
-        }, 'upcoming').title)
-            .toBe('After round: Attack 8 + Trap');
+        }, 'upcoming');
+
+        expect(visuals).toHaveLength(2);
+        expect(visuals[0]).toMatchObject({
+            textureKey: ENEMY_INTENT_TEXTURE_KEY.attack,
+            amountLabel: '8',
+        });
+        expect(visuals[1]).toMatchObject({
+            textureKey: ENEMY_INTENT_TEXTURE_KEY['place-hazard'],
+            amountLabel: undefined,
+        });
+    });
+
+    it('maps shield steps to a plus-prefixed amount label', () =>
+    {
+        const visuals = getEnemyIntentStepVisuals({
+            enemyId: 'basic',
+            steps: [
+                { kind: 'shield', amount: 10 },
+                { kind: 'place-hazard' },
+            ],
+        }, 'executing');
+
+        expect(visuals[0]?.amountLabel).toBe('+10');
+        expect(visuals[0]?.textureKey).toBe(ENEMY_INTENT_TEXTURE_KEY.shield);
     });
 });
 

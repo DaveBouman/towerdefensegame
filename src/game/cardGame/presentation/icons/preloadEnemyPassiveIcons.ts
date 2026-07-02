@@ -1,6 +1,7 @@
+import { ENEMY_INTENT_ICON_ENTRIES } from '../../../../ui/icons/enemyIntentIcons';
 import { ENEMY_PASSIVE_ICON_ENTRIES } from '../../../../ui/icons/enemyPassiveIcons';
 
-const PASSIVE_ICON_RASTER_SIZE = 48;
+const ICON_RASTER_SIZE = 48;
 
 const rasterizeSvgToTexture = (
     scene: Phaser.Scene,
@@ -38,21 +39,29 @@ const rasterizeSvgToTexture = (
         image.onerror = () =>
         {
             URL.revokeObjectURL(url);
-            reject(new Error(`Failed to rasterize passive icon texture: ${key}`));
+            reject(new Error(`Failed to rasterize icon texture: ${key}`));
         };
 
         image.src = url;
     });
 
-/** Registers passive icon textures without Phaser's XHR loader (data URIs break XHRLoader). */
-export const preloadEnemyPassiveIcons = async (scene: Phaser.Scene): Promise<void> =>
+const GAME_ICON_ENTRIES = [
+    ...ENEMY_PASSIVE_ICON_ENTRIES,
+    ...ENEMY_INTENT_ICON_ENTRIES,
+];
+
+/** Registers UI icon textures without Phaser's XHR loader (data URIs break XHRLoader). */
+export const preloadGameIcons = async (scene: Phaser.Scene): Promise<void> =>
 {
-    await Promise.all(ENEMY_PASSIVE_ICON_ENTRIES.map((entry) =>
+    await Promise.all(GAME_ICON_ENTRIES.map((entry) =>
         rasterizeSvgToTexture(
             scene,
             entry.textureKey,
             entry.svg,
-            PASSIVE_ICON_RASTER_SIZE,
+            ICON_RASTER_SIZE,
         ),
     ));
 };
+
+/** @deprecated Use preloadGameIcons */
+export const preloadEnemyPassiveIcons = preloadGameIcons;

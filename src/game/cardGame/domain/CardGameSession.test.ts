@@ -454,6 +454,46 @@ describe('CardGameSession enemy turn', () =>
             .toContain(session.board.getCardAt(slot!)!.arrow);
     });
 
+    it('can place a field boost outside the first row', () =>
+    {
+        const session = new CardGameSession();
+
+        for (let col = 0; col < GRID_CONFIG.cols; col++)
+        {
+            session.board.placeCard({ row: 0, col }, createCardInstance('attack', 'right'));
+        }
+
+        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+        const slot = session.placeFieldBoost();
+        randomSpy.mockRestore();
+
+        expect(slot).not.toBeNull();
+        expect(slot!.row).toBeGreaterThan(0);
+    });
+
+    it('can place a field boost on silenced empty tiles', () =>
+    {
+        const session = new CardGameSession();
+        const silencedSlot = { row: 2, col: 1 };
+
+        for (const slot of session.board.slotsInOrder())
+        {
+            if (slot.row === silencedSlot.row && slot.col === silencedSlot.col)
+            {
+                continue;
+            }
+
+            session.board.placeCard(slot, createCardInstance('attack', 'right'));
+        }
+
+        session['silencedSlots'].add(`${silencedSlot.row},${silencedSlot.col}`);
+
+        const slot = session.placeFieldBoost();
+
+        expect(slot).toEqual(silencedSlot);
+        expect(session.board.getCardAt(silencedSlot)?.owner).toBe('field');
+    });
+
     it('never assigns off-board arrows to field boosts on corner slots', () =>
     {
         const slot = { row: 0, col: 0 };

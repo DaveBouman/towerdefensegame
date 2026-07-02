@@ -9,6 +9,7 @@ import { CardGameSession } from '../cardGame/domain/CardGameSession';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import type { SlotPosition } from '../cardGame/domain/types';
 import { destroyCardTooltipController } from '../cardGame/presentation/tooltips/CardTooltipController';
+import { destroyEnemyIntentTooltipController } from '../cardGame/presentation/tooltips/EnemyIntentTooltipController';
 import { destroyEnemyPassiveTooltipController } from '../cardGame/presentation/tooltips/EnemyPassiveTooltipController';
 import { preloadEnemyPassiveIcons } from '../cardGame/presentation/icons/preloadEnemyPassiveIcons';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
@@ -181,6 +182,7 @@ export class Game extends Scene
         this.graveyardView?.destroy();
         destroyCardTooltipController();
         destroyEnemyPassiveTooltipController();
+        destroyEnemyIntentTooltipController();
         this.presenter = undefined;
         this.boardView = undefined;
         this.handView = undefined;
@@ -275,7 +277,6 @@ export class Game extends Scene
         }
 
         this.session.clearBoard();
-        this.session.placeFieldBoost();
         this.boardView.syncFromBoard(this.session.board);
         this.boardView.setBlockedSlots(
             this.session.getSilencedSlots(),
@@ -323,6 +324,8 @@ export class Game extends Scene
 
             this.handView?.syncHand(this.session!.getHand());
             this.armorView?.setArmor(this.session!.getPlayer().shield);
+            this.session!.placeFieldBoost();
+            this.boardView?.syncFromBoard(this.session!.board);
             this.boardView?.setBlockedSlots(
                 this.session!.getSilencedSlots(),
                 this.session!.getBombDisabledSlots(),

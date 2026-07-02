@@ -1,13 +1,22 @@
 import { ENEMY_PASSIVE_TEXTURE_KEY } from '../../ui/icons/enemyPassiveIcons';
 import { uiTextStyle } from '../config/uiTypography';
 import type { EnemyState, EnemyTurnAction } from '../cardGame/domain/types';
-import { describeEnemyIntent, getPrimaryCombatStep } from '../cardGame/combat/enemyTurn';
 import type { EnemyPassiveConfig } from '../cardGame/enemyPassives/types';
+import {
+    getEnemyIntentStepVisuals,
+    type EnemyIntentStepVisual,
+} from '../cardGame/presentation/enemyIntentVisuals';
 import { attachEnemyPassiveTooltip } from '../cardGame/presentation/tooltips/EnemyPassiveTooltipController';
+import { attachEnemyIntentTooltip } from '../cardGame/presentation/tooltips/EnemyIntentTooltipController';
 import type { BoardLayout } from './boardLayout';
 
 const PASSIVE_ICON_SIZE = 26;
 const PASSIVE_ICON_GAP = 4;
+const INTENT_ICON_SIZE = 28;
+const INTENT_CHIP_HEIGHT = 40;
+const INTENT_CHIP_GAP = 10;
+const INTENT_PLUS_GAP = 6;
+
 const PASSIVE_ROW_COLORS: Record<EnemyPassiveConfig['id'], number> = {
     thorns: 0xf39c12,
     enrage: 0xe74c3c,
@@ -233,29 +242,31 @@ export class EnemyTargetView
     {
         this.clearIntent();
 
-        const { title, color } = describeEnemyIntent(action, phase);
-        const intentY = -58;
-        const primary = getPrimaryCombatStep(action);
-        const strokeColor = primary?.kind === 'attack'
-            ? (phase === 'executing' ? 0xff7675 : 0xff9f43)
-            : 0x5dade2;
-        const intentWidth = Math.max(this.enemySize + 24, title.length * 8 + 28);
+        const steps = getEnemyIntentStepVisuals(action, phase);
+        const intentY = -66;
+        const rowWidth = this.measureIntentRowWidth(steps);
+        const startX = this.enemySize / 2 - rowWidth / 2;
+        const parts: Phaser.GameObjects.GameObject[] = [];
 
-        const badge = this.scene.add.rectangle(
-            this.enemySize / 2,
-            intentY,
-            intentWidth,
-            30,
-            0x141425,
-            0.95,
-        );
-        badge.setStrokeStyle(2, strokeColor, 1);
+        let x = startX;
 
-        const text = this.scene.add.text(this.enemySize / 2, intentY, title, {
-            ...uiTextStyle(15, color, { bold: true }),
-        }).setOrigin(0.5);
+        steps.forEach((visual, index) =>
+        {
+            if (index > 0)
+            {
+                const plus = this.scene.add.text(x + INTENT_PLUS_GAP, intentY, '+', {
+                    ...uiTextStyle(17, '#a8a8c8', { bold: true }),
+                }).setOrigin(0, 0.5);
 
-        this.intentContainer = this.scene.add.container(0, 0, [ badge, text ]);
+                parts.push(plus);
+                x += INTENT_PLUS_GAP + 12;
+            }
+
+            parts.push(...this.buildIntentChip(visual, x, intentY, phase));
+            x += this.measureIntentChipWidth(visual) + INTENT_CHIP_GAP;
+        });
+
+        this.intentContainer = this.scene.add.container(0, 0, parts);
         this.container.add(this.intentContainer);
 
         this.intentTween = this.scene.tweens.add({
@@ -265,6 +276,67 @@ export class EnemyTargetView
             yoyo: true,
             repeat: -1,
         });
+    }
+
+    private measureIntentChipWidth (visual: EnemyIntentStepVisual): number
+    {
+        return visual.amountLabel ? 62 : 44;
+    }
+
+    private measureIntentRowWidth (steps: EnemyIntentStepVisual[]): number
+    {
+        if (steps.length === 0)
+        {
+            return 0;
+        }
+
+        let width = steps.reduce((sum, step) => sum + this.measureIntentChipWidth(step), 0);
+        width += (steps.length - 1) * (INTENT_CHIP_GAP + INTENT_PLUS_GAP + 12);
+
+        return width;
+    }
+
+    private buildIntentChip (
+        visual: EnemyIntentStepVisual,
+        x: number,
+        y: number,
+        phase: 'upcoming' | 'executing',
+    ): Phaser.GameObjects.GameObject[]
+    {
+        const chipWidth = this.measureIntentChipWidth(visual);
+        const hitArea = this.scene.add.rectangle(
+            x + chipWidth / 2,
+            y,
+            chipWidth,
+            INTENT_CHIP_HEIGHT,
+            0x000000,
+            0,
+        );
+
+        attachEnemyIntentTooltip(this.scene, hitArea, visual.step, phase);
+
+        const parts: Phaser.GameObjects.GameObject[] = [ hitArea ];
+        const iconX = visual.amountLabel ? x + INTENT_ICON_SIZE / 2 + 4 : x + chipWidth / 2;
+
+        if (this.scene.textures.exists(visual.textureKey))
+        {
+            const icon = this.scene.add.image(iconX, y, visual.textureKey);
+            icon.setDisplaySize(INTENT_ICON_SIZE, INTENT_ICON_SIZE);
+            icon.setOrigin(0.5);
+            icon.setTint(visual.tint);
+            parts.push(icon);
+        }
+
+        if (visual.amountLabel)
+        {
+            const label = this.scene.add.text(x + chipWidth - 4, y, visual.amountLabel, {
+                ...uiTextStyle(20, visual.textColor, { bold: true }),
+            }).setOrigin(1, 0.5);
+
+            parts.push(label);
+        }
+
+        return parts;
     }
 
     clearIntent (): void
