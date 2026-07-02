@@ -2,6 +2,7 @@ import { getCardDefinitionOrThrow, GAME_RULES, getChainStepDistance } from '../c
 import type { CardInstance } from '../cardGame/domain/types';
 import { isEnemyOwnedCard, isFieldOwnedCard } from '../cardGame/domain/cardOwnership';
 import { uiTextStyle } from '../config/uiTypography';
+import { getCardBehaviorTextureKey } from '../../ui/icons/cardBehaviorIcons';
 import { ARROW_GLYPH, arrowLabelPosition } from './cardArrows';
 import { CARD_VISUALS } from './cardVisuals';
 
@@ -15,6 +16,9 @@ export interface CardGraphic {
     container: Phaser.GameObjects.Container;
     hitArea: Phaser.GameObjects.Rectangle;
 }
+
+const cardKindIconSize = (width: number): number =>
+    Math.max(22, Math.round(width * 0.34));
 
 /** Builds a card graphic from a card instance (arrow comes from the instance). */
 export const buildCardGraphic = (
@@ -43,7 +47,7 @@ export const buildCardGraphic = (
         ...uiTextStyle(20, isLoopReset ? '#f1c40f' : '#ffffff', { bold: true }),
     }).setOrigin(0.5);
 
-    const cardTexts: Phaser.GameObjects.Text[] = [ continueArrow ];
+    const cardDecor: Phaser.GameObjects.GameObject[] = [ continueArrow ];
 
     if (isLoopReset && card.loopArrow)
     {
@@ -53,12 +57,29 @@ export const buildCardGraphic = (
             ...uiTextStyle(17, '#e8daef', { bold: true }),
         }).setOrigin(0.5);
 
-        cardTexts.push(loopArrow);
+        cardDecor.push(loopArrow);
     }
 
-    const kindLabel = scene.add.text(width / 2, height * 0.38, definition.label, {
-        ...uiTextStyle(14, style.labelColor, { bold: true }),
-    }).setOrigin(0.5);
+    const kindIconY = height * 0.38;
+    const kindIconSize = cardKindIconSize(width);
+    const kindTextureKey = getCardBehaviorTextureKey(definition.behaviorId);
+
+    if (kindTextureKey && scene.textures.exists(kindTextureKey))
+    {
+        const kindIcon = scene.add.image(width / 2, kindIconY, kindTextureKey);
+        kindIcon.setDisplaySize(kindIconSize, kindIconSize);
+        kindIcon.setOrigin(0.5);
+        kindIcon.setTint(style.border);
+        cardDecor.push(kindIcon);
+    }
+    else
+    {
+        const kindLabel = scene.add.text(width / 2, kindIconY, definition.label, {
+            ...uiTextStyle(14, style.labelColor, { bold: true }),
+        }).setOrigin(0.5);
+
+        cardDecor.push(kindLabel);
+    }
 
     const power = scene.add.text(
         width / 2,
@@ -75,7 +96,7 @@ export const buildCardGraphic = (
         continueArrow.setFontSize(24);
     }
 
-    container.add([ body, ...cardTexts, kindLabel, power ]);
+    container.add([ body, ...cardDecor, power ]);
 
     if (leapDistance > 1)
     {

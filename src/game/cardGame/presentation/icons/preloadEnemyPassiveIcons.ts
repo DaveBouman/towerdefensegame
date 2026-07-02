@@ -1,5 +1,6 @@
 import { ENEMY_INTENT_ICON_ENTRIES } from '../../../../ui/icons/enemyIntentIcons';
 import { ENEMY_PASSIVE_ICON_ENTRIES } from '../../../../ui/icons/enemyPassiveIcons';
+import { CARD_BEHAVIOR_ICON_ENTRIES } from '../../../../ui/icons/cardBehaviorIcons';
 
 const ICON_RASTER_SIZE = 48;
 
@@ -48,6 +49,7 @@ const rasterizeSvgToTexture = (
 const GAME_ICON_ENTRIES = [
     ...ENEMY_PASSIVE_ICON_ENTRIES,
     ...ENEMY_INTENT_ICON_ENTRIES,
+    ...CARD_BEHAVIOR_ICON_ENTRIES,
 ];
 
 /** Registers UI icon textures without Phaser's XHR loader (data URIs break XHRLoader). */
