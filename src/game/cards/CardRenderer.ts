@@ -18,7 +18,10 @@ export interface CardGraphic {
 }
 
 const cardKindIconSize = (width: number): number =>
-    Math.max(22, Math.round(width * 0.34));
+    Math.max(18, Math.round(width * 0.26));
+
+const cardKindLabelSize = (width: number): number =>
+    Math.max(10, Math.round(width * 0.14));
 
 /** Builds a card graphic from a card instance (arrow comes from the instance). */
 export const buildCardGraphic = (
@@ -60,7 +63,8 @@ export const buildCardGraphic = (
         cardDecor.push(loopArrow);
     }
 
-    const kindIconY = height * 0.38;
+    const kindIconY = height * 0.3;
+    const kindLabelY = height * 0.44;
     const kindIconSize = cardKindIconSize(width);
     const kindTextureKey = getCardBehaviorTextureKey(definition.behaviorId);
 
@@ -72,14 +76,12 @@ export const buildCardGraphic = (
         kindIcon.setTint(style.border);
         cardDecor.push(kindIcon);
     }
-    else
-    {
-        const kindLabel = scene.add.text(width / 2, kindIconY, definition.label, {
-            ...uiTextStyle(14, style.labelColor, { bold: true }),
-        }).setOrigin(0.5);
 
-        cardDecor.push(kindLabel);
-    }
+    const kindLabel = scene.add.text(width / 2, kindLabelY, definition.label, {
+        ...uiTextStyle(cardKindLabelSize(width), style.labelColor, { bold: true }),
+    }).setOrigin(0.5);
+
+    cardDecor.push(kindLabel);
 
     const power = scene.add.text(
         width / 2,
