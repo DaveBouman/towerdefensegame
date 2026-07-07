@@ -374,6 +374,25 @@ export class CardGamePresenter
             return;
         }
 
+        if (step.kind === 'dampen-field')
+        {
+            this.enemyView.playEnemyAttackPulse();
+
+            this.scene.time.delayedCall(turnMs, () =>
+            {
+                const field = this.session.activateDampenField();
+
+                if (field)
+                {
+                    this.boardView.setDampenedSlots(this.session.getDampenedSlots());
+                }
+
+                onComplete();
+            });
+
+            return;
+        }
+
         this.scene.time.delayedCall(turnMs / 2, () =>
         {
             const enemy = this.session.resolveEnemyShield(step.amount ?? 0);

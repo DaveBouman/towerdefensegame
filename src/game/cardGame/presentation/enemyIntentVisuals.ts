@@ -25,6 +25,10 @@ const INTENT_STYLE: Record<EnemyTurnKind, {
         upcoming: { tint: 0xff9f43, text: '#ffb347' },
         executing: { tint: 0xff6b6b, text: '#ff8a84' },
     },
+    'dampen-field': {
+        upcoming: { tint: 0x9b8cff, text: '#b7a9ff' },
+        executing: { tint: 0x7d6cff, text: '#a89bff' },
+    },
 };
 
 export const getEnemyIntentStepVisuals = (
@@ -40,7 +44,7 @@ export const getEnemyIntentStepVisuals = (
             textureKey: ENEMY_INTENT_TEXTURE_KEY[step.kind],
             tint: style.tint,
             textColor: style.text,
-            amountLabel: step.kind === 'place-hazard'
+            amountLabel: step.kind === 'place-hazard' || step.kind === 'dampen-field'
                 ? undefined
                 : step.kind === 'shield'
                     ? `+${step.amount ?? 0}`

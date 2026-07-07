@@ -147,6 +147,7 @@ export class Game extends Scene
             this.session.getSilencedSlots(),
             this.session.getBombDisabledSlots(),
         );
+        this.boardView.setDampenedSlots(this.session.getDampenedSlots());
 
         this.presenter = new CardGamePresenter(
             this,
@@ -353,6 +354,7 @@ export class Game extends Scene
             this.session.getSilencedSlots(),
             this.session.getBombDisabledSlots(),
         );
+        this.boardView.setDampenedSlots(this.session.getDampenedSlots());
         this.graveyardView?.pulse();
         this.syncPileViews();
         this.enemyView.setHealth(this.session.getEnemy());
@@ -419,6 +421,7 @@ export class Game extends Scene
                 this.session!.getSilencedSlots(),
                 this.session!.getBombDisabledSlots(),
             );
+            this.boardView?.setDampenedSlots(this.session!.getDampenedSlots());
             this.syncPileViews();
             this.session!.finishPlayerTurn();
             this.emitAttackReadiness();

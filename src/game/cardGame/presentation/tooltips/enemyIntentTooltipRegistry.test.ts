@@ -27,4 +27,12 @@ describe('enemyIntentTooltipRegistry', () =>
         expect(tooltip.lines.some((line) => line.includes('random empty tile'))).toBe(true);
         expect(tooltip.lines.some((line) => line.includes('scorch'))).toBe(true);
     });
+
+    it('describes the Dead Zone field event', () =>
+    {
+        const tooltip = resolveEnemyIntentTooltip({ kind: 'dampen-field' }, 'upcoming');
+
+        expect(tooltip.title).toBe('Dead Zone');
+        expect(tooltip.lines.some((line) => line.includes('checkerboard'))).toBe(true);
+    });
 });

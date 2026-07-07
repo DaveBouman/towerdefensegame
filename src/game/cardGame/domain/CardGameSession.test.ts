@@ -410,6 +410,53 @@ describe('CardGameSession enemy turn', () =>
         });
     });
 
+    it('prefers to place enemy hazards away from existing traps', () =>
+    {
+        const session = new CardGameSession();
+
+        session.board.clear();
+        session.board.placeCard({ row: 0, col: 0 }, createCardInstance('hazard', 'right', 'enemy'));
+
+        // Leave one empty tile adjacent to the trap and one far away; fill the rest.
+        for (const slot of session.board.slotsInOrder())
+        {
+            const isHazard = slot.row === 0 && slot.col === 0;
+            const leaveEmpty = (slot.row === 0 && slot.col === 1) || (slot.row === 3 && slot.col === 3);
+
+            if (isHazard || leaveEmpty)
+            {
+                continue;
+            }
+
+            session.board.placeCard(slot, createCardInstance('attack', 'right'));
+        }
+
+        const slot = session.placeEnemyHazard();
+
+        expect(slot).toEqual({ row: 3, col: 3 });
+    });
+
+    it('activates and expires the enemy Dead Zone field', () =>
+    {
+        const session = new CardGameSession('smokebinder');
+
+        expect(session.getDampenField()).toBeNull();
+        expect(session.getDampenedSlots()).toEqual([]);
+
+        const field = session.activateDampenField();
+
+        expect(field).toEqual({ parity: 'even', multiplier: 0.5 });
+        expect(session.getDampenField()).toEqual({ parity: 'even', multiplier: 0.5 });
+        // Half of a 4x4 board are even (row + col) tiles.
+        expect(session.getDampenedSlots()).toHaveLength(8);
+
+        // The field lasts one player turn, then expires when the attack completes.
+        session.completeAttack(session.buildAttackSequence([]));
+
+        expect(session.getDampenField()).toBeNull();
+        expect(session.getDampenedSlots()).toEqual([]);
+    });
+
     it('prevents moving or removing enemy hazards', () =>
     {
         const session = new CardGameSession();

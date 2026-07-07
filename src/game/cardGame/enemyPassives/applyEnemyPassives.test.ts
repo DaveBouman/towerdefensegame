@@ -7,6 +7,7 @@ import { getDefaultCardGameEnemy } from '../config/enemyCatalog';
 import { normalizeEnemyPassives } from './defaults';
 import {
     applyEnemyPassivesToSequence,
+    applyTileDampening,
     computeThornsReflectDamage,
     planEnemyTurnWithPassives,
     resolvePostAttackPassives,
@@ -71,6 +72,105 @@ describe('enemy passives', () =>
 
         expect(action.steps[0]).toEqual({ kind: 'attack', amount: 14 });
         expect(action.steps.filter((step) => step.kind === 'place-hazard')).toHaveLength(3);
+    });
+
+    it('ramps escalate traps each turn and caps at the maximum', () =>
+    {
+        const enemy = {
+            ...getDefaultCardGameEnemy(),
+            attackChance: 1,
+            passives: normalizeEnemyPassives([
+                { id: 'escalate', trapsPerRamp: 1, maxTraps: 4 },
+            ]),
+        };
+
+        const trapsAfter = (turnsTaken: number): number =>
+            planEnemyTurnWithPassives({
+                enemy,
+                enemyState: { health: 80, maxHealth: 80, shield: 0 },
+                enrageStacks: 0,
+                turnsTaken,
+            }).steps.filter((step) => step.kind === 'place-hazard').length;
+
+        expect(trapsAfter(0)).toBe(1);
+        expect(trapsAfter(1)).toBe(2);
+        expect(trapsAfter(3)).toBe(4);
+        expect(trapsAfter(10)).toBe(4);
+    });
+
+    it('casts the Dead Zone event on the configured cadence', () =>
+    {
+        const enemy = {
+            ...getDefaultCardGameEnemy(),
+            attackChance: 1,
+            passives: normalizeEnemyPassives([
+                { id: 'dampenTiles', parity: 'even', multiplier: 0.5, everyTurns: 2, duration: 1 },
+            ]),
+        };
+
+        const castsOn = (turnsTaken: number): boolean =>
+            planEnemyTurnWithPassives({
+                enemy,
+                enemyState: { health: 80, maxHealth: 80, shield: 0 },
+                enrageStacks: 0,
+                turnsTaken,
+            }).steps.some((step) => step.kind === 'dampen-field');
+
+        expect(castsOn(0)).toBe(true);
+        expect(castsOn(1)).toBe(false);
+        expect(castsOn(2)).toBe(true);
+        expect(castsOn(3)).toBe(false);
+    });
+
+    it('halves damage and armor on dampened even tiles', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+        const chain = [
+            {
+                // (0,0): even tile -> dampened
+                slot: { row: 0, col: 0 },
+                card: createCardInstance('attack', 'right'),
+                definitionId: 'attack',
+                behaviorId: 'attack',
+                visualId: 'attack',
+                arrow: 'right' as const,
+                exitArrow: 'right' as const,
+                damage: 10,
+                armor: 0,
+            },
+            {
+                // (0,1): odd tile -> untouched
+                slot: { row: 0, col: 1 },
+                card: createCardInstance('defend', 'right'),
+                definitionId: 'defend',
+                behaviorId: 'defend',
+                visualId: 'defend',
+                arrow: 'right' as const,
+                exitArrow: 'right' as const,
+                damage: 0,
+                armor: 8,
+            },
+            {
+                // (0,2): even tile -> dampened
+                slot: { row: 0, col: 2 },
+                card: createCardInstance('defend', 'left'),
+                definitionId: 'defend',
+                behaviorId: 'defend',
+                visualId: 'defend',
+                arrow: 'left' as const,
+                exitArrow: 'left' as const,
+                damage: 0,
+                armor: 8,
+            },
+        ];
+        const raw = buildAttackSequence(chain, board);
+        const adjusted = applyTileDampening(raw, { parity: 'even', multiplier: 0.5 });
+
+        expect(raw.totalDamage).toBe(10);
+        expect(adjusted.totalDamage).toBe(5);
+        expect(adjusted.chain[0]!.damage).toBe(5);
+        expect(adjusted.chain[1]!.armor).toBe(8);
+        expect(adjusted.chain[2]!.armor).toBe(4);
     });
 
     it('suppresses the first poison trail from smoke', () =>

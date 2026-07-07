@@ -16,6 +16,8 @@ describe('enemyPassiveTooltipRegistry', () =>
             'silenceTile',
             'loopHunter',
             'jammer',
+            'escalate',
+            'dampenTiles',
         ]);
 
         for (const passive of passives)

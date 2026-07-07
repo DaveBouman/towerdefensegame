@@ -155,9 +155,9 @@ Deploy (place cards) → Attack (chain resolve) → Board clears → Enemy turn 
 |----|--------------|
 | `basic` | Raider — baseline (atk 10, 60% attack), no passives |
 | `thornward` | Thorns — reflects 3 damage on attack |
-| `saboteur` | Enrage (+3 atk per trap), Silence Tile — punishes long chains / ignored traps |
+| `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile — trap pressure snowballs |
 | `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps) |
-| `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (punishes loop-reset) |
+| `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (punishes loop-reset), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
 
 Each enemy should force a **different deck shape and chain strategy**.
 
@@ -233,6 +233,9 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-07 | Enemy traps now spread out: `CardGameSession.placeEnemyHazard` prefers empty tiles that are not orthogonally/diagonally adjacent to an existing trap, falling back to any empty tile on a crowded board. |
+| 2026-07-07 | **Dead Zone is now a telegraphed enemy event** (not a permanent passive). The `dampenTiles` ability gains `everyTurns` (cadence) + `duration`; `planEnemyTurnWithPassives` emits a `dampen-field` turn step (new `EnemyTurnKind`) on cadence turns, shown in the enemy intent (icon `empty-chessboard`, tooltip, visual). Resolving it calls `CardGameSession.activateDampenField`, which stores a `dampenField` (parity/multiplier/turnsRemaining). While active, `buildAttackSequence` runs `applyTileDampening` (halves damage/armor of cards on the checkerboard tiles, re-deriving `steps`/`totalDamage`); the field ticks down and expires in `completeAttack`. Weakened tiles are highlighted via `CardBoardView.setDampenedSlots` / `getDampenedSlots`. Added to `smokebinder`. |
+| 2026-07-07 | New enemy passive **Escalate** (`enemyPassives/types.ts`, `defaults.ts`): each enemy turn ramps the traps placed next turn by `trapsPerRamp` (default +1) up to `maxTraps` (default 4). A per-battle turn counter (`enemyTurnsTaken`, passed to planning as `turnsTaken`) lives in `CardGameSession` and increments per completed enemy turn; planning + cap in `planEnemyTurnWithPassives`. Wired icon (`minefield`), tooltip, label, color. Added to `saboteur` (its Enrage extra-traps set to 0 so the ramp is the single trap source). |
 | 2026-07-07 | Battle engagement pass. **Tier 1:** raised enemy pressure (`enemies.json` — higher atk/attack-chance, thorns 3, enrage +3), buffed streaks (+15%/dup) and off-chain (+2), sped up resolution (chain/enemy step 800ms), scaled traps (power 4). **Tier 2:** new chain abilities Bleed/Fortify/Overload with reward cards Rupture/Bulwark/Surge (`bleedAbility`/`fortifyAbility`/`overloadAbility`, `cards.json`, `REWARD_CARD_POOL`). **Poison rework:** poison now applies *stacks* to the enemy (`EnemyState.poison`) that deal damage at the start of each enemy turn (ignoring shield) then decay by 1 (`CardGameSession.tickPoison`); `abilityPoisonStacks` flows through the pipeline; smoke suppresses stacks; shown via `EnemyTargetView.setPoison`; poison can kill during the enemy turn (win handled in `Game`). **Bomb conversion:** a card that chains into a trap converts it to that card's type (`AttackPipeline.applyBombConversion`), so it deals attack/armor for the trap's power and joins streaks/abilities. |
 | 2026-07-07 | Map node kinds: nodes are now `enemy`/`boss`/`shop`/`event` (`nodeKinds.ts`) with distinct icons (`NodeKindIcon`) and hover tooltips (`RunMapOverlay`). Shop/event are non-battle placeholders (`NodeVisitOverlay`, `App` phase `visit`) that advance the path. `RunMapNode.enemyId`/`reward` are now battle-only (optional). |
 | 2026-07-07 | Seed-based runs: all randomness routes through a seeded RNG (`random/rng.ts`), reseeded at deterministic boundaries (map / reward / battle). Same seed → same map & rewards; same seed + actions → same battle. Seed viewable/editable on the map before the first fight. |

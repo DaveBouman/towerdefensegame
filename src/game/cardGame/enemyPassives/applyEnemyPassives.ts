@@ -2,7 +2,9 @@ import { getUnchainedHazardSlots } from '../combat/AttackPipeline';
 import type { BoardModel } from '../domain/BoardModel';
 import { slotKey } from '../domain/cardDirections';
 import type {
+    ActivationStep,
     AttackSequence,
+    AttackStep,
     EnemyState,
     EnemyTurnAction,
     EnemyTurnStep,
@@ -17,6 +19,8 @@ export interface EnemyTurnPlanningContext {
     enemy: LoadedCardGameEnemyDefinition;
     enemyState: EnemyState;
     enrageStacks: number;
+    /** Number of enemy turns already taken this battle — drives Escalate ramp and Dead Zone cadence. */
+    turnsTaken?: number;
 }
 
 const isLastStandActive = (
@@ -68,17 +72,34 @@ export const planEnemyTurnWithPassives = ({
     enemy,
     enemyState,
     enrageStacks,
+    turnsTaken = 0,
 }: EnemyTurnPlanningContext): EnemyTurnAction =>
 {
     const passives = enemy.passives;
     const lastStand = getEnemyPassive(passives, 'lastStand');
     const enrage = getEnemyPassive(passives, 'enrage');
+    const escalate = getEnemyPassive(passives, 'escalate');
+    const dampen = getEnemyPassive(passives, 'dampenTiles');
     const inLastStand = lastStand ? isLastStandActive(enemyState, lastStand) : false;
     const baseHazards = inLastStand ? lastStand!.hazardsPerTurn : enemy.hazardsPerTurn;
     const extraHazards = (enrage?.extraTrapsPerTrap ?? 0) * enrageStacks;
+    const escalateHazards = escalate ? escalate.trapsPerRamp * turnsTaken : 0;
+    let hazardCount = baseHazards + extraHazards + escalateHazards;
+
+    if (escalate)
+    {
+        hazardCount = Math.min(hazardCount, escalate.maxTraps);
+    }
+
     const steps: EnemyTurnStep[] = [ planCombatStep(enemy, enemyState, passives, enrageStacks) ];
 
-    for (let i = 0; i < baseHazards + extraHazards; i++)
+    // Dead Zone is an event the enemy casts on a cadence (telegraphed like a trap).
+    if (dampen && dampen.everyTurns > 0 && turnsTaken % dampen.everyTurns === 0)
+    {
+        steps.push({ kind: 'dampen-field' });
+    }
+
+    for (let i = 0; i < hazardCount; i++)
     {
         steps.push({ kind: 'place-hazard' });
     }
@@ -87,6 +108,60 @@ export const planEnemyTurnWithPassives = ({
         enemyId: enemy.id,
         steps,
     };
+};
+
+export type DampenField = Pick<
+    Extract<EnemyPassiveConfig, { id: 'dampenTiles' }>,
+    'parity' | 'multiplier'
+>;
+
+export const isDampenedTile = (
+    { row, col }: SlotPosition,
+    parity: DampenField['parity'],
+): boolean =>
+{
+    const even = (row + col) % 2 === 0;
+
+    return parity === 'even' ? even : !even;
+};
+
+const toAttackStep = (step: ActivationStep): AttackStep => ({
+    slot: step.slot,
+    card: step.card,
+    definitionId: step.definitionId,
+    damage: step.damage,
+    behaviorId: step.behaviorId,
+    visualId: step.visualId,
+});
+
+/** Halves a card's damage/armor on dead-zone tiles, then recomputes derived totals. */
+export const applyTileDampening = (
+    sequence: AttackSequence,
+    dampen: DampenField,
+): AttackSequence =>
+{
+    const chain = sequence.chain.map((step) =>
+    {
+        if (!isDampenedTile(step.slot, dampen.parity))
+        {
+            return step;
+        }
+
+        const damage = step.damage > 0 ? Math.floor(step.damage * dampen.multiplier) : step.damage;
+        const armor = step.armor > 0 ? Math.floor(step.armor * dampen.multiplier) : step.armor;
+
+        if (damage === step.damage && armor === step.armor)
+        {
+            return step;
+        }
+
+        return { ...step, damage, armor };
+    });
+
+    const steps = chain.filter((step) => step.damage > 0).map(toAttackStep);
+    const totalDamage = steps.reduce((sum, step) => sum + step.damage, 0);
+
+    return { ...sequence, chain, steps, totalDamage };
 };
 
 export const applyEnemyPassivesToSequence = (

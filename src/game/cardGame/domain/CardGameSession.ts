@@ -8,10 +8,14 @@ import { buildAttackSequence as buildRawAttackSequence, getUnchainedHazardSlots,
 import { planEnemyTurn } from '../combat/enemyTurn';
 import {
     applyEnemyPassivesToSequence,
+    applyTileDampening,
     computeThornsReflectDamage,
+    isDampenedTile,
     placeSilenceTiles,
     resolvePostAttackPassives,
+    type DampenField,
 } from '../enemyPassives/applyEnemyPassives';
+import { getEnemyPassive } from '../enemyPassives/defaults';
 import { slotKey } from '../domain/cardDirections';
 import { buildDeckFromDefinitionIds, buildPlayerDeck, shuffleInPlace } from '../domain/buildPlayerDeck';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
@@ -42,6 +46,8 @@ export class CardGameSession
     private readonly enemyDefinition: LoadedCardGameEnemyDefinition;
     private enemy: EnemyState;
     private enrageStacks = 0;
+    private enemyTurnsTaken = 0;
+    private dampenField: (DampenField & { turnsRemaining: number }) | null = null;
     private readonly silencedSlots = new Set<string>();
     private readonly bombDisabledSlots = new Set<string>();
     private player: PlayerState;
@@ -292,13 +298,60 @@ export class CardGameSession
         stepMs = GAME_RULES.activationStepMs,
     ): AttackSequence
     {
-        const sequence = buildRawAttackSequence(chain, this.board, stepMs);
-
-        return applyEnemyPassivesToSequence(
-            sequence,
+        const sequence = applyEnemyPassivesToSequence(
+            buildRawAttackSequence(chain, this.board, stepMs),
             this.getEnemy(),
             this.enemyDefinition.passives,
         );
+
+        return this.dampenField ? applyTileDampening(sequence, this.dampenField) : sequence;
+    }
+
+    /** Casts the Dead Zone field (from the dampenTiles ability) for the coming player turns. */
+    activateDampenField (): DampenField | null
+    {
+        const dampen = getEnemyPassive(this.enemyDefinition.passives, 'dampenTiles');
+
+        if (!dampen)
+        {
+            return null;
+        }
+
+        this.dampenField = {
+            parity: dampen.parity,
+            multiplier: dampen.multiplier,
+            turnsRemaining: Math.max(1, dampen.duration),
+        };
+
+        return { parity: dampen.parity, multiplier: dampen.multiplier };
+    }
+
+    getDampenField (): DampenField | null
+    {
+        return this.dampenField
+            ? { parity: this.dampenField.parity, multiplier: this.dampenField.multiplier }
+            : null;
+    }
+
+    /** Tiles currently weakened by the Dead Zone field (empty when inactive). */
+    getDampenedSlots (): SlotPosition[]
+    {
+        if (!this.dampenField)
+        {
+            return [];
+        }
+
+        const slots: SlotPosition[] = [];
+
+        for (const slot of this.board.slotsInOrder())
+        {
+            if (isDampenedTile(slot, this.dampenField.parity))
+            {
+                slots.push({ ...slot });
+            }
+        }
+
+        return slots;
     }
 
     getPlayer (): PlayerState
@@ -337,6 +390,7 @@ export class CardGameSession
             enemy: this.enemyDefinition,
             enemyState: this.getEnemy(),
             enrageStacks: this.enrageStacks,
+            turnsTaken: this.enemyTurnsTaken,
         });
 
         return { ...this.queuedEnemyTurn };
@@ -501,6 +555,17 @@ export class CardGameSession
 
         this.player.shield += chainArmor + sequence.offChainArmor + sequence.abilityArmorGain;
 
+        // The Dead Zone field applied to this attack; tick it down and expire.
+        if (this.dampenField)
+        {
+            this.dampenField.turnsRemaining -= 1;
+
+            if (this.dampenField.turnsRemaining <= 0)
+            {
+                this.dampenField = null;
+            }
+        }
+
         if (sequence.abilityPoisonStacks > 0)
         {
             this.enemy.poison = (this.enemy.poison ?? 0) + sequence.abilityPoisonStacks;
@@ -617,16 +682,24 @@ export class CardGameSession
         };
     }
 
-    /** Places an enemy trap on a random empty board slot. */
+    /** Places an enemy trap on a random empty board slot, avoiding tiles next to another trap when possible. */
     placeEnemyHazard (): SlotPosition | null
     {
+        const hazardId = GAME_RULES.hazard.definitionId;
         const emptySlots: SlotPosition[] = [];
+        const hazardSlots: SlotPosition[] = [];
 
         for (const slot of this.board.slotsInOrder())
         {
-            if (this.board.isEmpty(slot))
+            const card = this.board.getCardAt(slot);
+
+            if (card === null)
             {
                 emptySlots.push({ ...slot });
+            }
+            else if (card.definitionId === hazardId)
+            {
+                hazardSlots.push({ ...slot });
             }
         }
 
@@ -635,7 +708,16 @@ export class CardGameSession
             return null;
         }
 
-        const slot = pickRandom(emptySlots);
+        const isAdjacentToHazard = (candidate: SlotPosition): boolean =>
+            hazardSlots.some((hazard) =>
+                Math.abs(hazard.row - candidate.row) <= 1
+                && Math.abs(hazard.col - candidate.col) <= 1);
+
+        // Prefer spacing traps apart; fall back to any empty slot on a crowded board.
+        const spacedSlots = emptySlots.filter((candidate) => !isAdjacentToHazard(candidate));
+        const candidates = spacedSlots.length > 0 ? spacedSlots : emptySlots;
+
+        const slot = pickRandom(candidates);
         const hazardDefinition = getCardDefinitionOrThrow(GAME_RULES.hazard.definitionId);
         const hazardArrow = randomInBoundsDirectionForPool(
             slot,
@@ -706,6 +788,9 @@ export class CardGameSession
             CardGameEventBus.emit(CARD_GAME_EVENTS.PLAYER_DEFEATED, { player: this.getPlayer() });
             return;
         }
+
+        // Count completed enemy turns — drives Escalate ramp and Dead Zone cadence.
+        this.enemyTurnsTaken += 1;
 
         if (!this.isEnemyDefeated())
         {

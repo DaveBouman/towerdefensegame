@@ -26,7 +26,7 @@ describe('enemyCatalog', () =>
             reflectDamage: 3,
         });
         expect(getCardGameEnemyDefinition('smokebinder')?.passives.map((passive) => passive.id))
-            .toEqual([ 'smoke', 'loopHunter' ]);
+            .toEqual([ 'smoke', 'loopHunter', 'dampenTiles' ]);
     });
 
     it('uses the default enemy from game rules', () =>

@@ -6,7 +6,9 @@ export type EnemyPassiveId =
     | 'wetBlanket'
     | 'silenceTile'
     | 'loopHunter'
-    | 'jammer';
+    | 'jammer'
+    | 'escalate'
+    | 'dampenTiles';
 
 export interface ThornsPassiveConfig {
     id: 'thorns';
@@ -60,6 +62,29 @@ export interface JammerPassiveConfig {
     shieldGain: number;
 }
 
+export interface EscalatePassiveConfig {
+    id: 'escalate';
+    /** Extra traps added to each enemy turn per ramp (one ramp per turn taken). */
+    trapsPerRamp: number;
+    /** Hard cap on the total number of traps placed in a single enemy turn. */
+    maxTraps: number;
+}
+
+export interface DampenTilesPassiveConfig {
+    id: 'dampenTiles';
+    /**
+     * Which checkerboard tiles are dampened. `even` = tiles where (row + col) is
+     * even (includes the top-left activation start), `odd` = the other set.
+     */
+    parity: 'even' | 'odd';
+    /** Multiplier applied to a card's damage / armor while it sits on a dampened tile (e.g. 0.5 = half). */
+    multiplier: number;
+    /** The enemy casts the Dead Zone event on turns where (turnsTaken % everyTurns === 0). */
+    everyTurns: number;
+    /** How many player turns the Dead Zone field stays active once cast. */
+    duration: number;
+}
+
 export type EnemyPassiveConfig =
     | ThornsPassiveConfig
     | EnragePassiveConfig
@@ -68,6 +93,8 @@ export type EnemyPassiveConfig =
     | WetBlanketPassiveConfig
     | SilenceTilePassiveConfig
     | LoopHunterPassiveConfig
-    | JammerPassiveConfig;
+    | JammerPassiveConfig
+    | EscalatePassiveConfig
+    | DampenTilesPassiveConfig;
 
 export type EnemyPassiveInput = EnemyPassiveId | EnemyPassiveConfig;

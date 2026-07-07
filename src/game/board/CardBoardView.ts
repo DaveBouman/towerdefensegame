@@ -22,6 +22,8 @@ const SLOT_SILENCED = 0x2a2038;
 const SLOT_SILENCED_BORDER = 0x8e44ad;
 const SLOT_BOMB_DISABLED = 0x3a2418;
 const SLOT_BOMB_DISABLED_BORDER = 0xe67e22;
+const SLOT_DAMPENED = 0x25203a;
+const SLOT_DAMPENED_BORDER = 0x7d6cff;
 const SLOT_INSET = 4;
 
 export interface BoardCardDragHandlers {
@@ -54,6 +56,7 @@ export class CardBoardView
     private readonly slotBodies: Phaser.GameObjects.Rectangle[][] = [];
     private readonly silencedOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
     private readonly bombDisabledOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
+    private readonly dampenedOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
     private readonly cardContainers: (Phaser.GameObjects.Container | null)[][] = [];
     private highlightedSlot: SlotPosition | null = null;
     private highlightMode: BoardHighlightMode = null;
@@ -84,6 +87,7 @@ export class CardBoardView
             this.slotBodies[row] = [];
             this.silencedOverlays[row] = [];
             this.bombDisabledOverlays[row] = [];
+            this.dampenedOverlays[row] = [];
             this.cardContainers[row] = [];
 
             for (let col = 0; col < cols; col++)
@@ -99,6 +103,7 @@ export class CardBoardView
                 this.slotBodies[row][col] = slot;
                 this.silencedOverlays[row][col] = null;
                 this.bombDisabledOverlays[row][col] = null;
+                this.dampenedOverlays[row][col] = null;
                 this.cardContainers[row][col] = null;
 
                 const card = board.getCardAt({ row, col });
@@ -457,6 +462,17 @@ export class CardBoardView
     setSilencedSlots (slots: readonly SlotPosition[]): void
     {
         this.setBlockedSlots(slots, []);
+    }
+
+    /** Marks tiles weakened by the enemy's Dead Zone field. */
+    setDampenedSlots (slots: readonly SlotPosition[]): void
+    {
+        this.setSlotOverlays(
+            slots,
+            this.dampenedOverlays,
+            SLOT_DAMPENED,
+            SLOT_DAMPENED_BORDER,
+        );
     }
 
     private setSlotOverlays (

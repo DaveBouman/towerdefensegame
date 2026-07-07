@@ -77,5 +77,22 @@ export const resolveEnemyPassiveTooltip = (
                     `If your chain has ${passive.minChainLength}+ cards, the enemy gains ${passive.shieldGain} shield after your turn.`,
                 ],
             };
+        case 'escalate':
+            return {
+                title: 'Escalate',
+                lines: [
+                    `After every turn, the enemy places +${passive.trapsPerRamp} more trap(s) on its next turn.`,
+                    `Ramps up to a maximum of ${passive.maxTraps} traps per turn.`,
+                ],
+            };
+        case 'dampenTiles':
+            return {
+                title: 'Dead Zone',
+                lines: [
+                    `Every ${passive.everyTurns} turn(s), the enemy casts a field that weakens ${passive.parity} tiles (checkerboard).`,
+                    `Cards on weakened tiles deal ${percent(passive.multiplier)} of their damage and armor for ${passive.duration} turn(s).`,
+                    'Route your chain through the live tiles to hit full strength.',
+                ],
+            };
     }
 };

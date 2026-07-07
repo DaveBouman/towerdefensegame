@@ -69,6 +69,8 @@ export const describeEnemyPassives = (
         silenceTile: 'Silence Tile',
         loopHunter: 'Loop Hunter',
         jammer: 'Jammer',
+        escalate: 'Escalate',
+        dampenTiles: 'Dead Zone',
     };
 
     return enemy.passives.map((passive) => labels[passive.id] ?? passive.id);

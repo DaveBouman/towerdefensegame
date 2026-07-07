@@ -44,7 +44,7 @@ export interface PlayerDamageResult {
     healthDamage: number;
 }
 
-export type EnemyTurnKind = 'attack' | 'shield' | 'place-hazard';
+export type EnemyTurnKind = 'attack' | 'shield' | 'place-hazard' | 'dampen-field';
 
 export interface EnemyTurnStep {
     kind: EnemyTurnKind;

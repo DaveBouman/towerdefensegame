@@ -30,7 +30,8 @@
       "attackChance": 0.4,
       "hazardsPerTurn": 1,
       "passives": [
-        { "id": "enrage", "attackBonusPerTrap": 3, "extraTrapsPerTrap": 1 },
+        { "id": "enrage", "attackBonusPerTrap": 3, "extraTrapsPerTrap": 0 },
+        { "id": "escalate", "trapsPerRamp": 1, "maxTraps": 4 },
         "silenceTile"
       ]
     },
@@ -58,7 +59,8 @@
       "hazardsPerTurn": 1,
       "passives": [
         "smoke",
-        "loopHunter"
+        "loopHunter",
+        { "id": "dampenTiles", "parity": "even", "multiplier": 0.5, "everyTurns": 2, "duration": 1 }
       ]
     }
   ]

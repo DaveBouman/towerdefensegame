@@ -48,5 +48,16 @@ export const resolveEnemyIntentTooltip = (
                     'Undisarmed traps scorch that tile for your next turn.',
                 ],
             };
+        case 'dampen-field':
+            return {
+                title: 'Dead Zone',
+                lines: [
+                    upcoming
+                        ? 'Will weaken half the tiles (checkerboard) on your next turn.'
+                        : 'Weakens half the tiles (checkerboard) this turn.',
+                    'Cards on weakened tiles deal reduced damage and armor.',
+                    'Route your chain through the live tiles to hit full strength.',
+                ],
+            };
     }
 };

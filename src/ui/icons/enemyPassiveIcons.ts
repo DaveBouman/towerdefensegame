@@ -8,6 +8,8 @@ import wetBlanketSvg from './000000/transparent/1x1/sbed/water-drop.svg?raw';
 import silenceTileSvg from './000000/transparent/1x1/lorc/silence.svg?raw';
 import loopHunterSvg from './000000/transparent/1x1/lorc/cycle.svg?raw';
 import jammerSvg from './000000/transparent/1x1/delapouite/radio-tower.svg?raw';
+import escalateSvg from './000000/transparent/1x1/skoll/minefield.svg?raw';
+import dampenTilesSvg from './000000/transparent/1x1/delapouite/empty-chessboard.svg?raw';
 
 /** Icons from https://game-icons.net (see src/ui/icons/license.txt). */
 export const ENEMY_PASSIVE_TEXTURE_KEY: Record<EnemyPassiveId, string> = {
@@ -19,6 +21,8 @@ export const ENEMY_PASSIVE_TEXTURE_KEY: Record<EnemyPassiveId, string> = {
     silenceTile: 'passive-icon-silence-tile',
     loopHunter: 'passive-icon-loop-hunter',
     jammer: 'passive-icon-jammer',
+    escalate: 'passive-icon-escalate',
+    dampenTiles: 'passive-icon-dampen-tiles',
 };
 
 const ENEMY_PASSIVE_SVG_RAW: Record<EnemyPassiveId, string> = {
@@ -30,6 +34,8 @@ const ENEMY_PASSIVE_SVG_RAW: Record<EnemyPassiveId, string> = {
     silenceTile: toWhiteIconSvg(silenceTileSvg),
     loopHunter: toWhiteIconSvg(loopHunterSvg),
     jammer: toWhiteIconSvg(jammerSvg),
+    escalate: toWhiteIconSvg(escalateSvg),
+    dampenTiles: toWhiteIconSvg(dampenTilesSvg),
 };
 
 export const ENEMY_PASSIVE_ICON_ENTRIES = (Object.keys(ENEMY_PASSIVE_TEXTURE_KEY) as EnemyPassiveId[]).map((id) => ({
