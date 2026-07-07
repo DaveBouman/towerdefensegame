@@ -3,17 +3,9 @@ import type { ArrowPool, CardDirection } from './cardDirections';
 import { buildBalancedDirectionsForPool, DIAGONAL_DIRECTIONS, ORTHOGONAL_DIRECTIONS, randomOrthogonalPair } from './cardDirections';
 import { createCardInstance } from './createCardInstance';
 import type { CardInstance } from './types';
+import { shuffleInPlace } from '../../random/rng';
 
-export const shuffleInPlace = <T>(items: T[]): T[] =>
-{
-    for (let i = items.length - 1; i > 0; i--)
-    {
-        const j = Math.floor(Math.random() * (i + 1));
-        [ items[i], items[j] ] = [ items[j], items[i] ];
-    }
-
-    return items;
-};
+export { shuffleInPlace };
 
 const DECK_COMPOSITION: readonly { definitionId: string; count: number }[] = [
     { definitionId: 'attack', count: 4 },
@@ -25,6 +17,15 @@ const DECK_COMPOSITION: readonly { definitionId: string; count: number }[] = [
     { definitionId: 'poison', count: 2 },
     { definitionId: 'fire', count: 2 },
 ];
+
+/** The card definition ids that make up a fresh starting deck. */
+export const getDefaultDeckDefinitionIds = (): string[] =>
+    DECK_COMPOSITION.flatMap(({ definitionId, count }) =>
+        Array.from({ length: count }, () => definitionId));
+
+/** Builds a shuffled deck of card instances from a list of definition ids. */
+export const buildDeckFromDefinitionIds = (definitionIds: readonly string[]): CardInstance[] =>
+    shuffleInPlace(definitionIds.map((id) => createCardInstance(id)));
 
 const buildBalancedArrowQueues = (): Map<ArrowPool, CardDirection[]> =>
 {

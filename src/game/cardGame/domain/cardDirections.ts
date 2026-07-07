@@ -1,4 +1,5 @@
 import type { SlotPosition } from './types';
+import { random, randomInt } from '../../random/rng';
 
 export type CardDirection =
     | 'up'
@@ -47,7 +48,7 @@ const OFFSETS: Record<CardDirection, { row: number; col: number }> = {
 };
 
 export const randomCardDirection = (): CardDirection =>
-    CARD_DIRECTIONS[Math.floor(Math.random() * CARD_DIRECTIONS.length)];
+    CARD_DIRECTIONS[randomInt(CARD_DIRECTIONS.length)]!;
 
 export const randomDirectionForPool = (pool: ArrowPool): CardDirection =>
 {
@@ -58,7 +59,7 @@ export const randomDirectionForPool = (pool: ArrowPool): CardDirection =>
 
     const directions = pool === 'diagonal' ? DIAGONAL_DIRECTIONS : ORTHOGONAL_DIRECTIONS;
 
-    return directions[Math.floor(Math.random() * directions.length)];
+    return directions[randomInt(directions.length)]!;
 };
 
 /** Two distinct orthogonal directions for loop cards (continue + loop-back). */
@@ -70,7 +71,7 @@ export const randomOrthogonalPair = (
 
     for (let i = shuffled.length - 1; i > 0; i--)
     {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(random() * (i + 1));
         [ shuffled[i], shuffled[j] ] = [ shuffled[j], shuffled[i] ];
     }
 
@@ -126,7 +127,7 @@ const shuffleDirectionsInPlace = <T>(items: T[]): T[] =>
 {
     for (let i = items.length - 1; i > 0; i--)
     {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = Math.floor(random() * (i + 1));
         [ items[i], items[j] ] = [ items[j], items[i] ];
     }
 
@@ -150,7 +151,7 @@ export const randomInBoundsDirectionForPool = (
         return poolDirections[0] ?? 'right';
     }
 
-    return valid[Math.floor(Math.random() * valid.length)];
+    return valid[randomInt(valid.length)]!;
 };
 
 export const getInBoundsDirections = (

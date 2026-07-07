@@ -19,15 +19,64 @@ branching **run map** (roguelite-style path of battles).
 
 ## Run structure
 
-The game is a **run**: a left-to-right map of battle nodes connected by lines
+The game is a **run**: a left-to-right map of nodes connected by lines
 (`src/game/run/runMap.ts`). The player picks one node per column; enemies ramp
 in difficulty toward a boss (`warden`) in the final column.
 
+- **Node kinds** (`src/game/run/nodeKinds.ts`, `RunMapNode.kind`): `enemy` and `boss`
+  are battles; `shop` and `event` are non-battle stops. Each kind has an icon
+  (`NodeKindIcon`, from game-icons.net) and a hover tooltip on the map. First column
+  is always `enemy`, last column is the `boss`; middle columns are weighted-random
+  (`rollNodeKind`). Shop/event are **placeholders** for now — picking one shows
+  `NodeVisitOverlay` and advances the path with no battle (`App` phase `visit`).
 - **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
+- **Deck persists and grows**: the run owns the deck as a list of card definition ids (`getDefaultDeckDefinitionIds`). Each battle builds instances from those ids (`buildDeckFromDefinitionIds`).
+- **Victory rewards**: defeating a (non-boss) enemy grants that node's reward. Today every node grants a **card reward** (`CardRewardOverlay` → pick from choices → card ids appended to the run deck).
 - Losing any battle, or clearing the boss, ends the run (`RunEndOverlay` → new run).
 - The map regenerates each run.
 
-Flow: `map (pick node)` → `battle` → `win → map` / `lose → defeat` / `boss win → victory`.
+Flow: `map (pick node)` → `battle` → `win → reward → map` / `lose → defeat` / `boss win → victory`.
+Non-battle nodes: `map (pick shop/event)` → `visit` → `map`.
+
+### Seeds & determinism
+
+Runs are **seed-based**: the same seed produces the same map and the same rewards,
+and the same seed + same in-battle actions produces the same battle.
+
+- All gameplay randomness routes through a single seeded RNG (`src/game/random/rng.ts`,
+  mulberry32 + xmur3). **Never call `Math.random()` in gameplay code** — use `random()`,
+  `randomInt()`, `pickRandom()`, or `shuffleInPlace()` from that module. (`Math.random`
+  is used only inside `createRandomSeed` to pick a fresh unpredictable seed.)
+- The RNG is **reseeded at deterministic boundaries** via `seedScope(seed, scope)` /
+  `deriveSeed(seed, scope)`:
+  - `map` — map generation (`App.buildMapForSeed`)
+  - `reward:<nodeId>:<rerollIndex>` — a node's card reward (`App.rollRewardForNode`)
+  - `battle:<nodeId>` — a battle's stream, reseeded in `Game.startBattle` (passed via
+    the `START_BATTLE` payload `seed`)
+- Because each boundary reseeds, map/reward results are **idempotent and order-independent**
+  (robust to React StrictMode double-invocation); battles are reproducible given the same
+  player actions (actions consume the battle stream in order).
+- The player can view/enter the seed on the map before the first battle (`RunMapOverlay`).
+
+### Rewards (variable, extensible)
+
+Rewards are data on each map node (`RunMapNode.reward`), modeled as a discriminated
+union in `src/game/run/rewards.ts`:
+
+```
+RunReward = CardReward { kind: 'card'; choiceCount; pickCount; rerollable }
+```
+
+- **Variable per node** — different enemies can grant different rewards; today all use `DEFAULT_CARD_REWARD`.
+- **Trinket-ready** — the numeric knobs are the intended extension seam:
+  - `pickCount > 1` → "pick two cards"
+  - `rerollable: true` → reroll the offered choices (`CardRewardOverlay` already renders the button + `App` handles reroll)
+  - add new `RunReward` kinds (e.g. trinket/gold) without touching existing handling.
+- Card choices come from `REWARD_CARD_POOL` via `rollCardReward(choiceCount)`.
+
+When adding trinkets: give trinkets a modifier step that adjusts the `RunReward`
+before `rollCardReward`/display, or add a new `RunReward` kind + a case in `App`'s
+`onBattleWon`.
 
 ---
 
@@ -36,9 +85,11 @@ Flow: `map (pick node)` → `battle` → `win → map` / `lose → defeat` / `bo
 ```
 index.html → src/main.tsx → App.tsx (run controller)
   ├── PhaserGame.tsx → src/game/main.ts → scenes/Game.ts
-  ├── GameHud.tsx        (battle phase)
-  ├── RunMapOverlay.tsx  (map phase)
-  └── RunEndOverlay.tsx  (victory / defeat)
+  ├── GameHud.tsx           (battle phase)
+  ├── RunMapOverlay.tsx     (map phase; node icons + tooltips)
+  ├── CardRewardOverlay.tsx (reward phase)
+  ├── NodeVisitOverlay.tsx  (visit phase; shop/event placeholder)
+  └── RunEndOverlay.tsx     (victory / defeat)
 ```
 
 `App.tsx` owns run state (map, path, carry-over HP, phase). The Phaser `Game`
@@ -123,6 +174,9 @@ Each enemy should force a **different deck shape and chain strategy**.
 - [x] **Gauntlet / run map** — branching path of escalating enemies from `enemies.json` (`runMap.ts`, `RunMapOverlay`)
 - [x] **Carry-over HP** — HP carries between fights with a small heal on victory (`RUN_CONFIG.healOnVictory`)
 - [x] **Pre-fight enemy preview** — map nodes show the enemy label before you commit
+- [x] **Node kinds** — enemy/boss/shop/event nodes with icons + hover tooltips (`nodeKinds.ts`, `NodeKindIcon`); shop/event are placeholders (`NodeVisitOverlay`)
+- [ ] **Shop node** — spend a run currency on cards/trinkets (replace `NodeVisitOverlay` placeholder)
+- [ ] **Random event node** — branching choice encounters (replace `NodeVisitOverlay` placeholder)
 - [ ] **Run-wide rerolls** — e.g. 5 per run instead of 3 per fight
 
 #### Phase 2 — Spatial tactics (~1 week)
@@ -149,9 +203,14 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Task | Start here |
 |------|------------|
+| Seeded RNG / determinism | `src/game/random/rng.ts` (use `random`/`randomInt`/`pickRandom`/`shuffleInPlace`, never `Math.random`) |
 | Map layout / difficulty ramp | `src/game/run/runMap.ts` (`ROW_SIZES`, `ROW_ENEMY_POOLS`, `RUN_CONFIG`) |
-| Map / run visuals | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `.run-map*` / `.run-end*` in `public/style.css` |
-| Run flow (phases, carry-over HP) | `src/App.tsx` |
+| Map node kinds / icons / tooltips | `src/game/run/nodeKinds.ts` (kinds, weights, tooltip copy), `src/ui/components/NodeKindIcon.tsx` |
+| Shop / event node behavior | `src/ui/components/NodeVisitOverlay.tsx` (placeholder), `App.tsx` `visit` phase (`pickNode`/`finishVisit`) |
+| Rewards / reward pool / trinket hooks | `src/game/run/rewards.ts` |
+| Persistent run deck | `getDefaultDeckDefinitionIds` / `buildDeckFromDefinitionIds` in `buildPlayerDeck.ts` |
+| Map / run visuals | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`; `.run-map*` / `.run-end*` / `.card-reward*` in `public/style.css` |
+| Run flow (phases, carry-over HP, deck, rewards) | `src/App.tsx` |
 | Change balance numbers | `src/game/cardGame/config/gameRules.json` |
 | Add/edit cards | `src/game/cardGame/config/cards.json`, `cardRegistry.ts` |
 | Add/edit enemies | `src/game/cardGame/config/enemies.json`, `enemyCatalog.ts`, `enemyPassives/` |
@@ -167,5 +226,8 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-07 | Map node kinds: nodes are now `enemy`/`boss`/`shop`/`event` (`nodeKinds.ts`) with distinct icons (`NodeKindIcon`) and hover tooltips (`RunMapOverlay`). Shop/event are non-battle placeholders (`NodeVisitOverlay`, `App` phase `visit`) that advance the path. `RunMapNode.enemyId`/`reward` are now battle-only (optional). |
+| 2026-07-07 | Seed-based runs: all randomness routes through a seeded RNG (`random/rng.ts`), reseeded at deterministic boundaries (map / reward / battle). Same seed → same map & rewards; same seed + actions → same battle. Seed viewable/editable on the map before the first fight. |
+| 2026-07-07 | Added victory rewards: defeating an enemy grants a card (`rewards.ts`, `CardRewardOverlay`). Run now owns a persistent, growing deck (card ids) passed into each battle. Rewards are variable per node and structured for future trinkets (`pickCount`, `rerollable`, new `RunReward` kinds). |
 | 2026-07-07 | Added run map: branching node/line overworld between battles (`runMap.ts`, `RunMapOverlay`), carry-over HP with heal-on-victory, victory/defeat run-end screens. Scene now starts/ends battles on `START_BATTLE`/`BATTLE_WON`/`BATTLE_LOST` events. |
 | 2026-07-07 | Initial doc. Removed obsolete TD subsystem from codebase. Design focus: card-chain combat only. |

@@ -13,7 +13,7 @@ import {
     resolvePostAttackPassives,
 } from '../enemyPassives/applyEnemyPassives';
 import { slotKey } from '../domain/cardDirections';
-import { buildPlayerDeck, shuffleInPlace } from '../domain/buildPlayerDeck';
+import { buildDeckFromDefinitionIds, buildPlayerDeck, shuffleInPlace } from '../domain/buildPlayerDeck';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
 import { randomInBoundsDirectionForPool } from '../domain/cardDirections';
@@ -31,6 +31,7 @@ import type {
 } from '../domain/types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
+import { pickRandom } from '../../random/rng';
 
 export class CardGameSession
 {
@@ -54,7 +55,11 @@ export class CardGameSession
         col: GAME_RULES.activationStartColumn,
     };
 
-    constructor (enemyId: string = GAME_RULES.defaultEnemyId, startHealth?: number)
+    constructor (
+        enemyId: string = GAME_RULES.defaultEnemyId,
+        startHealth?: number,
+        deckDefinitionIds?: readonly string[],
+    )
     {
         this.enemyDefinition = getCardGameEnemyDefinitionOrThrow(enemyId);
         this.board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
@@ -72,7 +77,11 @@ export class CardGameSession
             shield: 0,
         };
 
-        this.deck.push(...buildPlayerDeck());
+        this.deck.push(
+            ...(deckDefinitionIds && deckDefinitionIds.length > 0
+                ? buildDeckFromDefinitionIds(deckDefinitionIds)
+                : buildPlayerDeck()),
+        );
         this.rerollsRemaining = GAME_RULES.fightRerollsPerFight;
         this.renewHand();
         this.queueNextEnemyTurn();
@@ -580,7 +589,7 @@ export class CardGameSession
             return null;
         }
 
-        const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)]!;
+        const slot = pickRandom(emptySlots);
         const hazardDefinition = getCardDefinitionOrThrow(GAME_RULES.hazard.definitionId);
         const hazardArrow = randomInBoundsDirectionForPool(
             slot,
@@ -613,7 +622,7 @@ export class CardGameSession
             return null;
         }
 
-        const slot = emptySlots[Math.floor(Math.random() * emptySlots.length)]!;
+        const slot = pickRandom(emptySlots);
         const boostDefinition = getCardDefinitionOrThrow(GAME_RULES.fieldBoost.definitionId);
         const boostArrow = randomInBoundsDirectionForPool(
             slot,

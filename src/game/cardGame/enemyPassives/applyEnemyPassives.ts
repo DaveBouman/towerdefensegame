@@ -11,6 +11,7 @@ import type {
 import type { LoadedCardGameEnemyDefinition } from '../config/enemyCatalog';
 import { getEnemyPassive } from './defaults';
 import type { EnemyPassiveConfig } from './types';
+import { random, randomInt } from '../../random/rng';
 
 export interface EnemyTurnPlanningContext {
     enemy: LoadedCardGameEnemyDefinition;
@@ -41,7 +42,7 @@ const planCombatStep = (
             return { kind: 'attack', amount: lastStand.attackDamage };
         }
 
-        return Math.random() < enemy.attackChance
+        return random() < enemy.attackChance
             ? { kind: 'attack', amount: lastStand.attackDamage }
             : { kind: 'shield', amount: lastStand.shieldGain };
     }
@@ -49,7 +50,7 @@ const planCombatStep = (
     const enrage = getEnemyPassive(passives, 'enrage');
     const attackBonus = (enrage?.attackBonusPerTrap ?? 0) * enrageStacks;
 
-    if (Math.random() < enemy.attackChance)
+    if (random() < enemy.attackChance)
     {
         return {
             kind: 'attack',
@@ -204,7 +205,7 @@ export const placeSilenceTiles = (
 
     for (let i = 0; i < silenceTile.tilesPerTurn && pool.length > 0; i++)
     {
-        const index = Math.floor(Math.random() * pool.length);
+        const index = randomInt(pool.length);
         const slot = pool.splice(index, 1)[0]!;
 
         silencedSlots.add(slotKey(slot));

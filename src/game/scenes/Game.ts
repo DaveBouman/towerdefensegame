@@ -17,6 +17,7 @@ import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../cardGame/events/cardGameEvents';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
+import { reseed } from '../random/rng';
 import { Scene } from 'phaser';
 
 const sameSlot = (a: SlotPosition, b: SlotPosition): boolean =>
@@ -64,24 +65,30 @@ export class Game extends Scene
         this.scale.on('resize', this.onResize, this);
     }
 
-    private onStartBattle = ({ enemyId, startHealth }: { enemyId: string; startHealth: number }): void =>
+    private onStartBattle = (
+        { enemyId, startHealth, deck, seed }:
+        { enemyId: string; startHealth: number; deck: string[]; seed: number },
+    ): void =>
     {
         if (this.battleActive)
         {
             this.endBattle();
         }
 
-        this.startBattle(enemyId, startHealth);
+        this.startBattle(enemyId, startHealth, deck, seed);
     };
 
-    private startBattle (enemyId: string, startHealth: number): void
+    private startBattle (enemyId: string, startHealth: number, deck: string[], seed: number): void
     {
+        // Install this battle's deterministic RNG stream before any card is dealt.
+        reseed(seed);
+
         const { width, height } = this.scale;
         this.layout = computeBoardLayout(width, height);
         const layout = this.layout;
         this.rerollModeActive = false;
         this.battleResolved = false;
-        this.session = new CardGameSession(enemyId, startHealth);
+        this.session = new CardGameSession(enemyId, startHealth, deck);
 
         this.handView = new CardHandView(this, layout, [ ...this.session.getHand() ], {
             onDragMove: (worldX, worldY) =>

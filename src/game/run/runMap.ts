@@ -3,6 +3,10 @@
  * through, picking one node per column (Slay-the-Spire-style branching path).
  */
 
+import { DEFAULT_CARD_REWARD, type RunReward } from './rewards';
+import { isBattleKind, rollNodeKind, type RunMapNodeKind } from './nodeKinds';
+import { pickRandom, random } from '../random/rng';
+
 export interface RunMapNode {
     id: string;
     /** Column index in the progression (0 = first choice). */
@@ -11,8 +15,11 @@ export interface RunMapNode {
     col: number;
     /** Number of nodes in this node's column (for layout). */
     colCount: number;
-    enemyId: string;
-    isBoss: boolean;
+    kind: RunMapNodeKind;
+    /** Enemy fought at this node (battle kinds only). */
+    enemyId?: string;
+    /** Reward granted for defeating this node's enemy (battle kinds only). */
+    reward?: RunReward;
     /** Node ids reachable from this node in the next column. */
     nextIds: string[];
 }
@@ -39,9 +46,6 @@ const ROW_ENEMY_POOLS: readonly (readonly string[])[] = [
 
 const ROW_SIZES: readonly number[] = [ 2, 3, 3, 2, 1 ];
 
-const pick = <T>(items: readonly T[]): T =>
-    items[Math.floor(Math.random() * items.length)]!;
-
 const clamp = (value: number, min: number, max: number): number =>
     Math.max(min, Math.min(max, value));
 
@@ -62,15 +66,23 @@ export const generateRunMap = (): RunMap =>
     const grid: RunMapNode[][] = ROW_SIZES.map((size, row) =>
         Array.from({ length: size }, (_unused, col) =>
         {
-            const isBoss = row === rows - 1;
+            const kind: RunMapNodeKind = row === rows - 1
+                ? 'boss'
+                : row === 0
+                    ? 'enemy'
+                    : rollNodeKind();
+            const battle = isBattleKind(kind);
 
             return {
                 id: `n${row}-${col}`,
                 row,
                 col,
                 colCount: size,
-                enemyId: pick(ROW_ENEMY_POOLS[row] ?? ROW_ENEMY_POOLS[0]!),
-                isBoss,
+                kind,
+                enemyId: battle
+                    ? pickRandom(ROW_ENEMY_POOLS[row] ?? ROW_ENEMY_POOLS[0]!)
+                    : undefined,
+                reward: battle ? { ...DEFAULT_CARD_REWARD } : undefined,
                 nextIds: [] as string[],
             } satisfies RunMapNode;
         }),
@@ -98,9 +110,9 @@ export const generateRunMap = (): RunMap =>
             hasIncoming.add(target.id);
 
             // Occasionally branch to an adjacent node for divergent paths.
-            if (Math.random() < 0.45 && next.length > 1)
+            if (random() < 0.45 && next.length > 1)
             {
-                const dir = Math.random() < 0.5 ? -1 : 1;
+                const dir = random() < 0.5 ? -1 : 1;
                 const branch = next[clamp(targetIndex + dir, 0, next.length - 1)]!;
                 connect(node, branch);
                 hasIncoming.add(branch.id);

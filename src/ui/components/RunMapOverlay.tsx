@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { getCardGameEnemyDefinition } from '../../game/cardGame/config/enemyCatalog';
 import type { RunMap, RunMapNode } from '../../game/run/runMap';
+import { NODE_KIND_INFO } from '../../game/run/nodeKinds';
+import { NodeKindIcon } from './NodeKindIcon';
 
 const PAD_X = 0.09;
 const PAD_Y = 0.16;
@@ -25,6 +27,11 @@ interface RunMapOverlayProps {
     availableIds: string[];
     playerHealth: number;
     maxHealth: number;
+    seed: string;
+    /** Whether the seed can still be changed (only before the first battle). */
+    seedEditable: boolean;
+    onSeedChange: (seed: string) => void;
+    onRandomizeSeed: () => void;
     onPick: (node: RunMapNode) => void;
 }
 
@@ -34,6 +41,10 @@ export const RunMapOverlay = ({
     availableIds,
     playerHealth,
     maxHealth,
+    seed,
+    seedEditable,
+    onSeedChange,
+    onRandomizeSeed,
     onPick,
 }: RunMapOverlayProps) =>
 {
@@ -81,7 +92,34 @@ export const RunMapOverlay = ({
     return (
         <div className="run-map">
             <div className="run-map__header">
-                <h1 className="run-map__title">Choose your path</h1>
+                <div className="run-map__heading">
+                    <h1 className="run-map__title">Choose your path</h1>
+                    <div className="run-map__seed">
+                        <span className="run-map__seed-label">Seed</span>
+                        {seedEditable ? (
+                            <>
+                                <input
+                                    className="run-map__seed-input"
+                                    value={seed}
+                                    maxLength={12}
+                                    spellCheck={false}
+                                    aria-label="Run seed"
+                                    onChange={(event) => onSeedChange(event.target.value)}
+                                />
+                                <button
+                                    type="button"
+                                    className="run-map__seed-random"
+                                    title="Random seed"
+                                    onClick={onRandomizeSeed}
+                                >
+                                    &#x21bb;
+                                </button>
+                            </>
+                        ) : (
+                            <code className="run-map__seed-value">{seed}</code>
+                        )}
+                    </div>
+                </div>
                 <div className="run-map__health" role="status">
                     <span className="run-map__health-label">Vitality</span>
                     <div className="run-map__health-bar">
@@ -146,10 +184,12 @@ export const RunMapOverlay = ({
                     const isCompleted = completed.has(node.id);
                     const isAvailable = available.has(node.id);
                     const isCurrent = node.id === currentNodeId;
-                    const enemy = getCardGameEnemyDefinition(node.enemyId);
-                    const classes = [ 'run-map__node' ];
+                    const info = NODE_KIND_INFO[node.kind];
+                    const enemy = node.enemyId ? getCardGameEnemyDefinition(node.enemyId) : undefined;
+                    const label = enemy?.label ?? info.label;
+                    const tooltipBody = enemy ? `${enemy.label}. ${info.tooltip}` : info.tooltip;
+                    const classes = [ 'run-map__node', `run-map__node--${node.kind}` ];
 
-                    if (node.isBoss) classes.push('run-map__node--boss');
                     if (isCompleted) classes.push('run-map__node--completed');
                     if (isCurrent) classes.push('run-map__node--current');
                     if (isAvailable) classes.push('run-map__node--available');
@@ -161,12 +201,22 @@ export const RunMapOverlay = ({
                             type="button"
                             className={classes.join(' ')}
                             style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
-                            disabled={!isAvailable}
-                            onClick={() => onPick(node)}
+                            aria-disabled={!isAvailable}
+                            onClick={() =>
+                            {
+                                if (isAvailable)
+                                {
+                                    onPick(node);
+                                }
+                            }}
                         >
-                            <span className="run-map__node-dot" />
-                            <span className="run-map__node-label">
-                                {node.isBoss ? '\u2605 ' : ''}{enemy?.label ?? node.enemyId}
+                            <span className="run-map__node-dot">
+                                <NodeKindIcon kind={node.kind} className="run-map__node-icon" />
+                            </span>
+                            <span className="run-map__node-label">{label}</span>
+                            <span className="run-map__tooltip" role="tooltip">
+                                <span className="run-map__tooltip-title">{info.label}</span>
+                                <span className="run-map__tooltip-body">{tooltipBody}</span>
                             </span>
                         </button>
                     );
