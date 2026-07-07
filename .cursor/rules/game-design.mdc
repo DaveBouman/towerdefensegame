@@ -1,0 +1,14 @@
+---
+description: Card game design goals, architecture, and roadmap for AI agents
+alwaysApply: true
+---
+
+# Game design context
+
+Read `docs/GAME_DESIGN.md` before making gameplay or balance changes.
+
+- **Active game:** 4×4 card-chain combat (`src/game/cardGame/`). Not tower defense.
+- **Entry point:** `App.tsx` → `GameHud` + `scenes/Game.ts` + `CardGameSession`.
+- **Removed:** All TD code (towers, waves, fusion, races, targeting modes). Do not recreate or reference it.
+- **Design goals:** Higher stakes (gauntlet, carry-over HP, scarce rerolls), deeper tactics (enemy counters, column pressure, telegraphed thresholds).
+- **When changing systems:** Update `docs/GAME_DESIGN.md` changelog and roadmap checkboxes.
