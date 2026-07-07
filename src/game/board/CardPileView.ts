@@ -18,6 +18,8 @@ export class CardPileView
     private readonly stackContainer: Phaser.GameObjects.Container;
     private readonly stackCards: Phaser.GameObjects.Rectangle[] = [];
     private readonly emptyStack: Phaser.GameObjects.Rectangle;
+    private readonly frame: Phaser.GameObjects.Rectangle;
+    private frameBorder = 0xffffff;
     private count = 0;
 
     constructor (
@@ -39,6 +41,8 @@ export class CardPileView
 
         frame.setOrigin(0, 0);
         frame.setStrokeStyle(2, border, 0.95);
+        this.frame = frame;
+        this.frameBorder = border;
 
         this.stackContainer = scene.add.container(pileWidth / 2 + 6, 8);
 
@@ -69,6 +73,25 @@ export class CardPileView
 
         this.container.add([ frame, this.stackContainer, this.countText, title ]);
         this.applyCount(0);
+    }
+
+    /** Makes the pile clickable to inspect its contents. */
+    setClickHandler (handler: () => void): void
+    {
+        this.frame.setInteractive({ useHandCursor: true });
+
+        this.frame.on('pointerover', () =>
+        {
+            this.frame.setStrokeStyle(3, this.frameBorder, 1);
+        });
+        this.frame.on('pointerout', () =>
+        {
+            this.frame.setStrokeStyle(2, this.frameBorder, 0.95);
+        });
+        this.frame.on('pointerdown', () =>
+        {
+            handler();
+        });
     }
 
     getReceivePosition (): { x: number; y: number }

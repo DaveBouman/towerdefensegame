@@ -10,4 +10,5 @@ export const GAME_EVENTS = {
     START_BATTLE: 'start-battle',
     BATTLE_WON: 'battle-won',
     BATTLE_LOST: 'battle-lost',
+    PILE_VIEW_OPEN: 'pile-view-open',
 } as const;

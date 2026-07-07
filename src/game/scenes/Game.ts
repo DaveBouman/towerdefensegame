@@ -6,7 +6,7 @@ import { CardPileView } from '../board/CardPileView';
 import { EnemyTargetView } from '../board/EnemyTargetView';
 import { PlayerHealthView } from '../board/PlayerHealthView';
 import { CardGameSession } from '../cardGame/domain/CardGameSession';
-import { GAME_RULES } from '../cardGame/config/cardRegistry';
+import { GAME_RULES, getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
 import type { SlotPosition } from '../cardGame/domain/types';
 import { destroyCardTooltipController } from '../cardGame/presentation/tooltips/CardTooltipController';
 import { destroyEnemyIntentTooltipController } from '../cardGame/presentation/tooltips/EnemyIntentTooltipController';
@@ -139,6 +139,8 @@ export class Game extends Scene
         this.armorView = new ArmorView(this, layout, 0);
         this.deckView = new CardPileView(this, layout, layout.deckX, layout.deckY, 'Deck', 'deck');
         this.graveyardView = new CardPileView(this, layout, layout.graveyardX, layout.graveyardY, 'Graveyard', 'graveyard');
+        this.deckView.setClickHandler(() => this.openPileView('deck'));
+        this.graveyardView.setClickHandler(() => this.openPileView('graveyard'));
         this.syncPileViews();
 
         this.session.placeFieldBoost();
@@ -288,6 +290,36 @@ export class Game extends Scene
 
         this.deckView?.setCount(deckSize);
         this.graveyardView?.setCount(discardSize);
+    }
+
+    private openPileView (kind: 'deck' | 'graveyard'): void
+    {
+        if (!this.session)
+        {
+            return;
+        }
+
+        const definitionIds = kind === 'deck'
+            ? this.session.getDeckDefinitionIds()
+            : this.session.getDiscardDefinitionIds();
+
+        const cards = definitionIds.map((definitionId) =>
+        {
+            const definition = getCardDefinitionOrThrow(definitionId);
+
+            return {
+                definitionId,
+                label: definition.label,
+                power: definition.power,
+                behaviorId: definition.behaviorId,
+            };
+        });
+
+        EventBus.emit(GAME_EVENTS.PILE_VIEW_OPEN, {
+            kind,
+            title: kind === 'deck' ? 'Draw Pile' : 'Discard Pile',
+            cards,
+        });
     }
 
     private onAttack = (): void =>

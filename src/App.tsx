@@ -5,6 +5,7 @@ import { RunMapOverlay } from './ui/components/RunMapOverlay';
 import { RunEndOverlay } from './ui/components/RunEndOverlay';
 import { CardRewardOverlay } from './ui/components/CardRewardOverlay';
 import { NodeVisitOverlay } from './ui/components/NodeVisitOverlay';
+import { PileViewOverlay } from './ui/components/PileViewOverlay';
 import { isBattleKind } from './game/run/nodeKinds';
 import { EventBus } from './game/EventBus';
 import { GAME_EVENTS } from './game/events/gameEvents';
@@ -253,6 +254,7 @@ function App()
         <div id="app">
             <PhaserGame />
             {phase === 'battle' && <GameHud />}
+            <PileViewOverlay />
             {phase === 'map' && (
                 <RunMapOverlay
                     map={map}

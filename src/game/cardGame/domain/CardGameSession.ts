@@ -113,6 +113,18 @@ export class CardGameSession
         };
     }
 
+    /** Draw-pile card definition ids (order intentionally not implied — callers should group/sort). */
+    getDeckDefinitionIds (): string[]
+    {
+        return this.deck.map((card) => card.definitionId);
+    }
+
+    /** Discard-pile card definition ids. */
+    getDiscardDefinitionIds (): string[]
+    {
+        return this.discard.map((card) => card.definitionId);
+    }
+
     private emitPilesChanged (): void
     {
         CardGameEventBus.emit(CARD_GAME_EVENTS.PILES_CHANGED, this.getPileCounts());
