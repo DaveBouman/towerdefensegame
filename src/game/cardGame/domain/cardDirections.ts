@@ -161,6 +161,27 @@ export const getInBoundsDirections = (
 ): CardDirection[] =>
     CARD_DIRECTIONS.filter((direction) => getNextSlot(slot, direction, rows, cols) !== null);
 
+/**
+ * The two forward-diagonal directions a "corner turn" card can hook into, given
+ * its orthogonal arrow. Order is fixed so routing stays seed-deterministic.
+ * Non-orthogonal arrows have no corner targets.
+ */
+const CORNER_TARGETS: Record<CardDirection, readonly CardDirection[]> = {
+    up: [ 'up-left', 'up-right' ],
+    down: [ 'down-left', 'down-right' ],
+    left: [ 'up-left', 'down-left' ],
+    right: [ 'up-right', 'down-right' ],
+    'up-left': [],
+    'up-right': [],
+    'down-left': [],
+    'down-right': [],
+};
+
+export const cornerTargetDirections = (
+    direction: CardDirection,
+): readonly CardDirection[] =>
+    CORNER_TARGETS[direction];
+
 export const slotKey = ({ row, col }: SlotPosition): string => `${row},${col}`;
 
 export const getNextSlot = (

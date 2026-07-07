@@ -192,10 +192,13 @@ export class EnemyTargetView
         this.enemyLabel.setText(label);
     }
 
-    setEnemyPassives (passives: readonly EnemyPassiveConfig[]): void
+    setEnemyPassives (allPassives: readonly EnemyPassiveConfig[]): void
     {
         this.passiveIconsContainer?.destroy();
         this.passiveIconsContainer = undefined;
+
+        // Event-style abilities are surfaced via the turn intent, not the passive row.
+        const passives = allPassives.filter((passive) => passive.id !== 'dampenTiles');
 
         if (passives.length === 0)
         {

@@ -4,6 +4,7 @@ import { isEnemyOwnedCard, isFieldOwnedCard } from '../cardGame/domain/cardOwner
 import { uiTextStyle } from '../config/uiTypography';
 import { getCardBehaviorTextureKey } from '../../ui/icons/cardBehaviorIcons';
 import { ARROW_GLYPH, arrowLabelPosition } from './cardArrows';
+import { cornerTargetDirections } from '../cardGame/domain/cardDirections';
 import { CARD_VISUALS } from './cardVisuals';
 
 export interface CardVisualOptions {
@@ -61,6 +62,19 @@ export const buildCardGraphic = (
         }).setOrigin(0.5);
 
         cardDecor.push(loopArrow);
+    }
+
+    if (definition.cornerTurn)
+    {
+        for (const target of cornerTargetDirections(card.arrow))
+        {
+            const hookPos = arrowLabelPosition(target, width, height);
+            const hookArrow = scene.add.text(hookPos.x, hookPos.y, ARROW_GLYPH[target], {
+                ...uiTextStyle(15, '#ffd98a', { bold: true }),
+            }).setOrigin(0.5);
+
+            cardDecor.push(hookArrow);
+        }
     }
 
     const kindIconY = height * 0.3;

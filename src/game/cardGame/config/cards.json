@@ -128,6 +128,24 @@
       "visualId": "fire",
       "arrowPool": "diagonal",
       "chainAbilityIds": [ "overload" ]
+    },
+    {
+      "id": "corner-strike",
+      "label": "Corner Strike",
+      "power": 6,
+      "behaviorId": "attack",
+      "visualId": "attack",
+      "arrowPool": "orthogonal",
+      "cornerTurn": true
+    },
+    {
+      "id": "corner-defense",
+      "label": "Corner Defense",
+      "power": 5,
+      "behaviorId": "defend",
+      "visualId": "defend",
+      "arrowPool": "orthogonal",
+      "cornerTurn": true
     }
   ]
 }

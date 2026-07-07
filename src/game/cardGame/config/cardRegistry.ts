@@ -15,6 +15,11 @@ export interface CardDefinition {
     maxChainActivations?: number;
     /** How many grid steps the chain advances along this card's arrow. */
     chainStepDistance?: number;
+    /**
+     * When true, the chain does not continue straight: it steps one tile along the
+     * arrow, then hooks 90° to a forward-diagonal tile (whichever side has a card).
+     */
+    cornerTurn?: boolean;
     /** Chain abilities resolved after the full activation chain is known. */
     chainAbilityIds?: string[];
     /** Optional tooltip provider id — defaults to card id, then behavior id. */

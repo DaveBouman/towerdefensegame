@@ -69,6 +69,22 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: attackLines(ctx),
     })),
+    provider('corner-strike', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Deals ${ctx.definition.power} damage when activated in the chain.`,
+            'Turns the corner: steps one tile along the arrow, then hooks to a forward-diagonal tile.',
+            'Continues around whichever corner has a card.',
+        ],
+    })),
+    provider('corner-defense', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Grants ${ctx.definition.power} armor when activated in the chain.`,
+            'Turns the corner: steps one tile along the arrow, then hooks to a forward-diagonal tile.',
+            'Continues around whichever corner has a card.',
+        ],
+    })),
     provider('defend-special', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: defendLines(ctx),

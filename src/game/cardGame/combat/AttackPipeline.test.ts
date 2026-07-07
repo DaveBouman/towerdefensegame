@@ -148,6 +148,46 @@ describe('AttackPipeline', () =>
         expect(chain[1].arrow).toBe('left');
     });
 
+    it('hooks a corner card around to a forward-diagonal tile', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 1, col: 0 }, createCardInstance('corner-strike', 'right'));
+        board.placeCard({ row: 2, col: 1 }, createCardInstance('attack', 'left'));
+
+        const chain = planActivationChain(board, { row: 1, col: 0 });
+
+        expect(chain.map((step) => step.slot)).toEqual([
+            { row: 1, col: 0 },
+            { row: 2, col: 1 },
+        ]);
+    });
+
+    it('prefers the first forward-diagonal side when a corner card has two targets', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 1, col: 0 }, createCardInstance('corner-strike', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('attack', 'left'));
+        board.placeCard({ row: 2, col: 1 }, createCardInstance('attack', 'left'));
+
+        const chain = planActivationChain(board, { row: 1, col: 0 });
+
+        expect(chain[1]?.slot).toEqual({ row: 0, col: 1 });
+    });
+
+    it('stops a corner card when neither forward-diagonal tile has a card', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 1, col: 0 }, createCardInstance('corner-strike', 'right'));
+        board.placeCard({ row: 1, col: 1 }, createCardInstance('attack', 'left'));
+
+        const chain = planActivationChain(board, { row: 1, col: 0 });
+
+        expect(chain).toHaveLength(1);
+    });
+
     it('jumps two spaces when leaving a leap card', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));

@@ -1,7 +1,7 @@
 import { GAME_RULES, getCardDefinitionOrThrow, getChainStepDistance, type CardDefinition } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
 import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
-import { getInBoundsDirectionsAtDistance, getSlotAtStepDistance, slotKey } from '../domain/cardDirections';
+import { cornerTargetDirections, getInBoundsDirectionsAtDistance, getNextSlot, getSlotAtStepDistance, slotKey } from '../domain/cardDirections';
 import type {
     ActivationStep,
     AttackSequence,
@@ -100,6 +100,9 @@ export const isBoostDefinition = (definition: CardDefinition): boolean =>
 
 export const isLoopResetDefinition = (definition: CardDefinition): boolean =>
     definition.behaviorId === 'loop-reset';
+
+export const isCornerDefinition = (definition: CardDefinition): boolean =>
+    definition.cornerTurn === true;
 
 const getLoopContinueArrow = (card: import('../domain/types').CardInstance): CardDirection =>
     card.arrow;
@@ -219,6 +222,30 @@ export const getNextChainSlot = (
     return landing;
 };
 
+/**
+ * Corner move: hooks 90° off the arrow to a forward-diagonal tile. Tries each
+ * side in a fixed order and takes the first that holds a card, so a corner card
+ * continues around whichever corner has a target.
+ */
+export const getCornerNextSlot = (
+    board: BoardModel,
+    from: SlotPosition,
+    direction: CardDirection,
+): SlotPosition | null =>
+{
+    for (const diagonal of cornerTargetDirections(direction))
+    {
+        const landing = getNextSlot(from, diagonal, board.rows, board.cols);
+
+        if (landing && board.getCardAt(landing))
+        {
+            return landing;
+        }
+    }
+
+    return null;
+};
+
 /** Walk the board following each card's arrow to build the activation chain. */
 export const planActivationChain = (
     board: BoardModel,
@@ -247,12 +274,14 @@ export const planActivationChain = (
             break;
         }
 
-        current = getNextChainSlot(
-            board,
-            current,
-            step.exitArrow,
-            getChainStepDistance(definition),
-        );
+        current = isCornerDefinition(definition)
+            ? getCornerNextSlot(board, current, step.exitArrow)
+            : getNextChainSlot(
+                board,
+                current,
+                step.exitArrow,
+                getChainStepDistance(definition),
+            );
     }
 
     return chain;
@@ -484,12 +513,18 @@ export const getNextChainSlotFromStep = (
     board: BoardModel,
     step: ActivationStep,
 ): SlotPosition | null =>
-    getNextChainSlot(
-        board,
-        step.slot,
-        step.exitArrow,
-        getChainStepDistance(getCardDefinitionOrThrow(step.definitionId)),
-    );
+{
+    const definition = getCardDefinitionOrThrow(step.definitionId);
+
+    return isCornerDefinition(definition)
+        ? getCornerNextSlot(board, step.slot, step.exitArrow)
+        : getNextChainSlot(
+            board,
+            step.slot,
+            step.exitArrow,
+            getChainStepDistance(definition),
+        );
+};
 
 export const buildAttackSequence = (
     chain: ActivationStep[],

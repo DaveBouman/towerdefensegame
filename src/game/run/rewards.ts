@@ -41,6 +41,8 @@ export const REWARD_CARD_POOL: readonly string[] = [
     'rupture',
     'bulwark',
     'surge',
+    'corner-strike',
+    'corner-defense',
 ];
 
 /** Picks `choiceCount` distinct card definition ids at random from the reward pool. */
@@ -61,6 +63,8 @@ const CARD_BLURBS: Record<string, string> = {
     rupture: 'Bleed — more damage the more attacks you chain.',
     bulwark: 'Fortify — more armor the more defends you chain.',
     surge: 'Overload — damage per skill card, doubled with a Joker.',
+    'corner-strike': 'Hooks around the corner to a forward-diagonal tile.',
+    'corner-defense': 'Armor that hooks around the corner to a forward-diagonal tile.',
 };
 
 export interface CardRewardDisplay {
