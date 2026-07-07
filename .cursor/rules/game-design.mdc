@@ -7,8 +7,9 @@ alwaysApply: true
 
 Read `docs/GAME_DESIGN.md` before making gameplay or balance changes.
 
-- **Active game:** 4×4 card-chain combat (`src/game/cardGame/`). Not tower defense.
-- **Entry point:** `App.tsx` → `GameHud` + `scenes/Game.ts` + `CardGameSession`.
+- **Active game:** 4×4 card-chain combat (`src/game/cardGame/`) played across a branching run map. Not tower defense.
+- **Entry point:** `App.tsx` (run controller) → `RunMapOverlay` / `GameHud` / `RunEndOverlay` + `scenes/Game.ts` + `CardGameSession`.
+- **Run flow:** map (pick node) → battle → win/lose. Scene starts/ends fights via `START_BATTLE` / `BATTLE_WON` / `BATTLE_LOST` events; HP carries over. See `src/game/run/runMap.ts`.
 - **Removed:** All TD code (towers, waves, fusion, races, targeting modes). Do not recreate or reference it.
 - **Design goals:** Higher stakes (gauntlet, carry-over HP, scarce rerolls), deeper tactics (enemy counters, column pressure, telegraphed thresholds).
 - **When changing systems:** Update `docs/GAME_DESIGN.md` changelog and roadmap checkboxes.

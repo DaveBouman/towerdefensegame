@@ -54,7 +54,7 @@ export class CardGameSession
         col: GAME_RULES.activationStartColumn,
     };
 
-    constructor (enemyId: string = GAME_RULES.defaultEnemyId)
+    constructor (enemyId: string = GAME_RULES.defaultEnemyId, startHealth?: number)
     {
         this.enemyDefinition = getCardGameEnemyDefinitionOrThrow(enemyId);
         this.board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
@@ -63,9 +63,12 @@ export class CardGameSession
             maxHealth: this.enemyDefinition.maxHealth,
             shield: 0,
         };
+        const maxHealth = GAME_RULES.player.maxHealth;
         this.player = {
-            health: GAME_RULES.player.maxHealth,
-            maxHealth: GAME_RULES.player.maxHealth,
+            health: startHealth !== undefined
+                ? Math.min(maxHealth, Math.max(1, Math.round(startHealth)))
+                : maxHealth,
+            maxHealth,
             shield: 0,
         };
 

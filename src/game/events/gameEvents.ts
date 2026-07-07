@@ -7,4 +7,7 @@ export const GAME_EVENTS = {
     REROLL_CANCEL: 'reroll-cancel',
     REROLL_STATE: 'reroll-state',
     SCENE_READY: 'current-scene-ready',
+    START_BATTLE: 'start-battle',
+    BATTLE_WON: 'battle-won',
+    BATTLE_LOST: 'battle-lost',
 } as const;

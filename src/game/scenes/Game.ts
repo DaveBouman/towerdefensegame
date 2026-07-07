@@ -35,6 +35,8 @@ export class Game extends Scene
     private graveyardView?: CardPileView;
     private rerollModeActive = false;
     private layout?: BoardLayout;
+    private battleActive = false;
+    private battleResolved = false;
 
     constructor ()
     {
@@ -43,15 +45,43 @@ export class Game extends Scene
 
     create (): void
     {
-        void preloadEnemyPassiveIcons(this).then(() => this.initializeGame());
+        void preloadEnemyPassiveIcons(this).then(() =>
+        {
+            this.registerListeners();
+            EventBus.emit(GAME_EVENTS.SCENE_READY, this);
+        });
     }
 
-    private initializeGame (): void
+    private registerListeners (): void
+    {
+        EventBus.on(GAME_EVENTS.START_BATTLE, this.onStartBattle, this);
+        EventBus.on(GAME_EVENTS.ATTACK, this.onAttack, this);
+        EventBus.on(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
+        EventBus.on(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
+        EventBus.on(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
+        CardGameEventBus.on(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
+        CardGameEventBus.on(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
+        this.scale.on('resize', this.onResize, this);
+    }
+
+    private onStartBattle = ({ enemyId, startHealth }: { enemyId: string; startHealth: number }): void =>
+    {
+        if (this.battleActive)
+        {
+            this.endBattle();
+        }
+
+        this.startBattle(enemyId, startHealth);
+    };
+
+    private startBattle (enemyId: string, startHealth: number): void
     {
         const { width, height } = this.scale;
         this.layout = computeBoardLayout(width, height);
         const layout = this.layout;
-        this.session = new CardGameSession();
+        this.rerollModeActive = false;
+        this.battleResolved = false;
+        this.session = new CardGameSession(enemyId, startHealth);
 
         this.handView = new CardHandView(this, layout, [ ...this.session.getHand() ], {
             onDragMove: (worldX, worldY) =>
@@ -129,16 +159,9 @@ export class Game extends Scene
             this.enemyView.showIntent(initialIntent);
         }
 
-        EventBus.on(GAME_EVENTS.ATTACK, this.onAttack, this);
-        EventBus.on(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
-        EventBus.on(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
-        EventBus.on(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
-        CardGameEventBus.on(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
-        CardGameEventBus.on(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
-        EventBus.emit(GAME_EVENTS.SCENE_READY, this);
+        this.battleActive = true;
         this.emitAttackReadiness();
         this.emitRerollState();
-        this.scale.on('resize', this.onResize, this);
     }
 
     private onResize = (gameSize: Phaser.Structs.Size): void =>
@@ -161,15 +184,8 @@ export class Game extends Scene
         });
     };
 
-    shutdown (): void
+    private endBattle (): void
     {
-        this.scale.off('resize', this.onResize, this);
-        EventBus.off(GAME_EVENTS.ATTACK, this.onAttack, this);
-        EventBus.off(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
-        EventBus.off(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
-        EventBus.off(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
-        CardGameEventBus.off(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
-        CardGameEventBus.off(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
         this.session?.cancelAttack();
         this.session?.cancelEnemyTurn();
         this.presenter?.unbind();
@@ -192,6 +208,54 @@ export class Game extends Scene
         this.deckView = undefined;
         this.graveyardView = undefined;
         this.session = undefined;
+        this.battleActive = false;
+        this.rerollModeActive = false;
+    }
+
+    private winBattle (): void
+    {
+        if (this.battleResolved || !this.session)
+        {
+            return;
+        }
+
+        this.battleResolved = true;
+        const playerHealth = this.session.getPlayer().health;
+
+        this.time.delayedCall(900, () =>
+        {
+            this.endBattle();
+            EventBus.emit(GAME_EVENTS.BATTLE_WON, { playerHealth });
+        });
+    }
+
+    private loseBattle (): void
+    {
+        if (this.battleResolved)
+        {
+            return;
+        }
+
+        this.battleResolved = true;
+
+        this.time.delayedCall(900, () =>
+        {
+            this.endBattle();
+            EventBus.emit(GAME_EVENTS.BATTLE_LOST);
+        });
+    }
+
+    shutdown (): void
+    {
+        this.scale.off('resize', this.onResize, this);
+        EventBus.off(GAME_EVENTS.START_BATTLE, this.onStartBattle, this);
+        EventBus.off(GAME_EVENTS.ATTACK, this.onAttack, this);
+        EventBus.off(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
+        EventBus.off(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
+        EventBus.off(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
+        CardGameEventBus.off(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
+        CardGameEventBus.off(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
+        this.endBattle();
     }
 
     private onPilesChanged = ({ deckSize, discardSize }: { deckSize: number; discardSize: number }): void =>
@@ -292,6 +356,7 @@ export class Game extends Scene
             this.enemyView.clearIntent();
             this.session.finishPlayerTurn();
             this.emitAttackReadiness();
+            this.winBattle();
             return;
         }
 
@@ -310,6 +375,14 @@ export class Game extends Scene
         {
             this.playerView?.setHealth(this.session!.getPlayer());
             this.enemyView?.setHealth(this.session!.getEnemy());
+
+            if (this.session!.isPlayerDefeated())
+            {
+                this.session!.finishPlayerTurn();
+                this.emitAttackReadiness();
+                this.loseBattle();
+                return;
+            }
 
             const nextIntent = this.session!.getQueuedEnemyTurn();
 

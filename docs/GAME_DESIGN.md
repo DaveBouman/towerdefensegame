@@ -8,7 +8,8 @@
 
 ## What this game is
 
-A **4×4 card-chain combat** game built with Phaser + React.
+A **4×4 card-chain combat** game built with Phaser + React, played across a
+branching **run map** (roguelite-style path of battles).
 
 - Player drags cards from hand onto a grid; arrows define activation order.
 - Player sets chain start (column 0) and clicks **Attack**.
@@ -16,28 +17,47 @@ A **4×4 card-chain combat** game built with Phaser + React.
 - Enemy acts with telegraphed intent (attack/shield + hazard traps).
 - Win: enemy HP ≤ 0. Lose: player HP ≤ 0.
 
-There is **no meta progression** yet — each session is a single fight vs one enemy (`defaultEnemyId: "basic"`).
+## Run structure
+
+The game is a **run**: a left-to-right map of battle nodes connected by lines
+(`src/game/run/runMap.ts`). The player picks one node per column; enemies ramp
+in difficulty toward a boss (`warden`) in the final column.
+
+- **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
+- Losing any battle, or clearing the boss, ends the run (`RunEndOverlay` → new run).
+- The map regenerates each run.
+
+Flow: `map (pick node)` → `battle` → `win → map` / `lose → defeat` / `boss win → victory`.
 
 ---
 
 ## Architecture (active code only)
 
 ```
-index.html → src/main.tsx → App.tsx
+index.html → src/main.tsx → App.tsx (run controller)
   ├── PhaserGame.tsx → src/game/main.ts → scenes/Game.ts
-  └── GameHud.tsx
+  ├── GameHud.tsx        (battle phase)
+  ├── RunMapOverlay.tsx  (map phase)
+  └── RunEndOverlay.tsx  (victory / defeat)
 ```
+
+`App.tsx` owns run state (map, path, carry-over HP, phase). The Phaser `Game`
+scene does **not** auto-start a fight; it waits for `START_BATTLE`, builds a
+battle, and emits `BATTLE_WON` / `BATTLE_LOST` back to React.
 
 | Layer | Path | Role |
 |-------|------|------|
-| Session | `src/game/cardGame/domain/CardGameSession.ts` | Turn flow, board state, combat orchestration |
+| Run controller | `src/App.tsx` | Map/battle/end phases, carry-over HP, node picks |
+| Run map | `src/game/run/runMap.ts` | Graph generation, reachability, run config |
+| Session | `src/game/cardGame/domain/CardGameSession.ts` | Turn flow, board state, combat orchestration (accepts carry-over HP) |
 | Combat | `src/game/cardGame/combat/AttackPipeline.ts` | Chain resolution, type streaks, off-chain bonus |
 | Enemy AI | `src/game/cardGame/combat/enemyTurn.ts` | Intent, attack/shield, hazard placement |
 | Passives | `src/game/cardGame/enemyPassives/` | Per-enemy counter-play |
 | Config | `src/game/cardGame/config/` | `gameRules.json`, `cards.json`, `enemies.json` |
 | Board UI | `src/game/board/` | Grid, hand, piles, health, armor views |
 | React HUD | `src/ui/components/GameHud.tsx` | Attack, reroll controls |
-| Event buses | `EventBus` (React↔Phaser shell), `CardGameEventBus` (in-game) |
+| Map / end UI | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx` | Node picking, run results |
+| Event buses | `EventBus` (React↔Phaser shell, incl. `START_BATTLE`/`BATTLE_WON`/`BATTLE_LOST`), `CardGameEventBus` (in-game) |
 
 **Shared config:** `src/game/config/gridConfig.ts` (4×4 board), `uiTypography.ts`.
 
@@ -100,10 +120,10 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 #### Phase 1 — Stakes (~1–2 weeks)
 
-- [ ] **Gauntlet** — 3–5 fights with escalating enemies from `enemies.json`
-- [ ] **Carry-over HP** — partial heal between fights; no full reset
+- [x] **Gauntlet / run map** — branching path of escalating enemies from `enemies.json` (`runMap.ts`, `RunMapOverlay`)
+- [x] **Carry-over HP** — HP carries between fights with a small heal on victory (`RUN_CONFIG.healOnVictory`)
+- [x] **Pre-fight enemy preview** — map nodes show the enemy label before you commit
 - [ ] **Run-wide rerolls** — e.g. 5 per run instead of 3 per fight
-- [ ] **Pre-fight enemy preview** — player can plan chain strategy
 
 #### Phase 2 — Spatial tactics (~1 week)
 
@@ -129,6 +149,9 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Task | Start here |
 |------|------------|
+| Map layout / difficulty ramp | `src/game/run/runMap.ts` (`ROW_SIZES`, `ROW_ENEMY_POOLS`, `RUN_CONFIG`) |
+| Map / run visuals | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `.run-map*` / `.run-end*` in `public/style.css` |
+| Run flow (phases, carry-over HP) | `src/App.tsx` |
 | Change balance numbers | `src/game/cardGame/config/gameRules.json` |
 | Add/edit cards | `src/game/cardGame/config/cards.json`, `cardRegistry.ts` |
 | Add/edit enemies | `src/game/cardGame/config/enemies.json`, `enemyCatalog.ts`, `enemyPassives/` |
@@ -144,4 +167,5 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-07 | Added run map: branching node/line overworld between battles (`runMap.ts`, `RunMapOverlay`), carry-over HP with heal-on-victory, victory/defeat run-end screens. Scene now starts/ends battles on `START_BATTLE`/`BATTLE_WON`/`BATTLE_LOST` events. |
 | 2026-07-07 | Initial doc. Removed obsolete TD subsystem from codebase. Design focus: card-chain combat only. |

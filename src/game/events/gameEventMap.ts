@@ -10,4 +10,7 @@ export interface GameEventMap {
     'reroll-confirm': void;
     'reroll-cancel': void;
     'reroll-state': RerollState;
+    'start-battle': { enemyId: string; startHealth: number };
+    'battle-won': { playerHealth: number };
+    'battle-lost': void;
 }
