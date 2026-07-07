@@ -27,6 +27,7 @@ const emptySequence = (): AttackSequence => ({
     abilityEnemyDamage: 0,
     abilityPlayerDamage: 0,
     abilityArmorGain: 0,
+    abilityPoisonStacks: 0,
     disarmResults: [],
     stackMultipliers: {},
     stepMs: 1500,

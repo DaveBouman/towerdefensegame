@@ -48,6 +48,7 @@ export class EnemyTargetView
     private readonly healthBarHeight: number;
     private readonly shieldBadge: Phaser.GameObjects.Container;
     private readonly shieldValueText: Phaser.GameObjects.Text;
+    private readonly poisonBadge: Phaser.GameObjects.Text;
     private readonly enemyLabel: Phaser.GameObjects.Text;
     private passiveIconsContainer?: Phaser.GameObjects.Container;
     private intentContainer?: Phaser.GameObjects.Container;
@@ -158,6 +159,15 @@ export class EnemyTargetView
         this.shieldBadge = scene.add.container(enemySize / 2, -22, [ badgeBg, badgeLabel, this.shieldValueText ]);
         this.shieldBadge.setVisible(false);
 
+        this.poisonBadge = scene.add.text(enemySize - 6, 6, '', {
+            ...uiTextStyle(14, '#8fe3a0', {
+                bold: true,
+                backgroundColor: '#0a2a16cc',
+                padding: { x: 5, y: 2 },
+            }),
+        }).setOrigin(1, 0);
+        this.poisonBadge.setVisible(false);
+
         container.add([
             this.shieldRing,
             this.outline,
@@ -169,6 +179,7 @@ export class EnemyTargetView
             this.healthText,
             label,
             this.shieldBadge,
+            this.poisonBadge,
         ]);
         this.container = container;
         this.setHealth(enemy);
@@ -378,6 +389,38 @@ export class EnemyTargetView
         this.healthBarFill.setScale(fraction, 1);
         this.healthBarFill.setVisible(enemy.health > 0);
         this.setShield(enemy.shield);
+        this.setPoison(enemy.poison ?? 0);
+    }
+
+    setPoison (stacks: number): void
+    {
+        if (!this.container.active || !this.poisonBadge.active)
+        {
+            return;
+        }
+
+        this.poisonBadge.setText(`\u2620 ${stacks}`);
+        this.poisonBadge.setVisible(stacks > 0);
+    }
+
+    showPoisonApplied (stacks: number): void
+    {
+        if (stacks <= 0)
+        {
+            return;
+        }
+
+        this.showFloatingNumber(`+${stacks} poison`, '#8fe3a0');
+    }
+
+    showPoisonTick (damage: number): void
+    {
+        if (damage <= 0)
+        {
+            return;
+        }
+
+        this.showFloatingNumber(`-${damage} poison`, '#8fe3a0');
     }
 
     playHitFlash (): void

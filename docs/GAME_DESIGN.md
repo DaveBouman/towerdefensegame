@@ -127,9 +127,10 @@ Deploy (place cards) → Attack (chain resolve) → Board clears → Enemy turn 
 | Rerolls per fight | 3 | `gameRules.json` |
 | Chain start column | 0 | `gameRules.json` |
 | Max chain steps | 24 | `gameRules.json` |
-| Off-chain bonus | +1 damage (attack) / +1 armor (defend) on board but not in chain | `gameRules.json` |
-| Type streak | +8% per duplicate attack/defend in streak | `gameRules.json` |
+| Off-chain bonus | +2 damage (attack) / +2 armor (defend) on board but not in chain | `gameRules.json` |
+| Type streak | +15% per duplicate attack/defend in streak | `gameRules.json` |
 | Field boost | Random boost on empty tile; doubles next chain step | `gameRules.json` |
+| Resolution speed | Chain step 800ms, enemy turn 800ms (snappy) | `gameRules.json` |
 
 ---
 
@@ -138,21 +139,25 @@ Deploy (place cards) → Attack (chain resolve) → Board clears → Enemy turn 
 | System | Files | Player decision |
 |--------|-------|-----------------|
 | Chain routing | `AttackPipeline.ts`, `cardDirections.ts` | Arrow pools, leap (2-tile), loop-reset |
-| Poison trail | `poisonTrailAbility.ts` | Converts subsequent defends to poison damage |
+| Poison trail | `poisonTrailAbility.ts` | Converts subsequent defends to **poison stacks** on the enemy |
+| Poison stacks (status) | `CardGameSession.tickPoison` | Enemy takes `stacks` damage at the start of each of its turns (ignores shield), then stacks decay by 1 |
 | Fire alternation | `fireAlternationAbility.ts` | +3 damage per alternating attack/defend after fire |
-| Hazards/traps | `hazardBehavior.ts` | Disarm in-chain or slot explodes + disables |
-| Shield layer | Both sides | Absorbs before HP |
+| Bleed (Rupture) | `bleedAbility.ts` | +2 damage per attack in the chain beyond 2 (rewards attack-heavy chains) |
+| Fortify (Bulwark) | `fortifyAbility.ts` | +2 armor per defend in the chain beyond 2 (rewards defend-heavy chains) |
+| Overload (Surge) | `overloadAbility.ts` | +3 damage per other skill card in the chain, doubled if a Joker activates |
+| Hazards/traps | `hazardBehavior.ts`, `AttackPipeline.applyBombConversion` | Skip → slot explodes (4 dmg) + disables; **route a card into it → the trap converts to that card's type** (attack→attack for its power, defend→armor) and joins streaks/abilities |
+| Shield layer | Both sides | Absorbs before HP (poison bypasses shield) |
 | Enemy passives | `enemyPassives/` | See enemy roster below |
 
 ### Enemy roster (`cardGame/config/enemies.json`)
 
 | ID | Counter-play |
 |----|--------------|
-| `basic` | Raider — baseline, no passives |
-| `thornward` | Thorns — reflects 2 damage on attack |
-| `saboteur` | Enrage (+2 atk per trap), Silence Tile — punishes long chains / ignored traps |
+| `basic` | Raider — baseline (atk 10, 60% attack), no passives |
+| `thornward` | Thorns — reflects 3 damage on attack |
+| `saboteur` | Enrage (+3 atk per trap), Silence Tile — punishes long chains / ignored traps |
 | `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps) |
-| `smokebinder` | Smoke (blocks poison trail), Loop Hunter (punishes loop-reset) |
+| `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (punishes loop-reset) |
 
 Each enemy should force a **different deck shape and chain strategy**.
 
@@ -215,7 +220,9 @@ Each enemy should force a **different deck shape and chain strategy**.
 | Add/edit cards | `src/game/cardGame/config/cards.json`, `cardRegistry.ts` |
 | Add/edit enemies | `src/game/cardGame/config/enemies.json`, `enemyCatalog.ts`, `enemyPassives/` |
 | Chain behavior | `src/game/cardGame/combat/AttackPipeline.ts` |
-| New card ability | `src/game/cardGame/effects/`, `abilities/` |
+| New card ability | `src/game/cardGame/effects/` (behaviors), `abilities/` (chain abilities: poison/fire/bleed/fortify/overload) + register in `chainAbilityRegistry.ts` |
+| Bomb / trap conversion | `AttackPipeline.applyBombConversion` (runs first in `resolveChainSteps`) |
+| Enemy poison status | `CardGameSession.tickPoison`/`applyPoisonStacks` (via `abilityPoisonStacks`), display in `EnemyTargetView.setPoison` |
 | Enemy turn logic | `src/game/cardGame/combat/enemyTurn.ts` |
 | HUD buttons | `src/ui/components/GameHud.tsx`, `src/game/events/gameEvents.ts` |
 | Tooltips | `src/game/cardGame/presentation/tooltips/` |
@@ -226,6 +233,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-07 | Battle engagement pass. **Tier 1:** raised enemy pressure (`enemies.json` — higher atk/attack-chance, thorns 3, enrage +3), buffed streaks (+15%/dup) and off-chain (+2), sped up resolution (chain/enemy step 800ms), scaled traps (power 4). **Tier 2:** new chain abilities Bleed/Fortify/Overload with reward cards Rupture/Bulwark/Surge (`bleedAbility`/`fortifyAbility`/`overloadAbility`, `cards.json`, `REWARD_CARD_POOL`). **Poison rework:** poison now applies *stacks* to the enemy (`EnemyState.poison`) that deal damage at the start of each enemy turn (ignoring shield) then decay by 1 (`CardGameSession.tickPoison`); `abilityPoisonStacks` flows through the pipeline; smoke suppresses stacks; shown via `EnemyTargetView.setPoison`; poison can kill during the enemy turn (win handled in `Game`). **Bomb conversion:** a card that chains into a trap converts it to that card's type (`AttackPipeline.applyBombConversion`), so it deals attack/armor for the trap's power and joins streaks/abilities. |
 | 2026-07-07 | Map node kinds: nodes are now `enemy`/`boss`/`shop`/`event` (`nodeKinds.ts`) with distinct icons (`NodeKindIcon`) and hover tooltips (`RunMapOverlay`). Shop/event are non-battle placeholders (`NodeVisitOverlay`, `App` phase `visit`) that advance the path. `RunMapNode.enemyId`/`reward` are now battle-only (optional). |
 | 2026-07-07 | Seed-based runs: all randomness routes through a seeded RNG (`random/rng.ts`), reseeded at deterministic boundaries (map / reward / battle). Same seed → same map & rewards; same seed + actions → same battle. Seed viewable/editable on the map before the first fight. |
 | 2026-07-07 | Added victory rewards: defeating an enemy grants a card (`rewards.ts`, `CardRewardOverlay`). Run now owns a persistent, growing deck (card ids) passed into each battle. Rewards are variable per node and structured for future trinkets (`pickCount`, `rerollable`, new `RunReward` kinds). |

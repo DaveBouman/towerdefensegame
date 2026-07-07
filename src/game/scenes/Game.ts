@@ -391,6 +391,15 @@ export class Game extends Scene
                 return;
             }
 
+            if (this.session!.isEnemyDefeated())
+            {
+                this.enemyView?.clearIntent();
+                this.session!.finishPlayerTurn();
+                this.emitAttackReadiness();
+                this.winBattle();
+                return;
+            }
+
             const nextIntent = this.session!.getQueuedEnemyTurn();
 
             if (nextIntent)

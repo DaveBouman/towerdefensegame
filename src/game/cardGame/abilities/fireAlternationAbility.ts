@@ -20,6 +20,7 @@ export const fireAlternationAbility: ChainAbility = {
             enemyDamage,
             playerDamage: 0,
             armorGain: 0,
+            poisonStacks: 0,
         };
     },
 };

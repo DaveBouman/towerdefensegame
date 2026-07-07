@@ -13,7 +13,7 @@ describe('cardRegistry', () =>
 
     it('loads card definitions from cards.json', () =>
     {
-        expect(CARD_DEFINITIONS).toHaveLength(12);
+        expect(CARD_DEFINITIONS).toHaveLength(15);
         expect(getCardDefinition('attack')?.arrowPool).toBe('orthogonal');
         expect(getCardDefinition('defend')?.arrowPool).toBe('orthogonal');
         expect(getCardDefinition('attack-special')?.maxChainActivations).toBe(2);
@@ -38,7 +38,7 @@ describe('cardRegistry', () =>
         expect(GAME_RULES.defaultEnemyId).toBe('basic');
         expect(GAME_RULES.player.maxHealth).toBe(80);
         expect(getDefaultCardGameEnemy().maxHealth).toBe(80);
-        expect(getDefaultCardGameEnemy().attackDamage).toBe(8);
+        expect(getDefaultCardGameEnemy().attackDamage).toBe(10);
         expect(getDefaultCardGameEnemy().shieldGain).toBe(10);
     });
 

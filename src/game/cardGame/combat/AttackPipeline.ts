@@ -339,6 +339,41 @@ const applyChainStacking = (chain: ActivationStep[]): ActivationStep[] =>
         return step;
     });
 
+/**
+ * A card that chains into an enemy trap converts that trap to its own kind: the
+ * bomb detonates as an attack (dealing the trap's power) after a damage step, or
+ * as armor after a defend. Converted bombs then participate in streaks/abilities
+ * like the type they became. Runs before stacking so the conversion is fully
+ * "that type". Unchained traps still explode (see `computeHazardDamage`).
+ */
+export const applyBombConversion = (chain: ActivationStep[]): ActivationStep[] =>
+{
+    const converted: ActivationStep[] = [];
+
+    chain.forEach((step, index) =>
+    {
+        if (index === 0 || !isHazardDefinition(getCardDefinitionOrThrow(step.definitionId)))
+        {
+            converted.push(step);
+
+            return;
+        }
+
+        const previous = converted[index - 1]!;
+        const hazardPower = getCardDefinitionOrThrow(step.definitionId).power;
+        const asDefend = previous.behaviorId === 'defend';
+
+        converted.push({
+            ...step,
+            behaviorId: asDefend ? 'defend' : 'attack',
+            damage: asDefend ? 0 : hazardPower,
+            armor: asDefend ? hazardPower : 0,
+        });
+    });
+
+    return converted;
+};
+
 const applyPoisonArmorReplacement = (chain: ActivationStep[]): ActivationStep[] =>
 {
     const suppressed = getAllDefendIndicesReplacedByPoison(chain);
@@ -438,9 +473,9 @@ export const collectDisarmResults = (
     return results;
 };
 
-/** Applies streak stacking, boost bonuses, and poison armor replacement. */
+/** Applies bomb conversion, streak stacking, boost bonuses, and poison armor replacement. */
 export const resolveChainSteps = (chain: ActivationStep[]): ActivationStep[] =>
-    applyPoisonArmorReplacement(applyBoostBonuses(applyChainStacking(chain)));
+    applyPoisonArmorReplacement(applyBoostBonuses(applyChainStacking(applyBombConversion(chain))));
 
 export const resolveChainStep = (chain: ActivationStep[], index: number): ActivationStep =>
     resolveChainSteps(chain)[index]!;
@@ -474,6 +509,7 @@ export const buildAttackSequence = (
         enemyDamage: 0,
         playerDamage: 0,
         armorGain: 0,
+        poisonStacks: 0,
     };
 
     return {
@@ -487,6 +523,7 @@ export const buildAttackSequence = (
         abilityEnemyDamage: abilities.enemyDamage,
         abilityPlayerDamage: abilities.playerDamage,
         abilityArmorGain: abilities.armorGain,
+        abilityPoisonStacks: abilities.poisonStacks,
         disarmResults,
         stackMultipliers,
         stepMs,

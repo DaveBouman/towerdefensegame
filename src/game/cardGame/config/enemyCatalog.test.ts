@@ -13,7 +13,7 @@ describe('enemyCatalog', () =>
         expect(getCardGameEnemyDefinition('basic')).toMatchObject({
             label: 'Raider',
             maxHealth: 80,
-            attackDamage: 8,
+            attackDamage: 10,
             shieldGain: 10,
             hazardsPerTurn: 1,
         });
@@ -23,7 +23,7 @@ describe('enemyCatalog', () =>
     {
         expect(getCardGameEnemyDefinition('thornward')?.passives[0]).toEqual({
             id: 'thorns',
-            reflectDamage: 2,
+            reflectDamage: 3,
         });
         expect(getCardGameEnemyDefinition('smokebinder')?.passives.map((passive) => passive.id))
             .toEqual([ 'smoke', 'loopHunter' ]);

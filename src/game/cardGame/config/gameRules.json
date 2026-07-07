@@ -1,6 +1,6 @@
 {
-  "activationStepMs": 1500,
-  "enemyTurnMs": 1200,
+  "activationStepMs": 800,
+  "enemyTurnMs": 800,
   "deckSize": 20,
   "handSize": 10,
   "fightRerollsPerFight": 3,
@@ -9,14 +9,14 @@
   },
   "defaultEnemyId": "basic",
   "offChainBonus": {
-    "attackDamage": 1,
-    "defendArmor": 1
+    "attackDamage": 2,
+    "defendArmor": 2
   },
   "hazard": {
     "definitionId": "hazard"
   },
   "typeStackBonus": {
-    "perDuplicate": 0.08
+    "perDuplicate": 0.15
   },
   "fieldBoost": {
     "definitionId": "boost",
@@ -34,6 +34,17 @@
     },
     "fireAlternation": {
       "bonusDamagePerAlternatingStep": 3
+    },
+    "bleed": {
+      "attackThreshold": 2,
+      "bonusPerExtraAttack": 2
+    },
+    "fortify": {
+      "defendThreshold": 2,
+      "armorPerExtraDefend": 2
+    },
+    "overload": {
+      "damagePerAbilityCard": 3
     }
   }
 }

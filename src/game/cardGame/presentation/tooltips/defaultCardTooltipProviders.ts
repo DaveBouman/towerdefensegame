@@ -104,9 +104,31 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
     provider('poison', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: [
-            `Defend cards after this lose armor and deal ${ctx.definition.power} poison damage each.`,
-            'Stops on defends that follow an attack; works alongside Fire and other specials.',
-            'Fire and Poison between this card and a defend do not cancel the trail.',
+            `Defend cards after this lose armor and add ${ctx.definition.power} poison stack(s) each to the enemy.`,
+            'Poison damages the enemy at the start of each of its turns, then weakens by 1.',
+            'Stops on defends that follow an attack; Fire and Poison between do not cancel the trail.',
+        ],
+    })),
+    provider('rupture', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            ...attackLines(ctx),
+            `Bleed: +${GAME_RULES.chainAbilities.bleed.bonusPerExtraAttack} damage for each attack in the chain beyond ${GAME_RULES.chainAbilities.bleed.attackThreshold}.`,
+        ],
+    })),
+    provider('bulwark', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            ...defendLines(ctx),
+            `Fortify: +${GAME_RULES.chainAbilities.fortify.armorPerExtraDefend} armor for each defend in the chain beyond ${GAME_RULES.chainAbilities.fortify.defendThreshold}.`,
+        ],
+    })),
+    provider('surge', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Deals ${ctx.definition.power} damage when activated in the chain.`,
+            `Overload: +${GAME_RULES.chainAbilities.overload.damagePerAbilityCard} damage per other skill card in the chain, doubled if a Joker activates.`,
+            'Uses diagonal arrows.',
         ],
     })),
     provider('fire', (ctx) => ({

@@ -41,6 +41,9 @@ export interface GameRules {
     chainAbilities: {
         poisonTrail: { damagePerSubsequentCard: number };
         fireAlternation: { bonusDamagePerAlternatingStep: number };
+        bleed: { attackThreshold: number; bonusPerExtraAttack: number };
+        fortify: { defendThreshold: number; armorPerExtraDefend: number };
+        overload: { damagePerAbilityCard: number };
     };
 }
 

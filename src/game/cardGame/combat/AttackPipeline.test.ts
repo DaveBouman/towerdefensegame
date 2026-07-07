@@ -215,7 +215,7 @@ describe('AttackPipeline', () =>
         expect(chain[0].definitionId).toBe('attack-special');
         expect(chain[2].definitionId).toBe('attack-special');
         expect(chain[0].slot).toEqual(chain[2].slot);
-        expect(planAttack(board, { row: 0, col: 0 }).totalDamage).toBe(20);
+        expect(planAttack(board, { row: 0, col: 0 }).totalDamage).toBe(22);
     });
 
     it('stops revisiting regular attack cards after the first activation', () =>
@@ -257,7 +257,7 @@ describe('AttackPipeline', () =>
         expect(chain.filter((step) => step.definitionId === 'loop-reset')).toHaveLength(2);
         expect(chain[1]!.exitArrow).toBe('left');
         expect(chain[3]!.exitArrow).toBe('right');
-        expect(planAttack(board, { row: 0, col: 0 }).totalDamage).toBe(10);
+        expect(planAttack(board, { row: 0, col: 0 }).totalDamage).toBe(11);
     });
 
     it('reopens every card before the loop but not cards after it on the return path', () =>
@@ -302,9 +302,9 @@ describe('AttackPipeline', () =>
         const sequence = planAttack(board);
 
         expect(sequence.steps).toHaveLength(2);
-        expect(sequence.totalDamage).toBe(10);
-        expect(sequence.stepMs).toBe(1500);
-        expect(sequence.durationMs).toBe(3000);
+        expect(sequence.totalDamage).toBe(11);
+        expect(sequence.stepMs).toBe(800);
+        expect(sequence.durationMs).toBe(1600);
     });
 
     it('stops at a joker until the player chooses a direction during attack', () =>
@@ -366,7 +366,7 @@ describe('AttackPipeline', () =>
         const bonuses = computeOffChainBonuses(board, chain);
 
         expect(chain).toHaveLength(2);
-        expect(bonuses).toEqual({ damage: 0, armor: 2 });
+        expect(bonuses).toEqual({ damage: 0, armor: 4 });
     });
 
     it('applies chain stacking to repeated attack behaviors', () =>
@@ -379,9 +379,9 @@ describe('AttackPipeline', () =>
 
         const sequence = planAttack(board, { row: 0, col: 0 });
 
-        expect(computeChainTypeMultipliers(sequence.chain)).toEqual({ attack: 1.16 });
+        expect(computeChainTypeMultipliers(sequence.chain)).toEqual({ attack: 1.3 });
         expect(sequence.chain).toHaveLength(3);
-        expect(sequence.totalDamage).toBe(16);
+        expect(sequence.totalDamage).toBe(18);
     });
 
     it('does not reset attack streak across jokers and other skills', () =>
@@ -400,8 +400,8 @@ describe('AttackPipeline', () =>
 
         const sequence = buildAttackSequence(chain);
 
-        expect(sequence.totalDamage).toBe(16);
-        expect(sequence.stackMultipliers).toEqual({ attack: 1.16 });
+        expect(sequence.totalDamage).toBe(23);
+        expect(sequence.stackMultipliers).toEqual({ attack: 1.3 });
     });
 
     it('resets the streak when the stackable behavior changes', () =>
@@ -435,8 +435,8 @@ describe('AttackPipeline', () =>
 
         const chain = planActivationChain(board, { row: 0, col: 0 });
 
-        expect(computeHazardDamage(board, chain)).toBe(3);
-        expect(planAttack(board, { row: 0, col: 0 }).hazardDamage).toBe(3);
+        expect(computeHazardDamage(board, chain)).toBe(4);
+        expect(planAttack(board, { row: 0, col: 0 }).hazardDamage).toBe(4);
     });
 
     it('disarms hazards that were included in the chain', () =>
@@ -463,7 +463,7 @@ describe('AttackPipeline', () =>
         const chain = planActivationChain(board, { row: 0, col: 0 });
         const bonuses = computeOffChainBonuses(board, chain);
 
-        expect(bonuses).toEqual({ damage: 0, armor: 1 });
+        expect(bonuses).toEqual({ damage: 0, armor: 2 });
     });
 
     it('multiplies the next chain step after a field boost', () =>
@@ -495,7 +495,7 @@ describe('AttackPipeline', () =>
             attackStep({ row: 0, col: 2 }, 5),
         ];
 
-        expect(buildAttackSequence(chain).totalDamage).toBe(15);
+        expect(buildAttackSequence(chain).totalDamage).toBe(17);
     });
 
     it('routes through a field boost on the board', () =>
@@ -509,7 +509,7 @@ describe('AttackPipeline', () =>
         const sequence = planAttack(board, { row: 0, col: 0 });
 
         expect(sequence.chain.map((step) => step.behaviorId)).toEqual([ 'attack', 'boost', 'attack' ]);
-        expect(sequence.totalDamage).toBe(15);
+        expect(sequence.totalDamage).toBe(17);
     });
 
     it('doubles fire damage and alternation bonus on the boosted special step only', () =>
@@ -541,6 +541,6 @@ describe('AttackPipeline', () =>
 
         const sequence = planAttack(board, { row: 0, col: 0 });
 
-        expect(sequence.abilityEnemyDamage).toBe(4);
+        expect(sequence.abilityPoisonStacks).toBe(4);
     });
 });

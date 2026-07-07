@@ -89,7 +89,7 @@
     {
       "id": "hazard",
       "label": "Trap",
-      "power": 3,
+      "power": 4,
       "behaviorId": "hazard",
       "visualId": "hazard",
       "arrowPool": "orthogonal"
@@ -101,6 +101,33 @@
       "behaviorId": "boost",
       "visualId": "boost",
       "arrowPool": "orthogonal"
+    },
+    {
+      "id": "rupture",
+      "label": "Rupture",
+      "power": 6,
+      "behaviorId": "attack",
+      "visualId": "attack",
+      "arrowPool": "orthogonal",
+      "chainAbilityIds": [ "bleed" ]
+    },
+    {
+      "id": "bulwark",
+      "label": "Bulwark",
+      "power": 4,
+      "behaviorId": "defend",
+      "visualId": "defend",
+      "arrowPool": "orthogonal",
+      "chainAbilityIds": [ "fortify" ]
+    },
+    {
+      "id": "surge",
+      "label": "Surge",
+      "power": 4,
+      "behaviorId": "attack",
+      "visualId": "fire",
+      "arrowPool": "diagonal",
+      "chainAbilityIds": [ "overload" ]
     }
   ]
 }

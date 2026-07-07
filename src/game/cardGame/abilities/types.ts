@@ -15,6 +15,8 @@ export interface ChainAbilityDamage {
     enemyDamage: number;
     playerDamage: number;
     armorGain: number;
+    /** Poison stacks applied to the enemy (ticks down by 1 each enemy turn). */
+    poisonStacks: number;
 }
 
 /** One resolved ability trigger — add new abilities via the registry. */

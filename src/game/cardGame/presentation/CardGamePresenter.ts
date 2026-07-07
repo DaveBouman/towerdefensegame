@@ -154,6 +154,11 @@ export class CardGamePresenter
                 this.applyEnemyHitResult(this.session.dealAttackDamage(sequence.abilityEnemyDamage));
             }
 
+            if (sequence.abilityPoisonStacks > 0)
+            {
+                this.enemyView.showPoisonApplied(sequence.abilityPoisonStacks);
+            }
+
             const playerAbilityDamage = sequence.abilityPlayerDamage + sequence.hazardDamage;
 
             if (playerAbilityDamage > 0)
@@ -290,6 +295,29 @@ export class CardGamePresenter
 
             this.playEnemyTurnStep(step, turnMs, playStep);
         };
+
+        // Poison ticks first, before the enemy acts — it may finish the enemy off.
+        if (this.session.getEnemyPoison() > 0)
+        {
+            this.scene.time.delayedCall(turnMs / 2, () =>
+            {
+                const result = this.session.tickPoison();
+
+                this.enemyView.setHealth(result.enemy);
+                this.enemyView.showPoisonTick(result.healthDamage);
+                this.enemyView.playHitFlash();
+
+                if (this.session.isEnemyDefeated())
+                {
+                    finishTurn();
+                    return;
+                }
+
+                playStep();
+            });
+
+            return;
+        }
 
         playStep();
     }

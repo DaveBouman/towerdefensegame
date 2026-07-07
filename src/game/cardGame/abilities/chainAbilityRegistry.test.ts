@@ -61,7 +61,7 @@ describe('chain abilities', () =>
         const resolved = resolveChainAbilities(chain, board);
         const scaled = resolveChainSteps(chain);
 
-        expect(resolved.enemyDamage).toBe(2);
+        expect(resolved.poisonStacks).toBe(2);
         expect(scaled[1]?.armor).toBe(0);
         expect(scaled[2]?.armor).toBe(0);
         expect(scaled[4]?.armor).toBe(3);
@@ -84,7 +84,7 @@ describe('chain abilities', () =>
         const resolved = resolveChainAbilities(chain, board);
         const scaled = resolveChainSteps(chain);
 
-        expect(resolved.enemyDamage).toBe(2);
+        expect(resolved.poisonStacks).toBe(2);
         expect(scaled[0]?.armor).toBe(3);
         expect(scaled[2]?.armor).toBe(0);
         expect(scaled[3]?.armor).toBe(0);
@@ -130,7 +130,7 @@ describe('chain abilities', () =>
 
         const sequence = planAttack(board, { row: 0, col: 0 });
 
-        expect(sequence.abilityEnemyDamage).toBe(1);
+        expect(sequence.abilityPoisonStacks).toBe(1);
         expect(sequence.chain[0]?.armor).toBe(3);
         expect(sequence.chain[2]?.armor).toBe(0);
     });
@@ -146,7 +146,7 @@ describe('chain abilities', () =>
         const chain = planActivationChain(board, { row: 0, col: 0 });
 
         expect(chain.map((step) => step.definitionId)).toEqual([ 'poison', 'defend', 'defend' ]);
-        expect(planAttack(board, { row: 0, col: 0 }).abilityEnemyDamage).toBe(2);
+        expect(planAttack(board, { row: 0, col: 0 }).abilityPoisonStacks).toBe(2);
     });
 
     it('adds bonus fire damage when attack and defend alternate after fire', () =>
@@ -205,7 +205,7 @@ describe('chain abilities', () =>
 
         const resolved = resolveChainAbilities(chain, board);
 
-        expect(resolved.enemyDamage).toBe(4);
+        expect(resolved.poisonStacks).toBe(4);
     });
 
     it('stacks fire alternation and poison trail when both are in the chain', () =>
@@ -222,7 +222,8 @@ describe('chain abilities', () =>
         const scaled = resolveChainSteps(chain);
 
         expect(resolved.effects).toHaveLength(2);
-        expect(resolved.enemyDamage).toBe(4);
+        expect(resolved.enemyDamage).toBe(3);
+        expect(resolved.poisonStacks).toBe(1);
         expect(scaled[2]?.armor).toBe(0);
     });
 
@@ -240,7 +241,8 @@ describe('chain abilities', () =>
         const resolved = resolveChainAbilities(chain, board);
         const scaled = resolveChainSteps(chain);
 
-        expect(resolved.enemyDamage).toBe(7);
+        expect(resolved.enemyDamage).toBe(6);
+        expect(resolved.poisonStacks).toBe(1);
         expect(scaled[2]?.armor).toBe(0);
         expect(scaled[4]?.armor).toBe(3);
     });
@@ -258,6 +260,7 @@ describe('chain abilities', () =>
 
         const resolved = resolveChainAbilities(chain, board);
 
-        expect(resolved.enemyDamage).toBe(7);
+        expect(resolved.enemyDamage).toBe(6);
+        expect(resolved.poisonStacks).toBe(1);
     });
 });

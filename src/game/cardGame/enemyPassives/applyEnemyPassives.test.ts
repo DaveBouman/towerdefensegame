@@ -69,7 +69,7 @@ describe('enemy passives', () =>
             enrageStacks: 2,
         });
 
-        expect(action.steps[0]).toEqual({ kind: 'attack', amount: 12 });
+        expect(action.steps[0]).toEqual({ kind: 'attack', amount: 14 });
         expect(action.steps.filter((step) => step.kind === 'place-hazard')).toHaveLength(3);
     });
 
@@ -107,8 +107,8 @@ describe('enemy passives', () =>
             normalizeEnemyPassives([ 'smoke' ]),
         );
 
-        expect(raw.abilityEnemyDamage).toBe(1);
-        expect(adjusted.abilityEnemyDamage).toBe(0);
+        expect(raw.abilityPoisonStacks).toBe(1);
+        expect(adjusted.abilityPoisonStacks).toBe(0);
     });
 
     it('reduces fire alternation while the enemy is shielded', () =>

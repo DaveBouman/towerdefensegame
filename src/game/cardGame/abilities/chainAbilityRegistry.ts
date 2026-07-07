@@ -2,7 +2,10 @@ import { getCardDefinitionOrThrow } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
 import type { ActivationStep } from '../domain/types';
 import { getBoostMultiplierForStep, scaleBoostedValue } from '../combat/chainBoost';
+import { bleedAbility } from './bleedAbility';
 import { fireAlternationAbility } from './fireAlternationAbility';
+import { fortifyAbility } from './fortifyAbility';
+import { overloadAbility } from './overloadAbility';
 import { poisonTrailAbility } from './poisonTrailAbility';
 import type {
     ChainAbility,
@@ -15,6 +18,9 @@ import type {
 const abilities = new Map<string, ChainAbility>([
     [ poisonTrailAbility.id, poisonTrailAbility ],
     [ fireAlternationAbility.id, fireAlternationAbility ],
+    [ bleedAbility.id, bleedAbility ],
+    [ fortifyAbility.id, fortifyAbility ],
+    [ overloadAbility.id, overloadAbility ],
 ]);
 
 export const registerChainAbility = (ability: ChainAbility): void =>
@@ -41,13 +47,21 @@ const emptyDamage = (): ChainAbilityDamage => ({
     enemyDamage: 0,
     playerDamage: 0,
     armorGain: 0,
+    poisonStacks: 0,
 });
 
 const mergeDamage = (total: ChainAbilityDamage, next: ChainAbilityDamage): ChainAbilityDamage => ({
     enemyDamage: total.enemyDamage + next.enemyDamage,
     playerDamage: total.playerDamage + next.playerDamage,
     armorGain: total.armorGain + next.armorGain,
+    poisonStacks: total.poisonStacks + next.poisonStacks,
 });
+
+const isEmptyResult = (result: ChainAbilityDamage): boolean =>
+    result.enemyDamage === 0
+    && result.playerDamage === 0
+    && result.armorGain === 0
+    && result.poisonStacks === 0;
 
 /** Resolves registered chain abilities for every step in the activation chain. */
 export const resolveChainAbilities = (
@@ -80,7 +94,7 @@ export const resolveChainAbilities = (
         {
             const result = getChainAbilityOrThrow(abilityId).resolve(ctx);
 
-            if (!result || (result.enemyDamage === 0 && result.playerDamage === 0 && result.armorGain === 0))
+            if (!result || isEmptyResult(result))
             {
                 continue;
             }
@@ -90,6 +104,7 @@ export const resolveChainAbilities = (
                 enemyDamage: scaleBoostedValue(result.enemyDamage, multiplier),
                 playerDamage: scaleBoostedValue(result.playerDamage, multiplier),
                 armorGain: scaleBoostedValue(result.armorGain, multiplier),
+                poisonStacks: scaleBoostedValue(result.poisonStacks, multiplier),
             };
 
             effects.push({

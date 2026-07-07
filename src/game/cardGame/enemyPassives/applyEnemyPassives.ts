@@ -105,16 +105,18 @@ export const applyEnemyPassivesToSequence = (
 
     let suppressedPoisonCards = smoke?.suppressedPoisonCards ?? 0;
     let abilityEnemyDamage = sequence.abilityEnemyDamage;
+    let abilityPoisonStacks = sequence.abilityPoisonStacks;
     const chainAbilityEffects = sequence.chainAbilityEffects.map((effect) => ({ ...effect }));
 
     for (const effect of chainAbilityEffects)
     {
         if (effect.abilityId === 'poison-trail' && suppressedPoisonCards > 0)
         {
-            abilityEnemyDamage -= effect.enemyDamage;
+            abilityPoisonStacks -= effect.poisonStacks;
             effect.enemyDamage = 0;
             effect.playerDamage = 0;
             effect.armorGain = 0;
+            effect.poisonStacks = 0;
             suppressedPoisonCards -= 1;
             continue;
         }
@@ -131,6 +133,7 @@ export const applyEnemyPassivesToSequence = (
         ...sequence,
         chainAbilityEffects,
         abilityEnemyDamage: Math.max(0, abilityEnemyDamage),
+        abilityPoisonStacks: Math.max(0, abilityPoisonStacks),
     };
 };
 

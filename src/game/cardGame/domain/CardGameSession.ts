@@ -67,6 +67,7 @@ export class CardGameSession
             health: this.enemyDefinition.maxHealth,
             maxHealth: this.enemyDefinition.maxHealth,
             shield: 0,
+            poison: 0,
         };
         const maxHealth = GAME_RULES.player.maxHealth;
         this.player = {
@@ -499,6 +500,12 @@ export class CardGameSession
         const chainArmor = sequence.chain.reduce((sum, step) => sum + step.armor, 0);
 
         this.player.shield += chainArmor + sequence.offChainArmor + sequence.abilityArmorGain;
+
+        if (sequence.abilityPoisonStacks > 0)
+        {
+            this.enemy.poison = (this.enemy.poison ?? 0) + sequence.abilityPoisonStacks;
+        }
+
         this.damageDealtThisAttack = 0;
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_COMPLETED, {
@@ -569,6 +576,45 @@ export class CardGameSession
         this.enemy.shield += shield;
 
         return this.getEnemy();
+    }
+
+    getEnemyPoison (): number
+    {
+        return this.enemy.poison ?? 0;
+    }
+
+    /**
+     * Applies one poison tick to the enemy (poison ignores shield) then decays the
+     * stack count by 1. Called at the start of each enemy turn.
+     */
+    tickPoison (): DamageResult
+    {
+        const stacks = this.enemy.poison ?? 0;
+
+        if (stacks <= 0)
+        {
+            return {
+                enemy: this.getEnemy(),
+                shieldAbsorbed: 0,
+                healthDamage: 0,
+            };
+        }
+
+        const healthDamage = Math.min(this.enemy.health, stacks);
+
+        this.enemy.health = Math.max(0, this.enemy.health - stacks);
+        this.enemy.poison = Math.max(0, stacks - 1);
+
+        if (this.isEnemyDefeated())
+        {
+            CardGameEventBus.emit(CARD_GAME_EVENTS.ENEMY_DEFEATED, { enemy: this.getEnemy() });
+        }
+
+        return {
+            enemy: this.getEnemy(),
+            shieldAbsorbed: 0,
+            healthDamage,
+        };
     }
 
     /** Places an enemy trap on a random empty board slot. */
