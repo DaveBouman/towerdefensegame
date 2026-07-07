@@ -103,11 +103,18 @@ export type AttackRejectReason =
     | 'enemy-turn'
     | 'enemy-defeated'
     | 'player-defeated'
-    | 'no-cards-on-board';
+    | 'no-cards-on-board'
+    | 'no-energy';
 
 export interface AttackReadiness {
     canAttack: boolean;
     reason: AttackRejectReason | null;
+}
+
+export interface TurnState {
+    energy: number;
+    maxEnergy: number;
+    canEndTurn: boolean;
 }
 
 export interface RerollState {

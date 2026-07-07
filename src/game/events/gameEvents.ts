@@ -1,7 +1,9 @@
 export const GAME_EVENTS = {
     ATTACK: 'attack',
+    END_TURN: 'end-turn',
     ATTACK_REJECTED: 'attack-rejected',
     CARD_ATTACK_READY: 'card-attack-ready',
+    TURN_STATE: 'turn-state',
     REROLL_BEGIN: 'reroll-begin',
     REROLL_CONFIRM: 'reroll-confirm',
     REROLL_CANCEL: 'reroll-cancel',

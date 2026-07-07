@@ -450,11 +450,69 @@ describe('CardGameSession enemy turn', () =>
         // Half of a 4x4 board are even (row + col) tiles.
         expect(session.getDampenedSlots()).toHaveLength(8);
 
-        // The field lasts one player turn, then expires when the attack completes.
-        session.completeAttack(session.buildAttackSequence([]));
+        // The field lasts one player turn, then expires when the turn ends.
+        session.tickDampenField();
 
         expect(session.getDampenField()).toBeNull();
         expect(session.getDampenedSlots()).toEqual([]);
+    });
+
+    it('starts the fight with a full energy pool', () =>
+    {
+        const session = new CardGameSession();
+
+        expect(session.getMaxEnergy()).toBe(GAME_RULES.energyPerTurn);
+        expect(session.getEnergy()).toBe(GAME_RULES.energyPerTurn);
+        expect(session.hasEnergy()).toBe(true);
+    });
+
+    it('spends energy and blocks attacking once it runs out', () =>
+    {
+        const session = new CardGameSession();
+
+        session.board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+
+        for (let i = 0; i < GAME_RULES.energyPerTurn; i++)
+        {
+            expect(session.getAttackReadiness().canAttack).toBe(true);
+            expect(session.spendEnergy()).toBe(true);
+        }
+
+        expect(session.getEnergy()).toBe(0);
+        expect(session.spendEnergy()).toBe(false);
+        expect(session.getAttackReadiness()).toEqual({ canAttack: false, reason: 'no-energy' });
+    });
+
+    it('refills the hand up to the hand size without discarding held cards', () =>
+    {
+        const session = new CardGameSession();
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
+        session.placeCardFromHand(0, { row: 1, col: 0 });
+
+        expect(session.getHand()).toHaveLength(GAME_RULES.handSize - 2);
+
+        session.refillHand();
+
+        expect(session.getHand()).toHaveLength(GAME_RULES.handSize);
+    });
+
+    it('resets energy at the start of the next player turn', () =>
+    {
+        const session = new CardGameSession();
+
+        session.spendEnergy();
+        session.spendEnergy();
+        expect(session.getEnergy()).toBe(GAME_RULES.energyPerTurn - 2);
+
+        const action = session.beginEnemyTurn();
+
+        if (action)
+        {
+            session.completeEnemyTurn(action);
+        }
+
+        expect(session.getEnergy()).toBe(GAME_RULES.energyPerTurn);
     });
 
     it('prevents moving or removing enemy hazards', () =>

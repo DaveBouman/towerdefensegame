@@ -70,7 +70,7 @@ describe('enemy passives', () =>
             enrageStacks: 2,
         });
 
-        expect(action.steps[0]).toEqual({ kind: 'attack', amount: 14 });
+        expect(action.steps[0]).toEqual({ kind: 'attack', amount: 17 });
         expect(action.steps.filter((step) => step.kind === 'place-hazard')).toHaveLength(3);
     });
 

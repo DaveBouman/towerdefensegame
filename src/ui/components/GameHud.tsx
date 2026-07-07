@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { EventBus } from '../../game/EventBus';
-import type { AttackReadiness, RerollState } from '../../game/cardGame/domain/types';
+import type { AttackReadiness, RerollState, TurnState } from '../../game/cardGame/domain/types';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
 
 const REJECT_MESSAGES: Record<NonNullable<AttackReadiness['reason']>, string> = {
@@ -9,6 +9,7 @@ const REJECT_MESSAGES: Record<NonNullable<AttackReadiness['reason']>, string> = 
     'enemy-defeated': 'Enemy already defeated.',
     'player-defeated': 'You were defeated.',
     'no-cards-on-board': 'Place cards on the board first.',
+    'no-energy': 'Out of energy — end your turn.',
 };
 
 const DEFAULT_REROLL_STATE: RerollState = {
@@ -19,6 +20,12 @@ const DEFAULT_REROLL_STATE: RerollState = {
     selectedCount: 0,
 };
 
+const DEFAULT_TURN_STATE: TurnState = {
+    energy: 0,
+    maxEnergy: 0,
+    canEndTurn: false,
+};
+
 export const GameHud = () =>
 {
     const [ readiness, setReadiness ] = useState<AttackReadiness>({
@@ -26,6 +33,7 @@ export const GameHud = () =>
         reason: 'no-cards-on-board',
     });
     const [ rerollState, setRerollState ] = useState<RerollState>(DEFAULT_REROLL_STATE);
+    const [ turnState, setTurnState ] = useState<TurnState>(DEFAULT_TURN_STATE);
     const [ rejectMessage, setRejectMessage ] = useState<string | null>(null);
 
     useEffect(() =>
@@ -33,6 +41,11 @@ export const GameHud = () =>
         const onReady = (next: AttackReadiness): void =>
         {
             setReadiness(next);
+        };
+
+        const onTurnState = (next: TurnState): void =>
+        {
+            setTurnState(next);
         };
 
         const onRejected = ({ reason }: { reason: AttackReadiness['reason'] }): void =>
@@ -53,12 +66,14 @@ export const GameHud = () =>
         EventBus.on(GAME_EVENTS.CARD_ATTACK_READY, onReady);
         EventBus.on(GAME_EVENTS.ATTACK_REJECTED, onRejected);
         EventBus.on(GAME_EVENTS.REROLL_STATE, onRerollState);
+        EventBus.on(GAME_EVENTS.TURN_STATE, onTurnState);
 
         return () =>
         {
             EventBus.off(GAME_EVENTS.CARD_ATTACK_READY, onReady);
             EventBus.off(GAME_EVENTS.ATTACK_REJECTED, onRejected);
             EventBus.off(GAME_EVENTS.REROLL_STATE, onRerollState);
+            EventBus.off(GAME_EVENTS.TURN_STATE, onTurnState);
         };
     }, []);
 
@@ -76,10 +91,28 @@ export const GameHud = () =>
 
     return (
         <aside className="game-hud">
+            <div className="game-hud__energy" title="Attacks left this turn">
+                <span className="game-hud__energy-label">Energy</span>
+                <span className="game-hud__energy-pips">
+                    {Array.from({ length: turnState.maxEnergy }, (_, i) => (
+                        <span
+                            key={i}
+                            className={
+                                i < turnState.energy
+                                    ? 'game-hud__energy-pip game-hud__energy-pip--full'
+                                    : 'game-hud__energy-pip'
+                            }
+                        />
+                    ))}
+                </span>
+                <span className="game-hud__energy-count">
+                    {turnState.energy}/{turnState.maxEnergy}
+                </span>
+            </div>
             <p className="game-hud__deploy-hint">
                 {rerollState.rerollModeActive
                     ? 'Click hand cards to select, then confirm reroll.'
-                    : 'Drag cards onto the grid. Arrows show which card activates next.'}
+                    : 'Attack chains through the whole board and keeps it — add cards and attack again to escalate.'}
             </p>
             {rerollState.rerollModeActive ? (
                 <div className="game-hud__reroll-actions">
@@ -116,6 +149,14 @@ export const GameHud = () =>
                 onClick={() => EventBus.emit(GAME_EVENTS.ATTACK)}
             >
                 Attack
+            </button>
+            <button
+                type="button"
+                className="game-hud__end-turn"
+                disabled={!turnState.canEndTurn || rerollState.rerollModeActive}
+                onClick={() => EventBus.emit(GAME_EVENTS.END_TURN)}
+            >
+                End Turn
             </button>
             {rejectMessage && (
                 <p className="game-hud__deploy-hint" role="status">

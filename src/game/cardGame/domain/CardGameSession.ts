@@ -51,6 +51,8 @@ export class CardGameSession
     private readonly silencedSlots = new Set<string>();
     private readonly bombDisabledSlots = new Set<string>();
     private player: PlayerState;
+    private energy: number;
+    private readonly maxEnergy: number;
     private attackInProgress = false;
     private enemyTurnInProgress = false;
     private damageDealtThisAttack = 0;
@@ -90,6 +92,8 @@ export class CardGameSession
                 : buildPlayerDeck()),
         );
         this.rerollsRemaining = GAME_RULES.fightRerollsPerFight;
+        this.maxEnergy = Math.max(1, Math.round(GAME_RULES.energyPerTurn ?? 1));
+        this.energy = this.maxEnergy;
         this.renewHand();
         this.queueNextEnemyTurn();
         this.emitRerollsChanged();
@@ -123,6 +127,55 @@ export class CardGameSession
     getDiscardDefinitionIds (): string[]
     {
         return this.discard.map((card) => card.definitionId);
+    }
+
+    getEnergy (): number
+    {
+        return this.energy;
+    }
+
+    getMaxEnergy (): number
+    {
+        return this.maxEnergy;
+    }
+
+    hasEnergy (): boolean
+    {
+        return this.energy > 0;
+    }
+
+    /** Spends one energy for an attack. Returns false when none remains. */
+    spendEnergy (): boolean
+    {
+        if (this.energy <= 0)
+        {
+            return false;
+        }
+
+        this.energy -= 1;
+
+        return true;
+    }
+
+    private resetEnergy (): void
+    {
+        this.energy = this.maxEnergy;
+    }
+
+    /** Tops the hand back up to the full hand size without discarding held cards. */
+    refillHand (): void
+    {
+        const missing = GAME_RULES.handSize - this.hand.length;
+
+        if (missing <= 0)
+        {
+            return;
+        }
+
+        this.hand.push(...this.drawCards(missing));
+
+        CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
+        this.emitPilesChanged();
     }
 
     private emitPilesChanged (): void
@@ -345,6 +398,22 @@ export class CardGameSession
             : null;
     }
 
+    /** Ages the Dead Zone field by one player turn, expiring it when it runs out. */
+    tickDampenField (): void
+    {
+        if (!this.dampenField)
+        {
+            return;
+        }
+
+        this.dampenField.turnsRemaining -= 1;
+
+        if (this.dampenField.turnsRemaining <= 0)
+        {
+            this.dampenField = null;
+        }
+    }
+
     /** Tiles currently weakened by the Dead Zone field (empty when inactive). */
     getDampenedSlots (): SlotPosition[]
     {
@@ -428,6 +497,11 @@ export class CardGameSession
         if (this.isPlayerDefeated())
         {
             return { canAttack: false, reason: 'player-defeated' };
+        }
+
+        if (this.energy <= 0)
+        {
+            return { canAttack: false, reason: 'no-energy' };
         }
 
         const sequence = planAttack(this.board, this.chainStart);
@@ -566,17 +640,6 @@ export class CardGameSession
         const chainArmor = sequence.chain.reduce((sum, step) => sum + step.armor, 0);
 
         this.player.shield += chainArmor + sequence.offChainArmor + sequence.abilityArmorGain;
-
-        // The Dead Zone field applied to this attack; tick it down and expire.
-        if (this.dampenField)
-        {
-            this.dampenField.turnsRemaining -= 1;
-
-            if (this.dampenField.turnsRemaining <= 0)
-            {
-                this.dampenField = null;
-            }
-        }
 
         if (sequence.abilityPoisonStacks > 0)
         {
@@ -812,6 +875,7 @@ export class CardGameSession
         if (!this.isPlayerDefeated() && !this.isEnemyDefeated())
         {
             this.renewHand();
+            this.resetEnergy();
         }
     }
 

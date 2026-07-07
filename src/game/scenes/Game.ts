@@ -35,6 +35,7 @@ export class Game extends Scene
     private deckView?: CardPileView;
     private graveyardView?: CardPileView;
     private rerollModeActive = false;
+    private turnResolving = false;
     private layout?: BoardLayout;
     private battleActive = false;
     private battleResolved = false;
@@ -57,6 +58,7 @@ export class Game extends Scene
     {
         EventBus.on(GAME_EVENTS.START_BATTLE, this.onStartBattle, this);
         EventBus.on(GAME_EVENTS.ATTACK, this.onAttack, this);
+        EventBus.on(GAME_EVENTS.END_TURN, this.onEndTurn, this);
         EventBus.on(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
         EventBus.on(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
         EventBus.on(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
@@ -87,6 +89,7 @@ export class Game extends Scene
         this.layout = computeBoardLayout(width, height);
         const layout = this.layout;
         this.rerollModeActive = false;
+        this.turnResolving = false;
         this.battleResolved = false;
         this.session = new CardGameSession(enemyId, startHealth, deck);
 
@@ -260,6 +263,7 @@ export class Game extends Scene
         this.scale.off('resize', this.onResize, this);
         EventBus.off(GAME_EVENTS.START_BATTLE, this.onStartBattle, this);
         EventBus.off(GAME_EVENTS.ATTACK, this.onAttack, this);
+        EventBus.off(GAME_EVENTS.END_TURN, this.onEndTurn, this);
         EventBus.off(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
         EventBus.off(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
         EventBus.off(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
@@ -324,7 +328,7 @@ export class Game extends Scene
 
     private onAttack = (): void =>
     {
-        if (!this.session || !this.presenter)
+        if (!this.session || !this.presenter || this.turnResolving)
         {
             return;
         }
@@ -352,28 +356,89 @@ export class Game extends Scene
 
         this.presenter.playAttack(chainStart, (sequence) =>
         {
-            this.finishPlayerRound(sequence);
+            this.onAttackResolved(sequence);
         });
     };
 
-    private finishPlayerRound (sequence: import('../cardGame/domain/types').AttackSequence): void
+    /**
+     * After a chain resolves the board is kept in place so the next attack chains through
+     * a longer, escalating sequence. Spends one energy, refills the hand, and — when energy
+     * runs out — hands the turn to the enemy.
+     */
+    private onAttackResolved (sequence: import('../cardGame/domain/types').AttackSequence): void
     {
-        if (!this.session || !this.presenter || !this.boardView || !this.enemyView)
+        if (!this.session || !this.boardView || !this.enemyView)
         {
             return;
         }
 
         this.session.completeAttack(sequence);
+        this.session.spendEnergy();
+        // Release the attack lock so cards can be added before the next attack.
+        this.session.finishPlayerTurn();
+        this.session.refillHand();
+
+        this.boardView.syncFromBoard(this.session.board);
+        this.boardView.setBlockedSlots(
+            this.session.getSilencedSlots(),
+            this.session.getBombDisabledSlots(),
+        );
+        this.boardView.setDampenedSlots(this.session.getDampenedSlots());
+        this.handView?.syncHand(this.session.getHand());
+        this.enemyView.setHealth(this.session.getEnemy());
+        this.armorView?.setArmor(this.session.getPlayer().shield);
+        this.syncPileViews();
+
+        if (this.session.isEnemyDefeated())
+        {
+            this.enemyView.clearIntent();
+            this.emitAttackReadiness();
+            this.winBattle();
+            return;
+        }
+
+        this.emitAttackReadiness();
+
+        if (!this.session.hasEnergy())
+        {
+            this.onEndTurn();
+        }
+    }
+
+    private onEndTurn = (): void =>
+    {
+        if (!this.session || !this.boardView || this.turnResolving)
+        {
+            return;
+        }
+
+        if (this.session.isAttackInProgress() || this.session.isEnemyTurnInProgress())
+        {
+            return;
+        }
+
+        if (this.session.isEnemyDefeated() || this.session.isPlayerDefeated())
+        {
+            return;
+        }
+
+        if (this.rerollModeActive)
+        {
+            this.onRerollCancel();
+        }
+
+        this.turnResolving = true;
+        this.emitAttackReadiness();
 
         const graveyardTarget = this.graveyardView?.getReceivePosition() ?? { x: 0, y: 0 };
 
         this.boardView.animateCardsToGraveyard(graveyardTarget.x, graveyardTarget.y, () =>
         {
-            this.afterGraveyardAnimation();
+            this.resolveEnemyPhase();
         });
-    }
+    };
 
-    private afterGraveyardAnimation (): void
+    private resolveEnemyPhase (): void
     {
         if (!this.session || !this.boardView || !this.enemyView)
         {
@@ -381,6 +446,7 @@ export class Game extends Scene
         }
 
         this.session.clearBoard();
+        this.session.tickDampenField();
         this.boardView.syncFromBoard(this.session.board);
         this.boardView.setBlockedSlots(
             this.session.getSilencedSlots(),
@@ -396,6 +462,7 @@ export class Game extends Scene
         {
             this.enemyView.clearIntent();
             this.session.finishPlayerTurn();
+            this.turnResolving = false;
             this.emitAttackReadiness();
             this.winBattle();
             return;
@@ -406,6 +473,7 @@ export class Game extends Scene
         if (!enemyTurn)
         {
             this.session.finishPlayerTurn();
+            this.turnResolving = false;
             this.emitAttackReadiness();
             return;
         }
@@ -420,6 +488,7 @@ export class Game extends Scene
             if (this.session!.isPlayerDefeated())
             {
                 this.session!.finishPlayerTurn();
+                this.turnResolving = false;
                 this.emitAttackReadiness();
                 this.loseBattle();
                 return;
@@ -429,6 +498,7 @@ export class Game extends Scene
             {
                 this.enemyView?.clearIntent();
                 this.session!.finishPlayerTurn();
+                this.turnResolving = false;
                 this.emitAttackReadiness();
                 this.winBattle();
                 return;
@@ -456,6 +526,7 @@ export class Game extends Scene
             this.boardView?.setDampenedSlots(this.session!.getDampenedSlots());
             this.syncPileViews();
             this.session!.finishPlayerTurn();
+            this.turnResolving = false;
             this.emitAttackReadiness();
         });
     }
@@ -535,11 +606,32 @@ export class Game extends Scene
 
         this.enemyView?.setHealth(this.session.getEnemy());
         EventBus.emit(GAME_EVENTS.CARD_ATTACK_READY, this.session.getAttackReadiness());
+        this.emitTurnState();
+    }
+
+    private emitTurnState (): void
+    {
+        if (!this.session)
+        {
+            return;
+        }
+
+        const canEndTurn = !this.turnResolving
+            && !this.session.isAttackInProgress()
+            && !this.session.isEnemyTurnInProgress()
+            && !this.session.isEnemyDefeated()
+            && !this.session.isPlayerDefeated();
+
+        EventBus.emit(GAME_EVENTS.TURN_STATE, {
+            energy: this.session.getEnergy(),
+            maxEnergy: this.session.getMaxEnergy(),
+            canEndTurn,
+        });
     }
 
     private onCardDropped (handIndex: number, worldX: number, worldY: number): boolean
     {
-        if (!this.session || !this.boardView || !this.session.canEditBoard())
+        if (!this.session || !this.boardView || !this.session.canEditBoard() || this.turnResolving)
         {
             this.boardView?.clearHighlight();
             return false;
@@ -567,7 +659,7 @@ export class Game extends Scene
 
     private onBoardCardDropped (fromSlot: SlotPosition, worldX: number, worldY: number): boolean
     {
-        if (!this.session || !this.boardView || !this.handView || !this.session.canEditBoard())
+        if (!this.session || !this.boardView || !this.handView || !this.session.canEditBoard() || this.turnResolving)
         {
             this.boardView?.clearHighlight();
             return false;

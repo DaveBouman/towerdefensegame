@@ -117,13 +117,16 @@ battle, and emits `BATTLE_WON` / `BATTLE_LOST` back to React.
 ## Core loop
 
 ```
-Deploy (place cards) → Attack (chain resolve) → Board clears → Enemy turn → New hand + field boost → repeat
+Deploy → Attack (chain resolve, board KEPT, costs 1 energy, hand refills) → repeat until energy = 0 or End Turn → Board clears → Enemy turn → New hand + field boost → repeat
 ```
+
+The player turn is **escalating**: each Attack resolves the whole board and leaves the cards in place, so the next Attack chains through a longer, harder-hitting sequence. Between attacks the hand tops back up to full, letting the deck progress mid-turn. Each Attack spends one **energy** (`energyPerTurn`, default 3); when energy runs out (or the player clicks **End Turn**) the board is discarded and the enemy acts. The Dead Zone (dampen) field now expires at end of turn rather than per attack.
 
 | Rule | Value | Config |
 |------|-------|--------|
 | Player HP | 80 | `gameRules.json` |
 | Deck / hand | 20 / 10 | `gameRules.json` |
+| Energy (attacks) per turn | 3 | `gameRules.json` (`energyPerTurn`) |
 | Rerolls per fight | 3 | `gameRules.json` |
 | Chain start column | 0 | `gameRules.json` |
 | Max chain steps | 24 | `gameRules.json` |
@@ -153,8 +156,8 @@ Deploy (place cards) → Attack (chain resolve) → Board clears → Enemy turn 
 
 | ID | Counter-play |
 |----|--------------|
-| `basic` | Raider — baseline (atk 10, 60% attack), no passives |
-| `thornward` | Thorns — reflects 3 damage on attack |
+| `basic` | Raider — baseline (HP 190, atk 13, 65% attack), no passives |
+| `thornward` | Thorns — reflects 4 damage on attack (punishes multi-attack re-firing) |
 | `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile — trap pressure snowballs |
 | `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps) |
 | `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (punishes loop-reset), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
@@ -233,6 +236,8 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-07 | **Enemy balance pass for the escalating turn** (`enemies.json`). Since a turn now lands up to `energyPerTurn` re-firing attacks, enemy `maxHealth` scaled ~2.3× (Raider 80→190, Thornward 72→170, Saboteur 64→150, Warden 95→220, Smokebinder 78→185) with moderate `attackDamage`/`shieldGain`/`attackChance` bumps so escalating shields don't trivialize them. Thornward's reflect 3→4 and Warden's high shield/Jammer act as natural counters to multi-attack re-firing. Tunable per taste. |
+| 2026-07-07 | **Escalating turn / dynamic play.** A player turn is no longer one-and-done: Attack now resolves the board **without clearing it**, so cards stay and each subsequent Attack chains through a longer, escalating sequence. Each Attack costs **1 energy** (`gameRules.energyPerTurn`, default 3, on `GameRules`); the hand refills to full after every attack (`CardGameSession.refillHand`) so the deck progresses mid-turn. New **End Turn** button (`GAME_EVENTS.END_TURN`) — or running out of energy — discards the board and hands off to the enemy (`Game.onEndTurn` → `resolveEnemyPhase`, formerly the post-attack path). Energy state (`getEnergy`/`getMaxEnergy`/`hasEnergy`/`spendEnergy`, reset each turn in `completeEnemyTurn`) surfaces via `GAME_EVENTS.TURN_STATE` → HUD energy pips + End Turn button (`GameHud`, `TurnState`). New readiness reason `no-energy`. Board edits are locked during end-turn resolution via a `turnResolving` guard in `Game`. Dead Zone/dampen now ages once per turn (`CardGameSession.tickDampenField`, called in `resolveEnemyPhase`) instead of per attack. |
 | 2026-07-07 | **Pile inspection:** the Deck and Graveyard piles are now clickable (`CardPileView.setClickHandler`, hover highlight). Clicking emits `pile-view-open` (`GAME_EVENTS.PILE_VIEW_OPEN`) with grouped card entries built in `Game.openPileView` from `CardGameSession.getDeckDefinitionIds`/`getDiscardDefinitionIds`. A React modal (`PileViewOverlay`, mounted in `App`) shows the cards grouped by type with counts and power, colored by behavior (`CARD_VISUALS`). Draw order is intentionally hidden (grouped/sorted) to avoid leaking upcoming draws. Closes on backdrop click / × / Escape. |
 | 2026-07-07 | New **corner-turn** cards **Corner Strike** (attack, power 6) and **Corner Defense** (defend, power 5) in `cards.json`, flagged `cornerTurn` (`CardDefinition`). The chain steps one tile along the orthogonal arrow then hooks 90° to a forward-diagonal tile, taking whichever side holds a card (fixed order → seed-deterministic) via `AttackPipeline.getCornerNextSlot` + `cardDirections.cornerTargetDirections`; wired into `planActivationChain` and `getNextChainSlotFromStep`. Card shows both hook glyphs (`CardRenderer`), has tooltips, and is added to `REWARD_CARD_POOL`. |
 | 2026-07-07 | Enemy traps now spread out: `CardGameSession.placeEnemyHazard` prefers empty tiles that are not orthogonally/diagonally adjacent to an existing trap, falling back to any empty tile on a crowded board. |

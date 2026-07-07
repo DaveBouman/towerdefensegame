@@ -33,6 +33,7 @@ export interface GameRules {
     enemyTurnMs: number;
     deckSize: number;
     handSize: number;
+    energyPerTurn: number;
     fightRerollsPerFight: number;
     player: { maxHealth: number };
     defaultEnemyId: string;

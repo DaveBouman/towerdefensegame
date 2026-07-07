@@ -12,9 +12,9 @@ describe('enemyCatalog', () =>
         expect(CARD_GAME_ENEMY_DEFINITIONS.length).toBeGreaterThanOrEqual(1);
         expect(getCardGameEnemyDefinition('basic')).toMatchObject({
             label: 'Raider',
-            maxHealth: 80,
-            attackDamage: 10,
-            shieldGain: 10,
+            maxHealth: 190,
+            attackDamage: 13,
+            shieldGain: 13,
             hazardsPerTurn: 1,
         });
     });
@@ -23,7 +23,7 @@ describe('enemyCatalog', () =>
     {
         expect(getCardGameEnemyDefinition('thornward')?.passives[0]).toEqual({
             id: 'thorns',
-            reflectDamage: 3,
+            reflectDamage: 4,
         });
         expect(getCardGameEnemyDefinition('smokebinder')?.passives.map((passive) => passive.id))
             .toEqual([ 'smoke', 'loopHunter', 'dampenTiles' ]);

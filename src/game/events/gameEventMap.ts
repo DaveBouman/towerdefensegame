@@ -1,4 +1,4 @@
-import type { AttackReadiness, RerollState } from '../cardGame/domain/types';
+import type { AttackReadiness, RerollState, TurnState } from '../cardGame/domain/types';
 import type { Scene } from 'phaser';
 
 export interface PileCardEntry {
@@ -17,8 +17,10 @@ export interface PileViewPayload {
 export interface GameEventMap {
     'current-scene-ready': Scene;
     'attack': void;
+    'end-turn': void;
     'attack-rejected': { reason: AttackReadiness['reason'] };
     'card-attack-ready': AttackReadiness;
+    'turn-state': TurnState;
     'reroll-begin': void;
     'reroll-confirm': void;
     'reroll-cancel': void;

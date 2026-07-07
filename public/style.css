@@ -127,6 +127,72 @@ html, body, #root {
     -webkit-font-smoothing: antialiased;
 }
 
+.game-hud__energy {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.game-hud__energy-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #ffd27a;
+    font-weight: 700;
+}
+
+.game-hud__energy-pips {
+    display: inline-flex;
+    gap: 4px;
+}
+
+.game-hud__energy-pip {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 200, 90, 0.55);
+    background: rgba(255, 200, 90, 0.08);
+    transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.game-hud__energy-pip--full {
+    background: #ffca57;
+    box-shadow: 0 0 8px rgba(255, 200, 90, 0.7);
+}
+
+.game-hud__energy-count {
+    font-size: 13px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #ffe6b0;
+}
+
+.game-hud__end-turn {
+    padding: 8px 16px;
+    border: 1px solid #e08a3c;
+    border-radius: 6px;
+    background: #3a271a;
+    color: #f3e0cc;
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.game-hud__end-turn:hover:not(:disabled) {
+    background: #52351f;
+    border-color: #f0a95c;
+}
+
+.game-hud__end-turn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    border-color: #3a3a5c;
+    background: #1a1a2e;
+}
+
 .game-hud__start-wave {
     padding: 8px 16px;
     border: 1px solid #3498db;
