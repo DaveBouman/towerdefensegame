@@ -4,6 +4,7 @@
   "deckSize": 20,
   "handSize": 10,
   "energyPerTurn": 3,
+  "enemyDamageRampPerAttack": 4,
   "fightRerollsPerFight": 3,
   "player": {
     "maxHealth": 80

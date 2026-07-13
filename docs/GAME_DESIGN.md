@@ -122,11 +122,14 @@ Deploy → Attack (chain resolve, board KEPT, costs 1 energy, hand refills) → 
 
 The player turn is **escalating**: each Attack resolves the whole board and leaves the cards in place, so the next Attack chains through a longer, harder-hitting sequence. Between attacks the hand tops back up to full, letting the deck progress mid-turn. Each Attack spends one **energy** (`energyPerTurn`, default 3); when energy runs out (or the player clicks **End Turn**) the board is discarded and the enemy acts. The Dead Zone (dampen) field now expires at end of turn rather than per attack.
 
+**Risk/reward:** the first attack of a round is baseline, but every *extra* attack ramps the enemy's incoming attack damage by `enemyDamageRampPerAttack` (default 4). The enemy intent re-telegraphs the ramped number live as you attack, so chaining more attacks trades bigger combos for a harder hit back.
+
 | Rule | Value | Config |
 |------|-------|--------|
 | Player HP | 80 | `gameRules.json` |
 | Deck / hand | 20 / 10 | `gameRules.json` |
 | Energy (attacks) per turn | 3 | `gameRules.json` (`energyPerTurn`) |
+| Enemy damage ramp per extra attack | +4 | `gameRules.json` (`enemyDamageRampPerAttack`) |
 | Rerolls per fight | 3 | `gameRules.json` |
 | Chain start column | 0 | `gameRules.json` |
 | Max chain steps | 24 | `gameRules.json` |
@@ -236,6 +239,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-07 | **Escalation risk/reward: enemy damage ramps with attacks per round.** Each extra attack the player makes in a round increases the enemy's next attack damage by `gameRules.enemyDamageRampPerAttack` (default 4; first attack is baseline). Ramp derives from spent energy (`CardGameSession.getAttacksThisRound` = `maxEnergy − energy`, `getEnemyDamageRamp`), is baked into attack steps at resolve time (`beginEnemyTurn` → `rampEnemyAction`), and is telegraphed live: after each attack `Game.onAttackResolved` re-shows the scaled intent (`getScaledEnemyIntent`). Attack intent tooltip notes the ramp. |
 | 2026-07-07 | **Enemy balance pass for the escalating turn** (`enemies.json`). Since a turn now lands up to `energyPerTurn` re-firing attacks, enemy `maxHealth` scaled ~2.3× (Raider 80→190, Thornward 72→170, Saboteur 64→150, Warden 95→220, Smokebinder 78→185) with moderate `attackDamage`/`shieldGain`/`attackChance` bumps so escalating shields don't trivialize them. Thornward's reflect 3→4 and Warden's high shield/Jammer act as natural counters to multi-attack re-firing. Tunable per taste. |
 | 2026-07-07 | **Escalating turn / dynamic play.** A player turn is no longer one-and-done: Attack now resolves the board **without clearing it**, so cards stay and each subsequent Attack chains through a longer, escalating sequence. Each Attack costs **1 energy** (`gameRules.energyPerTurn`, default 3, on `GameRules`); the hand refills to full after every attack (`CardGameSession.refillHand`) so the deck progresses mid-turn. New **End Turn** button (`GAME_EVENTS.END_TURN`) — or running out of energy — discards the board and hands off to the enemy (`Game.onEndTurn` → `resolveEnemyPhase`, formerly the post-attack path). Energy state (`getEnergy`/`getMaxEnergy`/`hasEnergy`/`spendEnergy`, reset each turn in `completeEnemyTurn`) surfaces via `GAME_EVENTS.TURN_STATE` → HUD energy pips + End Turn button (`GameHud`, `TurnState`). New readiness reason `no-energy`. Board edits are locked during end-turn resolution via a `turnResolving` guard in `Game`. Dead Zone/dampen now ages once per turn (`CardGameSession.tickDampenField`, called in `resolveEnemyPhase`) instead of per attack. |
 | 2026-07-07 | **Pile inspection:** the Deck and Graveyard piles are now clickable (`CardPileView.setClickHandler`, hover highlight). Clicking emits `pile-view-open` (`GAME_EVENTS.PILE_VIEW_OPEN`) with grouped card entries built in `Game.openPileView` from `CardGameSession.getDeckDefinitionIds`/`getDiscardDefinitionIds`. A React modal (`PileViewOverlay`, mounted in `App`) shows the cards grouped by type with counts and power, colored by behavior (`CARD_VISUALS`). Draw order is intentionally hidden (grouped/sorted) to avoid leaking upcoming draws. Closes on backdrop click / × / Escape. |

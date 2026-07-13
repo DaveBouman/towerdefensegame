@@ -397,6 +397,14 @@ export class Game extends Scene
             return;
         }
 
+        // Re-telegraph the enemy: more attacks this round ramp its incoming damage.
+        const scaledIntent = this.session.getScaledEnemyIntent();
+
+        if (scaledIntent)
+        {
+            this.enemyView.showIntent(scaledIntent);
+        }
+
         this.emitAttackReadiness();
 
         if (!this.session.hasEnergy())

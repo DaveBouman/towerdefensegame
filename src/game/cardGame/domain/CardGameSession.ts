@@ -144,6 +144,47 @@ export class CardGameSession
         return this.energy > 0;
     }
 
+    /** Attacks the player has taken so far this round (one energy spent per attack). */
+    getAttacksThisRound (): number
+    {
+        return this.maxEnergy - this.energy;
+    }
+
+    /** Bonus damage the enemy gains for the player's escalating attacks this round. */
+    getEnemyDamageRamp (): number
+    {
+        const perAttack = Math.max(0, GAME_RULES.enemyDamageRampPerAttack ?? 0);
+
+        // The first attack of a round is baseline; each additional attack ramps enemy damage.
+        return Math.max(0, this.getAttacksThisRound() - 1) * perAttack;
+    }
+
+    /** Applies the round's escalation ramp to an enemy action's attack steps. */
+    private rampEnemyAction (action: EnemyTurnAction): EnemyTurnAction
+    {
+        const bonus = this.getEnemyDamageRamp();
+
+        if (bonus <= 0)
+        {
+            return { ...action, steps: action.steps.map((step) => ({ ...step })) };
+        }
+
+        return {
+            ...action,
+            steps: action.steps.map((step) => (
+                step.kind === 'attack'
+                    ? { ...step, amount: (step.amount ?? 0) + bonus }
+                    : { ...step }
+            )),
+        };
+    }
+
+    /** The queued enemy turn scaled by the current round ramp (for telegraphing). */
+    getScaledEnemyIntent (): EnemyTurnAction | null
+    {
+        return this.queuedEnemyTurn ? this.rampEnemyAction(this.queuedEnemyTurn) : null;
+    }
+
     /** Spends one energy for an attack. Returns false when none remains. */
     spendEnergy (): boolean
     {
@@ -676,7 +717,8 @@ export class CardGameSession
         // Expire shield that was not fully used during the player's turn.
         this.enemy.shield = 0;
 
-        const action = { ...this.queuedEnemyTurn };
+        // Bake the round's escalation ramp into the attack the enemy is about to make.
+        const action = this.rampEnemyAction(this.queuedEnemyTurn);
 
         this.queuedEnemyTurn = null;
         this.enemyTurnInProgress = true;

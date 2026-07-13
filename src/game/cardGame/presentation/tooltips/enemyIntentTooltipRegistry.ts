@@ -24,6 +24,7 @@ export const resolveEnemyIntentTooltip = (
                         ? `Will deal ${step.amount ?? 0} damage to you after your turn.`
                         : `Deals ${step.amount ?? 0} damage to you.`,
                     'Enemy shield absorbs damage first.',
+                    'Each extra attack you make this round ramps this damage.',
                 ],
             };
         case 'shield':

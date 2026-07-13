@@ -515,6 +515,45 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getEnergy()).toBe(GAME_RULES.energyPerTurn);
     });
 
+    it('ramps enemy damage with each extra attack in a round', () =>
+    {
+        const session = new CardGameSession();
+        const perAttack = GAME_RULES.enemyDamageRampPerAttack;
+
+        expect(session.getAttacksThisRound()).toBe(0);
+        expect(session.getEnemyDamageRamp()).toBe(0);
+
+        session.spendEnergy();
+        expect(session.getAttacksThisRound()).toBe(1);
+        // The first attack of a round is baseline — no ramp yet.
+        expect(session.getEnemyDamageRamp()).toBe(0);
+
+        session.spendEnergy();
+        expect(session.getEnemyDamageRamp()).toBe(perAttack);
+
+        session.spendEnergy();
+        expect(session.getEnemyDamageRamp()).toBe(perAttack * 2);
+    });
+
+    it('bakes the round ramp into a scaled attack intent', () =>
+    {
+        const session = new CardGameSession();
+        const perAttack = GAME_RULES.enemyDamageRampPerAttack;
+
+        // Force a known attack intent so the ramp is deterministic.
+        (session as unknown as { queuedEnemyTurn: unknown }).queuedEnemyTurn = {
+            enemyId: 'basic',
+            steps: [ { kind: 'attack', amount: 10 } ],
+        };
+
+        session.spendEnergy();
+        session.spendEnergy();
+
+        const scaled = session.getScaledEnemyIntent();
+
+        expect(scaled?.steps[0]).toEqual({ kind: 'attack', amount: 10 + perAttack });
+    });
+
     it('prevents moving or removing enemy hazards', () =>
     {
         const session = new CardGameSession();
