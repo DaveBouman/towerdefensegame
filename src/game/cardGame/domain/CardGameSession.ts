@@ -1379,7 +1379,8 @@ export class CardGameSession
         this.enemyTurnInProgress = false;
     }
 
-    finishEnemyPhase (): void
+    /** Enemy-side cleanup after all combatants in the current phase have acted. */
+    completeEnemyPhase (): void
     {
         this.enemyPhaseQueue.length = 0;
         this.enemyPhasePrepared = false;
@@ -1407,22 +1408,51 @@ export class CardGameSession
         {
             this.queueNextEnemyTurn();
         }
+    }
 
-        if (!this.isPlayerDefeated() && !this.isEnemyDefeated())
+    /** Refreshes the player between attacks in the same energy round (board persists). */
+    refreshPlayerAfterMidRoundEnemy (): void
+    {
+        if (this.isPlayerDefeated() || this.isEnemyDefeated())
         {
-            this.renewHand();
+            return;
+        }
 
-            if (this.energy <= 0)
-            {
-                this.resetEnergy();
-                this.clearBattleModifiers();
-            }
-            else
-            {
-                this.clearTransientBattleModifiers();
-            }
+        this.refillHand();
+        this.clearTransientBattleModifiers();
+        this.applyEnemyCurseHand();
+    }
 
-            this.applyEnemyCurseHand();
+    /** Starts the next energy round after the board has been cleared. */
+    finishPlayerRound (): void
+    {
+        if (this.isPlayerDefeated() || this.isEnemyDefeated())
+        {
+            return;
+        }
+
+        this.renewHand();
+        this.resetEnergy();
+        this.clearBattleModifiers();
+        this.applyEnemyCurseHand();
+    }
+
+    finishEnemyPhase (): void
+    {
+        this.completeEnemyPhase();
+
+        if (this.isPlayerDefeated() || this.isEnemyDefeated())
+        {
+            return;
+        }
+
+        if (this.energy <= 0)
+        {
+            this.finishPlayerRound();
+        }
+        else
+        {
+            this.refreshPlayerAfterMidRoundEnemy();
         }
     }
 
@@ -1626,7 +1656,12 @@ export class CardGameSession
             return;
         }
 
-        this.finishEnemyPhase();
+        this.completeEnemyPhase();
+
+        if (this.energy > 0)
+        {
+            this.refreshPlayerAfterMidRoundEnemy();
+        }
     }
 
     /** Clears player cards from the board at end of player round (before the enemy acts). */

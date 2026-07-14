@@ -58,6 +58,11 @@ describe('CardGameSession enemy turn', () =>
         session.placeCardFromHand(0, { row: 0, col: 0 });
         session.clearBoard();
 
+        for (let i = session.getEnergy(); i > 0; i--)
+        {
+            session.spendEnergy();
+        }
+
         const action = session.beginEnemyTurn();
 
         expect(action).not.toBeNull();
@@ -65,6 +70,7 @@ describe('CardGameSession enemy turn', () =>
         if (action)
         {
             session.completeEnemyTurn(action);
+            session.finishPlayerRound();
         }
 
         expect(session.getHand()).toHaveLength(GAME_RULES.handSize);
@@ -308,6 +314,7 @@ describe('CardGameSession enemy turn', () =>
         if (resetAction)
         {
             session.completeEnemyTurn(resetAction);
+            session.finishPlayerRound();
         }
 
         session.resolveEnemyAttack(10);
@@ -495,16 +502,23 @@ describe('CardGameSession enemy turn', () =>
             ],
         });
 
+        for (let i = session.getEnergy(); i > 0; i--)
+        {
+            session.spendEnergy();
+        }
+
         const action = session.beginEnemyTurn();
 
         if (action?.steps.some((step) => step.kind === 'shield'))
         {
             session.completeEnemyTurn(action);
+            session.finishPlayerRound();
         }
         else if (action)
         {
             session.resolveEnemyAttack(action.amount);
             session.completeEnemyTurn(action);
+            session.finishPlayerRound();
         }
 
         expect(session.getPlayer().shield).toBe(0);
@@ -809,6 +823,7 @@ describe('CardGameSession enemy turn', () =>
         if (action2)
         {
             session.completeEnemyTurn(action2);
+            session.finishPlayerRound();
         }
 
         expect(session.getEnergy()).toBe(GAME_RULES.energyPerTurn);

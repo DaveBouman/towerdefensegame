@@ -486,8 +486,8 @@ export class Game extends Scene
     };
 
     /**
-     * After a chain resolves: spend energy, then the enemy responds only once
-     * the player has spent all energy for the round.
+     * After a chain resolves: spend energy, then the enemy responds. The board
+     * persists until all energy for the round is spent.
      */
     private onAttackResolved (sequence: import('../cardGame/domain/types').AttackSequence): void
     {
@@ -552,25 +552,11 @@ export class Game extends Scene
             return;
         }
 
-        if (this.session.getEnergy() > 0)
-        {
-            this.session.refillHand();
-            this.handView?.syncHand(this.session.getHand());
-            this.session.placeFieldBoost();
-            this.syncBoardFromSession();
-            this.syncPileViews();
-            this.emitAttackReadiness();
-            return;
-        }
-
-        this.emitAttackReadiness();
-        this.endPlayerRound();
+        this.beginPostAttackPhase();
     }
 
-    /**
-     * End of player round (energy depleted): graveyard animation, board clear, enemy phase.
-     */
-    private endPlayerRound = (): void =>
+    /** Enemy response after each attack; board clear only when energy is depleted. */
+    private beginPostAttackPhase (): void
     {
         if (!this.session || !this.boardView || this.turnResolving)
         {
@@ -594,13 +580,12 @@ export class Game extends Scene
 
         this.turnResolving = true;
         this.emitAttackReadiness();
+        this.resolveEnemyPhase();
+    }
 
-        const graveyardTarget = this.graveyardView?.getReceivePosition() ?? { x: 0, y: 0 };
-
-        this.boardView.animateCardsToGraveyard(graveyardTarget.x, graveyardTarget.y, () =>
-        {
-            this.resolveEnemyPhase();
-        });
+    private endPlayerRound = (): void =>
+    {
+        this.beginPostAttackPhase();
     };
 
     private onEndTurn = (): void =>
@@ -615,7 +600,7 @@ export class Game extends Scene
             return;
         }
 
-        if (!this.session.isEnemyDefeated())
+        if (!this.session.isEnemyDefeated() && this.session.getEnergy() <= 0)
         {
             this.session.resolveHandEndPenalties();
             this.playerView?.setHealth(this.session.getPlayer());
@@ -629,24 +614,6 @@ export class Game extends Scene
                 this.loseBattle();
                 return;
             }
-        }
-
-        this.session.clearBoard();
-        this.session.tickDampenField();
-        this.syncBoardFromSession();
-        this.graveyardView?.pulse();
-        this.syncPileViews();
-        this.enemySquad.syncFromSession(this.session);
-        this.armorView?.setArmor(this.session.getPlayer().shield);
-
-        if (this.session.isEnemyDefeated())
-        {
-            this.enemySquad.clearIntent();
-            this.session.releaseAttackLock();
-            this.turnResolving = false;
-            this.emitAttackReadiness();
-            this.winBattle();
-            return;
         }
 
         const finishEnemyPhase = (): void =>
@@ -673,16 +640,40 @@ export class Game extends Scene
                 return;
             }
 
-            this.enemySquad?.showAllIntents(this.session!);
+            if (this.session!.getEnergy() > 0)
+            {
+                this.enemySquad?.showAllIntents(this.session!);
+                this.handView?.syncHand(this.session!.getHand());
+                this.armorView?.setArmor(this.session!.getPlayer().shield);
+                this.session!.placeFieldBoost();
+                this.syncBoardFromSession();
+                this.syncPileViews();
+                this.session!.releaseAttackLock();
+                this.turnResolving = false;
+                this.emitAttackReadiness();
+                return;
+            }
 
-            this.handView?.syncHand(this.session!.getHand());
-            this.armorView?.setArmor(this.session!.getPlayer().shield);
-            this.session!.placeFieldBoost();
-            this.syncBoardFromSession();
-            this.syncPileViews();
-            this.session!.releaseAttackLock();
-            this.turnResolving = false;
-            this.emitAttackReadiness();
+            const graveyardTarget = this.graveyardView?.getReceivePosition() ?? { x: 0, y: 0 };
+
+            this.boardView!.animateCardsToGraveyard(graveyardTarget.x, graveyardTarget.y, () =>
+            {
+                this.session!.clearBoard();
+                this.session!.tickDampenField();
+                this.syncBoardFromSession();
+                this.graveyardView?.pulse();
+                this.syncPileViews();
+                this.session!.finishPlayerRound();
+                this.enemySquad?.showAllIntents(this.session!);
+                this.handView?.syncHand(this.session!.getHand());
+                this.armorView?.setArmor(this.session!.getPlayer().shield);
+                this.session!.placeFieldBoost();
+                this.syncBoardFromSession();
+                this.syncPileViews();
+                this.session!.releaseAttackLock();
+                this.turnResolving = false;
+                this.emitAttackReadiness();
+            });
         };
 
         const playEnemyResponse = (): void =>
