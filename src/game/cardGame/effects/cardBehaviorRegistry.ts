@@ -3,6 +3,7 @@ import { battleModBehavior } from './battleModBehavior';
 import { boostBehavior } from './boostBehavior';
 import { curseBehavior } from './curseBehavior';
 import { defendBehavior } from './defendBehavior';
+import { echoBehavior } from './echoBehavior';
 import { fireBehavior } from './fireBehavior';
 import { hazardBehavior } from './hazardBehavior';
 import { jokerBehavior } from './jokerBehavior';
@@ -16,6 +17,7 @@ const behaviors = new Map<string, CardBehavior>([
     [ curseBehavior.id, curseBehavior ],
     [ boostBehavior.id, boostBehavior ],
     [ defendBehavior.id, defendBehavior ],
+    [ echoBehavior.id, echoBehavior ],
     [ fireBehavior.id, fireBehavior ],
     [ hazardBehavior.id, hazardBehavior ],
     [ jokerBehavior.id, jokerBehavior ],

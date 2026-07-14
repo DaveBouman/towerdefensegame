@@ -27,6 +27,7 @@ describe('visualEffectRegistry', () =>
             'hardwire',
             'patch',
             'overclock',
+            'echo',
         ];
 
         for (const id of visualIds)

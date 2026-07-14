@@ -3,6 +3,7 @@ import { boostGlowVisual } from './boostGlowVisual';
 import { courierGlowVisual } from './courierGlowVisual';
 import { curseGlowVisual } from './curseGlowVisual';
 import { defendGlowVisual } from './defendGlowVisual';
+import { echoGlowVisual } from './echoGlowVisual';
 import { fireGlowVisual } from './fireGlowVisual';
 import { fuseGlowVisual } from './fuseGlowVisual';
 import { hazardGlowVisual } from './hazardGlowVisual';
@@ -16,6 +17,7 @@ const effects = new Map<string, CardVisualEffect>([
     [ boostGlowVisual.id, boostGlowVisual ],
     [ courierGlowVisual.id, courierGlowVisual ],
     [ defendGlowVisual.id, defendGlowVisual ],
+    [ echoGlowVisual.id, echoGlowVisual ],
     [ fireGlowVisual.id, fireGlowVisual ],
     [ hazardGlowVisual.id, hazardGlowVisual ],
     [ jokerGlowVisual.id, jokerGlowVisual ],

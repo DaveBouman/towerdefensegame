@@ -92,6 +92,9 @@ const buildStepContext = (
 export const isJokerDefinition = (definition: CardDefinition): boolean =>
     definition.behaviorId === 'joker';
 
+export const isEchoDefinition = (definition: CardDefinition): boolean =>
+    definition.behaviorId === 'echo';
+
 export const isHazardDefinition = (definition: CardDefinition): boolean =>
     definition.behaviorId === 'hazard';
 

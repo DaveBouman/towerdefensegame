@@ -13,7 +13,7 @@ describe('cardRegistry', () =>
 
     it('loads card definitions from cards.json', () =>
     {
-        expect(CARD_DEFINITIONS).toHaveLength(30);
+        expect(CARD_DEFINITIONS).toHaveLength(31);
         expect(getCardDefinition('corner-strike')?.cornerTurn).toBe(true);
         expect(getCardDefinition('corner-defense')?.behaviorId).toBe('defend');
         expect(getCardDefinition('attack')?.arrowPool).toBe('orthogonal');

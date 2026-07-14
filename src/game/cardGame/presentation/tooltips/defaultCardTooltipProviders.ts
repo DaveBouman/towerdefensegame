@@ -116,6 +116,14 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             `Chain jumps ${getChainStepDistance(ctx.definition)} tiles in that direction.`,
         ],
     })),
+    provider('echo', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            'Re-activates the previous chain card when this step resolves.',
+            'Repeats its damage, armor, and battle modifiers — then this card activates normally.',
+            'Does nothing when it is the first card in the chain.',
+        ],
+    })),
     provider('loop-reset', (ctx) =>
     {
         const loopArrow = ctx.card.loopArrow ?? ctx.card.arrow;

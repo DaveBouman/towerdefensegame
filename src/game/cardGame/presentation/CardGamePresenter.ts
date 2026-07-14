@@ -7,11 +7,13 @@ import {
     getOffChainSlots,
     getUnchainedHazardSlots,
     isBoostedChainStep,
+    isEchoDefinition,
     isJokerDefinition,
     resolveChainSteps,
     tryBuildActivationStep,
     createChainWalkState,
 } from '../combat/AttackPipeline';
+import { getEchoReplayTarget } from '../combat/echoReplay';
 import { describeBattleModifier, formatBattleModifierDelta } from '../combat/battleModifiers';
 import type { ActivationStep, AttackSequence, AttackStep, EnemyTurnAction, EnemyTurnStep, SlotPosition } from '../domain/types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
@@ -266,6 +268,21 @@ export class CardGamePresenter
             const resolvedChain = resolveChainSteps(chain);
             const resolvedStep = resolvedChain[stepIndex]!;
             const boosted = isBoostedChainStep(resolvedChain, stepIndex);
+
+            if (isEchoDefinition(definition))
+            {
+                const replay = getEchoReplayTarget(chain, stepIndex);
+
+                if (replay)
+                {
+                    this.replayPriorStep(
+                        replay,
+                        chain,
+                        attackSteps,
+                        buildCurrentSequence,
+                    );
+                }
+            }
 
             this.activateStep(step, boosted);
 
@@ -565,6 +582,93 @@ export class CardGamePresenter
                 this.playerView.showDamageNumber(result.thornsHealthDamage!);
             }
         }
+    }
+
+    private replayPriorStep (
+        replay: import('../combat/echoReplay').EchoReplayTarget,
+        chain: ActivationStep[],
+        attackSteps: AttackStep[],
+        buildCurrentSequence: () => AttackSequence,
+    ): void
+    {
+        const { step: prevStep, resolved: prevResolved } = replay;
+        const prevIndex = chain.indexOf(prevStep);
+        const prevBoosted = prevIndex >= 0 && isBoostedChainStep(resolveChainSteps(chain), prevIndex);
+
+        this.pulsePriorStep(prevStep, prevBoosted);
+
+        if (prevResolved.behaviorId === 'battle-mod')
+        {
+            this.session.addBattleModifierFromCard(prevStep.definitionId);
+
+            const definition = getCardDefinitionOrThrow(prevStep.definitionId);
+
+            if (definition.battleModifier)
+            {
+                const target = this.boardView.getCardVisualTarget(prevStep.slot);
+
+                if (target)
+                {
+                    playFloatingText(
+                        this.scene,
+                        target.wrapper,
+                        target.width / 2,
+                        target.height * 0.22,
+                        formatBattleModifierDelta(definition.battleModifier.delta),
+                        definition.battleModifier.delta > 0 ? '#fcee0a' : '#ff6b8a',
+                    );
+                }
+            }
+        }
+
+        if (prevResolved.damage > 0)
+        {
+            const result = this.session.dealAttackDamage(prevResolved.damage);
+            this.applyEnemyHitResult(result);
+
+            attackSteps.push({
+                slot: prevResolved.slot,
+                card: prevResolved.card,
+                definitionId: prevResolved.definitionId,
+                damage: prevResolved.damage,
+                behaviorId: prevResolved.behaviorId,
+                visualId: prevResolved.visualId,
+            });
+            this.session.emitAttackStep(attackSteps.length - 1, buildCurrentSequence());
+        }
+
+        if (prevResolved.armor > 0)
+        {
+            this.grantStepArmor(prevStep, chain);
+        }
+    }
+
+    private pulsePriorStep (prevStep: ActivationStep, boosted: boolean): void
+    {
+        const target = this.boardView.getCardVisualTarget(prevStep.slot);
+
+        if (!target)
+        {
+            return;
+        }
+
+        this.boardView.bringCardToFront(prevStep.slot);
+        getCardVisualEffectOrThrow(prevStep.visualId).activate(this.scene, target);
+
+        if (boosted)
+        {
+            boostedBuffVisual.activate(this.scene, target);
+        }
+
+        this.scene.time.delayedCall(180, () =>
+        {
+            getCardVisualEffectOrThrow(prevStep.visualId).deactivate(this.scene, target);
+
+            if (boosted)
+            {
+                boostedBuffVisual.deactivate(this.scene, target);
+            }
+        });
     }
 
     private activateStep (step: ActivationStep, boosted = false): void

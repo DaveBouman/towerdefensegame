@@ -21,7 +21,8 @@ describe('buildPlayerDeck', () =>
         expect(deck.filter((card) => card.definitionId === 'fire')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'attack-leap')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'defend-leap')).toHaveLength(2);
-        expect(deck.filter((card) => card.definitionId === 'joker')).toHaveLength(2);
+        expect(deck.filter((card) => card.definitionId === 'joker')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'echo')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'loop-reset')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'shiv')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'cinder')).toHaveLength(1);
@@ -73,7 +74,7 @@ describe('buildPlayerDeck', () =>
             return getCardDefinitionOrThrow(card.definitionId).arrowPool !== 'diagonal';
         });
 
-        expect(orthogonalCards).toHaveLength(15);
+        expect(orthogonalCards).toHaveLength(16);
 
         const countDirection = (direction: typeof ORTHOGONAL_DIRECTIONS[number]): number =>
             orthogonalCards.reduce((count, card) =>

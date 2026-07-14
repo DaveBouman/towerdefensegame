@@ -8,6 +8,7 @@ import poisonSvg from './000000/transparent/1x1/lorc/poison-bottle.svg?raw';
 import fireSvg from './000000/transparent/1x1/sbed/fire.svg?raw';
 import curseSvg from './000000/transparent/1x1/sbed/death-skull.svg?raw';
 import fuseSvg from './000000/transparent/1x1/lorc/time-bomb.svg?raw';
+import echoSvg from './000000/transparent/1x1/lorc/echo-ripples.svg?raw';
 import courierSvg from './000000/transparent/1x1/quoting/card-play.svg?raw';
 import { toWhiteIconSvg } from './toWhiteIconSvg';
 
@@ -23,6 +24,7 @@ export type CardBehaviorIconId =
     | 'fire'
     | 'curse'
     | 'fuse'
+    | 'echo'
     | 'courier';
 
 /** Icons from https://game-icons.net (see src/ui/icons/license.txt). */
@@ -37,6 +39,7 @@ export const CARD_BEHAVIOR_TEXTURE_KEY: Record<CardBehaviorIconId, string> = {
     fire: 'card-icon-fire',
     curse: 'card-icon-curse',
     fuse: 'card-icon-fuse',
+    echo: 'card-icon-echo',
     courier: 'card-icon-courier',
 };
 
@@ -51,6 +54,7 @@ const CARD_BEHAVIOR_SVG_RAW: Record<CardBehaviorIconId, string> = {
     fire: toWhiteIconSvg(fireSvg),
     curse: toWhiteIconSvg(curseSvg),
     fuse: toWhiteIconSvg(fuseSvg),
+    echo: toWhiteIconSvg(echoSvg),
     courier: toWhiteIconSvg(courierSvg),
 };
 

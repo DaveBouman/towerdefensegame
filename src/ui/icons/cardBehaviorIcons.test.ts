@@ -16,6 +16,8 @@ describe('cardBehaviorIcons', () =>
             'fire',
             'curse',
             'fuse',
+            'echo',
+            'courier',
         ];
 
         for (const behaviorId of behaviors)

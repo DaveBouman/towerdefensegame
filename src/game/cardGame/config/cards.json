@@ -268,6 +268,14 @@
       "visualId": "overclock",
       "arrowPool": "orthogonal",
       "battleModifier": { "stat": "player-damage-dealt", "delta": 0.1 }
+    },
+    {
+      "id": "echo",
+      "label": "Echo",
+      "power": 0,
+      "behaviorId": "echo",
+      "visualId": "echo",
+      "arrowPool": "orthogonal"
     }
   ]
 }

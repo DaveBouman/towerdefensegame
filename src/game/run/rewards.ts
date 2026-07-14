@@ -69,6 +69,7 @@ export const REWARD_CARD_POOL: readonly string[] = [
     'hardwire',
     'patch',
     'overclock',
+    'echo',
     'courier',
 ];
 
@@ -102,6 +103,7 @@ const CARD_BLURBS: Record<string, string> = {
     hardwire: 'Shield gained +10% from defend cards and armor effects.',
     patch: 'Damage taken -10% from enemy attacks and reflect damage.',
     overclock: 'Damage dealt +10% from your attack steps and bonuses.',
+    echo: 'Re-activates the previous chain card — repeats its damage, armor, and modifiers.',
     courier: 'Discards 2 hand cards to the graveyard when played. Single use per run.',
 };
 

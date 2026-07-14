@@ -6,6 +6,7 @@ export const TRAIL_NEUTRAL_BEHAVIORS = new Set([
     'poison',
     'loop-reset',
     'hazard',
+    'echo',
 ]);
 
 export const isTrailNeutralBehavior = (behaviorId: string): boolean =>
