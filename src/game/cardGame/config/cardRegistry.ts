@@ -30,8 +30,10 @@ export interface CardDefinition {
     unplayable?: boolean;
     /** Damage dealt to the player for each copy still in hand when the turn ends. */
     handEndPenalty?: number;
-    /** After this card is played from hand, auto-place up to this many other hand cards. */
-    deployFromHandOnPlay?: number;
+    /** After this card is played from hand, discard up to this many cards from the left of hand. */
+    discardFromHandOnPlay?: number;
+    /** When true, playing this card removes one copy from the run deck for the rest of the match. */
+    exhaustOnPlay?: boolean;
 }
 
 export interface GameRules {
@@ -92,5 +94,8 @@ export const isCardUnplayable = (definition: CardDefinition): boolean =>
 export const getCardHandEndPenalty = (definition: CardDefinition): number =>
     Math.max(0, definition.handEndPenalty ?? 0);
 
-export const getCardDeployFromHandCount = (definition: CardDefinition): number =>
-    Math.max(0, definition.deployFromHandOnPlay ?? 0);
+export const getCardDiscardFromHandCount = (definition: CardDefinition): number =>
+    Math.max(0, definition.discardFromHandOnPlay ?? 0);
+
+export const isCardExhaustOnPlay = (definition: CardDefinition): boolean =>
+    definition.exhaustOnPlay === true;

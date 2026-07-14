@@ -701,7 +701,7 @@ describe('CardGameSession enemy turn', () =>
     });
 });
 
-describe('CardGameSession courier deploy', () =>
+describe('CardGameSession courier discard', () =>
 {
     beforeEach(() =>
     {
@@ -711,7 +711,7 @@ describe('CardGameSession courier deploy', () =>
     const puzzleSession = (handCards: { definitionId: string; arrow: 'right' }[]) =>
         new CardGameSession('training-dummy', undefined, undefined, [], { handCards });
 
-    it('auto-deploys two cards from the left of hand when courier is played', () =>
+    it('discards two cards from the left of hand when courier is played', () =>
     {
         const session = puzzleSession([
             { definitionId: 'courier', arrow: 'right' },
@@ -723,13 +723,13 @@ describe('CardGameSession courier deploy', () =>
         expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
 
         expect(session.board.getCardAt({ row: 0, col: 0 })?.definitionId).toBe('courier');
-        expect(session.board.getCardAt({ row: 0, col: 1 })?.definitionId).toBe('attack');
-        expect(session.board.getCardAt({ row: 0, col: 2 })?.definitionId).toBe('defend');
+        expect(session.board.getCardAt({ row: 0, col: 1 })).toBeNull();
         expect(session.getHand()).toHaveLength(1);
         expect(session.getHand()[0]?.definitionId).toBe('attack');
+        expect(session.getDiscardDefinitionIds()).toEqual([ 'attack', 'defend' ]);
     });
 
-    it('deploys only remaining hand cards when fewer than two are available', () =>
+    it('discards only remaining hand cards when fewer than two are available', () =>
     {
         const session = puzzleSession([
             { definitionId: 'courier', arrow: 'right' },
@@ -738,11 +738,11 @@ describe('CardGameSession courier deploy', () =>
 
         expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
 
-        expect(session.board.getCardAt({ row: 0, col: 1 })?.definitionId).toBe('attack');
+        expect(session.getDiscardDefinitionIds()).toEqual([ 'attack' ]);
         expect(session.getHand()).toHaveLength(0);
     });
 
-    it('skips unplayable cards when auto-deploying', () =>
+    it('discards unplayable curse cards from the left of hand', () =>
     {
         const session = puzzleSession([
             { definitionId: 'courier', arrow: 'right' },
@@ -752,34 +752,37 @@ describe('CardGameSession courier deploy', () =>
 
         expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
 
-        expect(session.board.getCardAt({ row: 0, col: 1 })?.definitionId).toBe('defend');
-        expect(session.getHand()).toHaveLength(1);
-        expect(session.getHand()[0]?.definitionId).toBe('burden');
+        expect(session.getDiscardDefinitionIds()).toEqual([ 'burden', 'defend' ]);
+        expect(session.getHand()).toHaveLength(0);
     });
 
-    it('stops auto-deploy when no empty slots remain', () =>
+    it('marks courier as exhausted and omits it from the graveyard when the board clears', () =>
     {
         const session = puzzleSession([
             { definitionId: 'courier', arrow: 'right' },
             { definitionId: 'attack', arrow: 'right' },
-            { definitionId: 'defend', arrow: 'right' },
         ]);
 
-        const courierSlot = { row: 0, col: 0 };
+        expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
+        expect(session.getExhaustedDefinitionIds()).toEqual([ 'courier' ]);
+        expect(session.board.getCardAt({ row: 0, col: 0 })?.exhausted).toBe(true);
 
-        for (const slot of session.board.slotsInOrder())
-        {
-            if (slot.row === courierSlot.row && slot.col === courierSlot.col)
-            {
-                continue;
-            }
+        session.clearBoard();
 
-            session.board.placeCard(slot, createCardInstance('attack', 'right'));
-        }
+        expect(session.getDiscardDefinitionIds()).toEqual([ 'attack' ]);
+        expect(session.getExhaustedDefinitionIds()).toEqual([ 'courier' ]);
+    });
 
-        expect(session.placeCardFromHand(0, courierSlot)).toBe(true);
-        expect(session.board.getCardAt(courierSlot)?.definitionId).toBe('courier');
-        expect(session.getHand()).toHaveLength(2);
-        expect(session.getHand().map((card) => card.definitionId)).toEqual([ 'attack', 'defend' ]);
+    it('prevents an exhausted card from being played again from hand', () =>
+    {
+        const session = puzzleSession([
+            { definitionId: 'courier', arrow: 'right' },
+        ]);
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
+        session.removeCardFromBoard({ row: 0, col: 0 });
+
+        expect(session.getHand()).toHaveLength(1);
+        expect(session.placeCardFromHand(0, { row: 0, col: 1 })).toBe(false);
     });
 });

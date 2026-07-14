@@ -58,11 +58,15 @@ export interface WheelSegment {
     effects: RunEventEffect[];
 }
 
-export interface IconMatchRound {
-    /** Three icons shown — exactly two share `winningIcon`. */
-    options: EventIconId[];
-    winningIcon: EventIconId;
+export interface IconMatchGrid {
+    /** Shuffled face-down tiles — length 16, eight icon pairs. */
+    tiles: EventIconId[];
 }
+
+export const ICON_MATCH_GRID_SIZE = 16;
+export const ICON_MATCH_GRID_COLS = 4;
+export const ICON_MATCH_ATTEMPTS = 4;
+export const ICON_MATCH_PAIR_COUNT = ICON_MATCH_GRID_SIZE / 2;
 
 export interface AppliedEventMessage {
     text: string;
@@ -97,7 +101,9 @@ const WHEEL_SEGMENT_LIST: readonly WheelSegment[] = [
     { id: 'trap', label: '-5 HP', icon: 'trap', effects: [ { kind: 'damage', amount: 5 } ] },
 ];
 
-const MATCH_SYMBOLS: readonly EventIconId[] = [ 'sun', 'moon', 'skull', 'sword', 'shield', 'coin' ];
+const MATCH_GRID_SYMBOLS: readonly EventIconId[] = [
+    'sun', 'moon', 'skull', 'sword', 'shield', 'coin', 'heal', 'gold',
+];
 
 export const RUN_EVENTS: Record<string, RunEventDefinition> = {
     'combo-trial': {
@@ -140,13 +146,13 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
     'sign-matcher': {
         id: 'sign-matcher',
         title: 'Sign Matcher',
-        intro: 'Three sigils flare to life. Two are twins — touch the matching pair to claim a reward.',
+        intro: 'Sixteen sigils hide eight twin pairs on a 4×4 grid. Flip two at a time — you get four attempts to match as many pairs as you can.',
         icon: 'matcher',
         choices: [
             {
                 id: 'play',
                 label: 'Study the Signs',
-                description: 'Pick the icon that appears twice. Win a card (costs gold); miss and take damage.',
+                description: 'Memory match: more pairs = better rewards; whiffing every flip costs HP.',
                 icon: 'matcher',
                 effects: [ { kind: 'open-icon-match' } ],
             },
@@ -269,15 +275,13 @@ export const getRunEvent = (eventId: string): RunEventDefinition =>
 export const rollWheelSegment = (): WheelSegment =>
     pickRandom([ ...WHEEL_SEGMENT_LIST ]);
 
-export const buildIconMatchRound = (): IconMatchRound =>
+/** Builds a shuffled 4×4 memory grid of icon pairs. */
+export const buildIconMatchGrid = (): IconMatchGrid =>
 {
-    const pool = shuffleInPlace([ ...MATCH_SYMBOLS ]);
-    const winningIcon = pool[0]!;
-    const decoy = pool[1]!;
+    const tiles = MATCH_GRID_SYMBOLS.flatMap((icon) => [ icon, icon ]);
 
     return {
-        winningIcon,
-        options: shuffleInPlace([ winningIcon, winningIcon, decoy ]),
+        tiles: shuffleInPlace(tiles),
     };
 };
 
@@ -444,9 +448,8 @@ export const applyRunEventEffects = (
     };
 };
 
-export const resolveIconMatchPick = (
-    round: IconMatchRound,
-    picked: EventIconId,
+export const resolveIconMatchResult = (
+    pairsMatched: number,
     state: {
         playerHealth: number;
         maxHealth: number;
@@ -456,21 +459,49 @@ export const resolveIconMatchPick = (
     },
 ): AppliedEventResult =>
 {
-    if (picked === round.winningIcon)
+    const summary: AppliedEventMessage = {
+        text: `Matched ${pairsMatched} of ${ICON_MATCH_PAIR_COUNT} pairs.`,
+        tone: pairsMatched >= 3 ? 'good' : pairsMatched > 0 ? 'neutral' : 'bad',
+    };
+
+    if (pairsMatched === 0)
     {
-        return applyRunEventEffects(
-            [
-                { kind: 'add-card', cardId: '__random__' },
-                { kind: 'lose-gold', amount: 12 },
-            ],
+        const result = applyRunEventEffects(
+            [ { kind: 'damage', amount: 6 } ],
             state,
+        );
+
+        return {
+            ...result,
+            messages: [ summary, ...result.messages ],
+        };
+    }
+
+    const effects: RunEventEffect[] = [
+        { kind: 'gold', amount: pairsMatched * 4 },
+        { kind: 'lose-gold', amount: pairsMatched * 2 },
+    ];
+
+    if (pairsMatched >= 3)
+    {
+        effects.push(
+            { kind: 'add-card', cardId: '__random__' },
+            { kind: 'lose-gold', amount: 12 },
+            { kind: 'damage', amount: 3 },
         );
     }
 
-    return applyRunEventEffects(
-        [ { kind: 'damage', amount: 6 } ],
-        state,
-    );
+    if (pairsMatched >= 6)
+    {
+        effects.push({ kind: 'gold', amount: 10 });
+    }
+
+    const result = applyRunEventEffects(effects, state);
+
+    return {
+        ...result,
+        messages: [ summary, ...result.messages ],
+    };
 };
 
 export const WHEEL_SPIN_COST = 5;

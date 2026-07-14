@@ -173,7 +173,8 @@
       "behaviorId": "boost",
       "visualId": "courier",
       "arrowPool": "orthogonal",
-      "deployFromHandOnPlay": 2
+      "discardFromHandOnPlay": 2,
+      "exhaustOnPlay": true
     }
   ]
 }

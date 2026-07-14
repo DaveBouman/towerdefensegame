@@ -296,8 +296,10 @@ export class Game extends Scene
 
         this.time.delayedCall(900, () =>
         {
+            const exhaustedDefinitionIds = this.session?.getExhaustedDefinitionIds() ?? [];
+
             this.endBattle();
-            EventBus.emit(GAME_EVENTS.BATTLE_WON, { playerHealth });
+            EventBus.emit(GAME_EVENTS.BATTLE_WON, { playerHealth, exhaustedDefinitionIds });
         });
     }
 

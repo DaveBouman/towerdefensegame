@@ -1,5 +1,13 @@
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { GAME_RULES, getCardDefinitionOrThrow, isCardUnplayable, getCardHandEndPenalty, getCardDeployFromHandCount } from '../config/cardRegistry';
+import {
+    GAME_RULES,
+    getCardDefinitionOrThrow,
+    isCardUnplayable,
+    getCardHandEndPenalty,
+    getCardDiscardFromHandCount,
+    isCardExhaustOnPlay,
+    type CardDefinition,
+} from '../config/cardRegistry';
 import {
     type LoadedCardGameEnemyDefinition,
     getCardGameEnemyDefinitionOrThrow,
@@ -54,6 +62,8 @@ export class CardGameSession
     private readonly hand: CardInstance[] = [];
     private readonly deck: CardInstance[] = [];
     private readonly discard: CardInstance[] = [];
+    /** Definition ids removed from the run deck when this battle ends (single-use cards). */
+    private readonly exhaustedDefinitionIds: string[] = [];
     private readonly enemyDefinition: LoadedCardGameEnemyDefinition;
     private enemy: EnemyState;
     private enrageStacks = 0;
@@ -172,6 +182,12 @@ export class CardGameSession
     getDiscardDefinitionIds (): string[]
     {
         return this.discard.map((card) => card.definitionId);
+    }
+
+    /** Single-use cards played this battle — remove one copy each from the run deck on victory. */
+    getExhaustedDefinitionIds (): readonly string[]
+    {
+        return [ ...this.exhaustedDefinitionIds ];
     }
 
     getEnergy (): number
@@ -1081,7 +1097,10 @@ export class CardGameSession
 
             if (card && isPlayerOwnedCard(card))
             {
-                this.discard.push(card);
+                if (!card.exhausted)
+                {
+                    this.discard.push(card);
+                }
             }
         }
 
@@ -1123,6 +1142,11 @@ export class CardGameSession
             return false;
         }
 
+        if (card.exhausted)
+        {
+            return false;
+        }
+
         const existing = this.board.getCardAt(slot);
 
         if (existing && (isEnemyOwnedCard(existing) || isFieldOwnedCard(existing)))
@@ -1143,9 +1167,10 @@ export class CardGameSession
             }
 
             this.hand.splice(handIndex, 1);
+            this.markExhaustedIfNeeded(card, definition);
             CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card });
             CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
-            this.autoDeployFromHand(getCardDeployFromHandCount(definition));
+            this.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
 
             return true;
         }
@@ -1153,84 +1178,43 @@ export class CardGameSession
         this.board.removeCard(slot);
         this.board.placeCard(slot, card);
         this.hand[handIndex] = existing;
+        this.markExhaustedIfNeeded(card, definition);
         CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card });
         CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
-        this.autoDeployFromHand(getCardDeployFromHandCount(definition));
+        this.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
 
         return true;
     }
 
-    /** Auto-places up to `count` playable cards from the left of hand onto empty tiles. */
-    private autoDeployFromHand (count: number): void
+    /** Discards up to `count` cards from the left of hand into the graveyard. */
+    private discardFromHandOnPlay (count: number): void
     {
         if (count <= 0)
         {
             return;
         }
 
-        let deployed = 0;
+        const discarded = this.hand.splice(0, Math.min(count, this.hand.length));
 
-        while (deployed < count)
+        if (discarded.length === 0)
         {
-            const handIndex = this.hand.findIndex((handCard) =>
-                !isCardUnplayable(getCardDefinitionOrThrow(handCard.definitionId)),
-            );
-
-            if (handIndex < 0)
-            {
-                break;
-            }
-
-            const [ slot ] = this.findPlayerDeploySlots(1);
-
-            if (!slot)
-            {
-                break;
-            }
-
-            const deployCard = this.hand.splice(handIndex, 1)[0]!;
-
-            if (!this.board.placeCard(slot, deployCard))
-            {
-                this.hand.splice(handIndex, 0, deployCard);
-                break;
-            }
-
-            CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card: deployCard });
-            deployed += 1;
+            return;
         }
 
-        if (deployed > 0)
-        {
-            CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
-        }
+        this.discard.push(...discarded);
+        CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
+        this.emitPilesChanged();
     }
 
-    private findPlayerDeploySlots (max: number): SlotPosition[]
+    private markExhaustedIfNeeded (card: CardInstance, definition: CardDefinition): void
     {
-        const slots: SlotPosition[] = [];
-
-        for (const slot of this.board.slotsInOrder())
+        if (!isCardExhaustOnPlay(definition))
         {
-            if (slots.length >= max)
-            {
-                break;
-            }
-
-            if (!this.board.isEmpty(slot))
-            {
-                continue;
-            }
-
-            if (this.isSlotBlockedForPlayer(slot))
-            {
-                continue;
-            }
-
-            slots.push(slot);
+            return;
         }
 
-        return slots;
+        card.exhausted = true;
+        this.exhaustedDefinitionIds.push(definition.id);
     }
 
     removeCardFromBoard (slot: SlotPosition): boolean

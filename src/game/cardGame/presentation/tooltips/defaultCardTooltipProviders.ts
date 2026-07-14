@@ -193,9 +193,10 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
     provider('courier', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: [
-            'When played, automatically places up to 2 other cards from your hand onto empty tiles.',
-            'Takes cards from the left of your hand. Skips unplayable cards.',
-            'If the board or hand cannot supply 2 cards, places as many as possible.',
+            'When played, discards up to 2 cards from the left of your hand into the graveyard.',
+            'Includes unplayable curse cards.',
+            'If your hand has fewer than 2 cards, discards as many as remain.',
+            'Single use — removed from your deck for the rest of the run after playing.',
             'Neutral on the chain — no direct attack or defend effect.',
         ],
     })),

@@ -30,7 +30,8 @@ describe('cardRegistry', () =>
         expect(getCardDefinition('attack-leap')?.chainStepDistance).toBe(2);
         expect(getCardDefinition('defend-leap')?.chainStepDistance).toBe(2);
         expect(getCardDefinition('fuse')?.handEndPenalty).toBe(8);
-        expect(getCardDefinition('courier')?.deployFromHandOnPlay).toBe(2);
+        expect(getCardDefinition('courier')?.discardFromHandOnPlay).toBe(2);
+        expect(getCardDefinition('courier')?.exhaustOnPlay).toBe(true);
         expect(getCardDefinition('courier')?.behaviorId).toBe('boost');
     });
 

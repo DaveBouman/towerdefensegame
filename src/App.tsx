@@ -159,7 +159,13 @@ function App()
             }
         };
 
-        const onBattleWon = ({ playerHealth: remaining }: { playerHealth: number }): void =>
+        const onBattleWon = ({
+            playerHealth: remaining,
+            exhaustedDefinitionIds = [],
+        }: {
+            playerHealth: number;
+            exhaustedDefinitionIds?: string[];
+        }): void =>
         {
             const node = selectedNodeRef.current;
             const healed = Math.min(
@@ -169,6 +175,26 @@ function App()
 
             setPlayerHealth(healed);
             setGold((prev) => prev + getVictoryGoldBonus(trinketsRef.current));
+
+            if (exhaustedDefinitionIds.length > 0)
+            {
+                setDeck((prev) =>
+                {
+                    const next = [ ...prev ];
+
+                    for (const definitionId of exhaustedDefinitionIds)
+                    {
+                        const index = next.indexOf(definitionId);
+
+                        if (index >= 0)
+                        {
+                            next.splice(index, 1);
+                        }
+                    }
+
+                    return next;
+                });
+            }
 
             if (node)
             {

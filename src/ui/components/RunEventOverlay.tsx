@@ -1,17 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     applyRunEventEffects,
-    buildIconMatchRound,
+    buildIconMatchGrid,
     getRunEvent,
     getWheelSegmentIndex,
     getWheelSpinEffects,
-    resolveIconMatchPick,
+    ICON_MATCH_ATTEMPTS,
+    ICON_MATCH_GRID_COLS,
+    ICON_MATCH_PAIR_COUNT,
+    resolveIconMatchResult,
     rollWheelSegment,
     WHEEL_SEGMENTS,
     type AppliedEventMessage,
     type AppliedEventResult,
-    type EventIconId,
-    type IconMatchRound,
+    type IconMatchGrid,
     type WheelSegment,
     type RunEventChoice,
 } from '../../game/run/runEvents';
@@ -21,6 +23,22 @@ import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistr
 import { EventIcon } from './EventIcon';
 
 type EventPhase = 'choices' | 'wheel' | 'matcher' | 'puzzle-brief' | 'result';
+
+interface MatcherPlayState {
+    revealed: number[];
+    matched: number[];
+    attemptsLeft: number;
+    pairsMatched: number;
+    locked: boolean;
+}
+
+const createMatcherPlayState = (): MatcherPlayState => ({
+    revealed: [],
+    matched: [],
+    attemptsLeft: ICON_MATCH_ATTEMPTS,
+    pairsMatched: 0,
+    locked: false,
+});
 
 interface RunEventOverlayProps {
     eventId: string;
@@ -71,8 +89,10 @@ export const RunEventOverlay = ({
 
     const [ wheelSpinning, setWheelSpinning ] = useState(false);
     const [ wheelRotation, setWheelRotation ] = useState(0);
+    const [ matcherPlay, setMatcherPlay ] = useState<MatcherPlayState | null>(null);
+    const matcherFinishRef = useRef<number | null>(null);
 
-    const matchRound = useMemo<IconMatchRound | null>(() =>
+    const matchGrid = useMemo<IconMatchGrid | null>(() =>
     {
         if (phase !== 'matcher')
         {
@@ -81,8 +101,29 @@ export const RunEventOverlay = ({
 
         seedScope(seed, `event:${nodeId}:match`);
 
-        return buildIconMatchRound();
+        return buildIconMatchGrid();
     }, [ phase, seed, nodeId ]);
+
+    useEffect(() =>
+    {
+        if (phase === 'matcher' && matchGrid)
+        {
+            setMatcherPlay(createMatcherPlayState());
+        }
+        else
+        {
+            setMatcherPlay(null);
+        }
+
+        return () =>
+        {
+            if (matcherFinishRef.current !== null)
+            {
+                window.clearTimeout(matcherFinishRef.current);
+                matcherFinishRef.current = null;
+            }
+        };
+    }, [ phase, matchGrid ]);
 
     const runState = () => ({
         playerHealth: snapshot.playerHealth,
@@ -160,14 +201,82 @@ export const RunEventOverlay = ({
         }, 2600);
     };
 
-    const pickMatcherIcon = (icon: EventIconId): void =>
+    const finishMatcher = (pairsMatched: number): void =>
     {
-        if (!matchRound)
+        showResult(resolveIconMatchResult(pairsMatched, runState()));
+    };
+
+    const pickMatcherTile = (index: number): void =>
+    {
+        if (!matchGrid || !matcherPlay || matcherPlay.locked)
         {
             return;
         }
 
-        showResult(resolveIconMatchPick(matchRound, icon, runState()));
+        if (matcherPlay.matched.includes(index) || matcherPlay.revealed.includes(index))
+        {
+            return;
+        }
+
+        const nextRevealed = [ ...matcherPlay.revealed, index ];
+
+        if (nextRevealed.length < 2)
+        {
+            setMatcherPlay({ ...matcherPlay, revealed: nextRevealed });
+            return;
+        }
+
+        const [ firstIndex, secondIndex ] = nextRevealed;
+        const isMatch = matchGrid.tiles[firstIndex] === matchGrid.tiles[secondIndex];
+        const attemptsLeft = matcherPlay.attemptsLeft - 1;
+        const pairsMatched = matcherPlay.pairsMatched + (isMatch ? 1 : 0);
+        const matched = isMatch
+            ? [ ...matcherPlay.matched, firstIndex, secondIndex ]
+            : matcherPlay.matched;
+        const finished = attemptsLeft <= 0 || pairsMatched >= ICON_MATCH_PAIR_COUNT;
+
+        if (isMatch)
+        {
+            setMatcherPlay({
+                revealed: [],
+                matched,
+                attemptsLeft,
+                pairsMatched,
+                locked: false,
+            });
+
+            if (finished)
+            {
+                finishMatcher(pairsMatched);
+            }
+
+            return;
+        }
+
+        setMatcherPlay({
+            ...matcherPlay,
+            revealed: nextRevealed,
+            attemptsLeft,
+            pairsMatched,
+            locked: true,
+        });
+
+        matcherFinishRef.current = window.setTimeout(() =>
+        {
+            matcherFinishRef.current = null;
+            setMatcherPlay({
+                revealed: [],
+                matched,
+                attemptsLeft,
+                pairsMatched,
+                locked: false,
+            });
+
+            if (finished)
+            {
+                finishMatcher(pairsMatched);
+            }
+        }, 750);
     };
 
     const finish = (): void =>
@@ -247,20 +356,44 @@ export const RunEventOverlay = ({
                     </div>
                 )}
 
-                {phase === 'matcher' && matchRound && (
+                {phase === 'matcher' && matchGrid && matcherPlay && (
                     <div className="run-event__matcher">
-                        <p className="run-event__matcher-hint">Which sigil appears twice?</p>
-                        <div className="run-event__matcher-options">
-                            {matchRound.options.map((icon, index) => (
-                                <button
-                                    key={`${icon}-${index}`}
-                                    type="button"
-                                    className="run-event__matcher-btn"
-                                    onClick={() => pickMatcherIcon(icon)}
-                                >
-                                    <EventIcon icon={icon} />
-                                </button>
-                            ))}
+                        <div className="run-event__matcher-status">
+                            <span>Attempts left: <strong>{matcherPlay.attemptsLeft}</strong></span>
+                            <span>Pairs matched: <strong>{matcherPlay.pairsMatched}</strong> / {ICON_MATCH_PAIR_COUNT}</span>
+                        </div>
+                        <p className="run-event__matcher-hint">
+                            Flip two sigils per attempt. Match as many pairs as you can.
+                        </p>
+                        <div
+                            className="run-event__matcher-grid"
+                            style={{ gridTemplateColumns: `repeat(${ICON_MATCH_GRID_COLS}, 1fr)` }}
+                        >
+                            {matchGrid.tiles.map((icon, index) =>
+                            {
+                                const isMatched = matcherPlay.matched.includes(index);
+                                const isRevealed = isMatched || matcherPlay.revealed.includes(index);
+                                const tileClass = [
+                                    'run-event__matcher-tile',
+                                    isRevealed ? 'run-event__matcher-tile--revealed' : '',
+                                    isMatched ? 'run-event__matcher-tile--matched' : '',
+                                ].filter(Boolean).join(' ');
+
+                                return (
+                                    <button
+                                        key={`tile-${index}`}
+                                        type="button"
+                                        className={tileClass}
+                                        onClick={() => pickMatcherTile(index)}
+                                        disabled={matcherPlay.locked || isMatched}
+                                        aria-label={isRevealed ? `Sigil ${icon}` : 'Hidden sigil'}
+                                    >
+                                        {isRevealed
+                                            ? <EventIcon icon={icon} />
+                                            : <span className="run-event__matcher-back">?</span>}
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
                 )}

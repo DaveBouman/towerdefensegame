@@ -66,7 +66,7 @@ const CARD_BLURBS: Record<string, string> = {
     surge: 'Overload — damage per skill card, doubled with a Joker.',
     'corner-strike': 'Hooks around the corner to a forward-diagonal tile.',
     'corner-defense': 'Defend card that turns the corner to the next tile.',
-    courier: 'Deploys up to 2 other hand cards onto empty tiles when played.',
+    courier: 'Discards 2 hand cards to the graveyard when played. Single use per run.',
 };
 
 export interface CardRewardDisplay {

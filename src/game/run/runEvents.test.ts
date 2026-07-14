@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { seedScope } from '../random/rng';
 import {
     applyRunEventEffects,
-    buildIconMatchRound,
+    buildIconMatchGrid,
     getRunEvent,
+    ICON_MATCH_ATTEMPTS,
+    ICON_MATCH_GRID_SIZE,
+    ICON_MATCH_PAIR_COUNT,
+    resolveIconMatchResult,
     rollRunEventId,
     rollWheelSegment,
 } from './runEvents';
@@ -45,16 +49,53 @@ describe('runEvents', () =>
         expect(a).toBe(b);
     });
 
-    it('builds icon match rounds with exactly one duplicated icon', () =>
+    it('builds a 4x4 icon match grid with eight pairs', () =>
     {
         seedScope('match-seed', 'event:n2-0:match');
-        const round = buildIconMatchRound();
+        const grid = buildIconMatchGrid();
 
-        expect(round.options).toHaveLength(3);
+        expect(grid.tiles).toHaveLength(ICON_MATCH_GRID_SIZE);
+        expect(ICON_MATCH_PAIR_COUNT).toBe(8);
+        expect(ICON_MATCH_ATTEMPTS).toBe(4);
 
-        const matches = round.options.filter((icon) => icon === round.winningIcon);
+        const counts = new Map<string, number>();
 
-        expect(matches).toHaveLength(2);
+        for (const icon of grid.tiles)
+        {
+            counts.set(icon, (counts.get(icon) ?? 0) + 1);
+        }
+
+        expect(counts.size).toBe(ICON_MATCH_PAIR_COUNT);
+
+        for (const count of counts.values())
+        {
+            expect(count).toBe(2);
+        }
+    });
+
+    it('rewards icon match results based on pairs matched', () =>
+    {
+        const whiff = resolveIconMatchResult(0, {
+            playerHealth: 40,
+            maxHealth: 80,
+            gold: 20,
+            deck: [],
+            trinkets: [],
+        });
+
+        expect(whiff.playerHealth).toBe(34);
+        expect(whiff.messages[0]?.text).toContain('Matched 0');
+
+        const solid = resolveIconMatchResult(3, {
+            playerHealth: 40,
+            maxHealth: 80,
+            gold: 30,
+            deck: [],
+            trinkets: [],
+        });
+
+        expect(solid.deck).toHaveLength(1);
+        expect(solid.messages[0]?.text).toContain('Matched 3');
     });
 
     it('applies heal and gold effects', () =>

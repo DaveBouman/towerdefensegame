@@ -28,7 +28,7 @@ in difficulty toward a boss (`warden`) in the final column.
   (`NodeKindIcon`, from game-icons.net) and a hover tooltip on the map. First column
   is always `event` (for testing); last column is the `boss`; middle columns are weighted-random
   (`rollNodeKind`). **Event nodes** open `RunEventOverlay` (`runEvents.ts`) — wheel,
-  icon matcher, **combo trials** (damage puzzles), healing, gambles, trinkets. Shop is still a placeholder (`NodeVisitOverlay`).
+  icon matcher (4×4 memory grid, 4 attempts), **combo trials** (damage puzzles), healing, gambles, trinkets. Shop is still a placeholder (`NodeVisitOverlay`).
 - **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
 - **Deck persists and grows**: the run owns the deck as a list of card definition ids (`getDefaultDeckDefinitionIds`). Each battle builds instances from those ids (`buildDeckFromDefinitionIds`).
 - **Victory rewards**: defeating a (non-boss) enemy grants that node's reward. Today every node grants a **card reward** (`CardRewardOverlay` → pick from choices → card ids appended to the run deck).
@@ -240,7 +240,8 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
-| 2026-07-14 | **Courier deploy card + smaller hand.** New **Courier** card (`deployFromHandOnPlay: 2`) auto-places up to two playable cards from the left of your hand onto empty tiles when played. Skips unplayable cards; places fewer if hand or board cannot supply two. Starting hand reduced from 10 → **8** (`gameRules.handSize`). Added to reward pool with icon, tooltip, and chain glow. |
+| 2026-07-14 | **Sign Matcher memory game.** Sign Matcher is now a 4×4 (16-tile) picture-matching minigame: eight icon pairs, flip two per attempt, **4 attempts** to match as many pairs as possible. Rewards scale with pairs matched (gold tiers; 3+ pairs adds a card with gold/HP costs; 0 pairs deals damage). Seeded grid via `buildIconMatchGrid`. |
+| 2026-07-14 | **Courier + exhaust cards + smaller hand.** **Courier** discards up to 2 cards from the left of hand into the graveyard when played (includes unplayable curse cards). New `discardFromHandOnPlay` and `exhaustOnPlay` on `CardDefinition` — exhaust cards are destroyed instead of entering the discard pile and one copy is removed from the run deck on victory. Courier is single-use per run. Starting hand **8** (`gameRules.handSize`). |
 | 2026-07-14 | **Corner Defense readability.** Single arrow tucked in the card corner (no dual hook preview); tooltip copy simplified. Corner Strike keeps the hook preview. |
 | 2026-07-14 | **Player round gating.** Board persists and the enemy does not act until **all** energy is spent. Manual End Turn removed (it was ending the round early). `endPlayerRound` runs only when `energy === 0` → graveyard animation → `clearBoard` → single enemy turn. |
 | 2026-07-14 | **Escalating turn fix.** Player round splits per-attack cleanup (`releaseAttackLock`, hand refill, board persists) from end-of-round (`endPlayerRound` → graveyard → `clearBoard` → enemy). Attack animation guarded against double-resolve. |
