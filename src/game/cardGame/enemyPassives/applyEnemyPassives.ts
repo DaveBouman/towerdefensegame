@@ -214,13 +214,12 @@ export const applyEnemyPassivesToSequence = (
 
 export const computeThornsReflectDamage = (
     passives: readonly EnemyPassiveConfig[],
-    enemyShieldBefore: number,
     damage: number,
 ): number =>
 {
     const thorns = getEnemyPassive(passives, 'thorns');
 
-    if (!thorns || damage <= 0 || enemyShieldBefore <= 0)
+    if (!thorns || damage <= 0)
     {
         return 0;
     }

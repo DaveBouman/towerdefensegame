@@ -15,12 +15,13 @@ import {
 
 describe('enemy passives', () =>
 {
-    it('reflects thorns damage when the enemy is shielded', () =>
+    it('reflects thorns damage whenever the player deals damage', () =>
     {
         const passives = normalizeEnemyPassives([ 'thorns' ]);
 
-        expect(computeThornsReflectDamage(passives, 5, 4)).toBe(2);
-        expect(computeThornsReflectDamage(passives, 0, 4)).toBe(0);
+        expect(computeThornsReflectDamage(passives, 5)).toBe(2);
+        expect(computeThornsReflectDamage(passives, 4)).toBe(2);
+        expect(computeThornsReflectDamage(passives, 0)).toBe(0);
     });
 
     it('stores enrage stacks from undisarmed traps without re-exploding them', () =>

@@ -777,7 +777,6 @@ export class CardGameSession
 
         const thornsDamage = computeThornsReflectDamage(
             this.enemyDefinition.passives,
-            shieldBefore,
             damage,
         );
 

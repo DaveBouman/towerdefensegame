@@ -240,6 +240,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-14 | **Thorns trigger on hit.** Thorns now reflects damage whenever you deal attack damage to the enemy — shield is no longer required. Fires per damage step in the chain (e.g. attack then defend still procs thorns on the attack). |
 | 2026-07-14 | **Event map labels.** Event nodes now roll their encounter at **map generation** (`RunMapNode.eventId`) and show the title on the map (e.g. **Sign Matcher**). Column 0 always places Sign Matcher on the first event node; siblings in the same column get distinct events. Picking a node uses the pre-rolled id (no surprise reroll). Sign Matcher weight raised to match other headliners. |
 | 2026-07-14 | **Wheel of Fate visuals.** Wheel now shows segment icons on a skewed face — curse/damage slices are drawn larger (~42% of the wheel) so bad luck *looks* more likely, but `rollWheelSegment` odds stay equal. Spin animation lands using visual mid-angles (`wheelDisplay.ts`). |
 | 2026-07-14 | **Combo trial rewards + rules + difficulty.** Passing a combo trial now opens a **3-card reward picker** (take one or none) instead of auto-adding a random card. Trial rules shown on brief, in-fight HUD, and reward overlay (`PUZZLE_TRIAL_RULES`, `BATTLE_REWARD_RULES`). Damage targets raised across all puzzles; failure damage increased. Battle victory overlay also shows rules and allows skipping the card reward via **Take nothing**. |
