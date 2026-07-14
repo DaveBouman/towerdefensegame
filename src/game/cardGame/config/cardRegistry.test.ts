@@ -13,7 +13,7 @@ describe('cardRegistry', () =>
 
     it('loads card definitions from cards.json', () =>
     {
-        expect(CARD_DEFINITIONS).toHaveLength(19);
+        expect(CARD_DEFINITIONS).toHaveLength(20);
         expect(getCardDefinition('corner-strike')?.cornerTurn).toBe(true);
         expect(getCardDefinition('corner-defense')?.behaviorId).toBe('defend');
         expect(getCardDefinition('attack')?.arrowPool).toBe('orthogonal');
@@ -29,12 +29,15 @@ describe('cardRegistry', () =>
         expect(getCardDefinition('boost')?.behaviorId).toBe('boost');
         expect(getCardDefinition('attack-leap')?.chainStepDistance).toBe(2);
         expect(getCardDefinition('defend-leap')?.chainStepDistance).toBe(2);
+        expect(getCardDefinition('fuse')?.handEndPenalty).toBe(8);
+        expect(getCardDefinition('courier')?.deployFromHandOnPlay).toBe(2);
+        expect(getCardDefinition('courier')?.behaviorId).toBe('boost');
     });
 
     it('loads game rules and deck settings', () =>
     {
         expect(GAME_RULES.deckSize).toBe(20);
-        expect(GAME_RULES.handSize).toBe(10);
+        expect(GAME_RULES.handSize).toBe(8);
         expect(GAME_RULES.activationStartColumn).toBe(0);
         expect(GAME_RULES.maxChainSteps).toBe(24);
         expect(GAME_RULES.defaultEnemyId).toBe('basic');

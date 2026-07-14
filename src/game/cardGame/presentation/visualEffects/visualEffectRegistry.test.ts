@@ -16,6 +16,7 @@ describe('visualEffectRegistry', () =>
             'boost',
             'curse',
             'fuse',
+            'courier',
         ];
 
         for (const id of visualIds)

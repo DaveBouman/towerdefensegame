@@ -127,7 +127,7 @@ The player turn is **escalating**: each Attack resolves the whole board and leav
 | Rule | Value | Config |
 |------|-------|--------|
 | Player HP | 80 | `gameRules.json` |
-| Deck / hand | 20 / 10 | `gameRules.json` |
+| Deck / hand | 20 / 8 | `gameRules.json` |
 | Energy (attacks) per turn | 3 | `gameRules.json` (`energyPerTurn`) |
 | Enemy damage ramp per extra attack | +4 | `gameRules.json` (`enemyDamageRampPerAttack`) |
 | Rerolls per fight | 3 | `gameRules.json` |
@@ -240,6 +240,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-14 | **Courier deploy card + smaller hand.** New **Courier** card (`deployFromHandOnPlay: 2`) auto-places up to two playable cards from the left of your hand onto empty tiles when played. Skips unplayable cards; places fewer if hand or board cannot supply two. Starting hand reduced from 10 → **8** (`gameRules.handSize`). Added to reward pool with icon, tooltip, and chain glow. |
 | 2026-07-14 | **Corner Defense readability.** Single arrow tucked in the card corner (no dual hook preview); tooltip copy simplified. Corner Strike keeps the hook preview. |
 | 2026-07-14 | **Player round gating.** Board persists and the enemy does not act until **all** energy is spent. Manual End Turn removed (it was ending the round early). `endPlayerRound` runs only when `energy === 0` → graveyard animation → `clearBoard` → single enemy turn. |
 | 2026-07-14 | **Escalating turn fix.** Player round splits per-attack cleanup (`releaseAttackLock`, hand refill, board persists) from end-of-round (`endPlayerRound` → graveyard → `clearBoard` → enemy). Attack animation guarded against double-resolve. |

@@ -2,7 +2,7 @@
   "activationStepMs": 800,
   "enemyTurnMs": 800,
   "deckSize": 20,
-  "handSize": 10,
+  "handSize": 8,
   "energyPerTurn": 3,
   "enemyDamageRampPerAttack": 4,
   "fightRerollsPerFight": 3,

@@ -165,6 +165,15 @@
       "visualId": "fuse",
       "arrowPool": "orthogonal",
       "handEndPenalty": 8
+    },
+    {
+      "id": "courier",
+      "label": "Courier",
+      "power": 0,
+      "behaviorId": "boost",
+      "visualId": "courier",
+      "arrowPool": "orthogonal",
+      "deployFromHandOnPlay": 2
     }
   ]
 }

@@ -1,5 +1,5 @@
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { GAME_RULES, getCardDefinitionOrThrow, isCardUnplayable, getCardHandEndPenalty } from '../config/cardRegistry';
+import { GAME_RULES, getCardDefinitionOrThrow, isCardUnplayable, getCardHandEndPenalty, getCardDeployFromHandCount } from '../config/cardRegistry';
 import {
     type LoadedCardGameEnemyDefinition,
     getCardGameEnemyDefinitionOrThrow,
@@ -1145,6 +1145,7 @@ export class CardGameSession
             this.hand.splice(handIndex, 1);
             CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card });
             CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
+            this.autoDeployFromHand(getCardDeployFromHandCount(definition));
 
             return true;
         }
@@ -1154,8 +1155,82 @@ export class CardGameSession
         this.hand[handIndex] = existing;
         CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card });
         CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
+        this.autoDeployFromHand(getCardDeployFromHandCount(definition));
 
         return true;
+    }
+
+    /** Auto-places up to `count` playable cards from the left of hand onto empty tiles. */
+    private autoDeployFromHand (count: number): void
+    {
+        if (count <= 0)
+        {
+            return;
+        }
+
+        let deployed = 0;
+
+        while (deployed < count)
+        {
+            const handIndex = this.hand.findIndex((handCard) =>
+                !isCardUnplayable(getCardDefinitionOrThrow(handCard.definitionId)),
+            );
+
+            if (handIndex < 0)
+            {
+                break;
+            }
+
+            const [ slot ] = this.findPlayerDeploySlots(1);
+
+            if (!slot)
+            {
+                break;
+            }
+
+            const deployCard = this.hand.splice(handIndex, 1)[0]!;
+
+            if (!this.board.placeCard(slot, deployCard))
+            {
+                this.hand.splice(handIndex, 0, deployCard);
+                break;
+            }
+
+            CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card: deployCard });
+            deployed += 1;
+        }
+
+        if (deployed > 0)
+        {
+            CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
+        }
+    }
+
+    private findPlayerDeploySlots (max: number): SlotPosition[]
+    {
+        const slots: SlotPosition[] = [];
+
+        for (const slot of this.board.slotsInOrder())
+        {
+            if (slots.length >= max)
+            {
+                break;
+            }
+
+            if (!this.board.isEmpty(slot))
+            {
+                continue;
+            }
+
+            if (this.isSlotBlockedForPlayer(slot))
+            {
+                continue;
+            }
+
+            slots.push(slot);
+        }
+
+        return slots;
     }
 
     removeCardFromBoard (slot: SlotPosition): boolean

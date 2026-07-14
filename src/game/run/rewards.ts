@@ -43,6 +43,7 @@ export const REWARD_CARD_POOL: readonly string[] = [
     'surge',
     'corner-strike',
     'corner-defense',
+    'courier',
 ];
 
 /** Picks `choiceCount` distinct card definition ids at random from the reward pool. */
@@ -65,6 +66,7 @@ const CARD_BLURBS: Record<string, string> = {
     surge: 'Overload — damage per skill card, doubled with a Joker.',
     'corner-strike': 'Hooks around the corner to a forward-diagonal tile.',
     'corner-defense': 'Defend card that turns the corner to the next tile.',
+    courier: 'Deploys up to 2 other hand cards onto empty tiles when played.',
 };
 
 export interface CardRewardDisplay {

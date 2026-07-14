@@ -700,3 +700,86 @@ describe('CardGameSession enemy turn', () =>
         }
     });
 });
+
+describe('CardGameSession courier deploy', () =>
+{
+    beforeEach(() =>
+    {
+        resetCardInstanceCounter();
+    });
+
+    const puzzleSession = (handCards: { definitionId: string; arrow: 'right' }[]) =>
+        new CardGameSession('training-dummy', undefined, undefined, [], { handCards });
+
+    it('auto-deploys two cards from the left of hand when courier is played', () =>
+    {
+        const session = puzzleSession([
+            { definitionId: 'courier', arrow: 'right' },
+            { definitionId: 'attack', arrow: 'right' },
+            { definitionId: 'defend', arrow: 'right' },
+            { definitionId: 'attack', arrow: 'right' },
+        ]);
+
+        expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
+
+        expect(session.board.getCardAt({ row: 0, col: 0 })?.definitionId).toBe('courier');
+        expect(session.board.getCardAt({ row: 0, col: 1 })?.definitionId).toBe('attack');
+        expect(session.board.getCardAt({ row: 0, col: 2 })?.definitionId).toBe('defend');
+        expect(session.getHand()).toHaveLength(1);
+        expect(session.getHand()[0]?.definitionId).toBe('attack');
+    });
+
+    it('deploys only remaining hand cards when fewer than two are available', () =>
+    {
+        const session = puzzleSession([
+            { definitionId: 'courier', arrow: 'right' },
+            { definitionId: 'attack', arrow: 'right' },
+        ]);
+
+        expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
+
+        expect(session.board.getCardAt({ row: 0, col: 1 })?.definitionId).toBe('attack');
+        expect(session.getHand()).toHaveLength(0);
+    });
+
+    it('skips unplayable cards when auto-deploying', () =>
+    {
+        const session = puzzleSession([
+            { definitionId: 'courier', arrow: 'right' },
+            { definitionId: 'burden', arrow: 'right' },
+            { definitionId: 'defend', arrow: 'right' },
+        ]);
+
+        expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
+
+        expect(session.board.getCardAt({ row: 0, col: 1 })?.definitionId).toBe('defend');
+        expect(session.getHand()).toHaveLength(1);
+        expect(session.getHand()[0]?.definitionId).toBe('burden');
+    });
+
+    it('stops auto-deploy when no empty slots remain', () =>
+    {
+        const session = puzzleSession([
+            { definitionId: 'courier', arrow: 'right' },
+            { definitionId: 'attack', arrow: 'right' },
+            { definitionId: 'defend', arrow: 'right' },
+        ]);
+
+        const courierSlot = { row: 0, col: 0 };
+
+        for (const slot of session.board.slotsInOrder())
+        {
+            if (slot.row === courierSlot.row && slot.col === courierSlot.col)
+            {
+                continue;
+            }
+
+            session.board.placeCard(slot, createCardInstance('attack', 'right'));
+        }
+
+        expect(session.placeCardFromHand(0, courierSlot)).toBe(true);
+        expect(session.board.getCardAt(courierSlot)?.definitionId).toBe('courier');
+        expect(session.getHand()).toHaveLength(2);
+        expect(session.getHand().map((card) => card.definitionId)).toEqual([ 'attack', 'defend' ]);
+    });
+});

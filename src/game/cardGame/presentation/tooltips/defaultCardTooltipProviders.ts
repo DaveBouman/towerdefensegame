@@ -190,6 +190,15 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             'Place it on the board before ending your turn to defuse it.',
         ],
     })),
+    provider('courier', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            'When played, automatically places up to 2 other cards from your hand onto empty tiles.',
+            'Takes cards from the left of your hand. Skips unplayable cards.',
+            'If the board or hand cannot supply 2 cards, places as many as possible.',
+            'Neutral on the chain — no direct attack or defend effect.',
+        ],
+    })),
     provider('default', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: [ 'Follow the arrow to continue the chain.' ],
