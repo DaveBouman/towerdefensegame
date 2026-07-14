@@ -1186,6 +1186,29 @@ html, body, #root {
     letter-spacing: 0.06em;
 }
 
+.run-map__node--semi-boss .run-map__node-dot {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    color: #ffd0a0;
+}
+
+.run-map__node--semi-boss .run-map__node-icon {
+    width: 24px;
+    height: 24px;
+}
+
+.run-map__node--semi-boss.run-map__node--available .run-map__node-dot {
+    background: #3a2818;
+    border-color: rgba(255, 170, 80, 0.9);
+    box-shadow: 0 0 20px rgba(255, 140, 60, 0.65);
+    color: #ffe0b8;
+}
+
+.run-map__node--semi-boss .run-map__node-label {
+    color: #ffb870;
+}
+
 @keyframes run-map-pulse {
     0%, 100% { box-shadow: 0 0 14px rgba(150, 120, 255, 0.5); }
     50% { box-shadow: 0 0 26px rgba(170, 150, 255, 0.9); }

@@ -247,6 +247,17 @@ body {
     color: var(--cp-magenta);
 }
 
+.run-map__node--semi-boss.run-map__node--available .run-map__node-dot {
+    background: rgba(255, 140, 0, 0.18);
+    border-color: var(--cp-amber, #ff8c00);
+    box-shadow: 0 0 22px rgba(255, 140, 0, 0.5);
+    color: #ffd9a8;
+}
+
+.run-map__node--semi-boss .run-map__node-label {
+    color: #ffb347;
+}
+
 .run-map__tooltip {
     border-radius: 4px;
     background: rgba(8, 12, 22, 0.98);

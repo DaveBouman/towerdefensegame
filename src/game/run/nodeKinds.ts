@@ -5,7 +5,7 @@ import { random } from '../random/rng';
  * battles; `shop` and `event` are non-battle stops (behavior TBD — placeholder
  * for now). New kinds can be added here plus a case in `App`'s node handling.
  */
-export type RunMapNodeKind = 'enemy' | 'boss' | 'shop' | 'event';
+export type RunMapNodeKind = 'enemy' | 'semi-boss' | 'boss' | 'shop' | 'event';
 
 export interface NodeKindInfo {
     label: string;
@@ -19,6 +19,11 @@ export const NODE_KIND_INFO: Record<RunMapNodeKind, NodeKindInfo> = {
     enemy: {
         label: 'Hostile',
         tooltip: 'A street op. Flatline them to jack a card into your deck.',
+        isBattle: true,
+    },
+    'semi-boss': {
+        label: 'Lieutenant',
+        tooltip: 'A district lieutenant. Tougher than street ops — flatline them for a card reward.',
         isBattle: true,
     },
     boss: {
@@ -38,11 +43,11 @@ export const NODE_KIND_INFO: Record<RunMapNodeKind, NodeKindInfo> = {
     },
 };
 
-/** Relative frequency of each kind on non-fixed map columns. */
-const NODE_KIND_WEIGHTS: readonly (readonly [RunMapNodeKind, number])[] = [
-    [ 'enemy', 6 ],
-    [ 'shop', 2 ],
+/** Relative frequency of each kind on non-fixed map columns (70% / 20% / 10%). */
+export const NODE_KIND_WEIGHTS: readonly (readonly [RunMapNodeKind, number])[] = [
+    [ 'enemy', 7 ],
     [ 'event', 2 ],
+    [ 'shop', 1 ],
 ];
 
 export const isBattleKind = (kind: RunMapNodeKind): boolean =>

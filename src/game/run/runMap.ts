@@ -38,7 +38,12 @@ export const RUN_CONFIG = {
     healOnVictory: 12,
     /** Map columns between the first fight and the boss (exclusive of both). */
     middleColumns: 9,
+    /** Zero-based column index that always rolls a semi-boss fight (4th column). */
+    semiBossRow: 3,
 };
+
+/** Elite enemies used for the fixed semi-boss column. */
+const SEMI_BOSS_ENEMY_POOL: readonly string[] = [ 'smokebinder', 'saboteur' ];
 
 /** Enemy pools per column, ramping in difficulty. Last column is the boss. */
 const ROW_ENEMY_POOLS: readonly (readonly string[])[] = [
@@ -62,7 +67,7 @@ const clamp = (value: number, min: number, max: number): number =>
     Math.max(min, Math.min(max, value));
 
 /** Maps an index in a row of size `from` onto the nearest index in a row of size `to`. */
-const projectIndex = (index: number, from: number, to: number): number =>
+export const projectIndex = (index: number, from: number, to: number): number =>
 {
     if (from <= 1)
     {
@@ -70,6 +75,38 @@ const projectIndex = (index: number, from: number, to: number): number =>
     }
 
     return clamp(Math.round((index / (from - 1)) * (to - 1)), 0, to - 1);
+};
+
+/** Saboteur nodes always open adjacent routes on the next column (up and/or down). */
+const connectSaboteurBranches = (
+    node: RunMapNode,
+    nodeIndex: number,
+    current: RunMapNode[],
+    next: RunMapNode[],
+    connect: (from: RunMapNode, to: RunMapNode) => void,
+    hasIncoming: Set<string>,
+): void =>
+{
+    if (node.enemyId !== 'saboteur' || next.length <= 1)
+    {
+        return;
+    }
+
+    const targetIndex = projectIndex(nodeIndex, current.length, next.length);
+
+    for (const offset of [ -1, 1 ])
+    {
+        const branchIndex = targetIndex + offset;
+
+        if (branchIndex < 0 || branchIndex >= next.length)
+        {
+            continue;
+        }
+
+        const branch = next[branchIndex]!;
+        connect(node, branch);
+        hasIncoming.add(branch.id);
+    }
 };
 
 /** Assigns a distinct event id to each event node. */
@@ -103,6 +140,26 @@ export const assignEventIdsToNodes = (nodes: RunMapNode[]): void =>
     }
 };
 
+const resolveNodeKind = (row: number, rows: number): RunMapNodeKind =>
+{
+    if (row === rows - 1)
+    {
+        return 'boss';
+    }
+
+    if (row === 0)
+    {
+        return 'enemy';
+    }
+
+    if (row === RUN_CONFIG.semiBossRow)
+    {
+        return 'semi-boss';
+    }
+
+    return rollNodeKind();
+};
+
 export const generateRunMap = (): RunMap =>
 {
     const rows = RUN_CONFIG.middleColumns + 2;
@@ -115,11 +172,7 @@ export const generateRunMap = (): RunMap =>
     const grid: RunMapNode[][] = ROW_SIZES.map((size, row) =>
         Array.from({ length: size }, (_unused, col) =>
         {
-            const kind: RunMapNodeKind = row === rows - 1
-                ? 'boss'
-                : row === 0
-                    ? 'enemy'
-                    : rollNodeKind();
+            const kind = resolveNodeKind(row, rows);
             const battle = isBattleKind(kind);
 
             return {
@@ -129,7 +182,9 @@ export const generateRunMap = (): RunMap =>
                 colCount: size,
                 kind,
                 enemyId: battle
-                    ? pickRandom(ROW_ENEMY_POOLS[row] ?? ROW_ENEMY_POOLS[0]!)
+                    ? kind === 'semi-boss'
+                        ? pickRandom(SEMI_BOSS_ENEMY_POOL)
+                        : pickRandom(ROW_ENEMY_POOLS[row] ?? ROW_ENEMY_POOLS[0]!)
                     : undefined,
                 reward: battle ? { ...DEFAULT_CARD_REWARD } : undefined,
                 nextIds: [] as string[],
@@ -158,13 +213,20 @@ export const generateRunMap = (): RunMap =>
             connect(node, target);
             hasIncoming.add(target.id);
 
-            // Occasionally branch to an adjacent node for divergent paths.
-            if (random() < 0.45 && next.length > 1)
+            // Saboteur nodes always branch up/down; others occasionally branch.
+            if (next.length > 1)
             {
-                const dir = random() < 0.5 ? -1 : 1;
-                const branch = next[clamp(targetIndex + dir, 0, next.length - 1)]!;
-                connect(node, branch);
-                hasIncoming.add(branch.id);
+                if (node.enemyId === 'saboteur')
+                {
+                    connectSaboteurBranches(node, index, current, next, connect, hasIncoming);
+                }
+                else if (random() < 0.45)
+                {
+                    const dir = random() < 0.5 ? -1 : 1;
+                    const branch = next[clamp(targetIndex + dir, 0, next.length - 1)]!;
+                    connect(node, branch);
+                    hasIncoming.add(branch.id);
+                }
             }
         });
 

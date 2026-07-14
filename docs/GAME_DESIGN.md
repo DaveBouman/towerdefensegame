@@ -27,8 +27,9 @@ between the opening fight and the boss (`RUN_CONFIG.middleColumns`).
 - **Node kinds** (`src/game/run/nodeKinds.ts`, `RunMapNode.kind`): `enemy` and `boss`
   are battles; `shop` and `event` are non-battle stops. Each kind has an icon
   (`NodeKindIcon`, from game-icons.net) and a hover tooltip on the map. First column
-  is always `enemy`; last column is the `boss`; middle columns are weighted-random
-  (`rollNodeKind`). **Event nodes** open `RunEventOverlay` (`runEvents.ts`) — wheel,
+  is always `enemy`; column 4 (row index 3) is always a **semi-boss** lieutenant fight
+  (`smokebinder` / `saboteur`); last column is the `boss`; other middle columns are weighted-random
+  (`rollNodeKind`: 70% enemy, 20% event, 10% shop). **Event nodes** open `RunEventOverlay` (`runEvents.ts`) — wheel,
   icon matcher (4×4 memory grid, 4 attempts), **combo trials** (damage puzzles), stasis patches, gambles, body mods. Shop is still a placeholder (`NodeVisitOverlay`).
 - **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
 - **Deck persists and grows**: the run owns the deck as a list of card definition ids (`getDefaultDeckDefinitionIds`). Each battle builds instances from those ids (`buildDeckFromDefinitionIds`).
@@ -163,7 +164,7 @@ The player turn is **alternating**: each Attack resolves the board, then the ene
 |----|--------------|
 | `basic` | Raider — baseline (HP 190, atk 13, 65% attack), no passives |
 | `thornward` | Thorns — reflects 4 damage on attack (punishes multi-attack re-firing) |
-| `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile, **Curse Hand** (adds Burden to hand each turn) — trap pressure snowballs |
+| `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile, **Curse Hand** (adds Burden to hand each turn) — trap pressure snowballs. On the run map, saboteur nodes always connect to an adjacent route up or down on the next column. |
 | `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps) |
 | `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (punishes loop-reset), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
 
@@ -241,6 +242,8 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-14 | **Saboteur map branching.** Nodes fighting the saboteur always link to adjacent routes on the next column (up and/or down), so clearing them opens a vertical path change. |
+| 2026-07-14 | **Map node mix + semi-boss.** Middle columns roll 70% enemy / 20% event / 10% shop. Column 4 is always a **semi-boss** (`Lieutenant`: `smokebinder` or `saboteur`) with horned-skull map styling. |
 | 2026-07-14 | **Longer run map.** Nine columns now sit between the first fight and the boss (11 columns total). Enemy pools ramp across the longer path; branching uses a wider bell curve (`ROW_SIZES`). |
 | 2026-07-14 | **First column is always enemy.** Column 0 now always rolls `enemy` nodes (basic pool) so every run opens with a fight. Removed the column-0 Sign Matcher guarantee; events still roll in later columns. |
 | 2026-07-14 | **Cyberpunk naming pass.** Trinkets renamed to **body mods** (`bodyMods.ts`): Chrome Heart, Overclock Cell, Cred Siphon. Run currency shown as **creds**; map labels use Integrity / Body Mods. Events retitled (Fate Spinner, Glyph Matcher, Stasis Patch, Black ICE Relic, Neural Drill, Chrome Dealer). Node kinds: Hostile, Warden, Ripperdoc, Signal. |
