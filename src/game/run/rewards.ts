@@ -26,6 +26,22 @@ export const DEFAULT_CARD_REWARD: CardReward = {
     rerollable: false,
 };
 
+/** Shown on battle victory card rewards. */
+export const BATTLE_REWARD_RULES: readonly string[] = [
+    'Three random cards are offered from the reward pool.',
+    'Select one card to add to your deck, or continue without taking a card.',
+    'Your choice is permanent for the rest of the run.',
+];
+
+/** Shown on combo-trial briefs and reward screens. */
+export const PUZZLE_TRIAL_RULES: readonly string[] = [
+    'You receive a fixed hand — place every card on the board.',
+    'Set chain start in column 0, then launch one attack.',
+    'Deal at least the target damage in that single attack.',
+    'The training dummy does not fight back.',
+    'Pass: pick one reward card (or none). Fail: take damage.',
+];
+
 /** Card definition ids eligible to be offered as battle rewards. */
 export const REWARD_CARD_POOL: readonly string[] = [
     'attack',

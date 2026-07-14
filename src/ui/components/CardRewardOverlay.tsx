@@ -4,12 +4,18 @@ import { describeCardReward } from '../../game/run/rewards';
 interface CardRewardOverlayProps {
     /** Card definition ids offered as choices. */
     options: string[];
-    /** How many cards the player keeps. */
+    /** How many cards the player may keep. */
     pickCount: number;
     /** Whether the player may reroll the offered choices. */
     rerollable: boolean;
+    /** When true the player can confirm with zero selections. */
+    allowEmptyPick?: boolean;
+    eyebrow?: string;
+    title?: string;
+    subtitle?: string;
+    rules?: readonly string[];
     onConfirm: (definitionIds: string[]) => void;
-    onSkip: () => void;
+    onSkip?: () => void;
     onReroll?: () => void;
 }
 
@@ -17,6 +23,11 @@ export const CardRewardOverlay = ({
     options,
     pickCount,
     rerollable,
+    allowEmptyPick = true,
+    eyebrow = 'Victory spoils',
+    title,
+    subtitle,
+    rules,
     onConfirm,
     onSkip,
     onReroll,
@@ -24,6 +35,10 @@ export const CardRewardOverlay = ({
 {
     const [ selected, setSelected ] = useState<string[]>([]);
     const cards = useMemo(() => options.map(describeCardReward), [ options ]);
+
+    const resolvedTitle = title ?? (pickCount > 1
+        ? `Add up to ${pickCount} cards to your deck`
+        : 'Pick a card reward');
 
     const toggle = (definitionId: string): void =>
     {
@@ -36,23 +51,37 @@ export const CardRewardOverlay = ({
 
             if (prev.length >= pickCount)
             {
-                // Replace the oldest selection when the pick limit is reached.
-                return [ ...prev.slice(1), definitionId ];
+                return pickCount === 1
+                    ? [ definitionId ]
+                    : [ ...prev.slice(1), definitionId ];
             }
 
             return [ ...prev, definitionId ];
         });
     };
 
-    const canConfirm = selected.length === Math.min(pickCount, cards.length);
+    const canConfirm = allowEmptyPick
+        ? selected.length <= pickCount
+        : selected.length === Math.min(pickCount, cards.length);
+
+    const confirmLabel = selected.length > 0
+        ? `Take ${selected.length === 1 ? cards.find((card) => card.definitionId === selected[0])?.label ?? 'card' : `(${selected.length})`}`
+        : 'Take nothing';
 
     return (
         <div className="card-reward">
             <div className="card-reward__panel">
-                <p className="card-reward__eyebrow">Victory spoils</p>
-                <h1 className="card-reward__title">
-                    {pickCount > 1 ? `Add ${pickCount} cards to your deck` : 'Add a card to your deck'}
-                </h1>
+                <p className="card-reward__eyebrow">{eyebrow}</p>
+                <h1 className="card-reward__title">{resolvedTitle}</h1>
+                {subtitle && <p className="card-reward__subtitle">{subtitle}</p>}
+
+                {rules && rules.length > 0 && (
+                    <ul className="card-reward__rules">
+                        {rules.map((rule) => (
+                            <li key={rule}>{rule}</li>
+                        ))}
+                    </ul>
+                )}
 
                 <div className="card-reward__choices">
                     {cards.map((card, index) =>
@@ -80,16 +109,18 @@ export const CardRewardOverlay = ({
                             Reroll
                         </button>
                     )}
-                    <button type="button" className="card-reward__skip" onClick={onSkip}>
-                        Skip
-                    </button>
+                    {onSkip && !allowEmptyPick && (
+                        <button type="button" className="card-reward__skip" onClick={onSkip}>
+                            Skip
+                        </button>
+                    )}
                     <button
                         type="button"
                         className="card-reward__confirm"
                         disabled={!canConfirm}
                         onClick={() => onConfirm(selected)}
                     >
-                        Take {selected.length > 0 ? `(${selected.length})` : ''}
+                        {confirmLabel}
                     </button>
                 </div>
             </div>

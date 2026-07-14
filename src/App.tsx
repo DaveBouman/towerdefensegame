@@ -12,7 +12,7 @@ import { PileViewOverlay } from './ui/components/PileViewOverlay';
 import { isBattleKind } from './game/run/nodeKinds';
 import { rollRunEventId, applyRunEventEffects } from './game/run/runEvents';
 import type { AppliedEventResult, AppliedEventMessage } from './game/run/runEvents';
-import { getRunPuzzle } from './game/run/runPuzzles';
+import { getRunPuzzle, rollPuzzleCardReward } from './game/run/runPuzzles';
 import { getRunMaxHealth, getVictoryGoldBonus } from './game/run/runResources';
 import { EventBus } from './game/EventBus';
 import { GAME_EVENTS } from './game/events/gameEvents';
@@ -25,7 +25,7 @@ import {
     type RunMap,
     type RunMapNode,
 } from './game/run/runMap';
-import { rollCardReward, type CardReward } from './game/run/rewards';
+import { rollCardReward, BATTLE_REWARD_RULES, PUZZLE_TRIAL_RULES, type CardReward } from './game/run/rewards';
 import {
     createRandomSeed,
     deriveSeed,
@@ -33,7 +33,7 @@ import {
     seedScope,
 } from './game/random/rng';
 
-type RunPhase = 'map' | 'battle' | 'reward' | 'visit' | 'puzzle' | 'puzzle-result' | 'victory' | 'defeat';
+type RunPhase = 'map' | 'battle' | 'reward' | 'visit' | 'puzzle' | 'puzzle-result' | 'puzzle-reward' | 'victory' | 'defeat';
 
 interface PendingReward {
     nodeId: string;
@@ -52,6 +52,15 @@ interface VisitState {
 interface PuzzleResultState {
     puzzleId: string;
     success: boolean;
+    damageDealt: number;
+    damageTarget: number;
+    messages: AppliedEventMessage[];
+}
+
+interface PendingPuzzleReward {
+    puzzleId: string;
+    nodeId: string;
+    options: string[];
     damageDealt: number;
     damageTarget: number;
     messages: AppliedEventMessage[];
@@ -91,6 +100,7 @@ function App()
     const [ pendingReward, setPendingReward ] = useState<PendingReward | null>(null);
     const [ visit, setVisit ] = useState<VisitState | null>(null);
     const [ puzzleResult, setPuzzleResult ] = useState<PuzzleResultState | null>(null);
+    const [ pendingPuzzleReward, setPendingPuzzleReward ] = useState<PendingPuzzleReward | null>(null);
 
     const runMaxHealth = useMemo(() => getRunMaxHealth(trinkets), [ trinkets ]);
 
@@ -240,7 +250,8 @@ function App()
         }): void =>
         {
             const puzzle = getRunPuzzle(puzzleId);
-            const effects = success ? puzzle.successEffects : puzzle.failureEffects;
+            const effects = (success ? puzzle.successEffects : puzzle.failureEffects)
+                .filter((effect) => effect.kind !== 'add-card');
             const applied = applyRunEventEffects(effects, {
                 playerHealth: playerHealthRef.current,
                 maxHealth: getRunMaxHealth(trinketsRef.current),
@@ -253,6 +264,30 @@ function App()
             setGold(applied.gold);
             setDeck(applied.deck);
             setTrinkets(applied.trinkets);
+
+            if (success)
+            {
+                const node = eventVisitRef.current?.node;
+
+                if (!node)
+                {
+                    return;
+                }
+
+                seedScope(seedRef.current, `puzzle-reward:${node.id}:${puzzleId}`);
+
+                setPendingPuzzleReward({
+                    puzzleId,
+                    nodeId: node.id,
+                    options: rollPuzzleCardReward(),
+                    damageDealt,
+                    damageTarget,
+                    messages: applied.messages,
+                });
+                setPhase('puzzle-reward');
+                return;
+            }
+
             setPuzzleResult({
                 puzzleId,
                 success,
@@ -283,8 +318,13 @@ function App()
         {
             if (node.kind === 'event')
             {
-                seedScope(seed, `event:${node.id}`);
-                setVisit({ node, eventId: rollRunEventId() });
+                if (!node.eventId)
+                {
+                    seedScope(seed, `event:${node.id}`);
+                    node.eventId = rollRunEventId();
+                }
+
+                setVisit({ node, eventId: node.eventId });
             }
             else
             {
@@ -382,6 +422,25 @@ function App()
         finishVisit();
     }, [ finishVisit ]);
 
+    const finishPuzzleReward = useCallback((chosen: string[]): void =>
+    {
+        if (chosen.length > 0)
+        {
+            setDeck((prev) => [ ...prev, ...chosen ]);
+        }
+
+        const node = eventVisitRef.current?.node;
+
+        if (node)
+        {
+            setPath((prev) => (prev.includes(node.id) ? prev : [ ...prev, node.id ]));
+        }
+
+        eventVisitRef.current = null;
+        setPendingPuzzleReward(null);
+        setPhase('map');
+    }, []);
+
     const finishReward = useCallback((chosen: string[]): void =>
     {
         if (chosen.length > 0)
@@ -425,6 +484,7 @@ function App()
         setPendingReward(null);
         setVisit(null);
         setPuzzleResult(null);
+        setPendingPuzzleReward(null);
         eventVisitRef.current = null;
         setPhase('map');
     }, []);
@@ -476,9 +536,22 @@ function App()
                     options={pendingReward.options}
                     pickCount={pendingReward.reward.pickCount}
                     rerollable={pendingReward.reward.rerollable}
+                    rules={BATTLE_REWARD_RULES}
                     onConfirm={finishReward}
                     onSkip={() => finishReward([])}
                     onReroll={rerollReward}
+                />
+            )}
+            {phase === 'puzzle-reward' && pendingPuzzleReward && (
+                <CardRewardOverlay
+                    eyebrow="Trial passed"
+                    title="Choose a card reward"
+                    subtitle={`Dealt ${pendingPuzzleReward.damageDealt} / ${pendingPuzzleReward.damageTarget} damage.`}
+                    rules={PUZZLE_TRIAL_RULES}
+                    options={pendingPuzzleReward.options}
+                    pickCount={1}
+                    rerollable={false}
+                    onConfirm={finishPuzzleReward}
                 />
             )}
             {phase === 'visit' && visit && visit.eventId && (

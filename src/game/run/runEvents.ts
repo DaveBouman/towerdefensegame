@@ -84,7 +84,7 @@ export interface AppliedEventResult {
 const EVENT_POOL: readonly (readonly [string, number])[] = [
     [ 'combo-trial', 3 ],
     [ 'wheel-of-fate', 3 ],
-    [ 'sign-matcher', 2 ],
+    [ 'sign-matcher', 3 ],
     [ 'healing-spring', 2 ],
     [ 'cursed-idol', 2 ],
     [ 'gambler-offer', 2 ],
@@ -115,7 +115,7 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
             {
                 id: 'accept',
                 label: 'Accept the Trial',
-                description: 'Get puzzle cards and deal at least the target damage in a single attack.',
+                description: 'Deal the target damage in one attack, then pick one of three reward cards — or take none.',
                 icon: 'puzzle',
                 effects: [ { kind: 'open-puzzle', puzzleId: '__random__' } ],
             },
@@ -243,11 +243,17 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
 
 /** Weighted-random event id (caller must seed first). */
 export const rollRunEventId = (): string =>
+    rollRunEventIdExcluding(new Set());
+
+/** Picks a weighted event id, avoiding ids already used in the same map column. */
+export const rollRunEventIdExcluding = (excluded: ReadonlySet<string>): string =>
 {
-    const total = EVENT_POOL.reduce((sum, [ , weight ]) => sum + weight, 0);
+    const pool = EVENT_POOL.filter(([ id ]) => !excluded.has(id));
+    const choices = pool.length > 0 ? pool : EVENT_POOL;
+    const total = choices.reduce((sum, [ , weight ]) => sum + weight, 0);
     let roll = random() * total;
 
-    for (const [ id, weight ] of EVENT_POOL)
+    for (const [ id, weight ] of choices)
     {
         if (roll < weight)
         {
@@ -257,7 +263,7 @@ export const rollRunEventId = (): string =>
         roll -= weight;
     }
 
-    return EVENT_POOL[0]![0];
+    return choices[0]![0];
 };
 
 export const getRunEvent = (eventId: string): RunEventDefinition =>

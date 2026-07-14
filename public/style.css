@@ -566,38 +566,105 @@ html, body, #root {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 18px;
+    gap: 14px;
     position: relative;
+    padding-top: 8px;
 }
 
 .run-event__wheel {
-    width: 220px;
-    height: 220px;
+    position: relative;
+    width: 280px;
+    height: 280px;
     border-radius: 50%;
-    border: 4px solid rgba(200, 180, 255, 0.5);
-    background: conic-gradient(
-        #2a2550 0deg 45deg,
-        #1a1830 45deg 90deg,
-        #2a2550 90deg 135deg,
-        #1a1830 135deg 180deg,
-        #2a2550 180deg 225deg,
-        #1a1830 225deg 270deg,
-        #2a2550 270deg 315deg,
-        #1a1830 315deg 360deg
-    );
+    border: 4px solid rgba(200, 180, 255, 0.45);
     transition: transform 2.4s cubic-bezier(0.15, 0.85, 0.2, 1);
-    box-shadow: 0 0 30px rgba(120, 100, 220, 0.35);
+    box-shadow:
+        0 0 36px rgba(120, 60, 80, 0.35),
+        inset 0 0 24px rgba(0, 0, 0, 0.45);
+}
+
+.run-event__wheel-disc {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.06);
+}
+
+.run-event__wheel-segment {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.run-event__wheel-segment-icon {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 30px;
+    height: 30px;
+    margin: -15px 0 0 -15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(var(--wheel-angle)) translateY(-92px) rotate(calc(-1 * var(--wheel-angle)));
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.55));
+}
+
+.run-event__wheel-segment-icon svg {
+    width: 26px;
+    height: 26px;
+    fill: currentColor;
+}
+
+.run-event__wheel-segment--bad .run-event__wheel-segment-icon {
+    color: #ff8a9a;
+}
+
+.run-event__wheel-segment--risky .run-event__wheel-segment-icon {
+    color: #ffcc80;
+}
+
+.run-event__wheel-segment--lucky .run-event__wheel-segment-icon {
+    color: #9ef0c4;
+}
+
+.run-event__wheel-hub {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 52px;
+    height: 52px;
+    margin: -26px 0 0 -26px;
+    border-radius: 50%;
+    border: 3px solid rgba(200, 180, 255, 0.55);
+    background: radial-gradient(circle at 35% 30%, #3a3568 0%, #14162c 70%);
+    box-shadow: 0 0 12px rgba(0, 0, 0, 0.5);
 }
 
 .run-event__wheel-pointer {
     position: absolute;
-    top: 18px;
+    top: 0;
     width: 0;
     height: 0;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-bottom: 18px solid #ffca57;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    border-left: 12px solid transparent;
+    border-right: 12px solid transparent;
+    border-bottom: 22px solid #ffca57;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.55));
+    z-index: 2;
+}
+
+.run-event__wheel-note {
+    margin: 0;
+    max-width: 420px;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #9a8fbf;
+}
+
+.run-event__wheel-note em {
+    color: #c8b8ff;
+    font-style: italic;
 }
 
 .run-event__wheel-legend {
@@ -820,6 +887,27 @@ html, body, #root {
 
 .run-event__puzzle-goal strong {
     color: #f1c96a;
+}
+
+.run-event__puzzle-rules,
+.puzzle-hud__rules {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    display: grid;
+    gap: 5px;
+    border-radius: 8px;
+    border: 1px solid rgba(120, 140, 220, 0.2);
+    background: rgba(30, 34, 68, 0.45);
+    font-size: 12px;
+    line-height: 1.45;
+    color: #b8c0e8;
+}
+
+.run-event__puzzle-rules li::before,
+.puzzle-hud__rules li::before {
+    content: '• ';
+    color: #9b8fd8;
 }
 
 .run-event__puzzle-cards {
@@ -1367,10 +1455,36 @@ html, body, #root {
 }
 
 .card-reward__title {
-    margin: 0 0 24px;
+    margin: 0 0 12px;
     font-size: 24px;
     font-weight: 700;
     color: #eef1ff;
+}
+
+.card-reward__subtitle {
+    margin: 0 0 16px;
+    color: #c8b8ff;
+    font-size: 14px;
+}
+
+.card-reward__rules {
+    list-style: none;
+    margin: 0 0 20px;
+    padding: 12px 14px;
+    display: grid;
+    gap: 6px;
+    text-align: left;
+    border-radius: 10px;
+    border: 1px solid rgba(140, 150, 220, 0.25);
+    background: rgba(20, 22, 44, 0.65);
+    color: #c8c4e8;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.card-reward__rules li::before {
+    content: '• ';
+    color: #9b8fd8;
 }
 
 .card-reward__choices {

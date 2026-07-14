@@ -1,6 +1,7 @@
 import { random } from '../random/rng';
 import type { CardDirection } from '../cardGame/domain/cardDirections';
 import type { RunEventEffect } from './runEvents';
+import { rollCardReward } from './rewards';
 
 export interface PuzzleCardSpec {
     definitionId: string;
@@ -41,15 +42,14 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
             { definitionId: 'attack', arrow: 'right' },
             { definitionId: 'attack', arrow: 'right' },
         ],
-        damageTarget: 14,
+        damageTarget: 16,
         successEffects: [
             { kind: 'gold', amount: 18 },
             { kind: 'lose-gold', amount: 18 },
-            { kind: 'add-card', cardId: '__random__' },
             { kind: 'add-curse', cardId: 'fuse', count: 1 },
         ],
         failureEffects: [
-            { kind: 'damage', amount: 4 },
+            { kind: 'damage', amount: 6 },
         ],
     },
     'triple-strike': {
@@ -62,13 +62,13 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
             { definitionId: 'attack', arrow: 'right' },
             { definitionId: 'attack', arrow: 'right' },
         ],
-        damageTarget: 16,
+        damageTarget: 18,
         successEffects: [
             { kind: 'gold', amount: 20 },
             { kind: 'lose-gold', amount: 20 },
         ],
         failureEffects: [
-            { kind: 'damage', amount: 4 },
+            { kind: 'damage', amount: 6 },
         ],
     },
     'looping-strike': {
@@ -80,15 +80,14 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
             { definitionId: 'attack-special', arrow: 'right' },
             { definitionId: 'attack', arrow: 'left' },
         ],
-        damageTarget: 18,
+        damageTarget: 22,
         successEffects: [
             { kind: 'gold', amount: 22 },
             { kind: 'lose-gold', amount: 22 },
-            { kind: 'add-card', cardId: '__random__' },
             { kind: 'add-curse', cardId: 'fuse', count: 1 },
         ],
         failureEffects: [
-            { kind: 'damage', amount: 5 },
+            { kind: 'damage', amount: 7 },
         ],
     },
     'fire-alternation': {
@@ -102,15 +101,14 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
             { definitionId: 'defend', arrow: 'right' },
             { definitionId: 'attack', arrow: 'right' },
         ],
-        damageTarget: 18,
+        damageTarget: 21,
         successEffects: [
             { kind: 'gold', amount: 25 },
             { kind: 'lose-gold', amount: 25 },
-            { kind: 'add-card', cardId: '__random__' },
             { kind: 'add-curse', cardId: 'burden', count: 1 },
         ],
         failureEffects: [
-            { kind: 'damage', amount: 5 },
+            { kind: 'damage', amount: 7 },
         ],
     },
     'loop-lesson': {
@@ -123,13 +121,13 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
             { definitionId: 'loop-reset', arrow: 'right', loopArrow: 'left' },
             { definitionId: 'attack', arrow: 'right' },
         ],
-        damageTarget: 9,
+        damageTarget: 11,
         successEffects: [
             { kind: 'gold', amount: 15 },
             { kind: 'lose-gold', amount: 15 },
         ],
         failureEffects: [
-            { kind: 'damage', amount: 3 },
+            { kind: 'damage', amount: 5 },
         ],
     },
     'rupture-bleed': {
@@ -143,15 +141,14 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
             { definitionId: 'attack', arrow: 'right' },
             { definitionId: 'attack', arrow: 'right' },
         ],
-        damageTarget: 20,
+        damageTarget: 26,
         successEffects: [
             { kind: 'gold', amount: 30 },
             { kind: 'lose-gold', amount: 30 },
-            { kind: 'add-card', cardId: '__random__' },
             { kind: 'add-curse', cardId: 'burden', count: 1 },
         ],
         failureEffects: [
-            { kind: 'damage', amount: 6 },
+            { kind: 'damage', amount: 8 },
         ],
     },
 };
@@ -194,3 +191,9 @@ export const computePuzzleDamageDealt = (sequence: {
     abilityEnemyDamage: number;
 }): number =>
     sequence.totalDamage + sequence.offChainDamage + sequence.abilityEnemyDamage;
+
+export const PUZZLE_CARD_REWARD_COUNT = 3;
+
+/** Rolls card choices for a passed combo trial (caller must seed first). */
+export const rollPuzzleCardReward = (): string[] =>
+    rollCardReward(PUZZLE_CARD_REWARD_COUNT);

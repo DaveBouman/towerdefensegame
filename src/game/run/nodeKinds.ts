@@ -32,8 +32,8 @@ export const NODE_KIND_INFO: Record<RunMapNodeKind, NodeKindInfo> = {
         isBattle: false,
     },
     event: {
-        label: 'Random Event',
-        tooltip: 'An uncertain encounter — wheel, riddles, healing, curses, or trinkets.',
+        label: 'Event',
+        tooltip: 'A known encounter — Sign Matcher, wheel, combo trial, healing, curses, and more.',
         isBattle: false,
     },
 };

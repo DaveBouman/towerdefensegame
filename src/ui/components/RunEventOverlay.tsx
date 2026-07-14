@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
     applyRunEventEffects,
     buildIconMatchGrid,
@@ -14,11 +14,16 @@ import {
     type AppliedEventMessage,
     type AppliedEventResult,
     type IconMatchGrid,
-    type WheelSegment,
     type RunEventChoice,
 } from '../../game/run/runEvents';
+import {
+    buildWheelConicGradient,
+    getWheelDisplayLayout,
+    getWheelSpinRotationTarget,
+} from '../../game/run/wheelDisplay';
 import { seedScope } from '../../game/random/rng';
 import { getRunPuzzle, rollPuzzleId } from '../../game/run/runPuzzles';
+import { PUZZLE_TRIAL_RULES } from '../../game/run/rewards';
 import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistry';
 import { EventIcon } from './EventIcon';
 
@@ -104,6 +109,9 @@ export const RunEventOverlay = ({
         return buildIconMatchGrid();
     }, [ phase, seed, nodeId ]);
 
+    const wheelLayout = useMemo(() => getWheelDisplayLayout(), []);
+    const wheelGradient = useMemo(() => buildWheelConicGradient(), []);
+
     useEffect(() =>
     {
         if (phase === 'matcher' && matchGrid)
@@ -188,8 +196,7 @@ export const RunEventOverlay = ({
         seedScope(seed, `event:${nodeId}:wheel`);
         const segment = rollWheelSegment();
         const index = getWheelSegmentIndex(segment.id);
-        const slice = 360 / WHEEL_SEGMENTS.length;
-        const target = 360 * 6 + (WHEEL_SEGMENTS.length - index) * slice - slice / 2;
+        const target = getWheelSpinRotationTarget(index);
 
         setWheelSpinning(true);
         setWheelRotation(target);
@@ -338,8 +345,28 @@ export const RunEventOverlay = ({
                             className={`run-event__wheel${wheelSpinning ? ' run-event__wheel--spinning' : ''}`}
                             style={{ transform: `rotate(${wheelRotation}deg)` }}
                             aria-label="Prize wheel"
-                        />
+                        >
+                            <div
+                                className="run-event__wheel-disc"
+                                style={{ background: wheelGradient }}
+                            />
+                            {wheelLayout.map((segment) => (
+                                <div
+                                    key={segment.id}
+                                    className={`run-event__wheel-segment run-event__wheel-segment--${segment.tone}`}
+                                    style={{ '--wheel-angle': `${segment.midAngle}deg` } as CSSProperties}
+                                >
+                                    <span className="run-event__wheel-segment-icon" title={segment.label}>
+                                        <EventIcon icon={segment.icon} />
+                                    </span>
+                                </div>
+                            ))}
+                            <div className="run-event__wheel-hub" aria-hidden="true" />
+                        </div>
                         <div className="run-event__wheel-pointer" aria-hidden="true" />
+                        <p className="run-event__wheel-note">
+                            Curses and traps crowd the rim — the wheel only <em>looks</em> rigged against you.
+                        </p>
                         <div className="run-event__wheel-legend">
                             {WHEEL_SEGMENTS.map((segment) => (
                                 <span key={segment.id} className="run-event__wheel-legend-item">
@@ -406,6 +433,11 @@ export const RunEventOverlay = ({
                             Goal: deal at least <strong>{puzzle.damageTarget}</strong> damage
                             with <strong>{puzzle.cards.length}</strong> cards in one attack.
                         </p>
+                        <ul className="run-event__puzzle-rules">
+                            {PUZZLE_TRIAL_RULES.map((rule) => (
+                                <li key={rule}>{rule}</li>
+                            ))}
+                        </ul>
                         <p className="run-event__puzzle-hint">{puzzle.hint}</p>
                         <ul className="run-event__puzzle-cards">
                             {puzzle.cards.map((card, index) => (

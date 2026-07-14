@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { getCardGameEnemyDefinition } from '../../game/cardGame/config/enemyCatalog';
 import type { RunMap, RunMapNode } from '../../game/run/runMap';
+import { getRunEvent } from '../../game/run/runEvents';
 import { NODE_KIND_INFO } from '../../game/run/nodeKinds';
+import { EventIcon } from './EventIcon';
 import { NodeKindIcon } from './NodeKindIcon';
 
 const PAD_X = 0.09;
@@ -202,8 +204,13 @@ export const RunMapOverlay = ({
                     const isCurrent = node.id === currentNodeId;
                     const info = NODE_KIND_INFO[node.kind];
                     const enemy = node.enemyId ? getCardGameEnemyDefinition(node.enemyId) : undefined;
-                    const label = enemy?.label ?? info.label;
-                    const tooltipBody = enemy ? `${enemy.label}. ${info.tooltip}` : info.tooltip;
+                    const event = node.eventId ? getRunEvent(node.eventId) : undefined;
+                    const label = enemy?.label ?? event?.title ?? info.label;
+                    const tooltipBody = enemy
+                        ? `${enemy.label}. ${info.tooltip}`
+                        : event
+                            ? `${event.title}. ${event.intro}`
+                            : info.tooltip;
                     const classes = [ 'run-map__node', `run-map__node--${node.kind}` ];
 
                     if (isCompleted) classes.push('run-map__node--completed');
@@ -227,11 +234,13 @@ export const RunMapOverlay = ({
                             }}
                         >
                             <span className="run-map__node-dot">
-                                <NodeKindIcon kind={node.kind} className="run-map__node-icon" />
+                                {event
+                                    ? <EventIcon icon={event.icon} className="run-map__node-icon" />
+                                    : <NodeKindIcon kind={node.kind} className="run-map__node-icon" />}
                             </span>
                             <span className="run-map__node-label">{label}</span>
                             <span className="run-map__tooltip" role="tooltip">
-                                <span className="run-map__tooltip-title">{info.label}</span>
+                                <span className="run-map__tooltip-title">{event?.title ?? info.label}</span>
                                 <span className="run-map__tooltip-body">{tooltipBody}</span>
                             </span>
                         </button>

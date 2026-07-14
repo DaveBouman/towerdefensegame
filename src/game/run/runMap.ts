@@ -5,6 +5,7 @@
 
 import { DEFAULT_CARD_REWARD, type RunReward } from './rewards';
 import { isBattleKind, rollNodeKind, type RunMapNodeKind } from './nodeKinds';
+import { rollRunEventIdExcluding } from './runEvents';
 import { pickRandom, random } from '../random/rng';
 
 export interface RunMapNode {
@@ -16,6 +17,8 @@ export interface RunMapNode {
     /** Number of nodes in this node's column (for layout). */
     colCount: number;
     kind: RunMapNodeKind;
+    /** Seeded encounter for `event` nodes — shown on the map before you travel there. */
+    eventId?: string;
     /** Enemy fought at this node (battle kinds only). */
     enemyId?: string;
     /** Reward granted for defeating this node's enemy (battle kinds only). */
@@ -58,6 +61,48 @@ const projectIndex = (index: number, from: number, to: number): number =>
     }
 
     return clamp(Math.round((index / (from - 1)) * (to - 1)), 0, to - 1);
+};
+
+/** Assigns a distinct event id to each event node (first column always includes Sign Matcher). */
+export const assignEventIdsToNodes = (nodes: RunMapNode[]): void =>
+{
+    const byRow = new Map<number, RunMapNode[]>();
+
+    for (const node of nodes)
+    {
+        if (node.kind !== 'event')
+        {
+            continue;
+        }
+
+        const rowNodes = byRow.get(node.row) ?? [];
+
+        rowNodes.push(node);
+        byRow.set(node.row, rowNodes);
+    }
+
+    for (const [ row, rowNodes ] of byRow)
+    {
+        rowNodes.sort((a, b) => a.col - b.col);
+        const used = new Set<string>();
+
+        if (row === 0 && rowNodes.length > 0)
+        {
+            rowNodes[0]!.eventId = 'sign-matcher';
+            used.add('sign-matcher');
+        }
+
+        for (const node of rowNodes)
+        {
+            if (node.eventId)
+            {
+                continue;
+            }
+
+            node.eventId = rollRunEventIdExcluding(used);
+            used.add(node.eventId);
+        }
+    }
 };
 
 export const generateRunMap = (): RunMap =>
@@ -132,7 +177,11 @@ export const generateRunMap = (): RunMap =>
         });
     }
 
-    return { rows, nodes: grid.flat() };
+    const nodes = grid.flat();
+
+    assignEventIdsToNodes(nodes);
+
+    return { rows, nodes };
 };
 
 /** Returns the ids of nodes reachable given the last completed node (null = start). */
