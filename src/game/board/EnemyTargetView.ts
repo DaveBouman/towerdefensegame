@@ -609,6 +609,11 @@ export class EnemyTargetView
         });
     }
 
+    showIntentLabel (text: string): void
+    {
+        this.showFloatingNumber(text, '#fcee0a');
+    }
+
     private showFloatingNumber (text: string, color: string): void
     {
         playFloatingText(

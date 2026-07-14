@@ -65,6 +65,10 @@ export const REWARD_CARD_POOL: readonly string[] = [
     'lacerate',
     'scorch',
     'bramble',
+    'glitch',
+    'hardwire',
+    'patch',
+    'overclock',
     'courier',
 ];
 
@@ -94,6 +98,10 @@ const CARD_BLURBS: Record<string, string> = {
     lacerate: 'Lunge + bleed — skip a tile and stack attack bonuses.',
     scorch: 'Corner fire — hooks around a bend while igniting alternation.',
     bramble: 'Corner fortify — bends the chain while stacking defend bonuses.',
+    glitch: 'Enemy attack -10% for the rest of the chain and enemy response.',
+    hardwire: 'Shield gained +10% from defend cards and armor effects.',
+    patch: 'Damage taken -10% from enemy attacks and reflect damage.',
+    overclock: 'Damage dealt +10% from your attack steps and bonuses.',
     courier: 'Discards 2 hand cards to the graveyard when played. Single use per run.',
 };
 

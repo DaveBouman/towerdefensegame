@@ -109,6 +109,30 @@ export const CARD_VISUALS: Record<string, CardVisualStyle> = {
         labelColor: '#b8ffd0',
         powerColor: '#58d68d',
     },
+    glitch: {
+        fill: 0x101828,
+        border: 0x7af0ff,
+        labelColor: '#b8f0ff',
+        powerColor: '#00e8ff',
+    },
+    hardwire: {
+        fill: 0x081820,
+        border: 0x00e8ff,
+        labelColor: '#7af0ff',
+        powerColor: '#58d68d',
+    },
+    patch: {
+        fill: 0x0a1820,
+        border: 0x58d68d,
+        labelColor: '#b8ffe0',
+        powerColor: '#7af0ff',
+    },
+    overclock: {
+        fill: 0x201008,
+        border: 0xfcee0a,
+        labelColor: '#fff9b0',
+        powerColor: '#fcee0a',
+    },
 };
 
 export const HAND_CARD_WIDTH = 86;

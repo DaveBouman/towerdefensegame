@@ -1,4 +1,5 @@
 import { GAME_RULES, getCardDefinitionOrThrow } from '../../config/cardRegistry';
+import { describeBattleModifier } from '../../combat/battleModifiers';
 import type { EnemyTurnStep } from '../../domain/types';
 
 export interface EnemyIntentTooltipContent {
@@ -60,5 +61,21 @@ export const resolveEnemyIntentTooltip = (
                     'Route your chain through the live tiles to hit full strength.',
                 ],
             };
+        case 'battle-mod':
+        {
+            const stat = step.modifierStat ?? 'enemy-attack';
+            const delta = step.modifierDelta ?? 0;
+            const label = describeBattleModifier(stat, delta);
+
+            return {
+                title: 'Battle modifier',
+                lines: [
+                    upcoming
+                        ? `Will apply ${label} for the rest of this enemy turn and your next attacks.`
+                        : `Applies ${label}.`,
+                    'Stacks with other modifiers and cards in the chain.',
+                ],
+            };
+        }
     }
 };

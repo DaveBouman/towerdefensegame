@@ -14,6 +14,12 @@ import {
     getCardGameEnemyDefinitionOrThrow,
 } from '../config/enemyCatalog';
 import { buildAttackSequence as buildRawAttackSequence, getUnchainedHazardSlots, planAttack } from '../combat/AttackPipeline';
+import {
+    aggregateBattleModifiers,
+    applyBattleModifier,
+    type BattleModifier,
+    type BattleModifierStat,
+} from '../combat/battleModifiers';
 import { planEnemyTurn } from '../combat/enemyTurn';
 import {
     applyEnemyPassivesToSequence,
@@ -79,6 +85,7 @@ export class CardGameSession
     private enemyTurnInProgress = false;
     private damageDealtThisAttack = 0;
     private armorGrantedThisAttack = 0;
+    private readonly battleModifiers: BattleModifier[] = [];
     private queuedEnemyTurn: EnemyTurnAction | null = null;
     private rerollsRemaining: number;
     private readonly puzzleMode: PuzzleModeConfig | null;
@@ -238,20 +245,96 @@ export class CardGameSession
     private rampEnemyAction (action: EnemyTurnAction): EnemyTurnAction
     {
         const bonus = this.getEnemyDamageRamp();
-
-        if (bonus <= 0)
-        {
-            return { ...action, steps: action.steps.map((step) => ({ ...step })) };
-        }
+        const totals = aggregateBattleModifiers(this.battleModifiers);
 
         return {
             ...action,
-            steps: action.steps.map((step) => (
-                step.kind === 'attack'
-                    ? { ...step, amount: (step.amount ?? 0) + bonus }
-                    : { ...step }
-            )),
+            steps: action.steps.map((step) =>
+            {
+                if (step.kind !== 'attack')
+                {
+                    return { ...step };
+                }
+
+                const base = (step.amount ?? 0) + bonus;
+
+                return {
+                    ...step,
+                    amount: applyBattleModifier(base, totals.enemyAttack),
+                };
+            }),
         };
+    }
+
+    addBattleModifier (stat: BattleModifierStat, delta: number, source: BattleModifier['source']): void
+    {
+        if (delta === 0)
+        {
+            return;
+        }
+
+        this.battleModifiers.push({ stat, delta, source });
+    }
+
+    addBattleModifierFromCard (definitionId: string): void
+    {
+        const definition = getCardDefinitionOrThrow(definitionId);
+
+        if (!definition.battleModifier)
+        {
+            return;
+        }
+
+        this.addBattleModifier(
+            definition.battleModifier.stat,
+            definition.battleModifier.delta,
+            'player',
+        );
+    }
+
+    addBattleModifierFromEnemyStep (step: import('../domain/types').EnemyTurnStep): void
+    {
+        if (step.kind !== 'battle-mod' || step.modifierStat === undefined || step.modifierDelta === undefined)
+        {
+            return;
+        }
+
+        this.addBattleModifier(step.modifierStat, step.modifierDelta, 'enemy');
+    }
+
+    clearBattleModifiers (): void
+    {
+        this.battleModifiers.length = 0;
+    }
+
+    private getModifierTotals ()
+    {
+        return aggregateBattleModifiers(this.battleModifiers);
+    }
+
+    private scalePlayerDamageDealt (damage: number): number
+    {
+        return applyBattleModifier(damage, this.getModifierTotals().playerDamageDealt);
+    }
+
+    private scalePlayerArmorGain (armor: number): number
+    {
+        return applyBattleModifier(armor, this.getModifierTotals().playerArmor);
+    }
+
+    getScaledArmorGain (armor: number): number
+    {
+        return this.scalePlayerArmorGain(armor);
+    }
+
+    private scaleEnemyAttackDamage (damage: number): number
+    {
+        const totals = this.getModifierTotals();
+
+        return applyBattleModifier(
+            applyBattleModifier(damage, totals.enemyAttack),
+            totals.playerDamageTaken,
+        );
     }
 
     /** The queued enemy turn scaled by the current round ramp (for telegraphing). */
@@ -773,12 +856,14 @@ export class CardGameSession
     /** Grants player shield during an attack (called as each defend step finishes). */
     grantPlayerShield (amount: number): void
     {
-        if (amount <= 0)
+        const scaled = this.scalePlayerArmorGain(amount);
+
+        if (scaled <= 0)
         {
             return;
         }
 
-        this.player.shield += amount;
+        this.player.shield += scaled;
         this.armorGrantedThisAttack += amount;
         CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: this.player.shield });
     }
@@ -786,7 +871,9 @@ export class CardGameSession
     /** Applies attack damage to enemy shield first, then health. */
     dealAttackDamage (damage: number): DamageResult
     {
-        if (damage <= 0)
+        const scaledDamage = this.scalePlayerDamageDealt(damage);
+
+        if (scaledDamage <= 0)
         {
             return {
                 enemy: this.getEnemy(),
@@ -796,16 +883,16 @@ export class CardGameSession
         }
 
         const shieldBefore = this.enemy.shield;
-        const shieldAbsorbed = Math.min(this.enemy.shield, damage);
-        const healthDamage = damage - shieldAbsorbed;
+        const shieldAbsorbed = Math.min(this.enemy.shield, scaledDamage);
+        const healthDamage = scaledDamage - shieldAbsorbed;
 
         this.enemy.shield -= shieldAbsorbed;
         this.enemy.health = Math.max(0, this.enemy.health - healthDamage);
-        this.damageDealtThisAttack += damage;
+        this.damageDealtThisAttack += scaledDamage;
 
         const thornsDamage = computeThornsReflectDamage(
             this.enemyDefinition.passives,
-            damage,
+            scaledDamage,
         );
 
         if (thornsDamage > 0)
@@ -867,7 +954,7 @@ export class CardGameSession
             + sequence.abilityArmorGain;
         const remainingArmor = Math.max(0, totalArmor - this.armorGrantedThisAttack);
 
-        this.player.shield += remainingArmor;
+        this.player.shield += this.scalePlayerArmorGain(remainingArmor);
 
         if (sequence.abilityPoisonStacks > 0)
         {
@@ -928,7 +1015,9 @@ export class CardGameSession
 
     resolveEnemyAttack (damage: number): PlayerDamageResult
     {
-        if (damage <= 0)
+        const scaledDamage = this.scaleEnemyAttackDamage(damage);
+
+        if (scaledDamage <= 0)
         {
             return {
                 player: this.getPlayer(),
@@ -937,8 +1026,8 @@ export class CardGameSession
             };
         }
 
-        const shieldAbsorbed = Math.min(this.player.shield, damage);
-        const healthDamage = damage - shieldAbsorbed;
+        const shieldAbsorbed = Math.min(this.player.shield, scaledDamage);
+        const healthDamage = scaledDamage - shieldAbsorbed;
 
         this.player.shield -= shieldAbsorbed;
         this.player.health = Math.max(0, this.player.health - healthDamage);
@@ -1124,6 +1213,8 @@ export class CardGameSession
 
             this.applyEnemyCurseHand();
         }
+
+        this.clearBattleModifiers();
     }
 
     /** Clears player cards from the board at end of player round (before the enemy acts). */

@@ -232,6 +232,42 @@
       "arrowPool": "orthogonal",
       "cornerTurn": true,
       "chainAbilityIds": [ "fortify" ]
+    },
+    {
+      "id": "glitch",
+      "label": "Glitch",
+      "power": 0,
+      "behaviorId": "battle-mod",
+      "visualId": "glitch",
+      "arrowPool": "orthogonal",
+      "battleModifier": { "stat": "enemy-attack", "delta": -0.1 }
+    },
+    {
+      "id": "hardwire",
+      "label": "Hardwire",
+      "power": 0,
+      "behaviorId": "battle-mod",
+      "visualId": "hardwire",
+      "arrowPool": "orthogonal",
+      "battleModifier": { "stat": "player-armor", "delta": 0.1 }
+    },
+    {
+      "id": "patch",
+      "label": "Patch",
+      "power": 0,
+      "behaviorId": "battle-mod",
+      "visualId": "patch",
+      "arrowPool": "orthogonal",
+      "battleModifier": { "stat": "player-damage-taken", "delta": -0.1 }
+    },
+    {
+      "id": "overclock",
+      "label": "Overclock",
+      "power": 0,
+      "behaviorId": "battle-mod",
+      "visualId": "overclock",
+      "arrowPool": "orthogonal",
+      "battleModifier": { "stat": "player-damage-dealt", "delta": 0.1 }
     }
   ]
 }

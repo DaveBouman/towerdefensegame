@@ -34,6 +34,11 @@ export interface CardDefinition {
     discardFromHandOnPlay?: number;
     /** When true, playing this card removes one copy from the run deck for the rest of the match. */
     exhaustOnPlay?: boolean;
+    /** Applies a ±% battle modifier when this card activates in the chain. */
+    battleModifier?: {
+        stat: import('../combat/battleModifiers').BattleModifierStat;
+        delta: number;
+    };
 }
 
 export interface GameRules {
@@ -53,6 +58,7 @@ export interface GameRules {
     activationStart: { row: number; col: number };
     activationStartColumn: number;
     maxChainSteps: number;
+    battleModifier?: { step: number; enemyIntentChance: number };
     chainAbilities: {
         poisonTrail: { damagePerSubsequentCard: number };
         fireAlternation: { bonusDamagePerAlternatingStep: number };

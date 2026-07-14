@@ -27,8 +27,8 @@ describe('buildPlayerDeck', () =>
         expect(deck.filter((card) => card.definitionId === 'cinder')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'miasma')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'lacerate')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'rupture')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'bulwark')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'patch')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'glitch')).toHaveLength(1);
     });
 
     it('uses orthogonal arrows for standard deck cards', () =>

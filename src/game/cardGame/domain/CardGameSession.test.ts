@@ -167,6 +167,22 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth);
     });
 
+    it('applies battle modifiers to enemy attacks and player armor', () =>
+    {
+        const session = new CardGameSession('basic');
+
+        session.addBattleModifier('enemy-attack', -0.1, 'player');
+        session.beginAttack();
+        session.resolveEnemyAttack(10);
+
+        expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth - 9);
+
+        session.addBattleModifier('player-armor', 0.1, 'player');
+        session.grantPlayerShield(10);
+
+        expect(session.getPlayer().shield).toBe(11);
+    });
+
     it('does not double-apply armor granted during the chain when completing the attack', () =>
     {
         const session = new CardGameSession();

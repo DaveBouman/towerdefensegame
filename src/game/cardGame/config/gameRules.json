@@ -30,6 +30,10 @@
   },
   "activationStartColumn": 0,
   "maxChainSteps": 24,
+  "battleModifier": {
+    "step": 0.1,
+    "enemyIntentChance": 0.35
+  },
   "chainAbilities": {
     "poisonTrail": {
       "damagePerSubsequentCard": 1

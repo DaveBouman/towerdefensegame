@@ -46,11 +46,13 @@ export interface PlayerDamageResult {
     healthDamage: number;
 }
 
-export type EnemyTurnKind = 'attack' | 'shield' | 'place-hazard' | 'dampen-field';
+export type EnemyTurnKind = 'attack' | 'shield' | 'place-hazard' | 'dampen-field' | 'battle-mod';
 
 export interface EnemyTurnStep {
     kind: EnemyTurnKind;
     amount?: number;
+    modifierStat?: import('../combat/battleModifiers').BattleModifierStat;
+    modifierDelta?: number;
 }
 
 export interface EnemyTurnAction {

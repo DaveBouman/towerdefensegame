@@ -12,6 +12,7 @@ export const ENEMY_INTENT_TEXTURE_KEY: Record<EnemyTurnKind, string> = {
     shield: 'intent-icon-shield',
     'place-hazard': 'intent-icon-trap',
     'dampen-field': 'intent-icon-dampen-field',
+    'battle-mod': 'intent-icon-battle-mod',
 };
 
 const ENEMY_INTENT_SVG_RAW: Record<EnemyTurnKind, string> = {
@@ -19,6 +20,7 @@ const ENEMY_INTENT_SVG_RAW: Record<EnemyTurnKind, string> = {
     shield: toWhiteIconSvg(shieldSvg),
     'place-hazard': toWhiteIconSvg(trapSvg),
     'dampen-field': toWhiteIconSvg(dampenSvg),
+    'battle-mod': toWhiteIconSvg(dampenSvg),
 };
 
 export const ENEMY_INTENT_ICON_ENTRIES = (Object.keys(ENEMY_INTENT_TEXTURE_KEY) as EnemyTurnKind[]).map((id) => ({

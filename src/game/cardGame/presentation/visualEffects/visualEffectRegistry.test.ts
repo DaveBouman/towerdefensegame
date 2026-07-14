@@ -23,6 +23,10 @@ describe('visualEffectRegistry', () =>
             'lacerate',
             'scorch',
             'bramble',
+            'glitch',
+            'hardwire',
+            'patch',
+            'overclock',
         ];
 
         for (const id of visualIds)

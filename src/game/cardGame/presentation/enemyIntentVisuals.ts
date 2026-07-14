@@ -1,4 +1,5 @@
 import { ENEMY_INTENT_TEXTURE_KEY } from '../../../ui/icons/enemyIntentIcons';
+import { formatBattleModifierDelta, type BattleModifierStat } from '../combat/battleModifiers';
 import type { EnemyTurnAction, EnemyTurnKind, EnemyTurnStep } from '../domain/types';
 
 export interface EnemyIntentStepVisual {
@@ -29,6 +30,17 @@ const INTENT_STYLE: Record<EnemyTurnKind, {
         upcoming: { tint: 0x9b8cff, text: '#b7a9ff' },
         executing: { tint: 0x7d6cff, text: '#a89bff' },
     },
+    'battle-mod': {
+        upcoming: { tint: 0xfcee0a, text: '#fff9b0' },
+        executing: { tint: 0xffd43b, text: '#ffe680' },
+    },
+};
+
+const MOD_TEXTURE_BY_STAT: Record<BattleModifierStat, keyof typeof ENEMY_INTENT_TEXTURE_KEY> = {
+    'enemy-attack': 'attack',
+    'player-damage-taken': 'place-hazard',
+    'player-armor': 'shield',
+    'player-damage-dealt': 'dampen-field',
 };
 
 export const getEnemyIntentStepVisuals = (
@@ -37,6 +49,21 @@ export const getEnemyIntentStepVisuals = (
 ): EnemyIntentStepVisual[] =>
     action.steps.map((step) =>
     {
+        if (step.kind === 'battle-mod')
+        {
+            const style = INTENT_STYLE['battle-mod'][phase];
+            const stat = step.modifierStat ?? 'enemy-attack';
+            const delta = step.modifierDelta ?? 0;
+
+            return {
+                step,
+                textureKey: ENEMY_INTENT_TEXTURE_KEY[MOD_TEXTURE_BY_STAT[stat]],
+                tint: style.tint,
+                textColor: style.text,
+                amountLabel: formatBattleModifierDelta(delta),
+            };
+        }
+
         const style = INTENT_STYLE[step.kind][phase];
 
         return {

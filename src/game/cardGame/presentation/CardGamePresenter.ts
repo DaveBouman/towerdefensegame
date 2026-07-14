@@ -12,6 +12,7 @@ import {
     tryBuildActivationStep,
     createChainWalkState,
 } from '../combat/AttackPipeline';
+import { describeBattleModifier, formatBattleModifierDelta } from '../combat/battleModifiers';
 import type { ActivationStep, AttackSequence, AttackStep, EnemyTurnAction, EnemyTurnStep, SlotPosition } from '../domain/types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
@@ -448,6 +449,27 @@ export class CardGamePresenter
             return;
         }
 
+        if (step.kind === 'battle-mod')
+        {
+            this.enemyView.playEnemyAttackPulse();
+
+            this.scene.time.delayedCall(turnMs, () =>
+            {
+                this.session.addBattleModifierFromEnemyStep(step);
+
+                if (step.modifierStat !== undefined && step.modifierDelta !== undefined)
+                {
+                    this.enemyView.showIntentLabel(
+                        describeBattleModifier(step.modifierStat, step.modifierDelta),
+                    );
+                }
+
+                onComplete();
+            });
+
+            return;
+        }
+
         this.scene.time.delayedCall(turnMs / 2, () =>
         {
             const enemy = this.session.resolveEnemyShield(step.amount ?? 0);
@@ -478,9 +500,17 @@ export class CardGamePresenter
             return;
         }
 
+        const grantedArmor = this.session.getScaledArmorGain(resolvedStep.armor);
+
         this.session.grantPlayerShield(resolvedStep.armor);
         this.setDisplayedArmor(this.session.getPlayer().shield);
-        this.armorView.showShieldGain(resolvedStep.armor);
+
+        if (grantedArmor <= 0)
+        {
+            return;
+        }
+
+        this.armorView.showShieldGain(grantedArmor);
 
         const target = this.boardView.getCardVisualTarget(step.slot);
 
@@ -491,7 +521,7 @@ export class CardGamePresenter
                 target.wrapper,
                 target.width / 2,
                 target.height * 0.22,
-                `+${resolvedStep.armor}`,
+                `+${grantedArmor}`,
                 '#58d68d',
             );
         }
@@ -560,6 +590,25 @@ export class CardGamePresenter
         this.boardView.bringCardToFront(step.slot);
         getCardVisualEffectOrThrow(step.visualId).activate(this.scene, target);
         this.activeVisual = { target, visualId: step.visualId };
+
+        if (step.behaviorId === 'battle-mod')
+        {
+            this.session.addBattleModifierFromCard(step.definitionId);
+
+            const definition = getCardDefinitionOrThrow(step.definitionId);
+
+            if (definition.battleModifier)
+            {
+                playFloatingText(
+                    this.scene,
+                    target.wrapper,
+                    target.width / 2,
+                    target.height * 0.22,
+                    formatBattleModifierDelta(definition.battleModifier.delta),
+                    definition.battleModifier.delta > 0 ? '#fcee0a' : '#ff6b8a',
+                );
+            }
+        }
 
         if (boosted)
         {

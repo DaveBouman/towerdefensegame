@@ -13,6 +13,10 @@ import type {
 import type { LoadedCardGameEnemyDefinition } from '../config/enemyCatalog';
 import { getEnemyPassive } from './defaults';
 import type { EnemyPassiveConfig } from './types';
+import { GAME_RULES } from '../config/cardRegistry';
+import {
+    ENEMY_BATTLE_MODIFIER_PRESETS,
+} from '../combat/battleModifiers';
 import { random, randomInt } from '../../random/rng';
 
 export interface EnemyTurnPlanningContext {
@@ -91,7 +95,22 @@ export const planEnemyTurnWithPassives = ({
         hazardCount = Math.min(hazardCount, escalate.maxTraps);
     }
 
-    const steps: EnemyTurnStep[] = [ planCombatStep(enemy, enemyState, passives, enrageStacks) ];
+    const steps: EnemyTurnStep[] = [];
+
+    const modifierChance = GAME_RULES.battleModifier?.enemyIntentChance ?? 0;
+
+    if (modifierChance > 0 && random() < modifierChance)
+    {
+        const preset = ENEMY_BATTLE_MODIFIER_PRESETS[randomInt(ENEMY_BATTLE_MODIFIER_PRESETS.length)]!;
+
+        steps.push({
+            kind: 'battle-mod',
+            modifierStat: preset.stat,
+            modifierDelta: preset.delta,
+        });
+    }
+
+    steps.push(planCombatStep(enemy, enemyState, passives, enrageStacks));
 
     // Dead Zone is an event the enemy casts on a cadence (telegraphed like a trap).
     if (dampen && dampen.everyTurns > 0 && turnsTaken % dampen.everyTurns === 0)

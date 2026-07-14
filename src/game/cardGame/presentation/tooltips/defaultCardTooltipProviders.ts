@@ -1,4 +1,5 @@
 import { GAME_RULES, getChainStepDistance } from '../../config/cardRegistry';
+import { describeBattleModifier } from '../../combat/battleModifiers';
 import { ARROW_GLYPH } from '../../../cards/cardArrows';
 import { isEnemyOwnedCard } from '../../domain/cardOwnership';
 import type { CardTooltipContent, CardTooltipContext, CardTooltipProvider } from './types';
@@ -51,6 +52,22 @@ const defendLines = ({ definition }: CardTooltipContext): string[] =>
 
 const provider = (id: string, getTooltip: (ctx: CardTooltipContext) => CardTooltipContent): CardTooltipProvider =>
     ({ id, getTooltip });
+
+const battleModTooltipLines = ({ definition }: CardTooltipContext): string[] =>
+{
+    const lines = [
+        definition.battleModifier
+            ? `Applies ${describeBattleModifier(
+                definition.battleModifier.stat,
+                definition.battleModifier.delta,
+            )} when activated in the chain.`
+            : 'Applies a battle modifier when activated in the chain.',
+        'Lasts through the enemy response, then expires.',
+        'Stacks with enemy intents and other modifier cards.',
+    ];
+
+    return lines;
+};
 
 export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
     provider('attack', (ctx) => ({
@@ -246,6 +263,26 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             'Turns the corner: steps one tile along the arrow, then continues to the next card around the bend.',
             `Fortify: +${GAME_RULES.chainAbilities.fortify.armorPerExtraDefend} armor for each defend in the chain beyond ${GAME_RULES.chainAbilities.fortify.defendThreshold}.`,
         ],
+    })),
+    provider('battle-mod', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: battleModTooltipLines(ctx),
+    })),
+    provider('glitch', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: battleModTooltipLines(ctx),
+    })),
+    provider('hardwire', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: battleModTooltipLines(ctx),
+    })),
+    provider('patch', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: battleModTooltipLines(ctx),
+    })),
+    provider('overclock', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: battleModTooltipLines(ctx),
     })),
     provider('default', (ctx) => ({
         title: titleFromDefinition(ctx),

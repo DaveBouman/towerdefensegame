@@ -19,8 +19,8 @@ const DECK_COMPOSITION: readonly { definitionId: string; count: number }[] = [
     { definitionId: 'cinder', count: 1 },
     { definitionId: 'miasma', count: 1 },
     { definitionId: 'lacerate', count: 1 },
-    { definitionId: 'rupture', count: 1 },
-    { definitionId: 'bulwark', count: 1 },
+    { definitionId: 'patch', count: 1 },
+    { definitionId: 'glitch', count: 1 },
 ];
 
 /** The card definition ids that make up a fresh starting deck. */
