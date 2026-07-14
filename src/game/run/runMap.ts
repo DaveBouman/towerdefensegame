@@ -36,18 +36,27 @@ export interface RunMap {
 export const RUN_CONFIG = {
     /** Health restored after each victory (before carrying into the next fight). */
     healOnVictory: 12,
+    /** Map columns between the first fight and the boss (exclusive of both). */
+    middleColumns: 9,
 };
 
 /** Enemy pools per column, ramping in difficulty. Last column is the boss. */
 const ROW_ENEMY_POOLS: readonly (readonly string[])[] = [
     [ 'basic' ],
     [ 'basic', 'thornward' ],
+    [ 'basic', 'thornward' ],
+    [ 'thornward', 'saboteur' ],
     [ 'thornward', 'saboteur' ],
     [ 'saboteur', 'smokebinder' ],
+    [ 'saboteur', 'smokebinder' ],
+    [ 'saboteur', 'smokebinder' ],
+    [ 'smokebinder' ],
+    [ 'smokebinder' ],
     [ 'warden' ],
 ];
 
-const ROW_SIZES: readonly number[] = [ 2, 3, 3, 2, 1 ];
+/** Branching width per column (first → boss). */
+const ROW_SIZES: readonly number[] = [ 2, 3, 3, 3, 4, 4, 4, 3, 3, 2, 1 ];
 
 const clamp = (value: number, min: number, max: number): number =>
     Math.max(min, Math.min(max, value));
@@ -63,7 +72,7 @@ const projectIndex = (index: number, from: number, to: number): number =>
     return clamp(Math.round((index / (from - 1)) * (to - 1)), 0, to - 1);
 };
 
-/** Assigns a distinct event id to each event node (first column always includes Sign Matcher). */
+/** Assigns a distinct event id to each event node. */
 export const assignEventIdsToNodes = (nodes: RunMapNode[]): void =>
 {
     const byRow = new Map<number, RunMapNode[]>();
@@ -81,24 +90,13 @@ export const assignEventIdsToNodes = (nodes: RunMapNode[]): void =>
         byRow.set(node.row, rowNodes);
     }
 
-    for (const [ row, rowNodes ] of byRow)
+    for (const rowNodes of byRow.values())
     {
         rowNodes.sort((a, b) => a.col - b.col);
         const used = new Set<string>();
 
-        if (row === 0 && rowNodes.length > 0)
-        {
-            rowNodes[0]!.eventId = 'sign-matcher';
-            used.add('sign-matcher');
-        }
-
         for (const node of rowNodes)
         {
-            if (node.eventId)
-            {
-                continue;
-            }
-
             node.eventId = rollRunEventIdExcluding(used);
             used.add(node.eventId);
         }
@@ -107,14 +105,20 @@ export const assignEventIdsToNodes = (nodes: RunMapNode[]): void =>
 
 export const generateRunMap = (): RunMap =>
 {
-    const rows = ROW_SIZES.length;
+    const rows = RUN_CONFIG.middleColumns + 2;
+
+    if (ROW_SIZES.length !== rows || ROW_ENEMY_POOLS.length !== rows)
+    {
+        throw new Error(`Run map config expects ${rows} columns (ROW_SIZES / ROW_ENEMY_POOLS mismatch).`);
+    }
+
     const grid: RunMapNode[][] = ROW_SIZES.map((size, row) =>
         Array.from({ length: size }, (_unused, col) =>
         {
             const kind: RunMapNodeKind = row === rows - 1
                 ? 'boss'
                 : row === 0
-                    ? 'event'
+                    ? 'enemy'
                     : rollNodeKind();
             const battle = isBattleKind(kind);
 

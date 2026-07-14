@@ -21,12 +21,13 @@ branching **run map** (roguelite-style path of battles).
 
 The game is a **run**: a left-to-right map of nodes connected by lines
 (`src/game/run/runMap.ts`). The player picks one node per column; enemies ramp
-in difficulty toward a boss (`warden`) in the final column.
+in difficulty toward a boss (`warden`) in the final column. Each run has **9 columns**
+between the opening fight and the boss (`RUN_CONFIG.middleColumns`).
 
 - **Node kinds** (`src/game/run/nodeKinds.ts`, `RunMapNode.kind`): `enemy` and `boss`
   are battles; `shop` and `event` are non-battle stops. Each kind has an icon
   (`NodeKindIcon`, from game-icons.net) and a hover tooltip on the map. First column
-  is always `event` (for testing); last column is the `boss`; middle columns are weighted-random
+  is always `enemy`; last column is the `boss`; middle columns are weighted-random
   (`rollNodeKind`). **Event nodes** open `RunEventOverlay` (`runEvents.ts`) — wheel,
   icon matcher (4×4 memory grid, 4 attempts), **combo trials** (damage puzzles), stasis patches, gambles, body mods. Shop is still a placeholder (`NodeVisitOverlay`).
 - **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
@@ -240,6 +241,8 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-14 | **Longer run map.** Nine columns now sit between the first fight and the boss (11 columns total). Enemy pools ramp across the longer path; branching uses a wider bell curve (`ROW_SIZES`). |
+| 2026-07-14 | **First column is always enemy.** Column 0 now always rolls `enemy` nodes (basic pool) so every run opens with a fight. Removed the column-0 Sign Matcher guarantee; events still roll in later columns. |
 | 2026-07-14 | **Cyberpunk naming pass.** Trinkets renamed to **body mods** (`bodyMods.ts`): Chrome Heart, Overclock Cell, Cred Siphon. Run currency shown as **creds**; map labels use Integrity / Body Mods. Events retitled (Fate Spinner, Glyph Matcher, Stasis Patch, Black ICE Relic, Neural Drill, Chrome Dealer). Node kinds: Hostile, Warden, Ripperdoc, Signal. |
 | 2026-07-14 | **Enemy responds after each attack.** The enemy now acts immediately after every player attack (graveyard → board clear → enemy turn), not only when energy is depleted. Energy persists across these exchanges and refills only after the last attack in a round (energy = 0). Hand renews after each enemy turn. Damage ramp still stacks for extra attacks within the same energy round. |
 | 2026-07-14 | **Per-step player armor.** Defend armor now applies when each chain card finishes (`grantPlayerShield` during presentation), not in one batch at attack end. Thorns reflect during a later chain step can be blocked by shield from an earlier defend. `completeAttack` only adds armor not already granted mid-chain. |
