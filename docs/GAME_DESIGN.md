@@ -28,7 +28,7 @@ in difficulty toward a boss (`warden`) in the final column.
   (`NodeKindIcon`, from game-icons.net) and a hover tooltip on the map. First column
   is always `event` (for testing); last column is the `boss`; middle columns are weighted-random
   (`rollNodeKind`). **Event nodes** open `RunEventOverlay` (`runEvents.ts`) — wheel,
-  icon matcher (4×4 memory grid, 4 attempts), **combo trials** (damage puzzles), healing, gambles, trinkets. Shop is still a placeholder (`NodeVisitOverlay`).
+  icon matcher (4×4 memory grid, 4 attempts), **combo trials** (damage puzzles), stasis patches, gambles, body mods. Shop is still a placeholder (`NodeVisitOverlay`).
 - **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
 - **Deck persists and grows**: the run owns the deck as a list of card definition ids (`getDefaultDeckDefinitionIds`). Each battle builds instances from those ids (`buildDeckFromDefinitionIds`).
 - **Victory rewards**: defeating a (non-boss) enemy grants that node's reward. Today every node grants a **card reward** (`CardRewardOverlay` → pick from choices → card ids appended to the run deck).
@@ -68,13 +68,13 @@ RunReward = CardReward { kind: 'card'; choiceCount; pickCount; rerollable }
 ```
 
 - **Variable per node** — different enemies can grant different rewards; today all use `DEFAULT_CARD_REWARD`.
-- **Trinket-ready** — the numeric knobs are the intended extension seam:
+- **Body-mod-ready** — the numeric knobs are the intended extension seam:
   - `pickCount > 1` → "pick two cards"
   - `rerollable: true` → reroll the offered choices (`CardRewardOverlay` already renders the button + `App` handles reroll)
-  - add new `RunReward` kinds (e.g. trinket/gold) without touching existing handling.
+  - add new `RunReward` kinds (e.g. body-mod/creds) without touching existing handling.
 - Card choices come from `REWARD_CARD_POOL` via `rollCardReward(choiceCount)`.
 
-When adding trinkets: give trinkets a modifier step that adjusts the `RunReward`
+When adding body mods: give body mods a modifier step that adjusts the `RunReward`
 before `rollCardReward`/display, or add a new `RunReward` kind + a case in `App`'s
 `onBattleWon`.
 
@@ -117,12 +117,12 @@ battle, and emits `BATTLE_WON` / `BATTLE_LOST` back to React.
 ## Core loop
 
 ```
-Deploy → Attack (chain resolve, board KEPT, costs 1 energy, hand refills) → repeat while energy remains → energy = 0 → Board clears → Enemy turn → New hand + field boost → repeat
+Deploy → Attack (chain resolve, costs 1 energy) → Board clears → Enemy turn → New hand → repeat while energy remains → energy = 0 → Enemy turn → Energy refills → repeat
 ```
 
-The player turn is **escalating**: each Attack resolves the whole board and leaves the cards in place, so the next Attack chains through a longer, harder-hitting sequence. Between attacks the hand tops back up to full, letting the deck progress mid-turn. Each Attack spends one **energy** (`energyPerTurn`, default 3); when **all** energy is spent the board is discarded and the enemy acts once. The Dead Zone (dampen) field now expires at end of turn rather than per attack.
+The player turn is **alternating**: each Attack resolves the board, then the enemy immediately acts (attack/shield/traps). You get a fresh hand after every enemy turn. Each Attack spends one **energy** (`energyPerTurn`, default 3); energy only refills after you've spent all of it and the enemy finishes that response. The Dead Zone (dampen) field ticks down after each enemy turn.
 
-**Risk/reward:** the first attack of a round is baseline, but every *extra* attack ramps the enemy's incoming attack damage by `enemyDamageRampPerAttack` (default 4). The enemy intent re-telegraphs the ramped number live as you attack, so chaining more attacks trades bigger combos for a harder hit back.
+**Risk/reward:** the first attack of an energy round is baseline, but every *extra* attack before energy refills ramps the enemy's incoming attack damage by `enemyDamageRampPerAttack` (default 4). Spending all your energy before the refill means facing a harder-hitting enemy on those later attacks.
 
 | Rule | Value | Config |
 |------|-------|--------|
@@ -187,7 +187,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 - [x] **Carry-over HP** — HP carries between fights with a small heal on victory (`RUN_CONFIG.healOnVictory`)
 - [x] **Pre-fight enemy preview** — map nodes show the enemy label before you commit
 - [x] **Node kinds** — enemy/boss/shop/event nodes with icons + hover tooltips (`nodeKinds.ts`, `NodeKindIcon`); shop/event are placeholders (`NodeVisitOverlay`)
-- [ ] **Shop node** — spend a run currency on cards/trinkets (replace `NodeVisitOverlay` placeholder)
+- [ ] **Shop node** — spend creds on cards/body mods (replace `NodeVisitOverlay` placeholder)
 - [ ] **Random event node** — branching choice encounters (replace `NodeVisitOverlay` placeholder)
 - [ ] **Run-wide rerolls** — e.g. 5 per run instead of 3 per fight
 
@@ -219,7 +219,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 | Map layout / difficulty ramp | `src/game/run/runMap.ts` (`ROW_SIZES`, `ROW_ENEMY_POOLS`, `RUN_CONFIG`) |
 | Map node kinds / icons / tooltips | `src/game/run/nodeKinds.ts` (kinds, weights, tooltip copy), `src/ui/components/NodeKindIcon.tsx` |
 | Shop / event node behavior | `src/ui/components/NodeVisitOverlay.tsx` (placeholder), `RunEventOverlay.tsx`, `runEvents.ts`, `runPuzzles.ts`, `PuzzleHud.tsx`, `PuzzleResultOverlay.tsx`; `App.tsx` `visit`/`puzzle` phases |
-| Rewards / reward pool / trinket hooks | `src/game/run/rewards.ts` |
+| Rewards / reward pool / body-mod hooks | `src/game/run/rewards.ts` |
 | Persistent run deck | `getDefaultDeckDefinitionIds` / `buildDeckFromDefinitionIds` in `buildPlayerDeck.ts` |
 | Map / run visuals | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`; `.run-map*` / `.run-end*` / `.card-reward*` in `public/style.css` |
 | Run flow (phases, carry-over HP, deck, rewards) | `src/App.tsx` |
@@ -240,6 +240,8 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-14 | **Cyberpunk naming pass.** Trinkets renamed to **body mods** (`bodyMods.ts`): Chrome Heart, Overclock Cell, Cred Siphon. Run currency shown as **creds**; map labels use Integrity / Body Mods. Events retitled (Fate Spinner, Glyph Matcher, Stasis Patch, Black ICE Relic, Neural Drill, Chrome Dealer). Node kinds: Hostile, Warden, Ripperdoc, Signal. |
+| 2026-07-14 | **Enemy responds after each attack.** The enemy now acts immediately after every player attack (graveyard → board clear → enemy turn), not only when energy is depleted. Energy persists across these exchanges and refills only after the last attack in a round (energy = 0). Hand renews after each enemy turn. Damage ramp still stacks for extra attacks within the same energy round. |
 | 2026-07-14 | **Per-step player armor.** Defend armor now applies when each chain card finishes (`grantPlayerShield` during presentation), not in one batch at attack end. Thorns reflect during a later chain step can be blocked by shield from an earlier defend. `completeAttack` only adds armor not already granted mid-chain. |
 | 2026-07-14 | **Cyberpunk theme + animation polish.** Neon cyan/magenta palette across React overlays (`cyberpunk-theme.css`: Orbitron/Rajdhani fonts, scanline grid, panel glow) and Phaser canvas (`cyberpunkTheme.ts`). Shared combat tweens (`visualEffectTweens.ts`) — snappier card glow pulses, hit flashes, floating damage numbers. Board slots, card colors, health bars, chain-start indicator, and graveyard discard animation updated to match. |
 | 2026-07-14 | **Thorns trigger on hit.** Thorns now reflects damage whenever you deal attack damage to the enemy — shield is no longer required. Fires per damage step in the chain (e.g. attack then defend still procs thorns on the attack). |

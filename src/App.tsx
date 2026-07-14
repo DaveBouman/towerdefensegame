@@ -95,28 +95,28 @@ function App()
     const [ playerHealth, setPlayerHealth ] = useState(MAX_HEALTH);
     const [ deck, setDeck ] = useState<string[]>(() => getDefaultDeckDefinitionIds());
     const [ gold, setGold ] = useState(0);
-    const [ trinkets, setTrinkets ] = useState<string[]>([]);
+    const [ bodyMods, setBodyMods ] = useState<string[]>([]);
     const [ phase, setPhase ] = useState<RunPhase>('map');
     const [ pendingReward, setPendingReward ] = useState<PendingReward | null>(null);
     const [ visit, setVisit ] = useState<VisitState | null>(null);
     const [ puzzleResult, setPuzzleResult ] = useState<PuzzleResultState | null>(null);
     const [ pendingPuzzleReward, setPendingPuzzleReward ] = useState<PendingPuzzleReward | null>(null);
 
-    const runMaxHealth = useMemo(() => getRunMaxHealth(trinkets), [ trinkets ]);
+    const runMaxHealth = useMemo(() => getRunMaxHealth(bodyMods), [ bodyMods ]);
 
     const selectedNodeRef = useRef<RunMapNode | null>(null);
     const eventVisitRef = useRef<VisitState | null>(null);
     const sceneReadyRef = useRef(false);
     const seedRef = useRef(seed);
-    const trinketsRef = useRef(trinkets);
+    const bodyModsRef = useRef(bodyMods);
     const playerHealthRef = useRef(playerHealth);
     const goldRef = useRef(gold);
     const deckRef = useRef(deck);
     const pendingStartRef = useRef<
-        { enemyId: string; startHealth: number; deck: string[]; seed: number; trinkets: string[] } | null
+        { enemyId: string; startHealth: number; deck: string[]; seed: number; bodyMods: string[] } | null
     >(null);
     const pendingPuzzleRef = useRef<
-        { puzzleId: string; startHealth: number; seed: number; trinkets: string[] } | null
+        { puzzleId: string; startHealth: number; seed: number; bodyMods: string[] } | null
     >(null);
 
     useEffect(() =>
@@ -126,8 +126,8 @@ function App()
 
     useEffect(() =>
     {
-        trinketsRef.current = trinkets;
-    }, [ trinkets ]);
+        bodyModsRef.current = bodyMods;
+    }, [ bodyMods ]);
 
     useEffect(() =>
     {
@@ -179,12 +179,12 @@ function App()
         {
             const node = selectedNodeRef.current;
             const healed = Math.min(
-                getRunMaxHealth(trinketsRef.current),
+                getRunMaxHealth(bodyModsRef.current),
                 remaining + RUN_CONFIG.healOnVictory,
             );
 
             setPlayerHealth(healed);
-            setGold((prev) => prev + getVictoryGoldBonus(trinketsRef.current));
+            setGold((prev) => prev + getVictoryGoldBonus(bodyModsRef.current));
 
             if (exhaustedDefinitionIds.length > 0)
             {
@@ -254,16 +254,16 @@ function App()
                 .filter((effect) => effect.kind !== 'add-card');
             const applied = applyRunEventEffects(effects, {
                 playerHealth: playerHealthRef.current,
-                maxHealth: getRunMaxHealth(trinketsRef.current),
+                maxHealth: getRunMaxHealth(bodyModsRef.current),
                 gold: goldRef.current,
                 deck: [ ...deckRef.current ],
-                trinkets: [ ...trinketsRef.current ],
+                bodyMods: [ ...bodyModsRef.current ],
             });
 
             setPlayerHealth(applied.playerHealth);
             setGold(applied.gold);
             setDeck(applied.deck);
-            setTrinkets(applied.trinkets);
+            setBodyMods(applied.bodyMods);
 
             if (success)
             {
@@ -341,7 +341,7 @@ function App()
             startHealth: playerHealth,
             deck: [ ...deck ],
             seed: deriveSeed(seed, `battle:${node.id}`),
-            trinkets: [ ...trinkets ],
+            bodyMods: [ ...bodyMods ],
         };
         setPhase('battle');
 
@@ -353,7 +353,7 @@ function App()
         {
             pendingStartRef.current = payload;
         }
-    }, [ playerHealth, deck, seed, trinkets, visit ]);
+    }, [ playerHealth, deck, seed, bodyMods, visit ]);
 
     const startPuzzleFromEvent = useCallback((puzzleId: string): void =>
     {
@@ -371,7 +371,7 @@ function App()
             puzzleId,
             startHealth: playerHealth,
             seed: deriveSeed(seed, `puzzle:${currentVisit.node.id}:${puzzleId}`),
-            trinkets: [ ...trinkets ],
+            bodyMods: [ ...bodyMods ],
         };
         setPhase('puzzle');
 
@@ -383,7 +383,7 @@ function App()
         {
             pendingPuzzleRef.current = payload;
         }
-    }, [ visit, playerHealth, seed, trinkets ]);
+    }, [ visit, playerHealth, seed, bodyMods ]);
 
     const finishVisit = useCallback((): void =>
     {
@@ -418,7 +418,7 @@ function App()
         setPlayerHealth(result.playerHealth);
         setGold(result.gold);
         setDeck(result.deck);
-        setTrinkets(result.trinkets);
+        setBodyMods(result.bodyMods);
         finishVisit();
     }, [ finishVisit ]);
 
@@ -480,7 +480,7 @@ function App()
         setPlayerHealth(MAX_HEALTH);
         setDeck(getDefaultDeckDefinitionIds());
         setGold(0);
-        setTrinkets([]);
+        setBodyMods([]);
         setPendingReward(null);
         setVisit(null);
         setPuzzleResult(null);
@@ -523,7 +523,7 @@ function App()
                     playerHealth={playerHealth}
                     maxHealth={runMaxHealth}
                     gold={gold}
-                    trinketCount={trinkets.length}
+                    bodyModCount={bodyMods.length}
                     seed={seed}
                     seedEditable={path.length === 0}
                     onSeedChange={applySeed}
@@ -563,7 +563,7 @@ function App()
                     maxHealth={runMaxHealth}
                     gold={gold}
                     deck={deck}
-                    trinkets={trinkets}
+                    bodyMods={bodyMods}
                     onFinish={finishEvent}
                     onStartPuzzle={startPuzzleFromEvent}
                 />

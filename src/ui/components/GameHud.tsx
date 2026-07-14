@@ -9,7 +9,7 @@ const REJECT_MESSAGES: Record<NonNullable<AttackReadiness['reason']>, string> = 
     'enemy-defeated': 'Enemy already defeated.',
     'player-defeated': 'You were defeated.',
     'no-cards-on-board': 'Place cards on the board first.',
-    'no-energy': 'Out of energy — enemy turn incoming.',
+    'no-energy': 'Out of energy — wait for the next round.',
 };
 
 const DEFAULT_REROLL_STATE: RerollState = {
@@ -113,8 +113,8 @@ export const GameHud = () =>
                 {rerollState.rerollModeActive
                     ? 'Click hand cards to select, then confirm reroll.'
                     : turnState.energy > 0
-                        ? 'Attack chains through the whole board — keep adding cards and attacking while you have energy. The board stays until energy runs out.'
-                        : 'Out of energy — clearing the board, then the enemy acts.'}
+                        ? 'Place cards and attack — the enemy strikes back after each attack. Extra attacks this round make the enemy hit harder.'
+                        : 'Out of energy — the enemy acts, then your energy refills.'}
             </p>
             {rerollState.rerollModeActive ? (
                 <div className="game-hud__reroll-actions">

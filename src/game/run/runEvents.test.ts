@@ -16,7 +16,9 @@ describe('runEvents', () =>
 {
     it('loads event definitions', () =>
     {
-        expect(getRunEvent('wheel-of-fate').title).toBe('Wheel of Fate');
+        expect(getRunEvent('wheel-of-fate').title).toBe('Fate Spinner');
+        expect(getRunEvent('sign-matcher').title).toBe('Glyph Matcher');
+        expect(getRunEvent('healing-spring').title).toBe('Stasis Patch');
         expect(getRunEvent('sign-matcher').choices).toHaveLength(1);
         expect(getRunEvent('healing-spring').choices).toHaveLength(2);
     });
@@ -80,7 +82,7 @@ describe('runEvents', () =>
             maxHealth: 80,
             gold: 20,
             deck: [],
-            trinkets: [],
+            bodyMods: [],
         });
 
         expect(whiff.playerHealth).toBe(34);
@@ -91,7 +93,7 @@ describe('runEvents', () =>
             maxHealth: 80,
             gold: 30,
             deck: [],
-            trinkets: [],
+            bodyMods: [],
         });
 
         expect(solid.deck).toHaveLength(1);
@@ -110,7 +112,7 @@ describe('runEvents', () =>
                 maxHealth: 80,
                 gold: 5,
                 deck: [],
-                trinkets: [],
+                bodyMods: [],
             },
         );
 
@@ -131,7 +133,7 @@ describe('runEvents', () =>
                 maxHealth: 80,
                 gold: 7,
                 deck: [],
-                trinkets: [],
+                bodyMods: [],
             },
         );
 

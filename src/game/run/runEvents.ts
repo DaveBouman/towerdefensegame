@@ -1,6 +1,6 @@
 import { pickRandom, random, shuffleInPlace } from '../random/rng';
 import { rollCardReward } from './rewards';
-import { getTrinketDefinition, rollTrinketReward } from './trinkets';
+import { getBodyModDefinition, rollBodyModReward } from './bodyMods';
 
 /** Icons used across run events (wheel, matcher, choices). */
 export type EventIconId =
@@ -12,7 +12,7 @@ export type EventIconId =
     | 'gold'
     | 'card'
     | 'curse'
-    | 'trinket'
+    | 'body-mod'
     | 'heal'
     | 'trap'
     | 'sun'
@@ -30,7 +30,7 @@ export type RunEventEffect =
     | { kind: 'lose-gold'; amount: number }
     | { kind: 'add-card'; cardId: string }
     | { kind: 'add-curse'; cardId: string; count: number }
-    | { kind: 'trinket'; trinketId: string }
+    | { kind: 'body-mod'; bodyModId: string }
     | { kind: 'open-wheel' }
     | { kind: 'open-icon-match' }
     | { kind: 'open-puzzle'; puzzleId: string };
@@ -77,7 +77,7 @@ export interface AppliedEventResult {
     playerHealth: number;
     gold: number;
     deck: string[];
-    trinkets: string[];
+    bodyMods: string[];
     messages: AppliedEventMessage[];
 }
 
@@ -91,13 +91,13 @@ const EVENT_POOL: readonly (readonly [string, number])[] = [
 ];
 
 const WHEEL_SEGMENT_LIST: readonly WheelSegment[] = [
-    { id: 'gold-20', label: '+20 Gold (−5 HP)', icon: 'gold', effects: [ { kind: 'gold', amount: 20 }, { kind: 'damage', amount: 5 } ] },
-    { id: 'gold-35', label: '+35 Gold (−8 HP)', icon: 'gold', effects: [ { kind: 'gold', amount: 35 }, { kind: 'damage', amount: 8 } ] },
+    { id: 'gold-20', label: '+20 Creds (−5 HP)', icon: 'gold', effects: [ { kind: 'gold', amount: 20 }, { kind: 'damage', amount: 5 } ] },
+    { id: 'gold-35', label: '+35 Creds (−8 HP)', icon: 'gold', effects: [ { kind: 'gold', amount: 35 }, { kind: 'damage', amount: 8 } ] },
     { id: 'card', label: 'New Card (+ Burden)', icon: 'card', effects: [ { kind: 'add-card', cardId: '__random__' }, { kind: 'add-curse', cardId: 'burden', count: 1 } ] },
     { id: 'burden', label: 'Burden', icon: 'curse', effects: [ { kind: 'add-curse', cardId: 'burden', count: 1 } ] },
     { id: 'fuse', label: 'Fuse', icon: 'trap', effects: [ { kind: 'add-curse', cardId: 'fuse', count: 1 } ] },
-    { id: 'trinket', label: 'Trinket (+ Burden)', icon: 'trinket', effects: [ { kind: 'trinket', trinketId: '__random__' }, { kind: 'add-curse', cardId: 'burden', count: 1 } ] },
-    { id: 'heal', label: '+10 HP (−10 gold)', icon: 'heal', effects: [ { kind: 'heal', amount: 10 }, { kind: 'lose-gold', amount: 10 } ] },
+    { id: 'body-mod', label: 'Body Mod (+ Burden)', icon: 'body-mod', effects: [ { kind: 'body-mod', bodyModId: '__random__' }, { kind: 'add-curse', cardId: 'burden', count: 1 } ] },
+    { id: 'heal', label: '+10 HP (−10 creds)', icon: 'heal', effects: [ { kind: 'heal', amount: 10 }, { kind: 'lose-gold', amount: 10 } ] },
     { id: 'trap', label: '-5 HP', icon: 'trap', effects: [ { kind: 'damage', amount: 5 } ] },
 ];
 
@@ -108,21 +108,21 @@ const MATCH_GRID_SYMBOLS: readonly EventIconId[] = [
 export const RUN_EVENTS: Record<string, RunEventDefinition> = {
     'combo-trial': {
         id: 'combo-trial',
-        title: 'Combo Trial',
-        intro: 'A drill master sets out cards and a training dummy. Deal enough damage in one chain to pass.',
+        title: 'Neural Drill',
+        intro: 'A drill sergeant jacks a training rig into your deck. Deal enough damage in one chain to pass the sim.',
         icon: 'puzzle',
         choices: [
             {
                 id: 'accept',
-                label: 'Accept the Trial',
-                description: 'Deal the target damage in one attack, then pick one of three reward cards — or take none.',
+                label: 'Jack In',
+                description: 'Deal the target damage in one attack, then pick one of three reward cards — or ghost out.',
                 icon: 'puzzle',
                 effects: [ { kind: 'open-puzzle', puzzleId: '__random__' } ],
             },
             {
                 id: 'decline',
-                label: 'Walk Away',
-                description: 'Leave without risk or reward.',
+                label: 'Ghost Out',
+                description: 'Disconnect without risk or reward.',
                 icon: 'coin',
                 effects: [],
             },
@@ -130,14 +130,14 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
     },
     'wheel-of-fate': {
         id: 'wheel-of-fate',
-        title: 'Wheel of Fate',
-        intro: 'A crooked wheel creaks in the dark. One spin — fortune, cards, curses, or worse.',
+        title: 'Fate Spinner',
+        intro: 'A neon wheel flickers in the smog. One spin — creds, chrome, malware, or worse.',
         icon: 'wheel',
         choices: [
             {
                 id: 'spin',
                 label: 'Spin the Wheel',
-                description: 'Land on gold, a card, a curse, a trinket, healing, or a trap. Spin costs 5 gold.',
+                description: 'Land on creds, a card, a curse, a body mod, healing, or a trap. Spin costs 5 creds.',
                 icon: 'wheel',
                 effects: [ { kind: 'open-wheel' } ],
             },
@@ -145,14 +145,14 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
     },
     'sign-matcher': {
         id: 'sign-matcher',
-        title: 'Sign Matcher',
-        intro: 'Sixteen sigils hide eight twin pairs on a 4×4 grid. Flip two at a time — you get four attempts to match as many pairs as you can.',
+        title: 'Glyph Matcher',
+        intro: 'Sixteen glyphs hide eight twin pairs on a 4×4 grid. Flip two at a time — four attempts to match as many pairs as you can.',
         icon: 'matcher',
         choices: [
             {
                 id: 'play',
-                label: 'Study the Signs',
-                description: 'Memory match: more pairs = better rewards; whiffing every flip costs HP.',
+                label: 'Scan the Grid',
+                description: 'Memory match: more pairs = better rewards; whiffing every flip costs integrity.',
                 icon: 'matcher',
                 effects: [ { kind: 'open-icon-match' } ],
             },
@@ -160,14 +160,14 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
     },
     'healing-spring': {
         id: 'healing-spring',
-        title: 'Healing Spring',
-        intro: 'Clear water bubbles from cracked stone. The air tastes like rain.',
+        title: 'Stasis Patch',
+        intro: 'A street ripperdoc offers a quick patch job. Sterile foam hisses in the alley rain.',
         icon: 'spring',
         choices: [
             {
                 id: 'drink',
-                label: 'Drink Deep',
-                description: 'Restore 18 HP, but pay 18 gold (or all you carry).',
+                label: 'Take the Patch',
+                description: 'Restore 18 HP, but pay 18 creds (or all you carry).',
                 icon: 'heal',
                 effects: [
                     { kind: 'heal', amount: 18 },
@@ -176,8 +176,8 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
             },
             {
                 id: 'leave',
-                label: 'Move On',
-                description: 'Take nothing.',
+                label: 'Keep Moving',
+                description: 'Walk away.',
                 icon: 'coin',
                 effects: [],
             },
@@ -185,24 +185,24 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
     },
     'cursed-idol': {
         id: 'cursed-idol',
-        title: 'Cursed Idol',
-        intro: 'A relic thrums with power — and something sticky clings to its base.',
+        title: 'Black ICE Relic',
+        intro: 'Corrupted chrome thrums on a dead server rack — malware clings to the casing.',
         icon: 'idol',
         choices: [
             {
                 id: 'claim',
-                label: 'Claim the Relic',
-                description: 'Gain a trinket, but a Burden is added to your deck.',
-                icon: 'trinket',
+                label: 'Install the Chrome',
+                description: 'Gain a body mod, but a Burden is added to your deck.',
+                icon: 'body-mod',
                 effects: [
-                    { kind: 'trinket', trinketId: '__random__' },
+                    { kind: 'body-mod', bodyModId: '__random__' },
                     { kind: 'add-curse', cardId: 'burden', count: 1 },
                 ],
             },
             {
                 id: 'smash',
-                label: 'Smash It',
-                description: 'Gain 25 gold, but take 8 damage.',
+                label: 'Scrap It',
+                description: 'Gain 25 creds, but take 8 damage.',
                 icon: 'gold',
                 effects: [
                     { kind: 'gold', amount: 25 },
@@ -213,8 +213,8 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
     },
     'gambler-offer': {
         id: 'gambler-offer',
-        title: "Gambler's Offer",
-        intro: 'A hooded figure fans three cards. "Blood for bounty, or walk with coin."',
+        title: 'Chrome Dealer',
+        intro: 'A hooded fixer fans three data-chips. "Blood for bounty, or walk with creds."',
         icon: 'gambler',
         choices: [
             {
@@ -229,8 +229,8 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
             },
             {
                 id: 'coin',
-                label: 'Take the Coin',
-                description: 'Gain 15 gold, but take 6 damage.',
+                label: 'Take the Creds',
+                description: 'Gain 15 creds, but take 6 damage.',
                 icon: 'gold',
                 effects: [
                     { kind: 'gold', amount: 15 },
@@ -294,12 +294,12 @@ export const buildIconMatchGrid = (): IconMatchGrid =>
 const resolveRandomCard = (): string =>
     rollCardReward(1)[0] ?? 'attack';
 
-const resolveRandomTrinket = (ownedTrinkets: readonly string[]): string | null =>
-    rollTrinketReward(ownedTrinkets);
+const resolveRandomBodyMod = (ownedBodyMods: readonly string[]): string | null =>
+    rollBodyModReward(ownedBodyMods);
 
 const expandEffect = (
     effect: RunEventEffect,
-    ownedTrinkets: readonly string[],
+    ownedBodyMods: readonly string[],
 ): RunEventEffect[] =>
 {
     if (effect.kind === 'add-card' && effect.cardId === '__random__')
@@ -307,11 +307,11 @@ const expandEffect = (
         return [ { kind: 'add-card', cardId: resolveRandomCard() } ];
     }
 
-    if (effect.kind === 'trinket' && effect.trinketId === '__random__')
+    if (effect.kind === 'body-mod' && effect.bodyModId === '__random__')
     {
-        const trinketId = resolveRandomTrinket(ownedTrinkets);
+        const bodyModId = resolveRandomBodyMod(ownedBodyMods);
 
-        return trinketId ? [ { kind: 'trinket', trinketId } ] : [ { kind: 'gold', amount: 20 } ];
+        return bodyModId ? [ { kind: 'body-mod', bodyModId } ] : [ { kind: 'gold', amount: 20 } ];
     }
 
     return [ effect ];
@@ -328,8 +328,8 @@ const describeEffect = (effect: RunEventEffect): AppliedEventMessage =>
         case 'gold':
             return {
                 text: effect.amount >= 0
-                    ? `Gained ${effect.amount} gold.`
-                    : `Lost ${Math.abs(effect.amount)} gold.`,
+                    ? `Gained ${effect.amount} creds.`
+                    : `Lost ${Math.abs(effect.amount)} creds.`,
                 tone: effect.amount > 0 ? 'good' : 'bad',
             };
         case 'lose-gold':
@@ -341,9 +341,9 @@ const describeEffect = (effect: RunEventEffect): AppliedEventMessage =>
                 text: `Added ${effect.count}× ${effect.cardId} to your deck.`,
                 tone: 'bad',
             };
-        case 'trinket':
+        case 'body-mod':
             return {
-                text: `Gained ${getTrinketDefinition(effect.trinketId)?.label ?? effect.trinketId}.`,
+                text: `Installed ${getBodyModDefinition(effect.bodyModId)?.label ?? effect.bodyModId}.`,
                 tone: 'good',
             };
         default:
@@ -359,25 +359,25 @@ export const applyRunEventEffects = (
         maxHealth,
         gold,
         deck,
-        trinkets,
+        bodyMods,
     }: {
         playerHealth: number;
         maxHealth: number;
         gold: number;
         deck: string[];
-        trinkets: string[];
+        bodyMods: string[];
     },
 ): AppliedEventResult =>
 {
     let health = playerHealth;
     let nextGold = gold;
     const nextDeck = [ ...deck ];
-    const nextTrinkets = [ ...trinkets ];
+    const nextBodyMods = [ ...bodyMods ];
     const messages: AppliedEventMessage[] = [];
 
     for (const rawEffect of effects)
     {
-        for (const effect of expandEffect(rawEffect, nextTrinkets))
+        for (const effect of expandEffect(rawEffect, nextBodyMods))
         {
             switch (effect.kind)
             {
@@ -402,14 +402,14 @@ export const applyRunEventEffects = (
                     {
                         messages.push({
                             text: paid < effect.amount
-                                ? `Paid ${paid} gold (all you had).`
-                                : `Paid ${paid} gold.`,
+                                ? `Paid ${paid} creds (all you had).`
+                                : `Paid ${paid} creds.`,
                             tone: 'bad',
                         });
                     }
                     else
                     {
-                        messages.push({ text: 'Could not afford the gold cost.', tone: 'neutral' });
+                        messages.push({ text: 'Could not afford the cred cost.', tone: 'neutral' });
                     }
 
                     break;
@@ -425,17 +425,17 @@ export const applyRunEventEffects = (
                     }
                     messages.push(describeEffect(effect));
                     break;
-                case 'trinket':
-                    if (!nextTrinkets.includes(effect.trinketId))
+                case 'body-mod':
+                    if (!nextBodyMods.includes(effect.bodyModId))
                     {
-                        nextTrinkets.push(effect.trinketId);
+                        nextBodyMods.push(effect.bodyModId);
                         messages.push(describeEffect(effect));
                     }
                     else
                     {
                         nextGold += 15;
-                        messages.push({ text: 'Already owned that trinket — took 15 gold instead.', tone: 'neutral' });
-                        messages.push({ text: 'Took 5 damage from the relic\'s backlash.', tone: 'bad' });
+                        messages.push({ text: 'Already running that mod — took 15 creds instead.', tone: 'neutral' });
+                        messages.push({ text: 'Took 5 damage from the chrome backlash.', tone: 'bad' });
                         health = Math.max(0, health - 5);
                     }
                     break;
@@ -449,7 +449,7 @@ export const applyRunEventEffects = (
         playerHealth: health,
         gold: nextGold,
         deck: nextDeck,
-        trinkets: nextTrinkets,
+        bodyMods: nextBodyMods,
         messages: messages.filter((message) => message.text.length > 0),
     };
 };
@@ -461,7 +461,7 @@ export const resolveIconMatchResult = (
         maxHealth: number;
         gold: number;
         deck: string[];
-        trinkets: string[];
+        bodyMods: string[];
     },
 ): AppliedEventResult =>
 {

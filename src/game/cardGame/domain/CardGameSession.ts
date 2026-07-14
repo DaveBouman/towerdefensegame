@@ -1,3 +1,4 @@
+import { BODY_MOD_IDS } from '../../run/bodyMods';
 import { GRID_CONFIG } from '../../config/gridConfig';
 import {
     GAME_RULES,
@@ -91,7 +92,7 @@ export class CardGameSession
         enemyId: string = GAME_RULES.defaultEnemyId,
         startHealth?: number,
         deckDefinitionIds?: readonly string[],
-        trinkets: readonly string[] = [],
+        bodyMods: readonly string[] = [],
         puzzleMode: PuzzleModeConfig | null = null,
     )
     {
@@ -105,7 +106,7 @@ export class CardGameSession
             poison: 0,
         };
         const maxHealth = GAME_RULES.player.maxHealth
-            + (trinkets.includes('vitality-charm') ? 10 : 0);
+            + (bodyMods.includes(BODY_MOD_IDS.chromeHeart) ? 10 : 0);
         this.player = {
             health: startHealth !== undefined
                 ? Math.min(maxHealth, Math.max(1, Math.round(startHealth)))
@@ -120,7 +121,7 @@ export class CardGameSession
                 : buildPlayerDeck()),
         );
         this.rerollsRemaining = puzzleMode ? 0 : GAME_RULES.fightRerollsPerFight;
-        const bonusEnergy = trinkets.includes('energy-cell') ? 1 : 0;
+        const bonusEnergy = bodyMods.includes(BODY_MOD_IDS.overclockCell) ? 1 : 0;
         this.maxEnergy = puzzleMode
             ? 1
             : Math.max(1, Math.round(GAME_RULES.energyPerTurn) + bonusEnergy);
@@ -1101,7 +1102,12 @@ export class CardGameSession
         if (!this.isPlayerDefeated() && !this.isEnemyDefeated())
         {
             this.renewHand();
-            this.resetEnergy();
+
+            if (this.energy <= 0)
+            {
+                this.resetEnergy();
+            }
+
             this.applyEnemyCurseHand();
         }
     }

@@ -8,7 +8,7 @@ import gamblerSvg from '../icons/000000/transparent/1x1/lorc/hood.svg?raw';
 import goldSvg from '../icons/000000/transparent/1x1/delapouite/coins.svg?raw';
 import cardSvg from '../icons/000000/transparent/1x1/quoting/card-play.svg?raw';
 import curseSvg from '../icons/000000/transparent/1x1/sbed/death-skull.svg?raw';
-import trinketSvg from '../icons/000000/transparent/1x1/lorc/gem-chain.svg?raw';
+import bodyModSvg from '../icons/000000/transparent/1x1/lorc/gem-chain.svg?raw';
 import healSvg from '../icons/000000/transparent/1x1/zeromancer/heart-plus.svg?raw';
 import trapSvg from '../icons/000000/transparent/1x1/lorc/land-mine.svg?raw';
 import sunSvg from '../icons/000000/transparent/1x1/lorc/sundial.svg?raw';
@@ -28,7 +28,7 @@ const EVENT_ICON_SVG: Record<EventIconId, string> = {
     gold: toCurrentColorIconSvg(goldSvg),
     card: toCurrentColorIconSvg(cardSvg),
     curse: toCurrentColorIconSvg(curseSvg),
-    trinket: toCurrentColorIconSvg(trinketSvg),
+    'body-mod': toCurrentColorIconSvg(bodyModSvg),
     heal: toCurrentColorIconSvg(healSvg),
     trap: toCurrentColorIconSvg(trapSvg),
     sun: toCurrentColorIconSvg(sunSvg),

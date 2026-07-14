@@ -539,19 +539,31 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getHand()).toHaveLength(GAME_RULES.handSize);
     });
 
-    it('resets energy at the start of the next player turn', () =>
+    it('resets energy only after all attacks in a round are spent', () =>
     {
         const session = new CardGameSession();
 
         session.spendEnergy();
-        session.spendEnergy();
-        expect(session.getEnergy()).toBe(GAME_RULES.energyPerTurn - 2);
+        expect(session.getEnergy()).toBe(GAME_RULES.energyPerTurn - 1);
 
         const action = session.beginEnemyTurn();
 
         if (action)
         {
             session.completeEnemyTurn(action);
+        }
+
+        expect(session.getEnergy()).toBe(GAME_RULES.energyPerTurn - 1);
+
+        session.spendEnergy();
+        session.spendEnergy();
+        expect(session.getEnergy()).toBe(0);
+
+        const action2 = session.beginEnemyTurn();
+
+        if (action2)
+        {
+            session.completeEnemyTurn(action2);
         }
 
         expect(session.getEnergy()).toBe(GAME_RULES.energyPerTurn);

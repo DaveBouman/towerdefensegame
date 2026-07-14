@@ -41,8 +41,8 @@ export interface GameEventMap {
     'reroll-confirm': void;
     'reroll-cancel': void;
     'reroll-state': RerollState;
-    'start-battle': { enemyId: string; startHealth: number; deck: string[]; seed: number; trinkets: string[] };
-    'start-puzzle': { puzzleId: string; startHealth: number; seed: number; trinkets: string[] };
+    'start-battle': { enemyId: string; startHealth: number; deck: string[]; seed: number; bodyMods: string[] };
+    'start-puzzle': { puzzleId: string; startHealth: number; seed: number; bodyMods: string[] };
     'puzzle-state': PuzzleState;
     'puzzle-resolved': PuzzleResolvedPayload;
     'battle-won': { playerHealth: number };

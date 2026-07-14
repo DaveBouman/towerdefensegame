@@ -390,10 +390,10 @@ body {
 .run-map__hint { font-size: calc(14px * var(--text-scale)); }
 .run-map__health-label,
 .run-map__gold-label,
-.run-map__trinkets-label { font-size: calc(11px * var(--text-scale)); }
+.run-map__body-mods-label { font-size: calc(11px * var(--text-scale)); }
 .run-map__health-value,
 .run-map__gold-value,
-.run-map__trinkets-value { font-size: calc(14px * var(--text-scale)); }
+.run-map__body-mods-value { font-size: calc(14px * var(--text-scale)); }
 .run-map__tooltip-title { font-size: calc(12px * var(--text-scale)); }
 .run-map__tooltip-body { font-size: calc(13px * var(--text-scale)); }
 

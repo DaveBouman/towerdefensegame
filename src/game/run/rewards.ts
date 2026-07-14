@@ -3,8 +3,8 @@ import { shuffleInPlace } from '../random/rng';
 
 /**
  * Rewards granted for defeating an enemy. Kept as a discriminated union so new
- * reward kinds (e.g. trinkets, gold) can be added without touching existing
- * handling. Trinkets will later modify the numeric knobs below (e.g. raise
+ * reward kinds (e.g. body mods, creds) can be added without touching existing
+ * handling. Body mods modify the numeric knobs below (e.g. raise
  * `pickCount` to "pick two", or flag a reward as rerollable).
  */
 export interface CardReward {
@@ -13,7 +13,7 @@ export interface CardReward {
     choiceCount: number;
     /** How many of the presented cards the player keeps. */
     pickCount: number;
-    /** Whether the player may reroll the offered choices (trinket-driven). */
+    /** Whether the player may reroll the offered choices (body-mod-driven). */
     rerollable: boolean;
 }
 

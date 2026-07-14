@@ -72,8 +72,8 @@ export class Game extends Scene
     }
 
     private onStartBattle = (
-        { enemyId, startHealth, deck, seed, trinkets }:
-        { enemyId: string; startHealth: number; deck: string[]; seed: number; trinkets: string[] },
+        { enemyId, startHealth, deck, seed, bodyMods }:
+        { enemyId: string; startHealth: number; deck: string[]; seed: number; bodyMods: string[] },
     ): void =>
     {
         if (this.battleActive)
@@ -81,12 +81,12 @@ export class Game extends Scene
             this.endBattle();
         }
 
-        this.startBattle(enemyId, startHealth, deck, seed, trinkets);
+        this.startBattle(enemyId, startHealth, deck, seed, bodyMods);
     };
 
     private onStartPuzzle = (
-        { puzzleId, startHealth, seed, trinkets }:
-        { puzzleId: string; startHealth: number; seed: number; trinkets: string[] },
+        { puzzleId, startHealth, seed, bodyMods }:
+        { puzzleId: string; startHealth: number; seed: number; bodyMods: string[] },
     ): void =>
     {
         if (this.battleActive)
@@ -94,14 +94,14 @@ export class Game extends Scene
             this.endBattle();
         }
 
-        this.startPuzzle(puzzleId, startHealth, seed, trinkets);
+        this.startPuzzle(puzzleId, startHealth, seed, bodyMods);
     };
 
     private startPuzzle (
         puzzleId: string,
         startHealth: number,
         seed: number,
-        trinkets: string[],
+        bodyMods: string[],
     ): void
     {
         const puzzle = getRunPuzzle(puzzleId);
@@ -111,7 +111,7 @@ export class Game extends Scene
         };
 
         this.activePuzzleId = puzzleId;
-        this.startBattle('training-dummy', startHealth, [], seed, trinkets, puzzleMode);
+        this.startBattle('training-dummy', startHealth, [], seed, bodyMods, puzzleMode);
 
         EventBus.emit(GAME_EVENTS.PUZZLE_STATE, {
             puzzleId,
@@ -128,7 +128,7 @@ export class Game extends Scene
         startHealth: number,
         deck: string[],
         seed: number,
-        trinkets: string[],
+        bodyMods: string[],
         puzzleMode: PuzzleModeConfig | null = null,
     ): void
     {
@@ -146,7 +146,7 @@ export class Game extends Scene
         this.rerollModeActive = false;
         this.turnResolving = false;
         this.battleResolved = false;
-        this.session = new CardGameSession(enemyId, startHealth, deck, trinkets, puzzleMode);
+        this.session = new CardGameSession(enemyId, startHealth, deck, bodyMods, puzzleMode);
 
         this.handView = new CardHandView(this, layout, [ ...this.session.getHand() ], {
             onDragMove: (worldX, worldY) =>
@@ -423,9 +423,8 @@ export class Game extends Scene
     };
 
     /**
-     * After a chain resolves the board is kept in place so the next attack chains through
-     * a longer, escalating sequence. Spends one energy, refills the hand, and — when energy
-     * runs out — hands the turn to the enemy.
+     * After a chain resolves: spend energy, then the enemy responds before the player
+     * can attack again. When energy runs out, the next enemy turn starts a fresh round.
      */
     private onAttackResolved (sequence: import('../cardGame/domain/types').AttackSequence): void
     {
@@ -469,9 +468,7 @@ export class Game extends Scene
         }
 
         this.session.spendEnergy();
-        // Unlock the board for more placements / attacks while energy remains.
         this.session.releaseAttackLock();
-        this.session.refillHand();
 
         this.boardView.syncFromBoard(this.session.board);
         this.boardView.setBlockedSlots(
@@ -479,7 +476,6 @@ export class Game extends Scene
             this.session.getBombDisabledSlots(),
         );
         this.boardView.setDampenedSlots(this.session.getDampenedSlots());
-        this.handView?.syncHand(this.session.getHand());
         this.enemyView.setHealth(this.session.getEnemy());
         this.armorView?.setArmor(this.session.getPlayer().shield);
         this.syncPileViews();
@@ -492,38 +488,16 @@ export class Game extends Scene
             return;
         }
 
-        // Re-telegraph the enemy: more attacks this round ramp its incoming damage.
-        const scaledIntent = this.session.getScaledEnemyIntent();
-
-        if (scaledIntent)
-        {
-            this.enemyView.showIntent(scaledIntent);
-        }
-
         this.emitAttackReadiness();
-
-        // Player round continues — board stays, enemy does not act yet.
-        if (this.session.hasEnergy())
-        {
-            return;
-        }
-
-        // All energy spent — clear the board once, then the enemy takes a single turn.
         this.endPlayerRound();
     }
 
     /**
-     * Ends the player round: graveyard animation, board clear, then one enemy turn.
-     * Only runs when energy is fully depleted (board stays up for every attack before that).
+     * After each player attack: graveyard animation, board clear, then one enemy turn.
      */
     private endPlayerRound = (): void =>
     {
         if (!this.session || !this.boardView || this.turnResolving)
-        {
-            return;
-        }
-
-        if (this.session.hasEnergy())
         {
             return;
         }
@@ -770,7 +744,7 @@ export class Game extends Scene
         EventBus.emit(GAME_EVENTS.TURN_STATE, {
             energy: this.session.getEnergy(),
             maxEnergy: this.session.getMaxEnergy(),
-            // Round ends automatically when energy hits 0 — no manual end while attacks remain.
+            // Energy refills automatically when a full round of attacks is spent.
             canEndTurn: false,
         });
     }

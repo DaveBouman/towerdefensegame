@@ -30,7 +30,7 @@ interface RunMapOverlayProps {
     playerHealth: number;
     maxHealth: number;
     gold: number;
-    trinketCount: number;
+    bodyModCount: number;
     seed: string;
     /** Whether the seed can still be changed (only before the first battle). */
     seedEditable: boolean;
@@ -46,7 +46,7 @@ export const RunMapOverlay = ({
     playerHealth,
     maxHealth,
     gold,
-    trinketCount,
+    bodyModCount,
     seed,
     seedEditable,
     onSeedChange,
@@ -99,7 +99,7 @@ export const RunMapOverlay = ({
         <div className="run-map">
             <div className="run-map__header">
                 <div className="run-map__heading">
-                    <h1 className="run-map__title">Choose your path</h1>
+                    <h1 className="run-map__title">Pick Your Route</h1>
                     <div className="run-map__seed">
                         <span className="run-map__seed-label">Seed</span>
                         {seedEditable ? (
@@ -128,7 +128,7 @@ export const RunMapOverlay = ({
                 </div>
                 <div className="run-map__resources">
                     <div className="run-map__health" role="status">
-                        <span className="run-map__health-label">Vitality</span>
+                        <span className="run-map__health-label">Integrity</span>
                         <div className="run-map__health-bar">
                             <div
                                 className="run-map__health-fill"
@@ -138,13 +138,13 @@ export const RunMapOverlay = ({
                         <span className="run-map__health-value">{playerHealth}/{maxHealth}</span>
                     </div>
                     <div className="run-map__gold" role="status">
-                        <span className="run-map__gold-label">Gold</span>
+                        <span className="run-map__gold-label">Creds</span>
                         <span className="run-map__gold-value">{gold}</span>
                     </div>
-                    {trinketCount > 0 && (
-                        <div className="run-map__trinkets" role="status">
-                            <span className="run-map__trinkets-label">Trinkets</span>
-                            <span className="run-map__trinkets-value">{trinketCount}</span>
+                    {bodyModCount > 0 && (
+                        <div className="run-map__body-mods" role="status">
+                            <span className="run-map__body-mods-label">Body Mods</span>
+                            <span className="run-map__body-mods-value">{bodyModCount}</span>
                         </div>
                     )}
                 </div>

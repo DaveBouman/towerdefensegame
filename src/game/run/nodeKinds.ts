@@ -17,23 +17,23 @@ export interface NodeKindInfo {
 
 export const NODE_KIND_INFO: Record<RunMapNodeKind, NodeKindInfo> = {
     enemy: {
-        label: 'Enemy',
-        tooltip: 'A hostile foe. Defeat it to earn a card for your deck.',
+        label: 'Hostile',
+        tooltip: 'A street op. Flatline them to jack a card into your deck.',
         isBattle: true,
     },
     boss: {
-        label: 'Boss',
-        tooltip: 'The run\u2019s final warden. Defeat it to complete the run.',
+        label: 'Warden',
+        tooltip: 'The run\u2019s final warden. Take them down to clear the district.',
         isBattle: true,
     },
     shop: {
-        label: 'Shop',
-        tooltip: 'Spend your spoils on cards and trinkets. (Coming soon)',
+        label: 'Ripperdoc',
+        tooltip: 'Spend creds on cards and body mods. (Coming soon)',
         isBattle: false,
     },
     event: {
-        label: 'Event',
-        tooltip: 'A known encounter — Sign Matcher, wheel, combo trial, healing, curses, and more.',
+        label: 'Signal',
+        tooltip: 'A known encounter — glyph matcher, fate spinner, neural drill, stasis patches, black ICE, and more.',
         isBattle: false,
     },
 };

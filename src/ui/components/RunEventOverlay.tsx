@@ -53,7 +53,7 @@ interface RunEventOverlayProps {
     maxHealth: number;
     gold: number;
     deck: string[];
-    trinkets: string[];
+    bodyMods: string[];
     onFinish: (result: AppliedEventResult) => void;
     onStartPuzzle: (puzzleId: string) => void;
 }
@@ -76,7 +76,7 @@ export const RunEventOverlay = ({
     maxHealth,
     gold,
     deck,
-    trinkets,
+    bodyMods,
     onFinish,
     onStartPuzzle,
 }: RunEventOverlayProps) =>
@@ -89,7 +89,7 @@ export const RunEventOverlay = ({
         playerHealth,
         gold,
         deck,
-        trinkets,
+        bodyMods,
     });
 
     const [ wheelSpinning, setWheelSpinning ] = useState(false);
@@ -138,7 +138,7 @@ export const RunEventOverlay = ({
         maxHealth,
         gold: snapshot.gold,
         deck: snapshot.deck,
-        trinkets: snapshot.trinkets,
+        bodyMods: snapshot.bodyMods,
     });
 
     const showResult = (result: AppliedEventResult): void =>
@@ -147,7 +147,7 @@ export const RunEventOverlay = ({
             playerHealth: result.playerHealth,
             gold: result.gold,
             deck: result.deck,
-            trinkets: result.trinkets,
+            bodyMods: result.bodyMods,
         });
         setMessages(result.messages);
         setPhase('result');
@@ -292,7 +292,7 @@ export const RunEventOverlay = ({
             playerHealth: snapshot.playerHealth,
             gold: snapshot.gold,
             deck: snapshot.deck,
-            trinkets: snapshot.trinkets,
+            bodyMods: snapshot.bodyMods,
             messages,
         });
     };
@@ -470,9 +470,9 @@ export const RunEventOverlay = ({
                         </ul>
                         <div className="run-event__stats">
                             <span>HP {snapshot.playerHealth}/{maxHealth}</span>
-                            <span>{snapshot.gold} gold</span>
-                            {snapshot.trinkets.length > 0 && (
-                                <span>{snapshot.trinkets.length} trinket(s)</span>
+                            <span>{snapshot.gold} creds</span>
+                            {snapshot.bodyMods.length > 0 && (
+                                <span>{snapshot.bodyMods.length} body mod(s)</span>
                             )}
                         </div>
                         <button type="button" className="run-event__continue" onClick={finish}>
