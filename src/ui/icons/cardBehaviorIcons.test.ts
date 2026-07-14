@@ -14,6 +14,8 @@ describe('cardBehaviorIcons', () =>
             'loop-reset',
             'poison',
             'fire',
+            'curse',
+            'fuse',
         ];
 
         for (const behaviorId of behaviors)

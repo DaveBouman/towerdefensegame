@@ -32,7 +32,8 @@
       "passives": [
         { "id": "enrage", "attackBonusPerTrap": 3, "extraTrapsPerTrap": 0 },
         { "id": "escalate", "trapsPerRamp": 1, "maxTraps": 4 },
-        "silenceTile"
+        "silenceTile",
+        "curseHand"
       ]
     },
     {

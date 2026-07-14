@@ -453,6 +453,22 @@ export class Game extends Scene
             return;
         }
 
+        if (!this.session.isEnemyDefeated())
+        {
+            this.session.resolveHandEndPenalties();
+            this.playerView?.setHealth(this.session.getPlayer());
+            this.armorView?.setArmor(this.session.getPlayer().shield);
+
+            if (this.session.isPlayerDefeated())
+            {
+                this.session.finishPlayerTurn();
+                this.turnResolving = false;
+                this.emitAttackReadiness();
+                this.loseBattle();
+                return;
+            }
+        }
+
         this.session.clearBoard();
         this.session.tickDampenField();
         this.boardView.syncFromBoard(this.session.board);

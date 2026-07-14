@@ -26,6 +26,10 @@ export interface CardDefinition {
     tooltipProviderId?: string;
     /** Optional static tooltip lines merged over the resolved provider copy. */
     tooltip?: CardTooltipOverride;
+    /** When true the card cannot be dragged from hand onto the board. */
+    unplayable?: boolean;
+    /** Damage dealt to the player for each copy still in hand when the turn ends. */
+    handEndPenalty?: number;
 }
 
 export interface GameRules {
@@ -79,3 +83,9 @@ export const CARD_DEFINITIONS: readonly CardDefinition[] = cardsData.cards;
 
 export const getChainStepDistance = (definition: CardDefinition): number =>
     Math.max(1, definition.chainStepDistance ?? 1);
+
+export const isCardUnplayable = (definition: CardDefinition): boolean =>
+    definition.unplayable === true;
+
+export const getCardHandEndPenalty = (definition: CardDefinition): number =>
+    Math.max(0, definition.handEndPenalty ?? 0);

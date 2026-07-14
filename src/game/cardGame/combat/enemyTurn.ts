@@ -71,6 +71,7 @@ export const describeEnemyPassives = (
         jammer: 'Jammer',
         escalate: 'Escalate',
         dampenTiles: 'Dead Zone',
+        curseHand: 'Curse Hand',
     };
 
     return enemy.passives.map((passive) => labels[passive.id] ?? passive.id);

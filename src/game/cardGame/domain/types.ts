@@ -117,6 +117,11 @@ export interface TurnState {
     canEndTurn: boolean;
 }
 
+export interface HandPenaltyResult {
+    totalDamage: number;
+    penalizedCards: readonly { definitionId: string; damage: number }[];
+}
+
 export interface RerollState {
     rerollsRemaining: number;
     maxRerollsPerFight: number;

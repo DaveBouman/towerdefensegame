@@ -22,6 +22,7 @@ export const ENEMY_PASSIVE_DEFAULTS: Record<EnemyPassiveId, EnemyPassiveConfig> 
     jammer: { id: 'jammer', minChainLength: 6, shieldGain: 5 },
     escalate: { id: 'escalate', trapsPerRamp: 1, maxTraps: 4 },
     dampenTiles: { id: 'dampenTiles', parity: 'even', multiplier: 0.5, everyTurns: 2, duration: 1 },
+    curseHand: { id: 'curseHand', cardId: 'burden', count: 1 },
 };
 
 export const normalizeEnemyPassives = (

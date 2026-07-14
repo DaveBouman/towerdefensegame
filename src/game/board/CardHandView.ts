@@ -1,4 +1,5 @@
 import type { CardInstance } from '../cardGame/domain/types';
+import { getCardDefinitionOrThrow, isCardUnplayable } from '../cardGame/config/cardRegistry';
 import { buildCardGraphic } from '../cards/CardRenderer';
 import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
 import { HAND_CARD_GAP, HAND_CARD_HEIGHT, HAND_CARD_WIDTH } from '../cards/cardVisuals';
@@ -132,6 +133,11 @@ export class CardHandView
             slot.add(graphic);
             this.container.add(slot);
             this.slotContainers.push(slot);
+
+            if (isCardUnplayable(getCardDefinitionOrThrow(card.definitionId)))
+            {
+                slot.setAlpha(0.82);
+            }
         });
 
         this.updateSelectionVisuals();
@@ -166,6 +172,11 @@ export class CardHandView
     private beginDrag (index: number, card: CardInstance, pointer: Phaser.Input.Pointer): void
     {
         if (this.draggingIndex !== null || !this.canBeginDrag())
+        {
+            return;
+        }
+
+        if (isCardUnplayable(getCardDefinitionOrThrow(card.definitionId)))
         {
             return;
         }

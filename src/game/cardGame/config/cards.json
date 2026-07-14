@@ -146,6 +146,25 @@
       "visualId": "defend",
       "arrowPool": "orthogonal",
       "cornerTurn": true
+    },
+    {
+      "id": "burden",
+      "label": "Burden",
+      "power": 0,
+      "behaviorId": "curse",
+      "visualId": "curse",
+      "arrowPool": "orthogonal",
+      "unplayable": true,
+      "handEndPenalty": 5
+    },
+    {
+      "id": "fuse",
+      "label": "Fuse",
+      "power": 2,
+      "behaviorId": "attack",
+      "visualId": "fuse",
+      "arrowPool": "orthogonal",
+      "handEndPenalty": 8
     }
   ]
 }

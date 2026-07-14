@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-07-07
+**Last updated:** 2026-07-14
 
 ---
 
@@ -152,6 +152,7 @@ The player turn is **escalating**: each Attack resolves the whole board and leav
 | Fortify (Bulwark) | `fortifyAbility.ts` | +2 armor per defend in the chain beyond 2 (rewards defend-heavy chains) |
 | Overload (Surge) | `overloadAbility.ts` | +3 damage per other skill card in the chain, doubled if a Joker activates |
 | Hazards/traps | `hazardBehavior.ts`, `AttackPipeline.applyBombConversion` | Skip → slot explodes (4 dmg) + disables; **route a card into it → the trap converts to that card's type** (attack→attack for its power, defend→armor) and joins streaks/abilities |
+| **Curse cards** | `cards.json` (`unplayable`, `handEndPenalty`), `CardGameSession.resolveHandEndPenalties` | Bad cards that clog the hand — **Burden** (unplayable, 5 dmg if held at end of turn), **Fuse** (weak attack, 8 dmg if not placed by end of turn). **Saboteur** adds Burdens via `curseHand` passive |
 | Shield layer | Both sides | Absorbs before HP (poison bypasses shield) |
 | Enemy passives | `enemyPassives/` | See enemy roster below |
 
@@ -161,7 +162,7 @@ The player turn is **escalating**: each Attack resolves the whole board and leav
 |----|--------------|
 | `basic` | Raider — baseline (HP 190, atk 13, 65% attack), no passives |
 | `thornward` | Thorns — reflects 4 damage on attack (punishes multi-attack re-firing) |
-| `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile — trap pressure snowballs |
+| `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile, **Curse Hand** (adds Burden to hand each turn) — trap pressure snowballs |
 | `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps) |
 | `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (punishes loop-reset), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
 
@@ -239,6 +240,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-14 | **Curse / bad cards.** New card flags `unplayable` and `handEndPenalty` on `CardDefinition`. **Burden** — cannot be played, deals 5 damage if still in hand when the turn ends. **Fuse** — weak attack (power 2) that must be placed before end of turn or deals 8 damage. Penalties resolve in `CardGameSession.resolveHandEndPenalties` at end of player turn (`Game.resolveEnemyPhase`). Unplayable cards blocked in `placeCardFromHand` and `CardHandView` drag. New `curse` behavior (inert on board). **Saboteur** gains `curseHand` passive — slips 1 Burden into your hand after each enemy turn (can exceed hand size). |
 | 2026-07-07 | **Escalation risk/reward: enemy damage ramps with attacks per round.** Each extra attack the player makes in a round increases the enemy's next attack damage by `gameRules.enemyDamageRampPerAttack` (default 4; first attack is baseline). Ramp derives from spent energy (`CardGameSession.getAttacksThisRound` = `maxEnergy − energy`, `getEnemyDamageRamp`), is baked into attack steps at resolve time (`beginEnemyTurn` → `rampEnemyAction`), and is telegraphed live: after each attack `Game.onAttackResolved` re-shows the scaled intent (`getScaledEnemyIntent`). Attack intent tooltip notes the ramp. |
 | 2026-07-07 | **Enemy balance pass for the escalating turn** (`enemies.json`). Since a turn now lands up to `energyPerTurn` re-firing attacks, enemy `maxHealth` scaled ~2.3× (Raider 80→190, Thornward 72→170, Saboteur 64→150, Warden 95→220, Smokebinder 78→185) with moderate `attackDamage`/`shieldGain`/`attackChance` bumps so escalating shields don't trivialize them. Thornward's reflect 3→4 and Warden's high shield/Jammer act as natural counters to multi-attack re-firing. Tunable per taste. |
 | 2026-07-07 | **Escalating turn / dynamic play.** A player turn is no longer one-and-done: Attack now resolves the board **without clearing it**, so cards stay and each subsequent Attack chains through a longer, escalating sequence. Each Attack costs **1 energy** (`gameRules.energyPerTurn`, default 3, on `GameRules`); the hand refills to full after every attack (`CardGameSession.refillHand`) so the deck progresses mid-turn. New **End Turn** button (`GAME_EVENTS.END_TURN`) — or running out of energy — discards the board and hands off to the enemy (`Game.onEndTurn` → `resolveEnemyPhase`, formerly the post-attack path). Energy state (`getEnergy`/`getMaxEnergy`/`hasEnergy`/`spendEnergy`, reset each turn in `completeEnemyTurn`) surfaces via `GAME_EVENTS.TURN_STATE` → HUD energy pips + End Turn button (`GameHud`, `TurnState`). New readiness reason `no-energy`. Board edits are locked during end-turn resolution via a `turnResolving` guard in `Game`. Dead Zone/dampen now ages once per turn (`CardGameSession.tickDampenField`, called in `resolveEnemyPhase`) instead of per attack. |

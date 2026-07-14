@@ -94,5 +94,13 @@ export const resolveEnemyPassiveTooltip = (
                     'Route your chain through the live tiles to hit full strength.',
                 ],
             };
+        case 'curseHand':
+            return {
+                title: 'Curse Hand',
+                lines: [
+                    `After each enemy turn, adds ${passive.count} ${passive.cardId} card(s) to your hand.`,
+                    'Curse cards clog your hand and may hurt you if held at end of turn.',
+                ],
+            };
     }
 };

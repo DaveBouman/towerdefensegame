@@ -1,5 +1,5 @@
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
+import { GAME_RULES, getCardDefinitionOrThrow, isCardUnplayable, getCardHandEndPenalty } from '../config/cardRegistry';
 import {
     type LoadedCardGameEnemyDefinition,
     getCardGameEnemyDefinitionOrThrow,
@@ -32,6 +32,7 @@ import type {
     PlayerState,
     PlayerDamageResult,
     SlotPosition,
+    HandPenaltyResult,
 } from '../domain/types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
@@ -217,6 +218,67 @@ export class CardGameSession
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
         this.emitPilesChanged();
+    }
+
+    /** Adds a card to the hand (used by curse passives and future events). */
+    addCardToHand (definitionId: string, ignoreHandLimit = false): boolean
+    {
+        if (!ignoreHandLimit && this.hand.length >= GAME_RULES.handSize)
+        {
+            return false;
+        }
+
+        this.hand.push(createCardInstance(definitionId));
+        CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
+
+        return true;
+    }
+
+    /**
+     * Damages the player for each hand card with a hand-end penalty still held
+     * when the turn ends. Returns the breakdown without discarding the cards.
+     */
+    resolveHandEndPenalties (): HandPenaltyResult
+    {
+        const penalizedCards: { definitionId: string; damage: number }[] = [];
+        let totalDamage = 0;
+
+        for (const card of this.hand)
+        {
+            const definition = getCardDefinitionOrThrow(card.definitionId);
+            const damage = getCardHandEndPenalty(definition);
+
+            if (damage <= 0)
+            {
+                continue;
+            }
+
+            penalizedCards.push({ definitionId: card.definitionId, damage });
+            totalDamage += damage;
+        }
+
+        if (totalDamage > 0)
+        {
+            this.resolveEnemyAttack(totalDamage);
+        }
+
+        return { totalDamage, penalizedCards };
+    }
+
+    /** Enemy passives that slip curse cards into the player's hand between turns. */
+    private applyEnemyCurseHand (): void
+    {
+        const curseHand = getEnemyPassive(this.enemyDefinition.passives, 'curseHand');
+
+        if (!curseHand)
+        {
+            return;
+        }
+
+        for (let i = 0; i < curseHand.count; i++)
+        {
+            this.addCardToHand(curseHand.cardId, true);
+        }
     }
 
     private emitPilesChanged (): void
@@ -918,6 +980,7 @@ export class CardGameSession
         {
             this.renewHand();
             this.resetEnergy();
+            this.applyEnemyCurseHand();
         }
     }
 
@@ -961,6 +1024,13 @@ export class CardGameSession
         const card = this.hand[handIndex];
 
         if (!card)
+        {
+            return false;
+        }
+
+        const definition = getCardDefinitionOrThrow(card.definitionId);
+
+        if (isCardUnplayable(definition))
         {
             return false;
         }

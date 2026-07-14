@@ -1,5 +1,6 @@
 import { attackBehavior } from './attackBehavior';
 import { boostBehavior } from './boostBehavior';
+import { curseBehavior } from './curseBehavior';
 import { defendBehavior } from './defendBehavior';
 import { fireBehavior } from './fireBehavior';
 import { hazardBehavior } from './hazardBehavior';
@@ -10,6 +11,7 @@ import type { CardBehavior } from './types';
 
 const behaviors = new Map<string, CardBehavior>([
     [ attackBehavior.id, attackBehavior ],
+    [ curseBehavior.id, curseBehavior ],
     [ boostBehavior.id, boostBehavior ],
     [ defendBehavior.id, defendBehavior ],
     [ fireBehavior.id, fireBehavior ],

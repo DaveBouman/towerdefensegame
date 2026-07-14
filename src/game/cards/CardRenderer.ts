@@ -32,7 +32,8 @@ export const buildCardGraphic = (
 ): CardGraphic =>
 {
     const definition = getCardDefinitionOrThrow(card.definitionId);
-    const style = CARD_VISUALS[definition.behaviorId] ?? CARD_VISUALS.attack;
+    const visualKey = definition.visualId ?? definition.behaviorId;
+    const style = CARD_VISUALS[visualKey] ?? CARD_VISUALS[definition.behaviorId] ?? CARD_VISUALS.attack;
     const { width, height, interactive = false } = options;
     const container = scene.add.container(0, 0);
     const isJoker = definition.behaviorId === 'joker';
@@ -40,6 +41,9 @@ export const buildCardGraphic = (
     const isLoopReset = definition.behaviorId === 'loop-reset';
     const isPoison = definition.behaviorId === 'poison';
     const isFire = definition.behaviorId === 'fire';
+    const isCurse = definition.behaviorId === 'curse';
+    const isFuse = visualKey === 'fuse';
+    const handPenalty = definition.handEndPenalty ?? 0;
     const leapDistance = getChainStepDistance(definition);
 
     const body = scene.add.rectangle(width / 2, height / 2, width, height, style.fill);
@@ -80,7 +84,8 @@ export const buildCardGraphic = (
     const kindIconY = height * 0.3;
     const kindLabelY = height * 0.44;
     const kindIconSize = cardKindIconSize(width);
-    const kindTextureKey = getCardBehaviorTextureKey(definition.behaviorId);
+    const kindTextureKey = getCardBehaviorTextureKey(visualKey)
+        ?? getCardBehaviorTextureKey(definition.behaviorId);
 
     if (kindTextureKey && scene.textures.exists(kindTextureKey))
     {
@@ -100,11 +105,17 @@ export const buildCardGraphic = (
     const power = scene.add.text(
         width / 2,
         height * 0.62,
-        isJoker ? '★' : isBoost ? `×${GAME_RULES.fieldBoost.nextStepMultiplier}` : isLoopReset ? '↺1' : isPoison ? `${definition.power}×→` : isFire ? `${definition.power}↔` : String(definition.power),
+        isJoker ? '★' : isBoost ? `×${GAME_RULES.fieldBoost.nextStepMultiplier}` : isLoopReset ? '↺1' : isPoison ? `${definition.power}×→` : isFire ? `${definition.power}↔` : isCurse && handPenalty > 0 ? `-${handPenalty}` : isFuse && handPenalty > 0 ? `${definition.power}!` : String(definition.power),
         {
             ...uiTextStyle(22, style.powerColor, { bold: true }),
         },
     ).setOrigin(0.5);
+
+    if (definition.unplayable)
+    {
+        continueArrow.setText('✕');
+        continueArrow.setColor('#c97b7b');
+    }
 
     if (isJoker)
     {

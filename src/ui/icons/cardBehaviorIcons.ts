@@ -6,6 +6,8 @@ import boostSvg from './000000/transparent/1x1/sbed/doubled.svg?raw';
 import loopSvg from './000000/transparent/1x1/lorc/cycle.svg?raw';
 import poisonSvg from './000000/transparent/1x1/lorc/poison-bottle.svg?raw';
 import fireSvg from './000000/transparent/1x1/sbed/fire.svg?raw';
+import curseSvg from './000000/transparent/1x1/sbed/death-skull.svg?raw';
+import fuseSvg from './000000/transparent/1x1/lorc/time-bomb.svg?raw';
 import { toWhiteIconSvg } from './toWhiteIconSvg';
 
 /** Card behavior ids from cards.json / CARD_VISUALS. */
@@ -17,7 +19,9 @@ export type CardBehaviorIconId =
     | 'boost'
     | 'loop-reset'
     | 'poison'
-    | 'fire';
+    | 'fire'
+    | 'curse'
+    | 'fuse';
 
 /** Icons from https://game-icons.net (see src/ui/icons/license.txt). */
 export const CARD_BEHAVIOR_TEXTURE_KEY: Record<CardBehaviorIconId, string> = {
@@ -29,6 +33,8 @@ export const CARD_BEHAVIOR_TEXTURE_KEY: Record<CardBehaviorIconId, string> = {
     'loop-reset': 'card-icon-loop',
     poison: 'card-icon-poison',
     fire: 'card-icon-fire',
+    curse: 'card-icon-curse',
+    fuse: 'card-icon-fuse',
 };
 
 const CARD_BEHAVIOR_SVG_RAW: Record<CardBehaviorIconId, string> = {
@@ -40,6 +46,8 @@ const CARD_BEHAVIOR_SVG_RAW: Record<CardBehaviorIconId, string> = {
     'loop-reset': toWhiteIconSvg(loopSvg),
     poison: toWhiteIconSvg(poisonSvg),
     fire: toWhiteIconSvg(fireSvg),
+    curse: toWhiteIconSvg(curseSvg),
+    fuse: toWhiteIconSvg(fuseSvg),
 };
 
 export const CARD_BEHAVIOR_ICON_ENTRIES = (Object.keys(CARD_BEHAVIOR_TEXTURE_KEY) as CardBehaviorIconId[]).map((id) => ({

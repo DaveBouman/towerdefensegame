@@ -8,7 +8,8 @@ export type EnemyPassiveId =
     | 'loopHunter'
     | 'jammer'
     | 'escalate'
-    | 'dampenTiles';
+    | 'dampenTiles'
+    | 'curseHand';
 
 export interface ThornsPassiveConfig {
     id: 'thorns';
@@ -85,6 +86,14 @@ export interface DampenTilesPassiveConfig {
     duration: number;
 }
 
+export interface CurseHandPassiveConfig {
+    id: 'curseHand';
+    /** Card definition id added to the player's hand after each enemy turn. */
+    cardId: string;
+    /** How many copies to add (clamped by hand size). */
+    count: number;
+}
+
 export type EnemyPassiveConfig =
     | ThornsPassiveConfig
     | EnragePassiveConfig
@@ -95,6 +104,7 @@ export type EnemyPassiveConfig =
     | LoopHunterPassiveConfig
     | JammerPassiveConfig
     | EscalatePassiveConfig
-    | DampenTilesPassiveConfig;
+    | DampenTilesPassiveConfig
+    | CurseHandPassiveConfig;
 
 export type EnemyPassiveInput = EnemyPassiveId | EnemyPassiveConfig;

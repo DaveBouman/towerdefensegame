@@ -55,6 +55,18 @@ export const CARD_VISUALS: Record<string, CardVisualStyle> = {
         labelColor: '#ffe8d5',
         powerColor: '#f5b041',
     },
+    curse: {
+        fill: 0x2a1a2e,
+        border: 0x9b59b6,
+        labelColor: '#e8daef',
+        powerColor: '#e74c3c',
+    },
+    fuse: {
+        fill: 0x3a2010,
+        border: 0xff6b35,
+        labelColor: '#ffd9c4',
+        powerColor: '#ff9f43',
+    },
 };
 
 export const HAND_CARD_WIDTH = 80;

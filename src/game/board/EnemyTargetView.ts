@@ -28,6 +28,7 @@ const PASSIVE_ROW_COLORS: Record<EnemyPassiveConfig['id'], number> = {
     jammer: 0x5dade2,
     escalate: 0xff6b6b,
     dampenTiles: 0x9b8cff,
+    curseHand: 0xc97b9b,
 };
 
 const ENEMY_COLOR = 0xe74c3c;

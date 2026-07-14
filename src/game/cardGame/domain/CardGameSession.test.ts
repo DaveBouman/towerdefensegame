@@ -554,6 +554,49 @@ describe('CardGameSession enemy turn', () =>
         expect(scaled?.steps[0]).toEqual({ kind: 'attack', amount: 10 + perAttack });
     });
 
+    it('rejects unplayable curse cards from hand placement', () =>
+    {
+        const session = new CardGameSession();
+
+        session.addCardToHand('burden', true);
+
+        const burdenIndex = session.getHand().findIndex((card) => card.definitionId === 'burden');
+
+        expect(burdenIndex).toBeGreaterThanOrEqual(0);
+        expect(session.placeCardFromHand(burdenIndex, { row: 0, col: 1 })).toBe(false);
+    });
+
+    it('allows fuse to be placed but punishes leaving it in hand at turn end', () =>
+    {
+        const session = new CardGameSession();
+        const healthBefore = session.getPlayer().health;
+
+        session.addCardToHand('fuse', true);
+
+        const fuseIndex = session.getHand().findIndex((card) => card.definitionId === 'fuse');
+
+        expect(session.placeCardFromHand(fuseIndex, { row: 0, col: 1 })).toBe(true);
+
+        session.addCardToHand('fuse', true);
+        const penalty = session.resolveHandEndPenalties();
+
+        expect(penalty.totalDamage).toBe(8);
+        expect(penalty.penalizedCards).toEqual([ { definitionId: 'fuse', damage: 8 } ]);
+        expect(session.getPlayer().health).toBe(healthBefore - 8);
+    });
+
+    it('adds curse cards to the hand after an enemy turn when the passive is active', () =>
+    {
+        const session = new CardGameSession('saboteur');
+        const action = session.beginEnemyTurn();
+
+        expect(action).not.toBeNull();
+
+        session.completeEnemyTurn(action!);
+
+        expect(session.getHand().some((card) => card.definitionId === 'burden')).toBe(true);
+    });
+
     it('prevents moving or removing enemy hazards', () =>
     {
         const session = new CardGameSession();

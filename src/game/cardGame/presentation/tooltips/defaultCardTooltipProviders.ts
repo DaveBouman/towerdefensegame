@@ -175,6 +175,22 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             'Field card — spawns on a random empty tile anywhere on the board after the enemy turn.',
         ],
     })),
+    provider('burden', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            'Cannot be played on the board.',
+            `Still in hand at end of turn: you take ${ctx.definition.handEndPenalty ?? 0} damage.`,
+            'Reroll it away or end your turn early to discard it.',
+        ],
+    })),
+    provider('fuse', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Weak attack — deals ${ctx.definition.power} damage if placed and chained.`,
+            `Still in hand at end of turn: you take ${ctx.definition.handEndPenalty ?? 0} damage.`,
+            'Place it on the board before ending your turn to defuse it.',
+        ],
+    })),
     provider('default', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: [ 'Follow the arrow to continue the chain.' ],
