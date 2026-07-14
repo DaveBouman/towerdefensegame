@@ -77,4 +77,35 @@ describe('runEvents', () =>
         expect(result.gold).toBe(20);
         expect(result.messages).toHaveLength(2);
     });
+
+    it('lose-gold caps at current gold', () =>
+    {
+        const result = applyRunEventEffects(
+            [
+                { kind: 'heal', amount: 18 },
+                { kind: 'lose-gold', amount: 18 },
+            ],
+            {
+                playerHealth: 40,
+                maxHealth: 80,
+                gold: 7,
+                deck: [],
+                trinkets: [],
+            },
+        );
+
+        expect(result.playerHealth).toBe(58);
+        expect(result.gold).toBe(0);
+        expect(result.messages.some((message) => message.text.includes('all you had'))).toBe(true);
+    });
+
+    it('healing spring drink pairs heal with gold cost', () =>
+    {
+        const drink = getRunEvent('healing-spring').choices.find((choice) => choice.id === 'drink');
+
+        expect(drink?.effects).toEqual([
+            { kind: 'heal', amount: 18 },
+            { kind: 'lose-gold', amount: 18 },
+        ]);
+    });
 });

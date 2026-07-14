@@ -81,8 +81,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: [
             `Grants ${ctx.definition.power} armor when activated in the chain.`,
-            'Turns the corner: steps one tile along the arrow, then hooks to a forward-diagonal tile.',
-            'Continues around whichever corner has a card.',
+            'Turns the corner: steps one tile along the arrow, then continues to the next card around the bend.',
         ],
     })),
     provider('defend-special', (ctx) => ({

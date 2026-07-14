@@ -37,6 +37,16 @@ import type {
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
 import { pickRandom } from '../../random/rng';
+import type { CardDirection } from './cardDirections';
+
+export interface PuzzleModeConfig {
+    handCards: readonly {
+        definitionId: string;
+        arrow?: CardDirection;
+        loopArrow?: CardDirection;
+    }[];
+    damageTarget: number;
+}
 
 export class CardGameSession
 {
@@ -59,6 +69,8 @@ export class CardGameSession
     private damageDealtThisAttack = 0;
     private queuedEnemyTurn: EnemyTurnAction | null = null;
     private rerollsRemaining: number;
+    private readonly puzzleMode: PuzzleModeConfig | null;
+    private puzzleFinished = false;
     private chainStart: SlotPosition = {
         row: GAME_RULES.activationStart.row,
         col: GAME_RULES.activationStartColumn,
@@ -69,8 +81,10 @@ export class CardGameSession
         startHealth?: number,
         deckDefinitionIds?: readonly string[],
         trinkets: readonly string[] = [],
+        puzzleMode: PuzzleModeConfig | null = null,
     )
     {
+        this.puzzleMode = puzzleMode;
         this.enemyDefinition = getCardGameEnemyDefinitionOrThrow(enemyId);
         this.board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
         this.enemy = {
@@ -94,12 +108,39 @@ export class CardGameSession
                 ? buildDeckFromDefinitionIds(deckDefinitionIds)
                 : buildPlayerDeck()),
         );
-        this.rerollsRemaining = GAME_RULES.fightRerollsPerFight;
+        this.rerollsRemaining = puzzleMode ? 0 : GAME_RULES.fightRerollsPerFight;
         const bonusEnergy = trinkets.includes('energy-cell') ? 1 : 0;
-        this.maxEnergy = Math.max(1, Math.round(GAME_RULES.energyPerTurn) + bonusEnergy);
+        this.maxEnergy = puzzleMode
+            ? 1
+            : Math.max(1, Math.round(GAME_RULES.energyPerTurn) + bonusEnergy);
         this.energy = this.maxEnergy;
-        this.renewHand();
-        this.queueNextEnemyTurn();
+
+        if (puzzleMode)
+        {
+            this.deck.length = 0;
+            this.discard.length = 0;
+            this.hand.length = 0;
+
+            for (const spec of puzzleMode.handCards)
+            {
+                this.hand.push(createCardInstance(
+                    spec.definitionId,
+                    spec.arrow,
+                    'player',
+                    spec.loopArrow,
+                ));
+            }
+
+            this.queuedEnemyTurn = null;
+            CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
+            this.emitPilesChanged();
+        }
+        else
+        {
+            this.renewHand();
+            this.queueNextEnemyTurn();
+        }
+
         this.emitRerollsChanged();
     }
 
@@ -422,6 +463,39 @@ export class CardGameSession
         this.chainStart = { row: slot.row, col: slot.col };
 
         return true;
+    }
+
+    isPuzzleMode (): boolean
+    {
+        return this.puzzleMode !== null;
+    }
+
+    getPuzzleDamageTarget (): number | null
+    {
+        return this.puzzleMode?.damageTarget ?? null;
+    }
+
+    isPuzzleFinished (): boolean
+    {
+        return this.puzzleFinished;
+    }
+
+    evaluatePuzzleAttack (sequence: AttackSequence): { success: boolean; damageDealt: number }
+    {
+        const damageDealt = sequence.totalDamage
+            + sequence.offChainDamage
+            + sequence.abilityEnemyDamage;
+        const target = this.puzzleMode?.damageTarget ?? 0;
+
+        return {
+            success: damageDealt >= target,
+            damageDealt,
+        };
+    }
+
+    finishPuzzle (): void
+    {
+        this.puzzleFinished = true;
     }
 
     getHand (): readonly CardInstance[]
@@ -766,10 +840,21 @@ export class CardGameSession
         }
     }
 
-    /** Clears the attack lock after board cleanup and enemy turn resolve. */
-    finishPlayerTurn (): void
+    /** Releases the attack lock so the player can edit the board between attacks in a round. */
+    releaseAttackLock (): void
     {
         this.attackInProgress = false;
+    }
+
+    /** @deprecated Use releaseAttackLock — player round ends in Game.onEndTurn, not here. */
+    finishPlayerTurn (): void
+    {
+        this.releaseAttackLock();
+    }
+
+    hasQueuedEnemyTurn (): boolean
+    {
+        return this.queuedEnemyTurn !== null;
     }
 
     beginEnemyTurn (): EnemyTurnAction | null
@@ -987,7 +1072,7 @@ export class CardGameSession
         }
     }
 
-    /** Clears all cards from the board after a chain resolves. */
+    /** Clears player cards from the board at end of player round (before the enemy acts). */
     clearBoard (): void
     {
         for (const slot of this.board.slotsInOrder())
@@ -1153,6 +1238,11 @@ export class CardGameSession
 
     canEditBoard (): boolean
     {
+        if (this.puzzleFinished)
+        {
+            return false;
+        }
+
         return !this.attackInProgress && !this.enemyTurnInProgress;
     }
 }

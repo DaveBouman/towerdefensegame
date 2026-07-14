@@ -63,6 +63,15 @@
         "loopHunter",
         { "id": "dampenTiles", "parity": "even", "multiplier": 0.5, "everyTurns": 2, "duration": 1 }
       ]
+    },
+    {
+      "id": "training-dummy",
+      "label": "Training Dummy",
+      "maxHealth": 99999,
+      "attackDamage": 0,
+      "shieldGain": 0,
+      "attackChance": 0,
+      "hazardsPerTurn": 0
     }
   ]
 }

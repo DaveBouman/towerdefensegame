@@ -64,7 +64,7 @@ const CARD_BLURBS: Record<string, string> = {
     bulwark: 'Fortify — more armor the more defends you chain.',
     surge: 'Overload — damage per skill card, doubled with a Joker.',
     'corner-strike': 'Hooks around the corner to a forward-diagonal tile.',
-    'corner-defense': 'Armor that hooks around the corner to a forward-diagonal tile.',
+    'corner-defense': 'Defend card that turns the corner to the next tile.',
 };
 
 export interface CardRewardDisplay {

@@ -77,8 +77,17 @@ export class CardGamePresenter
         const buildCurrentSequence = (): AttackSequence =>
             this.session.buildAttackSequence(chain, stepMs);
 
+        let attackCompleted = false;
+
         const finalize = (): void =>
         {
+            if (attackCompleted)
+            {
+                return;
+            }
+
+            attackCompleted = true;
+
             this.attackTimer?.remove();
             this.attackTimer = undefined;
             this.boardView.hideJokerDirectionPicker();

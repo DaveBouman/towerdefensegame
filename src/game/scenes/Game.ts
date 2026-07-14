@@ -18,6 +18,8 @@ import { CARD_GAME_EVENTS } from '../cardGame/events/cardGameEvents';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
 import { reseed } from '../random/rng';
+import { getRunPuzzle } from '../run/runPuzzles';
+import type { PuzzleModeConfig } from '../cardGame/domain/CardGameSession';
 import { Scene } from 'phaser';
 
 const sameSlot = (a: SlotPosition, b: SlotPosition): boolean =>
@@ -39,6 +41,7 @@ export class Game extends Scene
     private layout?: BoardLayout;
     private battleActive = false;
     private battleResolved = false;
+    private activePuzzleId: string | null = null;
 
     constructor ()
     {
@@ -57,6 +60,7 @@ export class Game extends Scene
     private registerListeners (): void
     {
         EventBus.on(GAME_EVENTS.START_BATTLE, this.onStartBattle, this);
+        EventBus.on(GAME_EVENTS.START_PUZZLE, this.onStartPuzzle, this);
         EventBus.on(GAME_EVENTS.ATTACK, this.onAttack, this);
         EventBus.on(GAME_EVENTS.END_TURN, this.onEndTurn, this);
         EventBus.on(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
@@ -80,16 +84,61 @@ export class Game extends Scene
         this.startBattle(enemyId, startHealth, deck, seed, trinkets);
     };
 
+    private onStartPuzzle = (
+        { puzzleId, startHealth, seed, trinkets }:
+        { puzzleId: string; startHealth: number; seed: number; trinkets: string[] },
+    ): void =>
+    {
+        if (this.battleActive)
+        {
+            this.endBattle();
+        }
+
+        this.startPuzzle(puzzleId, startHealth, seed, trinkets);
+    };
+
+    private startPuzzle (
+        puzzleId: string,
+        startHealth: number,
+        seed: number,
+        trinkets: string[],
+    ): void
+    {
+        const puzzle = getRunPuzzle(puzzleId);
+        const puzzleMode: PuzzleModeConfig = {
+            handCards: puzzle.cards,
+            damageTarget: puzzle.damageTarget,
+        };
+
+        this.activePuzzleId = puzzleId;
+        this.startBattle('training-dummy', startHealth, [], seed, trinkets, puzzleMode);
+
+        EventBus.emit(GAME_EVENTS.PUZZLE_STATE, {
+            puzzleId,
+            title: puzzle.title,
+            hint: puzzle.hint,
+            damageTarget: puzzle.damageTarget,
+            cardCount: puzzle.cards.length,
+            isPuzzle: true,
+        });
+    }
+
     private startBattle (
         enemyId: string,
         startHealth: number,
         deck: string[],
         seed: number,
         trinkets: string[],
+        puzzleMode: PuzzleModeConfig | null = null,
     ): void
     {
         // Install this battle's deterministic RNG stream before any card is dealt.
         reseed(seed);
+
+        if (!puzzleMode)
+        {
+            this.activePuzzleId = null;
+        }
 
         const { width, height } = this.scale;
         this.layout = computeBoardLayout(width, height);
@@ -97,7 +146,7 @@ export class Game extends Scene
         this.rerollModeActive = false;
         this.turnResolving = false;
         this.battleResolved = false;
-        this.session = new CardGameSession(enemyId, startHealth, deck, trinkets);
+        this.session = new CardGameSession(enemyId, startHealth, deck, trinkets, puzzleMode);
 
         this.handView = new CardHandView(this, layout, [ ...this.session.getHand() ], {
             onDragMove: (worldX, worldY) =>
@@ -152,7 +201,10 @@ export class Game extends Scene
         this.graveyardView.setClickHandler(() => this.openPileView('graveyard'));
         this.syncPileViews();
 
-        this.session.placeFieldBoost();
+        if (!this.session.isPuzzleMode())
+        {
+            this.session.placeFieldBoost();
+        }
         this.boardView.syncFromBoard(this.session.board);
         this.boardView.setBlockedSlots(
             this.session.getSilencedSlots(),
@@ -173,7 +225,7 @@ export class Game extends Scene
 
         const initialIntent = this.session.getQueuedEnemyTurn();
 
-        if (initialIntent)
+        if (initialIntent && !this.session.isPuzzleMode())
         {
             this.enemyView.showIntent(initialIntent);
         }
@@ -228,6 +280,7 @@ export class Game extends Scene
         this.graveyardView = undefined;
         this.session = undefined;
         this.battleActive = false;
+        this.activePuzzleId = null;
         this.rerollModeActive = false;
     }
 
@@ -268,6 +321,7 @@ export class Game extends Scene
     {
         this.scale.off('resize', this.onResize, this);
         EventBus.off(GAME_EVENTS.START_BATTLE, this.onStartBattle, this);
+        EventBus.off(GAME_EVENTS.START_PUZZLE, this.onStartPuzzle, this);
         EventBus.off(GAME_EVENTS.ATTACK, this.onAttack, this);
         EventBus.off(GAME_EVENTS.END_TURN, this.onEndTurn, this);
         EventBus.off(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
@@ -373,15 +427,48 @@ export class Game extends Scene
      */
     private onAttackResolved (sequence: import('../cardGame/domain/types').AttackSequence): void
     {
-        if (!this.session || !this.boardView || !this.enemyView)
+        if (!this.session || !this.boardView || !this.enemyView || this.turnResolving)
         {
             return;
         }
 
         this.session.completeAttack(sequence);
+
+        if (this.session.isPuzzleMode())
+        {
+            this.session.spendEnergy();
+            this.session.releaseAttackLock();
+            this.session.finishPuzzle();
+
+            this.boardView.syncFromBoard(this.session.board);
+            this.handView?.syncHand(this.session.getHand());
+            this.enemyView.setHealth(this.session.getEnemy());
+            this.armorView?.setArmor(this.session.getPlayer().shield);
+            this.syncPileViews();
+
+            const evaluation = this.session.evaluatePuzzleAttack(sequence);
+            const puzzleId = this.activePuzzleId ?? 'unknown';
+            const damageTarget = this.session.getPuzzleDamageTarget() ?? 0;
+
+            this.emitAttackReadiness();
+
+            this.time.delayedCall(900, () =>
+            {
+                this.endBattle();
+                EventBus.emit(GAME_EVENTS.PUZZLE_RESOLVED, {
+                    puzzleId,
+                    success: evaluation.success,
+                    damageDealt: evaluation.damageDealt,
+                    damageTarget,
+                });
+            });
+
+            return;
+        }
+
         this.session.spendEnergy();
-        // Release the attack lock so cards can be added before the next attack.
-        this.session.finishPlayerTurn();
+        // Unlock the board for more placements / attacks while energy remains.
+        this.session.releaseAttackLock();
         this.session.refillHand();
 
         this.boardView.syncFromBoard(this.session.board);
@@ -413,15 +500,28 @@ export class Game extends Scene
 
         this.emitAttackReadiness();
 
-        if (!this.session.hasEnergy())
+        // Player round continues — board stays, enemy does not act yet.
+        if (this.session.hasEnergy())
         {
-            this.onEndTurn();
+            return;
         }
+
+        // All energy spent — clear the board once, then the enemy takes a single turn.
+        this.endPlayerRound();
     }
 
-    private onEndTurn = (): void =>
+    /**
+     * Ends the player round: graveyard animation, board clear, then one enemy turn.
+     * Only runs when energy is fully depleted (board stays up for every attack before that).
+     */
+    private endPlayerRound = (): void =>
     {
         if (!this.session || !this.boardView || this.turnResolving)
+        {
+            return;
+        }
+
+        if (this.session.hasEnergy())
         {
             return;
         }
@@ -452,6 +552,11 @@ export class Game extends Scene
         });
     };
 
+    private onEndTurn = (): void =>
+    {
+        this.endPlayerRound();
+    };
+
     private resolveEnemyPhase (): void
     {
         if (!this.session || !this.boardView || !this.enemyView)
@@ -467,7 +572,7 @@ export class Game extends Scene
 
             if (this.session.isPlayerDefeated())
             {
-                this.session.finishPlayerTurn();
+                this.session.releaseAttackLock();
                 this.turnResolving = false;
                 this.emitAttackReadiness();
                 this.loseBattle();
@@ -491,18 +596,23 @@ export class Game extends Scene
         if (this.session.isEnemyDefeated())
         {
             this.enemyView.clearIntent();
-            this.session.finishPlayerTurn();
+            this.session.releaseAttackLock();
             this.turnResolving = false;
             this.emitAttackReadiness();
             this.winBattle();
             return;
         }
 
+        if (!this.session.hasQueuedEnemyTurn())
+        {
+            this.session.queueNextEnemyTurn();
+        }
+
         const enemyTurn = this.session.beginEnemyTurn();
 
         if (!enemyTurn)
         {
-            this.session.finishPlayerTurn();
+            this.session.releaseAttackLock();
             this.turnResolving = false;
             this.emitAttackReadiness();
             return;
@@ -510,14 +620,14 @@ export class Game extends Scene
 
         this.enemyView.showIntent(enemyTurn, 'executing');
 
-        this.presenter?.playEnemyTurn(enemyTurn, () =>
+        const finishEnemyPhase = (): void =>
         {
             this.playerView?.setHealth(this.session!.getPlayer());
             this.enemyView?.setHealth(this.session!.getEnemy());
 
             if (this.session!.isPlayerDefeated())
             {
-                this.session!.finishPlayerTurn();
+                this.session!.releaseAttackLock();
                 this.turnResolving = false;
                 this.emitAttackReadiness();
                 this.loseBattle();
@@ -527,7 +637,7 @@ export class Game extends Scene
             if (this.session!.isEnemyDefeated())
             {
                 this.enemyView?.clearIntent();
-                this.session!.finishPlayerTurn();
+                this.session!.releaseAttackLock();
                 this.turnResolving = false;
                 this.emitAttackReadiness();
                 this.winBattle();
@@ -555,10 +665,19 @@ export class Game extends Scene
             );
             this.boardView?.setDampenedSlots(this.session!.getDampenedSlots());
             this.syncPileViews();
-            this.session!.finishPlayerTurn();
+            this.session!.releaseAttackLock();
             this.turnResolving = false;
             this.emitAttackReadiness();
-        });
+        };
+
+        if (!this.presenter)
+        {
+            this.session.completeEnemyTurn(enemyTurn);
+            finishEnemyPhase();
+            return;
+        }
+
+        this.presenter.playEnemyTurn(enemyTurn, finishEnemyPhase);
     }
 
     private onRerollsChanged = (): void =>
@@ -646,16 +765,11 @@ export class Game extends Scene
             return;
         }
 
-        const canEndTurn = !this.turnResolving
-            && !this.session.isAttackInProgress()
-            && !this.session.isEnemyTurnInProgress()
-            && !this.session.isEnemyDefeated()
-            && !this.session.isPlayerDefeated();
-
         EventBus.emit(GAME_EVENTS.TURN_STATE, {
             energy: this.session.getEnergy(),
             maxEnergy: this.session.getMaxEnergy(),
-            canEndTurn,
+            // Round ends automatically when energy hits 0 — no manual end while attacks remain.
+            canEndTurn: false,
         });
     }
 

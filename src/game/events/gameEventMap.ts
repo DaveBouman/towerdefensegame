@@ -14,6 +14,22 @@ export interface PileViewPayload {
     cards: PileCardEntry[];
 }
 
+export interface PuzzleState {
+    puzzleId: string;
+    title: string;
+    hint: string;
+    damageTarget: number;
+    cardCount: number;
+    isPuzzle: true;
+}
+
+export interface PuzzleResolvedPayload {
+    puzzleId: string;
+    success: boolean;
+    damageDealt: number;
+    damageTarget: number;
+}
+
 export interface GameEventMap {
     'current-scene-ready': Scene;
     'attack': void;
@@ -26,6 +42,9 @@ export interface GameEventMap {
     'reroll-cancel': void;
     'reroll-state': RerollState;
     'start-battle': { enemyId: string; startHealth: number; deck: string[]; seed: number; trinkets: string[] };
+    'start-puzzle': { puzzleId: string; startHealth: number; seed: number; trinkets: string[] };
+    'puzzle-state': PuzzleState;
+    'puzzle-resolved': PuzzleResolvedPayload;
     'battle-won': { playerHealth: number };
     'battle-lost': void;
     'pile-view-open': PileViewPayload;

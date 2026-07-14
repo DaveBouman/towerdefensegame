@@ -20,17 +20,20 @@ export type EventIconId =
     | 'skull'
     | 'sword'
     | 'shield'
-    | 'coin';
+    | 'coin'
+    | 'puzzle';
 
 export type RunEventEffect =
     | { kind: 'heal'; amount: number }
     | { kind: 'damage'; amount: number }
     | { kind: 'gold'; amount: number }
+    | { kind: 'lose-gold'; amount: number }
     | { kind: 'add-card'; cardId: string }
     | { kind: 'add-curse'; cardId: string; count: number }
     | { kind: 'trinket'; trinketId: string }
     | { kind: 'open-wheel' }
-    | { kind: 'open-icon-match' };
+    | { kind: 'open-icon-match' }
+    | { kind: 'open-puzzle'; puzzleId: string };
 
 export interface RunEventChoice {
     id: string;
@@ -75,6 +78,7 @@ export interface AppliedEventResult {
 }
 
 const EVENT_POOL: readonly (readonly [string, number])[] = [
+    [ 'combo-trial', 3 ],
     [ 'wheel-of-fate', 3 ],
     [ 'sign-matcher', 2 ],
     [ 'healing-spring', 2 ],
@@ -83,19 +87,41 @@ const EVENT_POOL: readonly (readonly [string, number])[] = [
 ];
 
 const WHEEL_SEGMENT_LIST: readonly WheelSegment[] = [
-    { id: 'gold-20', label: '+20 Gold', icon: 'gold', effects: [ { kind: 'gold', amount: 20 } ] },
-    { id: 'gold-35', label: '+35 Gold', icon: 'gold', effects: [ { kind: 'gold', amount: 35 } ] },
-    { id: 'card', label: 'New Card', icon: 'card', effects: [ { kind: 'add-card', cardId: '__random__' } ] },
+    { id: 'gold-20', label: '+20 Gold (−5 HP)', icon: 'gold', effects: [ { kind: 'gold', amount: 20 }, { kind: 'damage', amount: 5 } ] },
+    { id: 'gold-35', label: '+35 Gold (−8 HP)', icon: 'gold', effects: [ { kind: 'gold', amount: 35 }, { kind: 'damage', amount: 8 } ] },
+    { id: 'card', label: 'New Card (+ Burden)', icon: 'card', effects: [ { kind: 'add-card', cardId: '__random__' }, { kind: 'add-curse', cardId: 'burden', count: 1 } ] },
     { id: 'burden', label: 'Burden', icon: 'curse', effects: [ { kind: 'add-curse', cardId: 'burden', count: 1 } ] },
     { id: 'fuse', label: 'Fuse', icon: 'trap', effects: [ { kind: 'add-curse', cardId: 'fuse', count: 1 } ] },
-    { id: 'trinket', label: 'Trinket', icon: 'trinket', effects: [ { kind: 'trinket', trinketId: '__random__' } ] },
-    { id: 'heal', label: '+10 HP', icon: 'heal', effects: [ { kind: 'heal', amount: 10 } ] },
+    { id: 'trinket', label: 'Trinket (+ Burden)', icon: 'trinket', effects: [ { kind: 'trinket', trinketId: '__random__' }, { kind: 'add-curse', cardId: 'burden', count: 1 } ] },
+    { id: 'heal', label: '+10 HP (−10 gold)', icon: 'heal', effects: [ { kind: 'heal', amount: 10 }, { kind: 'lose-gold', amount: 10 } ] },
     { id: 'trap', label: '-5 HP', icon: 'trap', effects: [ { kind: 'damage', amount: 5 } ] },
 ];
 
 const MATCH_SYMBOLS: readonly EventIconId[] = [ 'sun', 'moon', 'skull', 'sword', 'shield', 'coin' ];
 
 export const RUN_EVENTS: Record<string, RunEventDefinition> = {
+    'combo-trial': {
+        id: 'combo-trial',
+        title: 'Combo Trial',
+        intro: 'A drill master sets out cards and a training dummy. Deal enough damage in one chain to pass.',
+        icon: 'puzzle',
+        choices: [
+            {
+                id: 'accept',
+                label: 'Accept the Trial',
+                description: 'Get puzzle cards and deal at least the target damage in a single attack.',
+                icon: 'puzzle',
+                effects: [ { kind: 'open-puzzle', puzzleId: '__random__' } ],
+            },
+            {
+                id: 'decline',
+                label: 'Walk Away',
+                description: 'Leave without risk or reward.',
+                icon: 'coin',
+                effects: [],
+            },
+        ],
+    },
     'wheel-of-fate': {
         id: 'wheel-of-fate',
         title: 'Wheel of Fate',
@@ -105,7 +131,7 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
             {
                 id: 'spin',
                 label: 'Spin the Wheel',
-                description: 'Land on gold, a card, a curse, a trinket, healing, or a trap.',
+                description: 'Land on gold, a card, a curse, a trinket, healing, or a trap. Spin costs 5 gold.',
                 icon: 'wheel',
                 effects: [ { kind: 'open-wheel' } ],
             },
@@ -120,7 +146,7 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
             {
                 id: 'play',
                 label: 'Study the Signs',
-                description: 'Pick the icon that appears twice. Win a card; miss and take damage.',
+                description: 'Pick the icon that appears twice. Win a card (costs gold); miss and take damage.',
                 icon: 'matcher',
                 effects: [ { kind: 'open-icon-match' } ],
             },
@@ -135,9 +161,12 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
             {
                 id: 'drink',
                 label: 'Drink Deep',
-                description: 'Restore 18 HP.',
+                description: 'Restore 18 HP, but pay 18 gold (or all you carry).',
                 icon: 'heal',
-                effects: [ { kind: 'heal', amount: 18 } ],
+                effects: [
+                    { kind: 'heal', amount: 18 },
+                    { kind: 'lose-gold', amount: 18 },
+                ],
             },
             {
                 id: 'leave',
@@ -167,9 +196,12 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
             {
                 id: 'smash',
                 label: 'Smash It',
-                description: 'Gain 25 gold instead.',
+                description: 'Gain 25 gold, but take 8 damage.',
                 icon: 'gold',
-                effects: [ { kind: 'gold', amount: 25 } ],
+                effects: [
+                    { kind: 'gold', amount: 25 },
+                    { kind: 'damage', amount: 8 },
+                ],
             },
         ],
     },
@@ -192,9 +224,12 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
             {
                 id: 'coin',
                 label: 'Take the Coin',
-                description: 'Gain 15 gold and leave.',
+                description: 'Gain 15 gold, but take 6 damage.',
                 icon: 'gold',
-                effects: [ { kind: 'gold', amount: 15 } ],
+                effects: [
+                    { kind: 'gold', amount: 15 },
+                    { kind: 'damage', amount: 6 },
+                ],
             },
         ],
     },
@@ -281,7 +316,14 @@ const describeEffect = (effect: RunEventEffect): AppliedEventMessage =>
         case 'damage':
             return { text: `Took ${effect.amount} damage.`, tone: 'bad' };
         case 'gold':
-            return { text: `Gained ${effect.amount} gold.`, tone: effect.amount > 0 ? 'good' : 'neutral' };
+            return {
+                text: effect.amount >= 0
+                    ? `Gained ${effect.amount} gold.`
+                    : `Lost ${Math.abs(effect.amount)} gold.`,
+                tone: effect.amount > 0 ? 'good' : 'bad',
+            };
+        case 'lose-gold':
+            return { text: '', tone: 'bad' };
         case 'add-card':
             return { text: `Added ${effect.cardId} to your deck.`, tone: 'good' };
         case 'add-curse':
@@ -338,9 +380,30 @@ export const applyRunEventEffects = (
                     messages.push(describeEffect(effect));
                     break;
                 case 'gold':
-                    nextGold += effect.amount;
+                    nextGold = Math.max(0, nextGold + effect.amount);
                     messages.push(describeEffect(effect));
                     break;
+                case 'lose-gold':
+                {
+                    const paid = Math.min(nextGold, effect.amount);
+                    nextGold -= paid;
+
+                    if (paid > 0)
+                    {
+                        messages.push({
+                            text: paid < effect.amount
+                                ? `Paid ${paid} gold (all you had).`
+                                : `Paid ${paid} gold.`,
+                            tone: 'bad',
+                        });
+                    }
+                    else
+                    {
+                        messages.push({ text: 'Could not afford the gold cost.', tone: 'neutral' });
+                    }
+
+                    break;
+                }
                 case 'add-card':
                     nextDeck.push(effect.cardId);
                     messages.push(describeEffect(effect));
@@ -362,6 +425,8 @@ export const applyRunEventEffects = (
                     {
                         nextGold += 15;
                         messages.push({ text: 'Already owned that trinket — took 15 gold instead.', tone: 'neutral' });
+                        messages.push({ text: 'Took 5 damage from the relic\'s backlash.', tone: 'bad' });
+                        health = Math.max(0, health - 5);
                     }
                     break;
                 default:
@@ -394,7 +459,10 @@ export const resolveIconMatchPick = (
     if (picked === round.winningIcon)
     {
         return applyRunEventEffects(
-            [ { kind: 'add-card', cardId: '__random__' } ],
+            [
+                { kind: 'add-card', cardId: '__random__' },
+                { kind: 'lose-gold', amount: 12 },
+            ],
             state,
         );
     }
@@ -405,7 +473,14 @@ export const resolveIconMatchPick = (
     );
 };
 
+export const WHEEL_SPIN_COST = 5;
+
 export const WHEEL_SEGMENTS = WHEEL_SEGMENT_LIST;
+
+export const getWheelSpinEffects = (segment: WheelSegment): RunEventEffect[] => [
+    { kind: 'lose-gold', amount: WHEEL_SPIN_COST },
+    ...segment.effects,
+];
 
 export const getWheelSegmentIndex = (segmentId: string): number =>
     WHEEL_SEGMENT_LIST.findIndex((segment) => segment.id === segmentId);

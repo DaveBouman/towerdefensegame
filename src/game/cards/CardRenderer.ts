@@ -3,7 +3,7 @@ import type { CardInstance } from '../cardGame/domain/types';
 import { isEnemyOwnedCard, isFieldOwnedCard } from '../cardGame/domain/cardOwnership';
 import { uiTextStyle } from '../config/uiTypography';
 import { getCardBehaviorTextureKey } from '../../ui/icons/cardBehaviorIcons';
-import { ARROW_GLYPH, arrowLabelPosition } from './cardArrows';
+import { ARROW_GLYPH, arrowLabelPosition, cornerEntryArrowPosition } from './cardArrows';
 import { cornerTargetDirections } from '../cardGame/domain/cardDirections';
 import { CARD_VISUALS } from './cardVisuals';
 
@@ -50,7 +50,10 @@ export const buildCardGraphic = (
 
     body.setStrokeStyle(isEnemyOwnedCard(card) || isFieldOwnedCard(card) ? 3 : 2, style.border, 1);
 
-    const arrowPos = arrowLabelPosition(card.arrow, width, height);
+    const isCornerDefense = definition.id === 'corner-defense';
+    const arrowPos = isCornerDefense
+        ? cornerEntryArrowPosition(card.arrow, width, height)
+        : arrowLabelPosition(card.arrow, width, height);
     const continueArrow = scene.add.text(arrowPos.x, arrowPos.y, ARROW_GLYPH[card.arrow], {
         ...uiTextStyle(20, isLoopReset ? '#f1c40f' : '#ffffff', { bold: true }),
     }).setOrigin(0.5);
@@ -68,7 +71,7 @@ export const buildCardGraphic = (
         cardDecor.push(loopArrow);
     }
 
-    if (definition.cornerTurn)
+    if (definition.cornerTurn && !isCornerDefense)
     {
         for (const target of cornerTargetDirections(card.arrow))
         {

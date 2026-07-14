@@ -4,6 +4,7 @@ import {
     buildIconMatchRound,
     getRunEvent,
     getWheelSegmentIndex,
+    getWheelSpinEffects,
     resolveIconMatchPick,
     rollWheelSegment,
     WHEEL_SEGMENTS,
@@ -15,9 +16,11 @@ import {
     type RunEventChoice,
 } from '../../game/run/runEvents';
 import { seedScope } from '../../game/random/rng';
+import { getRunPuzzle, rollPuzzleId } from '../../game/run/runPuzzles';
+import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistry';
 import { EventIcon } from './EventIcon';
 
-type EventPhase = 'choices' | 'wheel' | 'matcher' | 'result';
+type EventPhase = 'choices' | 'wheel' | 'matcher' | 'puzzle-brief' | 'result';
 
 interface RunEventOverlayProps {
     eventId: string;
@@ -29,6 +32,7 @@ interface RunEventOverlayProps {
     deck: string[];
     trinkets: string[];
     onFinish: (result: AppliedEventResult) => void;
+    onStartPuzzle: (puzzleId: string) => void;
 }
 
 const toneClass = (tone: AppliedEventMessage['tone']): string =>
@@ -51,10 +55,12 @@ export const RunEventOverlay = ({
     deck,
     trinkets,
     onFinish,
+    onStartPuzzle,
 }: RunEventOverlayProps) =>
 {
     const event = getRunEvent(eventId);
     const [ phase, setPhase ] = useState<EventPhase>('choices');
+    const [ puzzleId, setPuzzleId ] = useState<string | null>(null);
     const [ messages, setMessages ] = useState<AppliedEventMessage[]>([]);
     const [ snapshot, setSnapshot ] = useState({
         playerHealth,
@@ -102,6 +108,7 @@ export const RunEventOverlay = ({
     {
         const openWheel = choice.effects.some((effect) => effect.kind === 'open-wheel');
         const openMatch = choice.effects.some((effect) => effect.kind === 'open-icon-match');
+        const openPuzzle = choice.effects.find((effect) => effect.kind === 'open-puzzle');
 
         if (openWheel)
         {
@@ -112,6 +119,18 @@ export const RunEventOverlay = ({
         if (openMatch)
         {
             setPhase('matcher');
+            return;
+        }
+
+        if (openPuzzle)
+        {
+            seedScope(seed, `event:${nodeId}:puzzle`);
+            const rolledId = openPuzzle.puzzleId === '__random__'
+                ? rollPuzzleId()
+                : openPuzzle.puzzleId;
+
+            setPuzzleId(rolledId);
+            setPhase('puzzle-brief');
             return;
         }
 
@@ -137,7 +156,7 @@ export const RunEventOverlay = ({
         window.setTimeout(() =>
         {
             setWheelSpinning(false);
-            showResult(applyRunEventEffects(segment.effects, runState()));
+            showResult(applyRunEventEffects(getWheelSpinEffects(segment), runState()));
         }, 2600);
     };
 
@@ -160,6 +179,18 @@ export const RunEventOverlay = ({
             trinkets: snapshot.trinkets,
             messages,
         });
+    };
+
+    const puzzle = puzzleId ? getRunPuzzle(puzzleId) : null;
+
+    const beginPuzzle = (): void =>
+    {
+        if (!puzzleId)
+        {
+            return;
+        }
+
+        onStartPuzzle(puzzleId);
     };
 
     return (
@@ -231,6 +262,28 @@ export const RunEventOverlay = ({
                                 </button>
                             ))}
                         </div>
+                    </div>
+                )}
+
+                {phase === 'puzzle-brief' && puzzle && (
+                    <div className="run-event__puzzle-brief">
+                        <h2 className="run-event__puzzle-title">{puzzle.title}</h2>
+                        <p className="run-event__puzzle-intro">{puzzle.intro}</p>
+                        <p className="run-event__puzzle-goal">
+                            Goal: deal at least <strong>{puzzle.damageTarget}</strong> damage
+                            with <strong>{puzzle.cards.length}</strong> cards in one attack.
+                        </p>
+                        <p className="run-event__puzzle-hint">{puzzle.hint}</p>
+                        <ul className="run-event__puzzle-cards">
+                            {puzzle.cards.map((card, index) => (
+                                <li key={`${card.definitionId}-${index}`}>
+                                    {getCardDefinitionOrThrow(card.definitionId).label}
+                                </li>
+                            ))}
+                        </ul>
+                        <button type="button" className="run-event__continue" onClick={beginPuzzle}>
+                            Begin Trial
+                        </button>
                     </div>
                 )}
 

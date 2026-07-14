@@ -730,6 +730,114 @@ html, body, #root {
     font-variant-numeric: tabular-nums;
 }
 
+.run-event__puzzle-brief {
+    text-align: left;
+}
+
+.run-event__puzzle-title {
+    margin: 0 0 8px;
+    font-size: 20px;
+    color: #e8ecff;
+}
+
+.run-event__puzzle-intro,
+.run-event__puzzle-goal,
+.run-event__puzzle-hint {
+    margin: 0 0 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #b8c0e8;
+}
+
+.run-event__puzzle-goal strong {
+    color: #f1c96a;
+}
+
+.run-event__puzzle-cards {
+    list-style: none;
+    margin: 0 0 20px;
+    padding: 12px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: rgba(40, 48, 90, 0.35);
+    border-radius: 10px;
+    border: 1px solid rgba(120, 140, 220, 0.2);
+}
+
+.run-event__puzzle-cards li {
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: rgba(80, 100, 180, 0.25);
+    font-size: 13px;
+    color: #d8e0ff;
+}
+
+.puzzle-hud {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 20;
+    max-width: 320px;
+    padding: 16px 18px;
+    border-radius: 12px;
+    background: rgba(18, 22, 42, 0.92);
+    border: 1px solid rgba(140, 160, 255, 0.35);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+
+.puzzle-hud__header {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.puzzle-hud__icon {
+    display: flex;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+}
+
+.puzzle-hud__icon svg {
+    width: 100%;
+    height: 100%;
+    color: #c8b0ff;
+}
+
+.puzzle-hud__title {
+    margin: 0 0 4px;
+    font-size: 16px;
+    color: #eef1ff;
+}
+
+.puzzle-hud__goal {
+    margin: 0;
+    font-size: 13px;
+    color: #a8b4e8;
+}
+
+.puzzle-hud__goal strong {
+    color: #f1c96a;
+}
+
+.puzzle-hud__hint {
+    margin: 0 0 8px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #98a8d8;
+}
+
+.puzzle-hud__note {
+    margin: 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #7080b8;
+}
+
 .run-map__health-label {
     color: #8fa0d8;
     text-transform: uppercase;

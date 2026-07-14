@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PhaserGame } from './PhaserGame';
 import { GameHud } from './ui/components/GameHud';
+import { PuzzleHud } from './ui/components/PuzzleHud';
+import { PuzzleResultOverlay } from './ui/components/PuzzleResultOverlay';
 import { RunMapOverlay } from './ui/components/RunMapOverlay';
 import { RunEndOverlay } from './ui/components/RunEndOverlay';
 import { CardRewardOverlay } from './ui/components/CardRewardOverlay';
@@ -8,8 +10,9 @@ import { NodeVisitOverlay } from './ui/components/NodeVisitOverlay';
 import { RunEventOverlay } from './ui/components/RunEventOverlay';
 import { PileViewOverlay } from './ui/components/PileViewOverlay';
 import { isBattleKind } from './game/run/nodeKinds';
-import { rollRunEventId } from './game/run/runEvents';
-import type { AppliedEventResult } from './game/run/runEvents';
+import { rollRunEventId, applyRunEventEffects } from './game/run/runEvents';
+import type { AppliedEventResult, AppliedEventMessage } from './game/run/runEvents';
+import { getRunPuzzle } from './game/run/runPuzzles';
 import { getRunMaxHealth, getVictoryGoldBonus } from './game/run/runResources';
 import { EventBus } from './game/EventBus';
 import { GAME_EVENTS } from './game/events/gameEvents';
@@ -30,7 +33,7 @@ import {
     seedScope,
 } from './game/random/rng';
 
-type RunPhase = 'map' | 'battle' | 'reward' | 'visit' | 'victory' | 'defeat';
+type RunPhase = 'map' | 'battle' | 'reward' | 'visit' | 'puzzle' | 'puzzle-result' | 'victory' | 'defeat';
 
 interface PendingReward {
     nodeId: string;
@@ -44,6 +47,14 @@ const MAX_HEALTH = GAME_RULES.player.maxHealth;
 interface VisitState {
     node: RunMapNode;
     eventId: string | null;
+}
+
+interface PuzzleResultState {
+    puzzleId: string;
+    success: boolean;
+    damageDealt: number;
+    damageTarget: number;
+    messages: AppliedEventMessage[];
 }
 
 /** Reseeds the map stream for a run seed and generates a fresh map. */
@@ -79,15 +90,23 @@ function App()
     const [ phase, setPhase ] = useState<RunPhase>('map');
     const [ pendingReward, setPendingReward ] = useState<PendingReward | null>(null);
     const [ visit, setVisit ] = useState<VisitState | null>(null);
+    const [ puzzleResult, setPuzzleResult ] = useState<PuzzleResultState | null>(null);
 
     const runMaxHealth = useMemo(() => getRunMaxHealth(trinkets), [ trinkets ]);
 
     const selectedNodeRef = useRef<RunMapNode | null>(null);
+    const eventVisitRef = useRef<VisitState | null>(null);
     const sceneReadyRef = useRef(false);
     const seedRef = useRef(seed);
     const trinketsRef = useRef(trinkets);
+    const playerHealthRef = useRef(playerHealth);
+    const goldRef = useRef(gold);
+    const deckRef = useRef(deck);
     const pendingStartRef = useRef<
         { enemyId: string; startHealth: number; deck: string[]; seed: number; trinkets: string[] } | null
+    >(null);
+    const pendingPuzzleRef = useRef<
+        { puzzleId: string; startHealth: number; seed: number; trinkets: string[] } | null
     >(null);
 
     useEffect(() =>
@@ -99,6 +118,21 @@ function App()
     {
         trinketsRef.current = trinkets;
     }, [ trinkets ]);
+
+    useEffect(() =>
+    {
+        playerHealthRef.current = playerHealth;
+    }, [ playerHealth ]);
+
+    useEffect(() =>
+    {
+        goldRef.current = gold;
+    }, [ gold ]);
+
+    useEffect(() =>
+    {
+        deckRef.current = deck;
+    }, [ deck ]);
 
     const currentNodeId = path.length > 0 ? path[path.length - 1]! : null;
     const availableIds = useMemo(
@@ -116,6 +150,12 @@ function App()
             {
                 EventBus.emit(GAME_EVENTS.START_BATTLE, pendingStartRef.current);
                 pendingStartRef.current = null;
+            }
+
+            if (pendingPuzzleRef.current)
+            {
+                EventBus.emit(GAME_EVENTS.START_PUZZLE, pendingPuzzleRef.current);
+                pendingPuzzleRef.current = null;
             }
         };
 
@@ -161,15 +201,53 @@ function App()
             setPhase('defeat');
         };
 
+        const onPuzzleResolved = ({
+            puzzleId,
+            success,
+            damageDealt,
+            damageTarget,
+        }: {
+            puzzleId: string;
+            success: boolean;
+            damageDealt: number;
+            damageTarget: number;
+        }): void =>
+        {
+            const puzzle = getRunPuzzle(puzzleId);
+            const effects = success ? puzzle.successEffects : puzzle.failureEffects;
+            const applied = applyRunEventEffects(effects, {
+                playerHealth: playerHealthRef.current,
+                maxHealth: getRunMaxHealth(trinketsRef.current),
+                gold: goldRef.current,
+                deck: [ ...deckRef.current ],
+                trinkets: [ ...trinketsRef.current ],
+            });
+
+            setPlayerHealth(applied.playerHealth);
+            setGold(applied.gold);
+            setDeck(applied.deck);
+            setTrinkets(applied.trinkets);
+            setPuzzleResult({
+                puzzleId,
+                success,
+                damageDealt,
+                damageTarget,
+                messages: applied.messages,
+            });
+            setPhase('puzzle-result');
+        };
+
         EventBus.on(GAME_EVENTS.SCENE_READY, onSceneReady);
         EventBus.on(GAME_EVENTS.BATTLE_WON, onBattleWon);
         EventBus.on(GAME_EVENTS.BATTLE_LOST, onBattleLost);
+        EventBus.on(GAME_EVENTS.PUZZLE_RESOLVED, onPuzzleResolved);
 
         return () =>
         {
             EventBus.off(GAME_EVENTS.SCENE_READY, onSceneReady);
             EventBus.off(GAME_EVENTS.BATTLE_WON, onBattleWon);
             EventBus.off(GAME_EVENTS.BATTLE_LOST, onBattleLost);
+            EventBus.off(GAME_EVENTS.PUZZLE_RESOLVED, onPuzzleResolved);
         };
     }, []);
 
@@ -209,7 +287,37 @@ function App()
         {
             pendingStartRef.current = payload;
         }
-    }, [ playerHealth, deck, seed, trinkets ]);
+    }, [ playerHealth, deck, seed, trinkets, visit ]);
+
+    const startPuzzleFromEvent = useCallback((puzzleId: string): void =>
+    {
+        const currentVisit = visit;
+
+        if (!currentVisit)
+        {
+            return;
+        }
+
+        eventVisitRef.current = currentVisit;
+        setVisit(null);
+
+        const payload = {
+            puzzleId,
+            startHealth: playerHealth,
+            seed: deriveSeed(seed, `puzzle:${currentVisit.node.id}:${puzzleId}`),
+            trinkets: [ ...trinkets ],
+        };
+        setPhase('puzzle');
+
+        if (sceneReadyRef.current)
+        {
+            EventBus.emit(GAME_EVENTS.START_PUZZLE, payload);
+        }
+        else
+        {
+            pendingPuzzleRef.current = payload;
+        }
+    }, [ visit, playerHealth, seed, trinkets ]);
 
     const finishVisit = useCallback((): void =>
     {
@@ -222,6 +330,20 @@ function App()
 
             return null;
         });
+        setPhase('map');
+    }, []);
+
+    const finishPuzzleResult = useCallback((): void =>
+    {
+        const node = eventVisitRef.current?.node;
+
+        if (node)
+        {
+            setPath((prev) => (prev.includes(node.id) ? prev : [ ...prev, node.id ]));
+        }
+
+        eventVisitRef.current = null;
+        setPuzzleResult(null);
         setPhase('map');
     }, []);
 
@@ -276,6 +398,8 @@ function App()
         setTrinkets([]);
         setPendingReward(null);
         setVisit(null);
+        setPuzzleResult(null);
+        eventVisitRef.current = null;
         setPhase('map');
     }, []);
 
@@ -298,6 +422,12 @@ function App()
         <div id="app">
             <PhaserGame />
             {phase === 'battle' && <GameHud />}
+            {(phase === 'puzzle') && (
+                <>
+                    <GameHud />
+                    <PuzzleHud />
+                </>
+            )}
             <PileViewOverlay />
             {phase === 'map' && (
                 <RunMapOverlay
@@ -336,6 +466,17 @@ function App()
                     deck={deck}
                     trinkets={trinkets}
                     onFinish={finishEvent}
+                    onStartPuzzle={startPuzzleFromEvent}
+                />
+            )}
+            {phase === 'puzzle-result' && puzzleResult && (
+                <PuzzleResultOverlay
+                    puzzleId={puzzleResult.puzzleId}
+                    success={puzzleResult.success}
+                    damageDealt={puzzleResult.damageDealt}
+                    damageTarget={puzzleResult.damageTarget}
+                    messages={puzzleResult.messages}
+                    onContinue={finishPuzzleResult}
                 />
             )}
             {phase === 'visit' && visit && !visit.eventId && (

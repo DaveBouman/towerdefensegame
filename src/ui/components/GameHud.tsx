@@ -9,7 +9,7 @@ const REJECT_MESSAGES: Record<NonNullable<AttackReadiness['reason']>, string> = 
     'enemy-defeated': 'Enemy already defeated.',
     'player-defeated': 'You were defeated.',
     'no-cards-on-board': 'Place cards on the board first.',
-    'no-energy': 'Out of energy — end your turn.',
+    'no-energy': 'Out of energy — enemy turn incoming.',
 };
 
 const DEFAULT_REROLL_STATE: RerollState = {
@@ -112,7 +112,9 @@ export const GameHud = () =>
             <p className="game-hud__deploy-hint">
                 {rerollState.rerollModeActive
                     ? 'Click hand cards to select, then confirm reroll.'
-                    : 'Attack chains through the whole board and keeps it — add cards and attack again to escalate.'}
+                    : turnState.energy > 0
+                        ? 'Attack chains through the whole board — keep adding cards and attacking while you have energy. The board stays until energy runs out.'
+                        : 'Out of energy — clearing the board, then the enemy acts.'}
             </p>
             {rerollState.rerollModeActive ? (
                 <div className="game-hud__reroll-actions">
@@ -149,14 +151,6 @@ export const GameHud = () =>
                 onClick={() => EventBus.emit(GAME_EVENTS.ATTACK)}
             >
                 Attack
-            </button>
-            <button
-                type="button"
-                className="game-hud__end-turn"
-                disabled={!turnState.canEndTurn || rerollState.rerollModeActive}
-                onClick={() => EventBus.emit(GAME_EVENTS.END_TURN)}
-            >
-                End Turn
             </button>
             {rejectMessage && (
                 <p className="game-hud__deploy-hint" role="status">

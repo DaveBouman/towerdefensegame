@@ -17,6 +17,7 @@ import skullSvg from '../icons/000000/transparent/1x1/lorc/skull-crossed-bones.s
 import swordSvg from '../icons/000000/transparent/1x1/lorc/crossed-swords.svg?raw';
 import shieldSvg from '../icons/000000/transparent/1x1/willdabeast/round-shield.svg?raw';
 import coinSvg from '../icons/000000/transparent/1x1/delapouite/two-coins.svg?raw';
+import puzzleSvg from '../icons/000000/transparent/1x1/delapouite/puzzle.svg?raw';
 
 const EVENT_ICON_SVG: Record<EventIconId, string> = {
     wheel: toCurrentColorIconSvg(wheelSvg),
@@ -36,6 +37,7 @@ const EVENT_ICON_SVG: Record<EventIconId, string> = {
     sword: toCurrentColorIconSvg(swordSvg),
     shield: toCurrentColorIconSvg(shieldSvg),
     coin: toCurrentColorIconSvg(coinSvg),
+    puzzle: toCurrentColorIconSvg(puzzleSvg),
 };
 
 interface EventIconProps {

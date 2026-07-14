@@ -28,7 +28,7 @@ in difficulty toward a boss (`warden`) in the final column.
   (`NodeKindIcon`, from game-icons.net) and a hover tooltip on the map. First column
   is always `event` (for testing); last column is the `boss`; middle columns are weighted-random
   (`rollNodeKind`). **Event nodes** open `RunEventOverlay` (`runEvents.ts`) — wheel,
-  icon matcher, healing, gambles, trinkets. Shop is still a placeholder (`NodeVisitOverlay`).
+  icon matcher, **combo trials** (damage puzzles), healing, gambles, trinkets. Shop is still a placeholder (`NodeVisitOverlay`).
 - **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
 - **Deck persists and grows**: the run owns the deck as a list of card definition ids (`getDefaultDeckDefinitionIds`). Each battle builds instances from those ids (`buildDeckFromDefinitionIds`).
 - **Victory rewards**: defeating a (non-boss) enemy grants that node's reward. Today every node grants a **card reward** (`CardRewardOverlay` → pick from choices → card ids appended to the run deck).
@@ -117,10 +117,10 @@ battle, and emits `BATTLE_WON` / `BATTLE_LOST` back to React.
 ## Core loop
 
 ```
-Deploy → Attack (chain resolve, board KEPT, costs 1 energy, hand refills) → repeat until energy = 0 or End Turn → Board clears → Enemy turn → New hand + field boost → repeat
+Deploy → Attack (chain resolve, board KEPT, costs 1 energy, hand refills) → repeat while energy remains → energy = 0 → Board clears → Enemy turn → New hand + field boost → repeat
 ```
 
-The player turn is **escalating**: each Attack resolves the whole board and leaves the cards in place, so the next Attack chains through a longer, harder-hitting sequence. Between attacks the hand tops back up to full, letting the deck progress mid-turn. Each Attack spends one **energy** (`energyPerTurn`, default 3); when energy runs out (or the player clicks **End Turn**) the board is discarded and the enemy acts. The Dead Zone (dampen) field now expires at end of turn rather than per attack.
+The player turn is **escalating**: each Attack resolves the whole board and leaves the cards in place, so the next Attack chains through a longer, harder-hitting sequence. Between attacks the hand tops back up to full, letting the deck progress mid-turn. Each Attack spends one **energy** (`energyPerTurn`, default 3); when **all** energy is spent the board is discarded and the enemy acts once. The Dead Zone (dampen) field now expires at end of turn rather than per attack.
 
 **Risk/reward:** the first attack of a round is baseline, but every *extra* attack ramps the enemy's incoming attack damage by `enemyDamageRampPerAttack` (default 4). The enemy intent re-telegraphs the ramped number live as you attack, so chaining more attacks trades bigger combos for a harder hit back.
 
@@ -218,7 +218,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 | Seeded RNG / determinism | `src/game/random/rng.ts` (use `random`/`randomInt`/`pickRandom`/`shuffleInPlace`, never `Math.random`) |
 | Map layout / difficulty ramp | `src/game/run/runMap.ts` (`ROW_SIZES`, `ROW_ENEMY_POOLS`, `RUN_CONFIG`) |
 | Map node kinds / icons / tooltips | `src/game/run/nodeKinds.ts` (kinds, weights, tooltip copy), `src/ui/components/NodeKindIcon.tsx` |
-| Shop / event node behavior | `src/ui/components/NodeVisitOverlay.tsx` (placeholder), `App.tsx` `visit` phase (`pickNode`/`finishVisit`) |
+| Shop / event node behavior | `src/ui/components/NodeVisitOverlay.tsx` (placeholder), `RunEventOverlay.tsx`, `runEvents.ts`, `runPuzzles.ts`, `PuzzleHud.tsx`, `PuzzleResultOverlay.tsx`; `App.tsx` `visit`/`puzzle` phases |
 | Rewards / reward pool / trinket hooks | `src/game/run/rewards.ts` |
 | Persistent run deck | `getDefaultDeckDefinitionIds` / `buildDeckFromDefinitionIds` in `buildPlayerDeck.ts` |
 | Map / run visuals | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`; `.run-map*` / `.run-end*` / `.card-reward*` in `public/style.css` |
@@ -240,6 +240,11 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-14 | **Corner Defense readability.** Single arrow tucked in the card corner (no dual hook preview); tooltip copy simplified. Corner Strike keeps the hook preview. |
+| 2026-07-14 | **Player round gating.** Board persists and the enemy does not act until **all** energy is spent. Manual End Turn removed (it was ending the round early). `endPlayerRound` runs only when `energy === 0` → graveyard animation → `clearBoard` → single enemy turn. |
+| 2026-07-14 | **Escalating turn fix.** Player round splits per-attack cleanup (`releaseAttackLock`, hand refill, board persists) from end-of-round (`endPlayerRound` → graveyard → `clearBoard` → enemy). Attack animation guarded against double-resolve. |
+| 2026-07-14 | **Event trade-offs.** Every positive event outcome now pairs with a cost (`lose-gold` caps at current gold; HP damage or curse cards for other rewards). Healing Spring: +18 HP / −18 gold. Wheel: spin costs 5 gold; gold/heal/card/trinket segments also cost HP, gold, or Burden. Sign Matcher win costs 12 gold. Gambler coin and Cursed Idol smash cost HP. Combo Trial success pays mirror gold costs and curse tax on bonus cards. |
+| 2026-07-14 | **Combo Trial events.** New **Combo Trial** random event launches a seeded damage puzzle (`runPuzzles.ts`, `START_PUZZLE` / `PUZZLE_RESOLVED`). Player receives a fixed hand of combo cards against a **Training Dummy** (`training-dummy` enemy, no counterattack) and must deal at least the target damage in **one attack**. Six puzzles teach Boost, attack streaks, Strike loops, Fire alternation, Loop Reset, and Rupture bleed. Success grants gold/cards; failure costs a little HP. Puzzle UI: brief screen in `RunEventOverlay`, in-fight goal/hint in `PuzzleHud`, result in `PuzzleResultOverlay`. |
 | 2026-07-14 | **Random run events.** Map `event` nodes now open `RunEventOverlay` with seeded encounters (`runEvents.ts`, `seedScope(seed, event:<nodeId>)`). Five events: **Wheel of Fate** (spin for gold/card/curse/trinket/heal/trap), **Sign Matcher** (pick the duplicated icon — card or damage), **Healing Spring**, **Cursed Idol** (trinket + Burden or gold), **Gambler's Offer** (HP for card or gold). First map column is now **all events** for easy testing. Run resources: **gold** + **trinkets** (`trinkets.ts`, `runResources.ts`) shown on the map; trinkets pass into battles (`START_BATTLE.trinkets`) — Vitality Charm (+10 max HP), Energy Cell (+1 energy/turn), Lucky Pouch (+8 gold on victory). Shop nodes remain a placeholder (`NodeVisitOverlay` shows gold). |
 | 2026-07-14 | **Curse / bad cards.** New card flags `unplayable` and `handEndPenalty` on `CardDefinition`. **Burden** — cannot be played, deals 5 damage if still in hand when the turn ends. **Fuse** — weak attack (power 2) that must be placed before end of turn or deals 8 damage. Penalties resolve in `CardGameSession.resolveHandEndPenalties` at end of player turn (`Game.resolveEnemyPhase`). Unplayable cards blocked in `placeCardFromHand` and `CardHandView` drag. New `curse` behavior (inert on board). **Saboteur** gains `curseHand` passive — slips 1 Burden into your hand after each enemy turn (can exceed hand size). |
 | 2026-07-07 | **Escalation risk/reward: enemy damage ramps with attacks per round.** Each extra attack the player makes in a round increases the enemy's next attack damage by `gameRules.enemyDamageRampPerAttack` (default 4; first attack is baseline). Ramp derives from spent energy (`CardGameSession.getAttacksThisRound` = `maxEnergy − energy`, `getEnemyDamageRamp`), is baked into attack steps at resolve time (`beginEnemyTurn` → `rampEnemyAction`), and is telegraphed live: after each attack `Game.onAttackResolved` re-shows the scaled intent (`getScaledEnemyIntent`). Attack intent tooltip notes the ramp. |

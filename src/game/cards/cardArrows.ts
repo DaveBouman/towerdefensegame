@@ -37,3 +37,25 @@ export const arrowLabelPosition = (
             return { x: width * 0.82, y: height * 0.82 };
     }
 };
+
+/** Corner-turn cards that only show one arrow tucked in the card corner (less visual noise). */
+export const cornerEntryArrowPosition = (
+    direction: CardDirection,
+    width: number,
+    height: number,
+): { x: number; y: number } =>
+{
+    switch (direction)
+    {
+        case 'right':
+            return { x: width * 0.82, y: height * 0.82 };
+        case 'left':
+            return { x: width * 0.18, y: height * 0.82 };
+        case 'up':
+            return { x: width * 0.82, y: height * 0.18 };
+        case 'down':
+            return { x: width * 0.18, y: height * 0.82 };
+        default:
+            return arrowLabelPosition(direction, width, height);
+    }
+};

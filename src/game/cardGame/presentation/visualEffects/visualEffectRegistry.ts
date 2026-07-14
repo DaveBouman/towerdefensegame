@@ -1,7 +1,9 @@
 import { attackGlowVisual } from './attackGlowVisual';
 import { boostGlowVisual } from './boostGlowVisual';
+import { curseGlowVisual } from './curseGlowVisual';
 import { defendGlowVisual } from './defendGlowVisual';
 import { fireGlowVisual } from './fireGlowVisual';
+import { fuseGlowVisual } from './fuseGlowVisual';
 import { hazardGlowVisual } from './hazardGlowVisual';
 import { jokerGlowVisual } from './jokerGlowVisual';
 import { loopResetGlowVisual } from './loopResetGlowVisual';
@@ -17,6 +19,8 @@ const effects = new Map<string, CardVisualEffect>([
     [ jokerGlowVisual.id, jokerGlowVisual ],
     [ loopResetGlowVisual.id, loopResetGlowVisual ],
     [ poisonGlowVisual.id, poisonGlowVisual ],
+    [ fuseGlowVisual.id, fuseGlowVisual ],
+    [ curseGlowVisual.id, curseGlowVisual ],
 ]);
 
 export const registerCardVisualEffect = (effect: CardVisualEffect): void =>
