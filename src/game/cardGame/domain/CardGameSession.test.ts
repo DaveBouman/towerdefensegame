@@ -154,6 +154,48 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth - 1);
     });
 
+    it('grants chain armor mid-attack so thorns can be blocked by earlier defend steps', () =>
+    {
+        const session = new CardGameSession('thornward');
+
+        session.beginAttack();
+        session.grantPlayerShield(5);
+        const result = session.dealAttackDamage(10);
+
+        expect(result.thornsDamage).toBe(4);
+        expect(session.getPlayer().shield).toBe(1);
+        expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth);
+    });
+
+    it('does not double-apply armor granted during the chain when completing the attack', () =>
+    {
+        const session = new CardGameSession();
+
+        session.beginAttack();
+        session.grantPlayerShield(3);
+        session.completeAttack({
+            ...emptySequence(),
+            chain: [
+                {
+                    slot: { row: 0, col: 0 },
+                    card: {
+                        instanceId: 'defend-1',
+                        definitionId: 'defend',
+                        arrow: 'right',
+                    },
+                    definitionId: 'defend',
+                    behaviorId: 'defend',
+                    visualId: 'defend',
+                    arrow: 'right',
+                    damage: 0,
+                    armor: 3,
+                },
+            ],
+        });
+
+        expect(session.getPlayer().shield).toBe(3);
+    });
+
     it('absorbs player damage with enemy shield first', () =>
     {
         const session = new CardGameSession();

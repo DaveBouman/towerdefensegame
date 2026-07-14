@@ -1,4 +1,5 @@
 import { addCardOverlay, clearWrapperData } from './cardOverlay';
+import { playCardGlowPulse, resetCardGlowPulse } from './visualEffectTweens';
 
 const FUSE_GLOW = 0xff6b35;
 const FUSE_STROKE = 0xff9f43;
@@ -27,30 +28,17 @@ export const fuseGlowVisual: import('./types').CardVisualEffect = {
         glow.setName('card-visual-glow');
         target.wrapper.setData(GLOW_DATA_KEY, glow);
 
-        scene.tweens.killTweensOf(target.wrapper);
-        target.wrapper.setScale(1);
-
-        const scaleTween = scene.tweens.add({
-            targets: target.wrapper,
-            scaleX: 1.08,
-            scaleY: 1.08,
+        const { scaleTween, overlayTween } = playCardGlowPulse(scene, target.wrapper, glow, {
+            scale: 1.08,
             duration: 180,
-            yoyo: true,
-            repeat: -1,
+            width: target.width,
+            height: target.height,
         });
 
-        const glowTween = scene.tweens.add({
-            targets: glow,
-            alpha: { from: 0.45, to: 1 },
-            duration: 180,
-            yoyo: true,
-            repeat: -1,
-        });
-
-        target.wrapper.setData(TWEEN_KEY, glowTween);
+        target.wrapper.setData(TWEEN_KEY, overlayTween);
         target.wrapper.setData(SCALE_TWEEN_KEY, scaleTween);
 
-        return glowTween;
+        return overlayTween;
     },
     deactivate (scene, target)
     {
@@ -67,7 +55,6 @@ export const fuseGlowVisual: import('./types').CardVisualEffect = {
         clearWrapperData(target.wrapper, TWEEN_KEY);
         clearWrapperData(target.wrapper, SCALE_TWEEN_KEY);
 
-        scene.tweens.killTweensOf(target.wrapper);
-        target.wrapper.setScale(1);
+        resetCardGlowPulse(target.wrapper);
     },
 };

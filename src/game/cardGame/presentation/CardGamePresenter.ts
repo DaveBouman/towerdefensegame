@@ -94,6 +94,7 @@ export class CardGamePresenter
 
             if (activeStep)
             {
+                this.grantStepArmor(activeStep, chain);
                 this.deactivateStep(activeStep);
                 activeStep = null;
             }
@@ -148,9 +149,19 @@ export class CardGamePresenter
                 this.boardView.bringCardToFront(slot);
             }
 
+            if (sequence.abilityArmorGain > 0)
+            {
+                this.session.grantPlayerShield(sequence.abilityArmorGain);
+            }
+
+            if (sequence.offChainArmor > 0)
+            {
+                this.session.grantPlayerShield(sequence.offChainArmor);
+            }
+
             if (sequence.offChainArmor > 0 || sequence.abilityArmorGain > 0)
             {
-                this.setDisplayedArmor(this.displayedArmor + sequence.offChainArmor + sequence.abilityArmorGain);
+                this.setDisplayedArmor(this.session.getPlayer().shield);
             }
 
             if (sequence.offChainDamage > 0)
@@ -208,6 +219,7 @@ export class CardGamePresenter
         {
             if (activeStep)
             {
+                this.grantStepArmor(activeStep, chain);
                 this.deactivateStep(activeStep);
                 activeStep = null;
             }
@@ -234,11 +246,6 @@ export class CardGamePresenter
             const boosted = isBoostedChainStep(resolvedChain, stepIndex);
 
             this.activateStep(step, boosted);
-
-            if (resolvedStep.armor > 0)
-            {
-                this.setDisplayedArmor(this.displayedArmor + resolvedStep.armor);
-            }
 
             if (resolvedStep.damage > 0)
             {
@@ -414,6 +421,26 @@ export class CardGamePresenter
             this.enemyView.setHealth(this.session.getEnemy());
             onComplete();
         });
+    }
+
+    private grantStepArmor (step: ActivationStep, chain: ActivationStep[]): void
+    {
+        const stepIndex = chain.indexOf(step);
+
+        if (stepIndex < 0)
+        {
+            return;
+        }
+
+        const resolvedStep = resolveChainSteps(chain)[stepIndex]!;
+
+        if (resolvedStep.armor <= 0)
+        {
+            return;
+        }
+
+        this.session.grantPlayerShield(resolvedStep.armor);
+        this.setDisplayedArmor(this.session.getPlayer().shield);
     }
 
     private setDisplayedArmor (armor: number): void

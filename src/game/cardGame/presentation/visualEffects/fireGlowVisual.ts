@@ -1,10 +1,9 @@
 import { addCardOverlay, clearWrapperData } from './cardOverlay';
-
-const FIRE_GLOW = 0xe67e22;
-const FIRE_STROKE = 0xf39c12;
+import { playCardGlowPulse, resetCardGlowPulse } from './visualEffectTweens';
 
 const GLOW_DATA_KEY = 'card-visual-glow';
 const TWEEN_KEY = 'fireGlowTween';
+const OVERLAY_TWEEN_KEY = 'fireOverlayTween';
 
 export const fireGlowVisual: import('./types').CardVisualEffect = {
     id: 'fire',
@@ -17,26 +16,26 @@ export const fireGlowVisual: import('./types').CardVisualEffect = {
             target,
             target.width + 14,
             target.height + 14,
-            FIRE_GLOW,
-            0.28,
-            FIRE_STROKE,
+            0xff6b35,
+            0.3,
+            0xff9f43,
             4,
         );
 
         glow.setName('card-visual-glow');
         target.wrapper.setData(GLOW_DATA_KEY, glow);
 
-        const tween = scene.tweens.add({
-            targets: glow,
-            alpha: { from: 0.5, to: 1 },
-            duration: 260,
-            yoyo: true,
-            repeat: -1,
+        const { scaleTween, overlayTween } = playCardGlowPulse(scene, target.wrapper, glow, {
+            scale: 1.05,
+            duration: 280,
+            width: target.width,
+            height: target.height,
         });
 
-        target.wrapper.setData(TWEEN_KEY, tween);
+        target.wrapper.setData(TWEEN_KEY, scaleTween);
+        target.wrapper.setData(OVERLAY_TWEEN_KEY, overlayTween);
 
-        return tween;
+        return scaleTween;
     },
     deactivate (scene, target)
     {
@@ -46,10 +45,12 @@ export const fireGlowVisual: import('./types').CardVisualEffect = {
         clearWrapperData(target.wrapper, GLOW_DATA_KEY);
 
         const tween = target.wrapper.getData(TWEEN_KEY) as Phaser.Tweens.Tween | undefined;
+        const overlayTween = target.wrapper.getData(OVERLAY_TWEEN_KEY) as Phaser.Tweens.Tween | undefined;
 
         tween?.stop();
+        overlayTween?.stop();
         clearWrapperData(target.wrapper, TWEEN_KEY);
-        scene.tweens.killTweensOf(target.wrapper);
-        target.wrapper.setScale(1);
+        clearWrapperData(target.wrapper, OVERLAY_TWEEN_KEY);
+        resetCardGlowPulse(target.wrapper);
     },
 };

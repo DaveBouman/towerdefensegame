@@ -1,10 +1,8 @@
 import type { PlayerState } from '../cardGame/domain/types';
+import { CYBER } from '../config/cyberpunkTheme';
 import { uiTextStyle } from '../config/uiTypography';
+import { playFloatingText, playHitFlash as playHitFlashTween } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import type { BoardLayout } from './boardLayout';
-
-const PLAYER_COLOR = 0x3498db;
-const PLAYER_BAR_BG = 0x152535;
-const PLAYER_BAR_FILL = 0x5dade2;
 
 export class PlayerHealthView
 {
@@ -27,10 +25,10 @@ export class PlayerHealthView
         const outline = scene.add.rectangle(0, 0, playerSize, playerSize);
 
         outline.setOrigin(0, 0);
-        outline.setStrokeStyle(2, PLAYER_COLOR, 0.7);
-        outline.setFillStyle(PLAYER_COLOR, 0.12);
+        outline.setStrokeStyle(2, CYBER.player, 0.75);
+        outline.setFillStyle(CYBER.player, 0.1);
 
-        const body = scene.add.rectangle(0, 0, playerSize, playerSize, PLAYER_COLOR);
+        const body = scene.add.rectangle(0, 0, playerSize, playerSize, CYBER.player);
 
         body.setOrigin(0, 0);
 
@@ -44,7 +42,7 @@ export class PlayerHealthView
             barY,
             this.healthBarWidth,
             this.healthBarHeight,
-            PLAYER_BAR_BG,
+            CYBER.playerBarBg,
             1,
         ).setOrigin(0, 0);
 
@@ -53,7 +51,7 @@ export class PlayerHealthView
             barY,
             this.healthBarWidth,
             this.healthBarHeight,
-            PLAYER_BAR_FILL,
+            CYBER.playerBarFill,
             1,
         ).setOrigin(0, 0);
 
@@ -62,7 +60,7 @@ export class PlayerHealthView
         }).setOrigin(0.5);
 
         const label = scene.add.text(playerSize / 2, playerSize + 14, 'You', {
-            ...uiTextStyle(16, '#c8e6ff'),
+            ...uiTextStyle(16, '#7af0ff'),
         }).setOrigin(0.5, 0);
 
         container.add([ outline, body, healthBarBg, this.healthBarFill, this.healthText, label ]);
@@ -89,21 +87,7 @@ export class PlayerHealthView
 
     playHitFlash (): void
     {
-        this.scene.tweens.killTweensOf(this.container);
-        this.container.setScale(1);
-        this.body.setFillStyle(0xffffff, 0.95);
-
-        this.scene.tweens.add({
-            targets: this.container,
-            scaleX: 1.1,
-            scaleY: 1.1,
-            duration: 100,
-            yoyo: true,
-            onComplete: () =>
-            {
-                this.body.setFillStyle(PLAYER_COLOR, 1);
-            },
-        });
+        playHitFlashTween(this.scene, this.container, this.body, CYBER.player);
     }
 
     showDamageNumber (damage: number): void
@@ -113,20 +97,14 @@ export class PlayerHealthView
             return;
         }
 
-        const popup = this.scene.add.text(this.body.width / 2, -8, `-${damage}`, {
-            ...uiTextStyle(24, '#ff8a84', { bold: true }),
-        }).setOrigin(0.5, 1);
-
-        this.container.add(popup);
-
-        this.scene.tweens.add({
-            targets: popup,
-            y: -36,
-            alpha: 0,
-            duration: 700,
-            ease: 'Cubic.easeOut',
-            onComplete: () => popup.destroy(),
-        });
+        playFloatingText(
+            this.scene,
+            this.container,
+            this.body.width / 2,
+            -8,
+            `-${damage}`,
+            '#ff3b6b',
+        );
     }
 
     destroy (): void

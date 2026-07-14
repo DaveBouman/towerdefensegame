@@ -1,7 +1,6 @@
+import { CYBER } from '../../../config/cyberpunkTheme';
 import { addCardOverlay, clearWrapperData } from './cardOverlay';
-
-const ATTACK_GLOW = 0xf39c12;
-const ATTACK_STROKE = 0xf1c40f;
+import { playCardGlowPulse, resetCardGlowPulse } from './visualEffectTweens';
 
 const GLOW_DATA_KEY = 'card-visual-glow';
 const TWEEN_KEY = 'attackGlowTween';
@@ -18,33 +17,20 @@ export const attackGlowVisual: import('./types').CardVisualEffect = {
             target,
             target.width + 18,
             target.height + 18,
-            ATTACK_GLOW,
-            0.2,
-            ATTACK_STROKE,
+            CYBER.attackGlow,
+            0.22,
+            CYBER.attackStroke,
             5,
         );
 
         glow.setName('card-visual-glow');
         target.wrapper.setData(GLOW_DATA_KEY, glow);
 
-        scene.tweens.killTweensOf(target.wrapper);
-        target.wrapper.setScale(1);
-
-        const scaleTween = scene.tweens.add({
-            targets: target.wrapper,
-            scaleX: 1.12,
-            scaleY: 1.12,
-            duration: 280,
-            yoyo: true,
-            repeat: -1,
-        });
-
-        const overlayTween = scene.tweens.add({
-            targets: glow,
-            alpha: { from: 0.55, to: 1 },
-            duration: 280,
-            yoyo: true,
-            repeat: -1,
+        const { scaleTween, overlayTween } = playCardGlowPulse(scene, target.wrapper, glow, {
+            scale: 1.07,
+            duration: 340,
+            width: target.width,
+            height: target.height,
         });
 
         target.wrapper.setData(TWEEN_KEY, scaleTween);
@@ -67,7 +53,6 @@ export const attackGlowVisual: import('./types').CardVisualEffect = {
         clearWrapperData(target.wrapper, TWEEN_KEY);
         clearWrapperData(target.wrapper, OVERLAY_TWEEN_KEY);
 
-        scene.tweens.killTweensOf(target.wrapper);
-        target.wrapper.setScale(1);
+        resetCardGlowPulse(target.wrapper);
     },
 };

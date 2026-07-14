@@ -1,4 +1,5 @@
 import { uiTextStyle } from '../config/uiTypography';
+import { CYBER } from '../config/cyberpunkTheme';
 import { GRID_CONFIG } from '../config/gridConfig';
 import { buildCardGraphic } from '../cards/CardRenderer';
 import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
@@ -12,18 +13,18 @@ import type { CardInstance, SlotPosition } from '../cardGame/domain/types';
 import type { BoardLayout } from './boardLayout';
 import { JokerDirectionPicker } from './JokerDirectionPicker';
 
-const SLOT_FILL = 0x1a1a2e;
-const SLOT_BORDER = 0x4a4a72;
-const SLOT_DROP = 0x3d5a80;
-const SLOT_REPLACE = 0x6b4a2a;
-const SLOT_MOVE = 0x2d5a3d;
-const SLOT_SWAP = 0x5a3d6b;
-const SLOT_SILENCED = 0x2a2038;
-const SLOT_SILENCED_BORDER = 0x8e44ad;
-const SLOT_BOMB_DISABLED = 0x3a2418;
-const SLOT_BOMB_DISABLED_BORDER = 0xe67e22;
-const SLOT_DAMPENED = 0x25203a;
-const SLOT_DAMPENED_BORDER = 0x7d6cff;
+const SLOT_FILL = CYBER.slotFill;
+const SLOT_BORDER = CYBER.slotBorder;
+const SLOT_DROP = CYBER.slotDrop;
+const SLOT_REPLACE = CYBER.slotReplace;
+const SLOT_MOVE = CYBER.slotMove;
+const SLOT_SWAP = CYBER.slotSwap;
+const SLOT_SILENCED = CYBER.slotSilenced;
+const SLOT_SILENCED_BORDER = CYBER.slotSilencedBorder;
+const SLOT_BOMB_DISABLED = CYBER.slotBombDisabled;
+const SLOT_BOMB_DISABLED_BORDER = CYBER.slotBombDisabledBorder;
+const SLOT_DAMPENED = CYBER.slotDampened;
+const SLOT_DAMPENED_BORDER = CYBER.slotDampenedBorder;
 const SLOT_INSET = 4;
 
 export interface BoardCardDragHandlers {
@@ -47,8 +48,8 @@ interface ChainStartIndicator {
 
 export type BoardHighlightMode = 'place' | 'replace' | 'move' | 'swap' | null;
 
-const CHAIN_START_SELECTED = 0xf1c40f;
-const CHAIN_START_IDLE = 0x5a5a78;
+const CHAIN_START_SELECTED = CYBER.chainStartSelected;
+const CHAIN_START_IDLE = CYBER.chainStartIdle;
 
 export class CardBoardView
 {
@@ -153,14 +154,30 @@ export class CardBoardView
             return;
         }
 
+        indicator.ring.setScale(1);
+        indicator.arrow.setScale(1);
+        this.scene.tweens.killTweensOf(indicator.arrow);
+
         if (active)
         {
-            indicator.arrow.setColor('#ffffff');
-            indicator.ring.setStrokeStyle(3, 0xffffff, 1);
+            indicator.arrow.setColor('#fcee0a');
+            indicator.ring.setStrokeStyle(3, CYBER.cyan, 1);
+            indicator.ring.setOrigin(0.5, 0.5);
             this.chainStartTween = this.scene.tweens.add({
-                targets: [ indicator.arrow, indicator.ring ],
+                targets: indicator.ring,
+                alpha: { from: 0.45, to: 1 },
+                scaleX: { from: 0.96, to: 1.06 },
+                scaleY: { from: 0.96, to: 1.06 },
+                duration: 320,
+                ease: 'Sine.easeInOut',
+                yoyo: true,
+                repeat: -1,
+            });
+            this.scene.tweens.add({
+                targets: indicator.arrow,
                 alpha: { from: 0.55, to: 1 },
-                duration: 280,
+                duration: 320,
+                ease: 'Sine.easeInOut',
                 yoyo: true,
                 repeat: -1,
             });
@@ -633,16 +650,17 @@ export class CardBoardView
                 targets: proxy,
                 x: targetX,
                 y: targetY,
-                scaleX: 0.35,
-                scaleY: 0.35,
-                alpha: 0.15,
-                duration: 420,
-                ease: 'Quad.easeIn',
+                angle: proxy.angle + 180,
+                scaleX: 0.25,
+                scaleY: 0.25,
+                alpha: 0,
+                duration: 480,
+                ease: 'Back.easeIn',
                 onComplete: finish,
             });
         }
 
-        this.scene.time.delayedCall(480, finish);
+        this.scene.time.delayedCall(520, finish);
     }
 
     clearBoard (): void
@@ -709,6 +727,7 @@ export class CardBoardView
                 0x000000,
                 0,
             );
+            ring.setOrigin(0.5, 0.5);
 
             const arrow = this.scene.add.text(cellLeftX - 10, centerY, ARROW_GLYPH.right, {
                 ...uiTextStyle(32, '#7a7a9a', { bold: true }),

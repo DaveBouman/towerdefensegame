@@ -77,6 +77,7 @@ export class CardGameSession
     private attackInProgress = false;
     private enemyTurnInProgress = false;
     private damageDealtThisAttack = 0;
+    private armorGrantedThisAttack = 0;
     private queuedEnemyTurn: EnemyTurnAction | null = null;
     private rerollsRemaining: number;
     private readonly puzzleMode: PuzzleModeConfig | null;
@@ -738,6 +739,7 @@ export class CardGameSession
 
         this.attackInProgress = true;
         this.damageDealtThisAttack = 0;
+        this.armorGrantedThisAttack = 0;
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_STARTED, { chainStart: { ...this.chainStart } });
 
         return { ...this.chainStart };
@@ -753,6 +755,19 @@ export class CardGameSession
         }
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_STEP, { step, stepIndex, sequence });
+    }
+
+    /** Grants player shield during an attack (called as each defend step finishes). */
+    grantPlayerShield (amount: number): void
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        this.player.shield += amount;
+        this.armorGrantedThisAttack += amount;
+        CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: this.player.shield });
     }
 
     /** Applies attack damage to enemy shield first, then health. */
@@ -832,9 +847,12 @@ export class CardGameSession
             this.bombDisabledSlots.add(slotKey(slot));
         }
 
-        const chainArmor = sequence.chain.reduce((sum, step) => sum + step.armor, 0);
+        const totalArmor = sequence.chain.reduce((sum, step) => sum + step.armor, 0)
+            + sequence.offChainArmor
+            + sequence.abilityArmorGain;
+        const remainingArmor = Math.max(0, totalArmor - this.armorGrantedThisAttack);
 
-        this.player.shield += chainArmor + sequence.offChainArmor + sequence.abilityArmorGain;
+        this.player.shield += remainingArmor;
 
         if (sequence.abilityPoisonStacks > 0)
         {
@@ -842,6 +860,7 @@ export class CardGameSession
         }
 
         this.damageDealtThisAttack = 0;
+        this.armorGrantedThisAttack = 0;
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_COMPLETED, {
             sequence,
@@ -1110,6 +1129,7 @@ export class CardGameSession
     cancelAttack (): void
     {
         this.damageDealtThisAttack = 0;
+        this.armorGrantedThisAttack = 0;
         this.attackInProgress = false;
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_CANCELLED);
     }

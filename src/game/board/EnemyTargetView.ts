@@ -1,4 +1,5 @@
 import { ENEMY_PASSIVE_TEXTURE_KEY } from '../../ui/icons/enemyPassiveIcons';
+import { CYBER } from '../config/cyberpunkTheme';
 import { uiTextStyle } from '../config/uiTypography';
 import type { EnemyState, EnemyTurnAction } from '../cardGame/domain/types';
 import type { EnemyPassiveConfig } from '../cardGame/enemyPassives/types';
@@ -8,6 +9,7 @@ import {
 } from '../cardGame/presentation/enemyIntentVisuals';
 import { attachEnemyPassiveTooltip } from '../cardGame/presentation/tooltips/EnemyPassiveTooltipController';
 import { attachEnemyIntentTooltip } from '../cardGame/presentation/tooltips/EnemyIntentTooltipController';
+import { playFloatingText, playHitFlash as playHitFlashTween } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import type { BoardLayout } from './boardLayout';
 
 const PASSIVE_ICON_SIZE = 26;
@@ -31,11 +33,11 @@ const PASSIVE_ROW_COLORS: Record<EnemyPassiveConfig['id'], number> = {
     curseHand: 0xc97b9b,
 };
 
-const ENEMY_COLOR = 0xe74c3c;
-const ENEMY_BAR_BG = 0x3a1520;
-const ENEMY_BAR_FILL = 0xff6b6b;
-const ENEMY_SHIELD_COLOR = 0x5dade2;
-const ENEMY_SHIELD_FILL = 0x2471a3;
+const ENEMY_COLOR = CYBER.enemy;
+const ENEMY_BAR_BG = CYBER.enemyBarBg;
+const ENEMY_BAR_FILL = CYBER.enemyBarFill;
+const ENEMY_SHIELD_COLOR = CYBER.enemyShield;
+const ENEMY_SHIELD_FILL = CYBER.enemyShieldFill;
 
 export class EnemyTargetView
 {
@@ -142,7 +144,7 @@ export class EnemyTargetView
         }).setOrigin(0.5);
 
         const label = scene.add.text(enemySize / 2, enemySize + 14, 'Enemy', {
-            ...uiTextStyle(16, '#ffc8c2'),
+            ...uiTextStyle(16, '#ff8ec4'),
         }).setOrigin(0.5, 0);
 
         this.enemyLabel = label;
@@ -288,8 +290,11 @@ export class EnemyTargetView
 
         this.intentTween = this.scene.tweens.add({
             targets: this.intentContainer,
-            alpha: { from: 0.65, to: 1 },
-            duration: phase === 'executing' ? 180 : 320,
+            alpha: { from: 0.5, to: 1 },
+            scaleX: { from: 0.98, to: 1.02 },
+            scaleY: { from: 0.98, to: 1.02 },
+            duration: phase === 'executing' ? 140 : 260,
+            ease: 'Sine.easeInOut',
             yoyo: true,
             repeat: -1,
         });
@@ -431,21 +436,14 @@ export class EnemyTargetView
 
     playHitFlash (): void
     {
-        this.scene.tweens.killTweensOf(this.container);
-        this.container.setScale(1);
-        this.body.setFillStyle(0xffffff, 0.95);
-
-        this.scene.tweens.add({
-            targets: this.container,
-            scaleX: 1.1,
-            scaleY: 1.1,
-            duration: 100,
-            yoyo: true,
-            onComplete: () =>
-            {
-                this.applyShieldVisuals();
-            },
+        playHitFlashTween(this.scene, this.container, this.body, ENEMY_COLOR, {
+            restoreAlpha: this.displayedShield > 0 ? 0.28 : 1,
         });
+
+        if (this.displayedShield > 0)
+        {
+            this.scene.time.delayedCall(180, () => this.applyShieldVisuals());
+        }
     }
 
     showDamageNumber (damage: number): void
@@ -467,9 +465,10 @@ export class EnemyTargetView
 
         this.scene.tweens.add({
             targets: this.container,
-            scaleX: 1.08,
-            scaleY: 1.08,
-            duration: 180,
+            scaleX: 1.1,
+            scaleY: 1.1,
+            duration: 140,
+            ease: 'Back.easeOut',
             yoyo: true,
             onComplete: () =>
             {
@@ -495,9 +494,10 @@ export class EnemyTargetView
 
         this.scene.tweens.add({
             targets: this.container,
-            scaleX: 1.14,
-            scaleY: 1.14,
-            duration: 160,
+            scaleX: 1.16,
+            scaleY: 1.16,
+            duration: 120,
+            ease: 'Back.easeOut',
             yoyo: true,
             repeat: 1,
             onComplete: () =>
@@ -545,8 +545,11 @@ export class EnemyTargetView
         this.shieldRing.setAlpha(1);
         this.shieldTween = this.scene.tweens.add({
             targets: this.shieldRing,
-            alpha: { from: 0.45, to: 1 },
-            duration: 700,
+            alpha: { from: 0.35, to: 1 },
+            scaleX: { from: 0.98, to: 1.04 },
+            scaleY: { from: 0.98, to: 1.04 },
+            duration: 520,
+            ease: 'Sine.easeInOut',
             yoyo: true,
             repeat: -1,
         });
@@ -554,19 +557,13 @@ export class EnemyTargetView
 
     private showFloatingNumber (text: string, color: string): void
     {
-        const popup = this.scene.add.text(this.body.width / 2, -8, text, {
-            ...uiTextStyle(24, color, { bold: true }),
-        }).setOrigin(0.5, 1);
-
-        this.container.add(popup);
-
-        this.scene.tweens.add({
-            targets: popup,
-            y: -36,
-            alpha: 0,
-            duration: 700,
-            ease: 'Cubic.easeOut',
-            onComplete: () => popup.destroy(),
-        });
+        playFloatingText(
+            this.scene,
+            this.container,
+            this.body.width / 2,
+            -8,
+            text,
+            color,
+        );
     }
 }

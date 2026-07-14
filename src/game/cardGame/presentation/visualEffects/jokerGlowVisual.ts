@@ -1,4 +1,5 @@
 import { addCardOverlay, clearWrapperData } from './cardOverlay';
+import { playCardGlowPulse, resetCardGlowPulse } from './visualEffectTweens';
 
 const JOKER_GLOW = 0xf1c40f;
 const JOKER_STROKE = 0xfff3bf;
@@ -27,24 +28,11 @@ export const jokerGlowVisual: import('./types').CardVisualEffect = {
         glow.setName('card-visual-glow');
         target.wrapper.setData(GLOW_DATA_KEY, glow);
 
-        scene.tweens.killTweensOf(target.wrapper);
-        target.wrapper.setScale(1);
-
-        const scaleTween = scene.tweens.add({
-            targets: target.wrapper,
-            scaleX: 1.1,
-            scaleY: 1.1,
+        const { scaleTween, overlayTween } = playCardGlowPulse(scene, target.wrapper, glow, {
+            scale: 1.1,
             duration: 320,
-            yoyo: true,
-            repeat: -1,
-        });
-
-        const overlayTween = scene.tweens.add({
-            targets: glow,
-            alpha: { from: 0.5, to: 1 },
-            duration: 320,
-            yoyo: true,
-            repeat: -1,
+            width: target.width,
+            height: target.height,
         });
 
         target.wrapper.setData(TWEEN_KEY, scaleTween);
@@ -67,7 +55,6 @@ export const jokerGlowVisual: import('./types').CardVisualEffect = {
         clearWrapperData(target.wrapper, TWEEN_KEY);
         clearWrapperData(target.wrapper, OVERLAY_TWEEN_KEY);
 
-        scene.tweens.killTweensOf(target.wrapper);
-        target.wrapper.setScale(1);
+        resetCardGlowPulse(target.wrapper);
     },
 };
