@@ -21,11 +21,13 @@ import { getDefaultDeckDefinitionIds } from './game/cardGame/domain/buildPlayerD
 import {
     generateRunMap,
     reachableNodeIds,
+    getBattleEnemyIds,
     RUN_CONFIG,
     type RunMap,
     type RunMapNode,
 } from './game/run/runMap';
 import { rollCardReward, BATTLE_REWARD_RULES, PUZZLE_TRIAL_RULES, type CardReward } from './game/run/rewards';
+import { removeCardsFromDeck } from './game/run/deck';
 import {
     createRandomSeed,
     deriveSeed,
@@ -96,6 +98,7 @@ function App()
     const [ deck, setDeck ] = useState<string[]>(() => getDefaultDeckDefinitionIds());
     const [ gold, setGold ] = useState(0);
     const [ bodyMods, setBodyMods ] = useState<string[]>([]);
+    const [ runAttackCount, setRunAttackCount ] = useState(0);
     const [ phase, setPhase ] = useState<RunPhase>('map');
     const [ pendingReward, setPendingReward ] = useState<PendingReward | null>(null);
     const [ visit, setVisit ] = useState<VisitState | null>(null);
@@ -113,10 +116,18 @@ function App()
     const goldRef = useRef(gold);
     const deckRef = useRef(deck);
     const pendingStartRef = useRef<
-        { enemyId: string; startHealth: number; deck: string[]; seed: number; bodyMods: string[] } | null
+        {
+            enemyId?: string;
+            enemyIds?: string[];
+            startHealth: number;
+            deck: string[];
+            seed: number;
+            bodyMods: string[];
+            runAttackCount: number;
+        } | null
     >(null);
     const pendingPuzzleRef = useRef<
-        { puzzleId: string; startHealth: number; seed: number; bodyMods: string[] } | null
+        { puzzleId: string; startHealth: number; seed: number; bodyMods: string[]; runAttackCount: number } | null
     >(null);
 
     useEffect(() =>
@@ -172,11 +183,14 @@ function App()
         const onBattleWon = ({
             playerHealth: remaining,
             exhaustedDefinitionIds = [],
+            runAttackCount: nextRunAttackCount,
         }: {
             playerHealth: number;
             exhaustedDefinitionIds?: string[];
+            runAttackCount: number;
         }): void =>
         {
+            setRunAttackCount(nextRunAttackCount);
             const node = selectedNodeRef.current;
             const healed = Math.min(
                 getRunMaxHealth(bodyModsRef.current),
@@ -188,22 +202,7 @@ function App()
 
             if (exhaustedDefinitionIds.length > 0)
             {
-                setDeck((prev) =>
-                {
-                    const next = [ ...prev ];
-
-                    for (const definitionId of exhaustedDefinitionIds)
-                    {
-                        const index = next.indexOf(definitionId);
-
-                        if (index >= 0)
-                        {
-                            next.splice(index, 1);
-                        }
-                    }
-
-                    return next;
-                });
+                setDeck((prev) => removeCardsFromDeck(prev, exhaustedDefinitionIds));
             }
 
             if (node)
@@ -232,8 +231,21 @@ function App()
             setPhase('map');
         };
 
-        const onBattleLost = (): void =>
+        const onBattleLost = ({
+            exhaustedDefinitionIds = [],
+            runAttackCount: nextRunAttackCount,
+        }: {
+            exhaustedDefinitionIds?: string[];
+            runAttackCount: number;
+        }): void =>
         {
+            setRunAttackCount(nextRunAttackCount);
+
+            if (exhaustedDefinitionIds.length > 0)
+            {
+                setDeck((prev) => removeCardsFromDeck(prev, exhaustedDefinitionIds));
+            }
+
             setPhase('defeat');
         };
 
@@ -314,7 +326,9 @@ function App()
 
     const pickNode = useCallback((node: RunMapNode): void =>
     {
-        if (!isBattleKind(node.kind) || !node.enemyId)
+        const battleEnemyIds = getBattleEnemyIds(node);
+
+        if (!isBattleKind(node.kind) || battleEnemyIds.length === 0)
         {
             if (node.kind === 'event')
             {
@@ -337,11 +351,13 @@ function App()
 
         selectedNodeRef.current = node;
         const payload = {
-            enemyId: node.enemyId,
+            enemyId: battleEnemyIds[0],
+            enemyIds: battleEnemyIds.length > 1 ? battleEnemyIds : undefined,
             startHealth: playerHealth,
             deck: [ ...deck ],
             seed: deriveSeed(seed, `battle:${node.id}`),
             bodyMods: [ ...bodyMods ],
+            runAttackCount,
         };
         setPhase('battle');
 
@@ -353,7 +369,7 @@ function App()
         {
             pendingStartRef.current = payload;
         }
-    }, [ playerHealth, deck, seed, bodyMods, visit ]);
+    }, [ playerHealth, deck, seed, bodyMods, runAttackCount, visit ]);
 
     const startPuzzleFromEvent = useCallback((puzzleId: string): void =>
     {
@@ -372,6 +388,7 @@ function App()
             startHealth: playerHealth,
             seed: deriveSeed(seed, `puzzle:${currentVisit.node.id}:${puzzleId}`),
             bodyMods: [ ...bodyMods ],
+            runAttackCount,
         };
         setPhase('puzzle');
 
@@ -383,7 +400,7 @@ function App()
         {
             pendingPuzzleRef.current = payload;
         }
-    }, [ visit, playerHealth, seed, bodyMods ]);
+    }, [ visit, playerHealth, seed, bodyMods, runAttackCount ]);
 
     const finishVisit = useCallback((): void =>
     {
@@ -481,6 +498,7 @@ function App()
         setDeck(getDefaultDeckDefinitionIds());
         setGold(0);
         setBodyMods([]);
+        setRunAttackCount(0);
         setPendingReward(null);
         setVisit(null);
         setPuzzleResult(null);

@@ -34,6 +34,8 @@ export interface CardDefinition {
     discardFromHandOnPlay?: number;
     /** When true, playing this card removes one copy from the run deck for the rest of the match. */
     exhaustOnPlay?: boolean;
+    /** Heal the player by this amount when this card's damage kills an enemy. */
+    healOnKill?: number;
     /** Applies a ±% battle modifier when this card activates in the chain. */
     battleModifier?: {
         stat: import('../combat/battleModifiers').BattleModifierStat;
@@ -106,3 +108,6 @@ export const getCardDiscardFromHandCount = (definition: CardDefinition): number 
 
 export const isCardExhaustOnPlay = (definition: CardDefinition): boolean =>
     definition.exhaustOnPlay === true;
+
+export const getCardHealOnKill = (definition: CardDefinition): number =>
+    Math.max(0, definition.healOnKill ?? 0);

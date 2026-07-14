@@ -9,6 +9,7 @@ vi.mock('../events/CardGameEventBus', () => ({
 }));
 
 import { GAME_RULES } from '../config/cardRegistry';
+import { BODY_MOD_IDS } from '../../run/bodyMods';
 import { getDefaultCardGameEnemy } from '../config/enemyCatalog';
 import { CardGameSession } from './CardGameSession';
 import { createCardInstance, resetCardInstanceCounter } from './createCardInstance';
@@ -183,6 +184,34 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getPlayer().shield).toBe(11);
     });
 
+    it('deals damage to a selected enemy in multi-enemy fights', () =>
+    {
+        const session = new CardGameSession([ 'basic', 'basic' ]);
+
+        session.setAttackTarget('enemy-0');
+        session.beginAttack();
+        session.dealAttackDamage(999, 'enemy-0');
+
+        expect(session.getEnemy('enemy-0').health).toBe(0);
+        expect(session.getEnemy('enemy-1').health).toBeGreaterThan(0);
+        expect(session.isEnemyDefeated()).toBe(false);
+    });
+
+    it('heals the player when salvage kills an enemy', () =>
+    {
+        const session = new CardGameSession('basic');
+
+        session.setAttackTarget('enemy-0');
+        session.beginAttack();
+        session.resolveEnemyAttack(50);
+        const before = session.getPlayer().health;
+        const result = session.dealAttackDamage(999, 'enemy-0', 'salvage');
+
+        expect(result.enemyKilled).toBe(true);
+        expect(result.healOnKill).toBe(5);
+        expect(session.getPlayer().health).toBe(before + 5);
+    });
+
     it('keeps glitch active across enemy turns until energy resets', () =>
     {
         const session = new CardGameSession('basic');
@@ -218,6 +247,70 @@ describe('CardGameSession enemy turn', () =>
         session.resolveEnemyAttack(10);
 
         expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth - 19);
+    });
+
+    it('doubles damage on every 7th run attack with Mark VII', () =>
+    {
+        const session = new CardGameSession(
+            'basic',
+            undefined,
+            undefined,
+            [ BODY_MOD_IDS.markSeven ],
+            null,
+            6,
+        );
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
+        session.beginAttack();
+
+        expect(session.isDoubleDamageThisAttack()).toBe(true);
+        expect(session.getRunAttackCount()).toBe(7);
+
+        const result = session.dealAttackDamage(10);
+
+        expect(result.shieldAbsorbed + result.healthDamage).toBe(20);
+    });
+
+    it('does not double damage on non-seventh attacks with Mark VII', () =>
+    {
+        const session = new CardGameSession(
+            'basic',
+            undefined,
+            undefined,
+            [ BODY_MOD_IDS.markSeven ],
+            null,
+            4,
+        );
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
+        session.beginAttack();
+
+        expect(session.isDoubleDamageThisAttack()).toBe(false);
+        expect(session.getRunAttackCount()).toBe(5);
+
+        const result = session.dealAttackDamage(10);
+
+        expect(result.shieldAbsorbed + result.healthDamage).toBe(10);
+    });
+
+    it('persists the run attack counter across battles', () =>
+    {
+        const firstBattle = new CardGameSession('basic', undefined, undefined, [], null, 0);
+
+        firstBattle.placeCardFromHand(0, { row: 0, col: 0 });
+        firstBattle.beginAttack();
+        firstBattle.releaseAttackLock();
+        firstBattle.placeCardFromHand(0, { row: 0, col: 0 });
+        firstBattle.beginAttack();
+
+        expect(firstBattle.getRunAttackCount()).toBe(2);
+
+        const secondBattle = new CardGameSession('basic', undefined, undefined, [], null, firstBattle.getRunAttackCount());
+
+        secondBattle.placeCardFromHand(0, { row: 0, col: 0 });
+        secondBattle.beginAttack();
+
+        expect(secondBattle.getRunAttackCount()).toBe(3);
     });
 
     it('does not double-apply armor granted during the chain when completing the attack', () =>
@@ -891,5 +984,20 @@ describe('CardGameSession courier discard', () =>
 
         expect(session.getHand()).toHaveLength(1);
         expect(session.placeCardFromHand(0, { row: 0, col: 1 })).toBe(false);
+    });
+
+    it('does not recycle exhausted cards from hand into the discard pile on renewHand', () =>
+    {
+        const session = puzzleSession([
+            { definitionId: 'courier', arrow: 'right' },
+            { definitionId: 'attack', arrow: 'right' },
+        ]);
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
+        session.removeCardFromBoard({ row: 0, col: 0 });
+        session.renewHand();
+
+        expect(session.getDiscardDefinitionIds()).not.toContain('courier');
+        expect(session.getDeckDefinitionIds()).not.toContain('courier');
     });
 });

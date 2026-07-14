@@ -34,6 +34,17 @@ export interface EnemyState {
     poison?: number;
 }
 
+/** One enemy in a multi-enemy fight. */
+export interface EnemyCombatant {
+    instanceId: string;
+    definitionId: string;
+    definition: import('../config/enemyCatalog').LoadedCardGameEnemyDefinition;
+    state: EnemyState;
+    queuedTurn: EnemyTurnAction | null;
+    turnsTaken: number;
+    enrageStacks: number;
+}
+
 export interface PlayerState {
     health: number;
     maxHealth: number;
@@ -56,6 +67,8 @@ export interface EnemyTurnStep {
 }
 
 export interface EnemyTurnAction {
+    /** Combat instance this turn belongs to (multi-enemy fights). */
+    instanceId?: string;
     enemyId: string;
     steps: EnemyTurnStep[];
 }
@@ -71,6 +84,9 @@ export interface DamageResult {
     enemy: EnemyState;
     shieldAbsorbed: number;
     healthDamage: number;
+    targetInstanceId?: string;
+    enemyKilled?: boolean;
+    healOnKill?: number;
     thornsDamage?: number;
     thornsShieldAbsorbed?: number;
     thornsHealthDamage?: number;
@@ -110,7 +126,8 @@ export type AttackRejectReason =
     | 'enemy-defeated'
     | 'player-defeated'
     | 'no-cards-on-board'
-    | 'no-energy';
+    | 'no-energy'
+    | 'no-target';
 
 export interface AttackReadiness {
     canAttack: boolean;

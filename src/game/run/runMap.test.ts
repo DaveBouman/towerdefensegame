@@ -69,6 +69,8 @@ describe('runMap', () =>
         expect(rowZero.length).toBeGreaterThanOrEqual(1);
         expect(rowZero.every((node) => node.kind === 'enemy')).toBe(true);
         expect(rowZero.every((node) => node.enemyId !== undefined)).toBe(true);
+        expect(rowZero.every((node) => node.enemyIds?.length === 3)).toBe(true);
+        expect(rowZero.every((node) => node.enemyIds?.every((id) => id === 'test-grunt'))).toBe(true);
     });
 
     it('assigns distinct events within the same column when possible', () =>

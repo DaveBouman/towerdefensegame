@@ -72,6 +72,15 @@
       "shieldGain": 0,
       "attackChance": 0,
       "hazardsPerTurn": 0
+    },
+    {
+      "id": "test-grunt",
+      "label": "Test Grunt",
+      "maxHealth": 6,
+      "attackDamage": 3,
+      "shieldGain": 0,
+      "attackChance": 0.5,
+      "hazardsPerTurn": 0
     }
   ]
 }

@@ -21,11 +21,23 @@ export interface RunMapNode {
     eventId?: string;
     /** Enemy fought at this node (battle kinds only). */
     enemyId?: string;
+    /** Multiple enemies for this node — overrides `enemyId` when set. */
+    enemyIds?: string[];
     /** Reward granted for defeating this node's enemy (battle kinds only). */
     reward?: RunReward;
     /** Node ids reachable from this node in the next column. */
     nextIds: string[];
 }
+
+export const getBattleEnemyIds = (node: RunMapNode): string[] =>
+{
+    if (node.enemyIds && node.enemyIds.length > 0)
+    {
+        return [ ...node.enemyIds ];
+    }
+
+    return node.enemyId ? [ node.enemyId ] : [];
+};
 
 export interface RunMap {
     /** Number of columns in the map. */
@@ -44,6 +56,9 @@ export const RUN_CONFIG = {
 
 /** Elite enemies used for the fixed semi-boss column. */
 const SEMI_BOSS_ENEMY_POOL: readonly string[] = [ 'smokebinder', 'saboteur' ];
+
+/** Temporary: first-column fights use three weak grunts for multi-target testing. */
+const FIRST_COLUMN_ENEMY_IDS: readonly string[] = [ 'test-grunt', 'test-grunt', 'test-grunt' ];
 
 /** Enemy pools per column, ramping in difficulty. Last column is the boss. */
 const ROW_ENEMY_POOLS: readonly (readonly string[])[] = [
@@ -186,6 +201,7 @@ export const generateRunMap = (): RunMap =>
                         ? pickRandom(SEMI_BOSS_ENEMY_POOL)
                         : pickRandom(ROW_ENEMY_POOLS[row] ?? ROW_ENEMY_POOLS[0]!)
                     : undefined,
+                enemyIds: battle && row === 0 ? [ ...FIRST_COLUMN_ENEMY_IDS ] : undefined,
                 reward: battle ? { ...DEFAULT_CARD_REWARD } : undefined,
                 nextIds: [] as string[],
             } satisfies RunMapNode;

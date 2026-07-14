@@ -3,7 +3,7 @@ import { ArmorView } from '../board/ArmorView';
 import { CardBoardView } from '../board/CardBoardView';
 import { CardHandView } from '../board/CardHandView';
 import { CardPileView } from '../board/CardPileView';
-import { EnemyTargetView } from '../board/EnemyTargetView';
+import { EnemySquadView } from '../board/EnemySquadView';
 import { PlayerHealthView } from '../board/PlayerHealthView';
 import { CardGameSession } from '../cardGame/domain/CardGameSession';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
@@ -31,7 +31,7 @@ export class Game extends Scene
     private presenter?: CardGamePresenter;
     private boardView?: CardBoardView;
     private handView?: CardHandView;
-    private enemyView?: EnemyTargetView;
+    private enemySquad?: EnemySquadView;
     private playerView?: PlayerHealthView;
     private armorView?: ArmorView;
     private deckView?: CardPileView;
@@ -72,8 +72,16 @@ export class Game extends Scene
     }
 
     private onStartBattle = (
-        { enemyId, startHealth, deck, seed, bodyMods }:
-        { enemyId: string; startHealth: number; deck: string[]; seed: number; bodyMods: string[] },
+        { enemyId, enemyIds, startHealth, deck, seed, bodyMods, runAttackCount }:
+        {
+            enemyId?: string;
+            enemyIds?: readonly string[];
+            startHealth: number;
+            deck: string[];
+            seed: number;
+            bodyMods: string[];
+            runAttackCount: number;
+        },
     ): void =>
     {
         if (this.battleActive)
@@ -81,12 +89,18 @@ export class Game extends Scene
             this.endBattle();
         }
 
-        this.startBattle(enemyId, startHealth, deck, seed, bodyMods);
+        const battleEnemyIds = enemyIds && enemyIds.length > 0
+            ? enemyIds
+            : enemyId
+                ? [ enemyId ]
+                : [ GAME_RULES.defaultEnemyId ];
+
+        this.startBattle(battleEnemyIds, startHealth, deck, seed, bodyMods, null, runAttackCount);
     };
 
     private onStartPuzzle = (
-        { puzzleId, startHealth, seed, bodyMods }:
-        { puzzleId: string; startHealth: number; seed: number; bodyMods: string[] },
+        { puzzleId, startHealth, seed, bodyMods, runAttackCount }:
+        { puzzleId: string; startHealth: number; seed: number; bodyMods: string[]; runAttackCount: number },
     ): void =>
     {
         if (this.battleActive)
@@ -94,7 +108,7 @@ export class Game extends Scene
             this.endBattle();
         }
 
-        this.startPuzzle(puzzleId, startHealth, seed, bodyMods);
+        this.startPuzzle(puzzleId, startHealth, seed, bodyMods, runAttackCount);
     };
 
     private startPuzzle (
@@ -102,6 +116,7 @@ export class Game extends Scene
         startHealth: number,
         seed: number,
         bodyMods: string[],
+        runAttackCount: number,
     ): void
     {
         const puzzle = getRunPuzzle(puzzleId);
@@ -111,7 +126,7 @@ export class Game extends Scene
         };
 
         this.activePuzzleId = puzzleId;
-        this.startBattle('training-dummy', startHealth, [], seed, bodyMods, puzzleMode);
+        this.startBattle('training-dummy', startHealth, [], seed, bodyMods, puzzleMode, runAttackCount);
 
         EventBus.emit(GAME_EVENTS.PUZZLE_STATE, {
             puzzleId,
@@ -124,12 +139,13 @@ export class Game extends Scene
     }
 
     private startBattle (
-        enemyId: string,
+        enemyIds: string | readonly string[],
         startHealth: number,
         deck: string[],
         seed: number,
         bodyMods: string[],
         puzzleMode: PuzzleModeConfig | null = null,
+        runAttackCount = 0,
     ): void
     {
         // Install this battle's deterministic RNG stream before any card is dealt.
@@ -146,7 +162,14 @@ export class Game extends Scene
         this.rerollModeActive = false;
         this.turnResolving = false;
         this.battleResolved = false;
-        this.session = new CardGameSession(enemyId, startHealth, deck, bodyMods, puzzleMode);
+        this.session = new CardGameSession(
+            enemyIds,
+            startHealth,
+            deck,
+            bodyMods,
+            puzzleMode,
+            runAttackCount,
+        );
 
         this.handView = new CardHandView(this, layout, [ ...this.session.getHand() ], {
             onDragMove: (worldX, worldY) =>
@@ -191,9 +214,21 @@ export class Game extends Scene
         });
 
         this.playerView = new PlayerHealthView(this, layout, this.session.getPlayer());
-        this.enemyView = new EnemyTargetView(this, layout, this.session.getEnemy());
-        this.enemyView.setEnemyLabel(this.session.getEnemyDefinition().label);
-        this.enemyView.setEnemyPassives(this.session.getEnemyDefinition().passives);
+        this.enemySquad = new EnemySquadView(
+            this,
+            layout,
+            this.session.getCombatants(),
+            (instanceId) =>
+            {
+                if (!this.session || this.session.isAttackInProgress() || this.turnResolving)
+                {
+                    return;
+                }
+
+                this.session.setAttackTarget(instanceId);
+                this.emitAttackReadiness();
+            },
+        );
         this.armorView = new ArmorView(this, layout, 0);
         this.deckView = new CardPileView(this, layout, layout.deckX, layout.deckY, 'Deck', 'deck');
         this.graveyardView = new CardPileView(this, layout, layout.graveyardX, layout.graveyardY, 'Graveyard', 'graveyard');
@@ -217,17 +252,15 @@ export class Game extends Scene
             this.session,
             this.boardView,
             this.handView,
-            this.enemyView,
+            this.enemySquad,
             this.playerView,
             this.armorView,
         );
         this.presenter.bind();
 
-        const initialIntent = this.session.getQueuedEnemyTurn();
-
-        if (initialIntent && !this.session.isPuzzleMode())
+        if (!this.session.isPuzzleMode())
         {
-            this.enemyView.showIntent(initialIntent);
+            this.enemySquad.showAllIntents(this.session);
         }
 
         this.battleActive = true;
@@ -237,7 +270,7 @@ export class Game extends Scene
 
     private onResize = (gameSize: Phaser.Structs.Size): void =>
     {
-        if (!this.layout || !this.boardView || !this.handView || !this.enemyView
+        if (!this.layout || !this.boardView || !this.handView || !this.enemySquad
             || !this.playerView || !this.armorView || !this.deckView || !this.graveyardView)
         {
             return;
@@ -247,12 +280,13 @@ export class Game extends Scene
         applyBoardLayout(this.layout, {
             board: this.boardView,
             hand: this.handView.container,
-            enemy: this.enemyView.container,
+            enemy: this.enemySquad.firstView?.container ?? this.playerView.container,
             player: this.playerView.container,
             armor: this.armorView.container,
             deck: this.deckView.container,
             graveyard: this.graveyardView.container,
         });
+        this.enemySquad.applyLayout(this.layout);
     };
 
     private endBattle (): void
@@ -262,7 +296,7 @@ export class Game extends Scene
         this.presenter?.unbind();
         this.boardView?.destroy();
         this.handView?.destroy();
-        this.enemyView?.destroy();
+        this.enemySquad?.destroy();
         this.playerView?.destroy();
         this.armorView?.destroy();
         this.deckView?.destroy();
@@ -273,7 +307,7 @@ export class Game extends Scene
         this.presenter = undefined;
         this.boardView = undefined;
         this.handView = undefined;
-        this.enemyView = undefined;
+        this.enemySquad = undefined;
         this.playerView = undefined;
         this.armorView = undefined;
         this.deckView = undefined;
@@ -293,29 +327,31 @@ export class Game extends Scene
 
         this.battleResolved = true;
         const playerHealth = this.session.getPlayer().health;
+        const exhaustedDefinitionIds = [ ...this.session.getExhaustedDefinitionIds() ];
+        const runAttackCount = this.session.getRunAttackCount();
 
         this.time.delayedCall(900, () =>
         {
-            const exhaustedDefinitionIds = this.session?.getExhaustedDefinitionIds() ?? [];
-
             this.endBattle();
-            EventBus.emit(GAME_EVENTS.BATTLE_WON, { playerHealth, exhaustedDefinitionIds });
+            EventBus.emit(GAME_EVENTS.BATTLE_WON, { playerHealth, exhaustedDefinitionIds, runAttackCount });
         });
     }
 
     private loseBattle (): void
     {
-        if (this.battleResolved)
+        if (this.battleResolved || !this.session)
         {
             return;
         }
 
         this.battleResolved = true;
+        const exhaustedDefinitionIds = [ ...this.session.getExhaustedDefinitionIds() ];
+        const runAttackCount = this.session.getRunAttackCount();
 
         this.time.delayedCall(900, () =>
         {
             this.endBattle();
-            EventBus.emit(GAME_EVENTS.BATTLE_LOST);
+            EventBus.emit(GAME_EVENTS.BATTLE_LOST, { exhaustedDefinitionIds, runAttackCount });
         });
     }
 
@@ -408,6 +444,13 @@ export class Game extends Scene
             return;
         }
 
+        const selectedTarget = this.enemySquad?.getSelectedId();
+
+        if (selectedTarget)
+        {
+            this.session.setAttackTarget(selectedTarget);
+        }
+
         const chainStart = this.session.beginAttack();
 
         if (!chainStart)
@@ -435,7 +478,7 @@ export class Game extends Scene
 
         this.session.completeAttack(sequence);
 
-        if (!this.boardView || !this.enemyView || this.turnResolving)
+        if (!this.boardView || !this.enemySquad || this.turnResolving)
         {
             this.session.releaseAttackLock();
             return;
@@ -449,7 +492,7 @@ export class Game extends Scene
 
             this.boardView.syncFromBoard(this.session.board);
             this.handView?.syncHand(this.session.getHand());
-            this.enemyView.setHealth(this.session.getEnemy());
+            this.enemySquad.syncFromSession(this.session);
             this.armorView?.setArmor(this.session.getPlayer().shield);
             this.syncPileViews();
 
@@ -482,13 +525,13 @@ export class Game extends Scene
             this.session.getBombDisabledSlots(),
         );
         this.boardView.setDampenedSlots(this.session.getDampenedSlots());
-        this.enemyView.setHealth(this.session.getEnemy());
+        this.enemySquad.syncFromSession(this.session);
         this.armorView?.setArmor(this.session.getPlayer().shield);
         this.syncPileViews();
 
         if (this.session.isEnemyDefeated())
         {
-            this.enemyView.clearIntent();
+            this.enemySquad.clearIntent();
             this.emitAttackReadiness();
             this.winBattle();
             return;
@@ -541,7 +584,7 @@ export class Game extends Scene
 
     private resolveEnemyPhase (): void
     {
-        if (!this.session || !this.boardView || !this.enemyView)
+        if (!this.session || !this.boardView || !this.enemySquad)
         {
             return;
         }
@@ -572,12 +615,12 @@ export class Game extends Scene
         this.boardView.setDampenedSlots(this.session.getDampenedSlots());
         this.graveyardView?.pulse();
         this.syncPileViews();
-        this.enemyView.setHealth(this.session.getEnemy());
+        this.enemySquad.syncFromSession(this.session);
         this.armorView?.setArmor(this.session.getPlayer().shield);
 
         if (this.session.isEnemyDefeated())
         {
-            this.enemyView.clearIntent();
+            this.enemySquad.clearIntent();
             this.session.releaseAttackLock();
             this.turnResolving = false;
             this.emitAttackReadiness();
@@ -585,27 +628,10 @@ export class Game extends Scene
             return;
         }
 
-        if (!this.session.hasQueuedEnemyTurn())
-        {
-            this.session.queueNextEnemyTurn();
-        }
-
-        const enemyTurn = this.session.beginEnemyTurn();
-
-        if (!enemyTurn)
-        {
-            this.session.releaseAttackLock();
-            this.turnResolving = false;
-            this.emitAttackReadiness();
-            return;
-        }
-
-        this.enemyView.showIntent(enemyTurn, 'executing');
-
         const finishEnemyPhase = (): void =>
         {
             this.playerView?.setHealth(this.session!.getPlayer());
-            this.enemyView?.setHealth(this.session!.getEnemy());
+            this.enemySquad?.syncFromSession(this.session!);
 
             if (this.session!.isPlayerDefeated())
             {
@@ -618,7 +644,7 @@ export class Game extends Scene
 
             if (this.session!.isEnemyDefeated())
             {
-                this.enemyView?.clearIntent();
+                this.enemySquad?.clearIntent();
                 this.session!.releaseAttackLock();
                 this.turnResolving = false;
                 this.emitAttackReadiness();
@@ -626,16 +652,7 @@ export class Game extends Scene
                 return;
             }
 
-            const nextIntent = this.session!.getQueuedEnemyTurn();
-
-            if (nextIntent)
-            {
-                this.enemyView?.showIntent(nextIntent);
-            }
-            else
-            {
-                this.enemyView?.clearIntent();
-            }
+            this.enemySquad?.showAllIntents(this.session!);
 
             this.handView?.syncHand(this.session!.getHand());
             this.armorView?.setArmor(this.session!.getPlayer().shield);
@@ -652,14 +669,46 @@ export class Game extends Scene
             this.emitAttackReadiness();
         };
 
-        if (!this.presenter)
+        const playEnemyResponse = (): void =>
         {
-            this.session.completeEnemyTurn(enemyTurn);
-            finishEnemyPhase();
-            return;
-        }
+            const enemyTurn = this.session!.beginEnemyTurn();
 
-        this.presenter.playEnemyTurn(enemyTurn, finishEnemyPhase);
+            if (!enemyTurn)
+            {
+                finishEnemyPhase();
+                return;
+            }
+
+            const instanceId = enemyTurn.instanceId ?? this.session!.getLivingCombatants()[0]?.instanceId;
+
+            if (instanceId)
+            {
+                this.enemySquad?.showIntent(instanceId, enemyTurn, 'executing');
+            }
+
+            if (!this.presenter)
+            {
+                this.session!.completeEnemyTurn(enemyTurn);
+                playEnemyResponse();
+                return;
+            }
+
+            this.presenter.playEnemyTurn(enemyTurn, () =>
+            {
+                this.enemySquad?.syncFromSession(this.session!);
+
+                if (this.session!.isPlayerDefeated() || this.session!.isEnemyDefeated())
+                {
+                    finishEnemyPhase();
+                    return;
+                }
+
+                playEnemyResponse();
+            });
+        };
+
+        this.session.prepareEnemyPhase();
+        playEnemyResponse();
     }
 
     private onRerollsChanged = (): void =>
@@ -735,7 +784,7 @@ export class Game extends Scene
             return;
         }
 
-        this.enemyView?.setHealth(this.session.getEnemy());
+        this.enemySquad?.syncFromSession(this.session);
         EventBus.emit(GAME_EVENTS.CARD_ATTACK_READY, this.session.getAttackReadiness());
         this.emitTurnState();
     }

@@ -276,6 +276,16 @@
       "behaviorId": "echo",
       "visualId": "echo",
       "arrowPool": "orthogonal"
+    },
+    {
+      "id": "salvage",
+      "label": "Salvage",
+      "power": 4,
+      "behaviorId": "attack",
+      "visualId": "salvage",
+      "arrowPool": "orthogonal",
+      "exhaustOnPlay": true,
+      "healOnKill": 5
     }
   ]
 }

@@ -13,4 +13,5 @@ export const CARD_GAME_EVENTS = {
     ENEMY_TURN_COMPLETED: 'card-game-enemy-turn-completed',
     ENEMY_TURN_CANCELLED: 'card-game-enemy-turn-cancelled',
     PLAYER_DEFEATED: 'card-game-player-defeated',
+    PLAYER_HEALED: 'card-game-player-healed',
 } as const;

@@ -25,7 +25,7 @@ import type { CardVisualTarget } from './visualEffects/types';
 import type { ArmorView } from '../../board/ArmorView';
 import type { CardBoardView } from '../../board/CardBoardView';
 import type { CardHandView } from '../../board/CardHandView';
-import type { EnemyTargetView } from '../../board/EnemyTargetView';
+import type { EnemySquadView } from '../../board/EnemySquadView';
 import type { PlayerHealthView } from '../../board/PlayerHealthView';
 
 export class CardGamePresenter
@@ -40,7 +40,7 @@ export class CardGamePresenter
         private readonly session: CardGameSession,
         private readonly boardView: CardBoardView,
         private readonly handView: CardHandView,
-        private readonly enemyView: EnemyTargetView,
+        private readonly enemySquad: EnemySquadView,
         private readonly playerView: PlayerHealthView,
         private readonly armorView: ArmorView,
     ) {}
@@ -187,7 +187,10 @@ export class CardGamePresenter
 
                 if (sequence.abilityPoisonStacks > 0)
                 {
-                    this.enemyView.showPoisonApplied(sequence.abilityPoisonStacks);
+                    const targetId = this.session.getAttackTargetId() ?? this.session.getLivingCombatants()[0]?.instanceId;
+                    const enemyView = targetId ? this.enemySquad.getView(targetId) : this.enemySquad.firstView;
+
+                    enemyView?.showPoisonApplied(sequence.abilityPoisonStacks);
                 }
 
                 const playerAbilityDamage = sequence.abilityPlayerDamage + sequence.hazardDamage;
@@ -268,6 +271,7 @@ export class CardGamePresenter
             const resolvedChain = resolveChainSteps(chain);
             const resolvedStep = resolvedChain[stepIndex]!;
             const boosted = isBoostedChainStep(resolvedChain, stepIndex);
+            const definition = getCardDefinitionOrThrow(step.definitionId);
 
             if (isEchoDefinition(definition))
             {
@@ -286,24 +290,6 @@ export class CardGamePresenter
 
             this.activateStep(step, boosted);
 
-            if (resolvedStep.damage > 0)
-            {
-                const result = this.session.dealAttackDamage(resolvedStep.damage);
-                this.applyEnemyHitResult(result);
-
-                attackSteps.push({
-                    slot: resolvedStep.slot,
-                    card: resolvedStep.card,
-                    definitionId: resolvedStep.definitionId,
-                    damage: resolvedStep.damage,
-                    behaviorId: resolvedStep.behaviorId,
-                    visualId: resolvedStep.visualId,
-                });
-                this.session.emitAttackStep(attackSteps.length - 1, buildCurrentSequence());
-            }
-
-            const definition = getCardDefinitionOrThrow(step.definitionId);
-
             const proceedAfterStep = (): void =>
             {
                 finishActiveStep();
@@ -316,6 +302,19 @@ export class CardGamePresenter
 
                 scheduleNext(getNextChainSlotFromStep(board, step));
             };
+
+            if (resolvedStep.damage > 0)
+            {
+                this.dealStepDamage(
+                    resolvedStep.damage,
+                    definition.id,
+                    resolvedStep,
+                    attackSteps,
+                    buildCurrentSequence,
+                    proceedAfterStep,
+                );
+                return;
+            }
 
             if (isJokerDefinition(definition))
             {
@@ -349,6 +348,8 @@ export class CardGamePresenter
     {
         const turnMs = GAME_RULES.enemyTurnMs;
         const steps = [ ...action.steps ];
+        const instanceId = action.instanceId ?? this.session.getLivingCombatants()[0]?.instanceId;
+        const enemyView = instanceId ? this.enemySquad.getView(instanceId) : this.enemySquad.firstView;
 
         const finishTurn = (): void =>
         {
@@ -366,19 +367,19 @@ export class CardGamePresenter
                 return;
             }
 
-            this.playEnemyTurnStep(step, turnMs, playStep);
+            this.playEnemyTurnStep(step, turnMs, enemyView, instanceId, playStep);
         };
 
-        // Poison ticks first, before the enemy acts — it may finish the enemy off.
-        if (this.session.getEnemyPoison() > 0)
+        if (instanceId && this.session.getEnemyPoison(instanceId) > 0)
         {
             this.scene.time.delayedCall(turnMs / 2, () =>
             {
-                const result = this.session.tickPoison();
+                const result = this.session.tickPoison(instanceId);
 
-                this.enemyView.setHealth(result.enemy);
-                this.enemyView.showPoisonTick(result.healthDamage);
-                this.enemyView.playHitFlash();
+                enemyView?.setHealth(result.enemy);
+                enemyView?.showPoisonTick(result.healthDamage);
+                enemyView?.playHitFlash();
+                this.enemySquad.syncFromSession(this.session);
 
                 if (this.session.isEnemyDefeated())
                 {
@@ -398,12 +399,14 @@ export class CardGamePresenter
     private playEnemyTurnStep (
         step: EnemyTurnStep,
         turnMs: number,
+        enemyView: import('../../board/EnemyTargetView').EnemyTargetView | undefined,
+        instanceId: string | undefined,
         onComplete: () => void,
     ): void
     {
         if (step.kind === 'attack')
         {
-            this.enemyView.playEnemyAttackPulse();
+            enemyView?.playEnemyAttackPulse();
 
             this.scene.time.delayedCall(turnMs, () =>
             {
@@ -430,7 +433,7 @@ export class CardGamePresenter
 
         if (step.kind === 'place-hazard')
         {
-            this.enemyView.playEnemyAttackPulse();
+            enemyView?.playEnemyAttackPulse();
 
             this.scene.time.delayedCall(turnMs, () =>
             {
@@ -449,7 +452,7 @@ export class CardGamePresenter
 
         if (step.kind === 'dampen-field')
         {
-            this.enemyView.playEnemyAttackPulse();
+            enemyView?.playEnemyAttackPulse();
 
             this.scene.time.delayedCall(turnMs, () =>
             {
@@ -468,7 +471,7 @@ export class CardGamePresenter
 
         if (step.kind === 'battle-mod')
         {
-            this.enemyView.playEnemyAttackPulse();
+            enemyView?.playEnemyAttackPulse();
 
             this.scene.time.delayedCall(turnMs, () =>
             {
@@ -476,7 +479,7 @@ export class CardGamePresenter
 
                 if (step.modifierStat !== undefined && step.modifierDelta !== undefined)
                 {
-                    this.enemyView.showIntentLabel(
+                    enemyView?.showIntentLabel(
                         describeBattleModifier(step.modifierStat, step.modifierDelta),
                     );
                 }
@@ -489,16 +492,67 @@ export class CardGamePresenter
 
         this.scene.time.delayedCall(turnMs / 2, () =>
         {
-            const enemy = this.session.resolveEnemyShield(step.amount ?? 0);
-            this.enemyView.setHealth(enemy);
-            this.enemyView.showShieldGain(step.amount ?? 0);
+            const enemy = this.session.resolveEnemyShield(step.amount ?? 0, instanceId);
+
+            enemyView?.setHealth(enemy);
+            enemyView?.showShieldGain(step.amount ?? 0);
         });
 
         this.scene.time.delayedCall(turnMs, () =>
         {
-            this.enemyView.setHealth(this.session.getEnemy());
+            if (instanceId)
+            {
+                enemyView?.setHealth(this.session.getEnemy(instanceId));
+            }
+
             onComplete();
         });
+    }
+
+    private dealStepDamage (
+        damage: number,
+        sourceDefinitionId: string,
+        resolvedStep: ActivationStep,
+        attackSteps: AttackStep[],
+        buildCurrentSequence: () => AttackSequence,
+        onComplete: () => void,
+    ): void
+    {
+        const livingIds = this.session.getLivingCombatants().map((combatant) => combatant.instanceId);
+
+        const deal = (): void =>
+        {
+            const targetId = this.session.ensureAttackTarget();
+
+            if (!targetId)
+            {
+                this.enemySquad.requestTarget(livingIds, (pickedId) =>
+                {
+                    this.session.setAttackTarget(pickedId);
+                    this.enemySquad.setSelected(pickedId);
+                    deal();
+                });
+
+                return;
+            }
+
+            const result = this.session.dealAttackDamage(damage, targetId, sourceDefinitionId);
+
+            this.applyEnemyHitResult(result);
+
+            attackSteps.push({
+                slot: resolvedStep.slot,
+                card: resolvedStep.card,
+                definitionId: resolvedStep.definitionId,
+                damage: resolvedStep.damage,
+                behaviorId: resolvedStep.behaviorId,
+                visualId: resolvedStep.visualId,
+            });
+            this.session.emitAttackStep(attackSteps.length - 1, buildCurrentSequence());
+            onComplete();
+        };
+
+        deal();
     }
 
     private grantStepArmor (step: ActivationStep, chain: ActivationStep[]): void
@@ -552,17 +606,36 @@ export class CardGamePresenter
 
     private applyEnemyHitResult (result: import('../domain/types').DamageResult): void
     {
-        this.enemyView.setHealth(result.enemy);
+        const targetId = result.targetInstanceId ?? this.session.getAttackTargetId();
+        const enemyView = targetId ? this.enemySquad.getView(targetId) : this.enemySquad.firstView;
+
+        enemyView?.setHealth(result.enemy);
+        this.enemySquad.syncFromSession(this.session);
 
         if (result.shieldAbsorbed > 0)
         {
-            this.enemyView.showShieldAbsorb(result.shieldAbsorbed);
+            enemyView?.showShieldAbsorb(result.shieldAbsorbed);
         }
 
         if (result.healthDamage > 0)
         {
-            this.enemyView.playHitFlash();
-            this.enemyView.showDamageNumber(result.healthDamage);
+            enemyView?.playHitFlash();
+            enemyView?.showDamageNumber(result.healthDamage);
+        }
+
+        if ((result.healOnKill ?? 0) > 0)
+        {
+            const player = this.session.getPlayer();
+
+            this.playerView.setHealth(player);
+            playFloatingText(
+                this.scene,
+                this.playerView.container,
+                this.playerView.container.width / 2,
+                -12,
+                `+${result.healOnKill}`,
+                '#58d68d',
+            );
         }
 
         if ((result.thornsDamage ?? 0) > 0)
@@ -623,7 +696,11 @@ export class CardGamePresenter
 
         if (prevResolved.damage > 0)
         {
-            const result = this.session.dealAttackDamage(prevResolved.damage);
+            const result = this.session.dealAttackDamage(
+                prevResolved.damage,
+                undefined,
+                prevResolved.definitionId,
+            );
             this.applyEnemyHitResult(result);
 
             attackSteps.push({

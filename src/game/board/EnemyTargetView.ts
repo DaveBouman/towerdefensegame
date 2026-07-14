@@ -546,6 +546,43 @@ export class EnemyTargetView
         });
     }
 
+    reposition (x: number, y: number): void
+    {
+        this.container.setPosition(x, y);
+    }
+
+    setSelected (selected: boolean): void
+    {
+        this.threatRing.setStrokeStyle(3, selected ? 0xfcee0a : ENEMY_COLOR, selected ? 1 : 0.5);
+        this.threatRing.setVisible(selected || this.displayedShield > 0);
+    }
+
+    setDefeated (defeated: boolean): void
+    {
+        this.container.setAlpha(defeated ? 0.28 : 1);
+        this.clearIntent();
+
+        if (defeated)
+        {
+            this.setSelected(false);
+            this.setTargetClickHandler(null);
+        }
+    }
+
+    setTargetClickHandler (handler: (() => void) | null): void
+    {
+        if (handler)
+        {
+            this.outline.setInteractive({ useHandCursor: true });
+            this.outline.removeAllListeners('pointerdown');
+            this.outline.on('pointerdown', handler);
+            return;
+        }
+
+        this.outline.disableInteractive();
+        this.outline.removeAllListeners('pointerdown');
+    }
+
     destroy (): void
     {
         this.clearIntent();

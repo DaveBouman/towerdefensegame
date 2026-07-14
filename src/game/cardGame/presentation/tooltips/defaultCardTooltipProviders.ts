@@ -238,6 +238,14 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             'Neutral on the chain — no direct attack or defend effect.',
         ],
     })),
+    provider('salvage', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Deals ${ctx.definition.power} damage when activated in the chain.`,
+            `Heal ${ctx.definition.healOnKill ?? 0} HP if this card's damage kills an enemy.`,
+            'Destroyed after use — removed from your run deck when the battle ends.',
+        ],
+    })),
     provider('shiv', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: [

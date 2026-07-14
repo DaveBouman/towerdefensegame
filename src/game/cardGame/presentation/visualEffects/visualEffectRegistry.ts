@@ -38,6 +38,7 @@ const VISUAL_ALIASES: Record<string, string> = {
     hardwire: 'defend',
     patch: 'boost',
     overclock: 'fire',
+    salvage: 'attack',
 };
 
 for (const [ alias, baseId ] of Object.entries(VISUAL_ALIASES))

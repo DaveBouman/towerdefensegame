@@ -28,6 +28,7 @@ describe('visualEffectRegistry', () =>
             'patch',
             'overclock',
             'echo',
+            'salvage',
         ];
 
         for (const id of visualIds)

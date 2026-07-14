@@ -13,7 +13,14 @@ export const BODY_MOD_IDS = {
     chromeHeart: 'chrome-heart',
     overclockCell: 'overclock-cell',
     credSiphon: 'cred-siphon',
+    markSeven: 'mark-seven',
 } as const;
+
+/** Attacks that trigger Mark VII's double-damage proc (7th, 14th, …). */
+export const SEVENTH_STRIKE_INTERVAL = 7;
+
+export const isSeventhStrikeAttack = (attackNumber: number): boolean =>
+    attackNumber > 0 && attackNumber % SEVENTH_STRIKE_INTERVAL === 0;
 
 export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
     {
@@ -33,6 +40,12 @@ export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
         label: 'Cred Siphon',
         blurb: 'Firmware skims loose eddies from every downed target.',
         effect: '+8 creds after each victory.',
+    },
+    {
+        id: BODY_MOD_IDS.markSeven,
+        label: 'Mark VII',
+        blurb: 'Neural strike firmware overclocks every seventh combat swing.',
+        effect: 'Every 7th attack deals double damage.',
     },
 ];
 

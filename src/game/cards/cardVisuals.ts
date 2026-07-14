@@ -133,6 +133,12 @@ export const CARD_VISUALS: Record<string, CardVisualStyle> = {
         labelColor: '#fff9b0',
         powerColor: '#fcee0a',
     },
+    salvage: {
+        fill: 0x102818,
+        border: 0x58d68d,
+        labelColor: '#b8ffe0',
+        powerColor: '#7af0ff',
+    },
     echo: {
         fill: 0x081820,
         border: 0x5ce1e6,

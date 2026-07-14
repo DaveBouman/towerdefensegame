@@ -10,6 +10,7 @@ const REJECT_MESSAGES: Record<NonNullable<AttackReadiness['reason']>, string> = 
     'player-defeated': 'You were defeated.',
     'no-cards-on-board': 'Place cards on the board first.',
     'no-energy': 'Out of energy — wait for the next round.',
+    'no-target': 'Select an enemy target first.',
 };
 
 const DEFAULT_REROLL_STATE: RerollState = {
