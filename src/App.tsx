@@ -5,8 +5,12 @@ import { RunMapOverlay } from './ui/components/RunMapOverlay';
 import { RunEndOverlay } from './ui/components/RunEndOverlay';
 import { CardRewardOverlay } from './ui/components/CardRewardOverlay';
 import { NodeVisitOverlay } from './ui/components/NodeVisitOverlay';
+import { RunEventOverlay } from './ui/components/RunEventOverlay';
 import { PileViewOverlay } from './ui/components/PileViewOverlay';
 import { isBattleKind } from './game/run/nodeKinds';
+import { rollRunEventId } from './game/run/runEvents';
+import type { AppliedEventResult } from './game/run/runEvents';
+import { getRunMaxHealth, getVictoryGoldBonus } from './game/run/runResources';
 import { EventBus } from './game/EventBus';
 import { GAME_EVENTS } from './game/events/gameEvents';
 import { GAME_RULES } from './game/cardGame/config/cardRegistry';
@@ -37,6 +41,11 @@ interface PendingReward {
 
 const MAX_HEALTH = GAME_RULES.player.maxHealth;
 
+interface VisitState {
+    node: RunMapNode;
+    eventId: string | null;
+}
+
 /** Reseeds the map stream for a run seed and generates a fresh map. */
 const buildMapForSeed = (seed: string): RunMap =>
 {
@@ -65,21 +74,31 @@ function App()
     const [ path, setPath ] = useState<string[]>([]);
     const [ playerHealth, setPlayerHealth ] = useState(MAX_HEALTH);
     const [ deck, setDeck ] = useState<string[]>(() => getDefaultDeckDefinitionIds());
+    const [ gold, setGold ] = useState(0);
+    const [ trinkets, setTrinkets ] = useState<string[]>([]);
     const [ phase, setPhase ] = useState<RunPhase>('map');
     const [ pendingReward, setPendingReward ] = useState<PendingReward | null>(null);
-    const [ visitNode, setVisitNode ] = useState<RunMapNode | null>(null);
+    const [ visit, setVisit ] = useState<VisitState | null>(null);
+
+    const runMaxHealth = useMemo(() => getRunMaxHealth(trinkets), [ trinkets ]);
 
     const selectedNodeRef = useRef<RunMapNode | null>(null);
     const sceneReadyRef = useRef(false);
     const seedRef = useRef(seed);
+    const trinketsRef = useRef(trinkets);
     const pendingStartRef = useRef<
-        { enemyId: string; startHealth: number; deck: string[]; seed: number } | null
+        { enemyId: string; startHealth: number; deck: string[]; seed: number; trinkets: string[] } | null
     >(null);
 
     useEffect(() =>
     {
         seedRef.current = seed;
     }, [ seed ]);
+
+    useEffect(() =>
+    {
+        trinketsRef.current = trinkets;
+    }, [ trinkets ]);
 
     const currentNodeId = path.length > 0 ? path[path.length - 1]! : null;
     const availableIds = useMemo(
@@ -103,9 +122,13 @@ function App()
         const onBattleWon = ({ playerHealth: remaining }: { playerHealth: number }): void =>
         {
             const node = selectedNodeRef.current;
-            const healed = Math.min(MAX_HEALTH, remaining + RUN_CONFIG.healOnVictory);
+            const healed = Math.min(
+                getRunMaxHealth(trinketsRef.current),
+                remaining + RUN_CONFIG.healOnVictory,
+            );
 
             setPlayerHealth(healed);
+            setGold((prev) => prev + getVictoryGoldBonus(trinketsRef.current));
 
             if (node)
             {
@@ -154,7 +177,16 @@ function App()
     {
         if (!isBattleKind(node.kind) || !node.enemyId)
         {
-            setVisitNode(node);
+            if (node.kind === 'event')
+            {
+                seedScope(seed, `event:${node.id}`);
+                setVisit({ node, eventId: rollRunEventId() });
+            }
+            else
+            {
+                setVisit({ node, eventId: null });
+            }
+
             setPhase('visit');
             return;
         }
@@ -165,6 +197,7 @@ function App()
             startHealth: playerHealth,
             deck: [ ...deck ],
             seed: deriveSeed(seed, `battle:${node.id}`),
+            trinkets: [ ...trinkets ],
         };
         setPhase('battle');
 
@@ -176,21 +209,30 @@ function App()
         {
             pendingStartRef.current = payload;
         }
-    }, [ playerHealth, deck, seed ]);
+    }, [ playerHealth, deck, seed, trinkets ]);
 
     const finishVisit = useCallback((): void =>
     {
-        setVisitNode((node) =>
+        setVisit((current) =>
         {
-            if (node)
+            if (current?.node)
             {
-                setPath((prev) => (prev.includes(node.id) ? prev : [ ...prev, node.id ]));
+                setPath((prev) => (prev.includes(current.node.id) ? prev : [ ...prev, current.node.id ]));
             }
 
             return null;
         });
         setPhase('map');
     }, []);
+
+    const finishEvent = useCallback((result: AppliedEventResult): void =>
+    {
+        setPlayerHealth(result.playerHealth);
+        setGold(result.gold);
+        setDeck(result.deck);
+        setTrinkets(result.trinkets);
+        finishVisit();
+    }, [ finishVisit ]);
 
     const finishReward = useCallback((chosen: string[]): void =>
     {
@@ -230,8 +272,10 @@ function App()
         setPath([]);
         setPlayerHealth(MAX_HEALTH);
         setDeck(getDefaultDeckDefinitionIds());
+        setGold(0);
+        setTrinkets([]);
         setPendingReward(null);
-        setVisitNode(null);
+        setVisit(null);
         setPhase('map');
     }, []);
 
@@ -261,7 +305,9 @@ function App()
                     path={path}
                     availableIds={availableIds}
                     playerHealth={playerHealth}
-                    maxHealth={MAX_HEALTH}
+                    maxHealth={runMaxHealth}
+                    gold={gold}
+                    trinketCount={trinkets.length}
                     seed={seed}
                     seedEditable={path.length === 0}
                     onSeedChange={applySeed}
@@ -279,8 +325,21 @@ function App()
                     onReroll={rerollReward}
                 />
             )}
-            {phase === 'visit' && visitNode && (
-                <NodeVisitOverlay node={visitNode} onContinue={finishVisit} />
+            {phase === 'visit' && visit && visit.eventId && (
+                <RunEventOverlay
+                    eventId={visit.eventId}
+                    nodeId={visit.node.id}
+                    seed={seed}
+                    playerHealth={playerHealth}
+                    maxHealth={runMaxHealth}
+                    gold={gold}
+                    deck={deck}
+                    trinkets={trinkets}
+                    onFinish={finishEvent}
+                />
+            )}
+            {phase === 'visit' && visit && !visit.eventId && (
+                <NodeVisitOverlay node={visit.node} gold={gold} onContinue={finishVisit} />
             )}
             {phase === 'victory' && <RunEndOverlay variant="victory" onRestart={startNewRun} />}
             {phase === 'defeat' && <RunEndOverlay variant="defeat" onRestart={startNewRun} />}

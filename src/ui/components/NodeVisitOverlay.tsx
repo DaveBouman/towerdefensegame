@@ -4,15 +4,14 @@ import { NodeKindIcon } from './NodeKindIcon';
 
 interface NodeVisitOverlayProps {
     node: RunMapNode;
+    gold: number;
     onContinue: () => void;
 }
 
 /**
- * Placeholder screen for non-battle nodes (shop / random event). Behavior is
- * not implemented yet — this communicates the node kind and lets the player
- * continue along the map.
+ * Placeholder screen for shop nodes. Random events use `RunEventOverlay`.
  */
-export const NodeVisitOverlay = ({ node, onContinue }: NodeVisitOverlayProps) =>
+export const NodeVisitOverlay = ({ node, gold, onContinue }: NodeVisitOverlayProps) =>
 {
     const info = NODE_KIND_INFO[node.kind];
 
@@ -24,6 +23,9 @@ export const NodeVisitOverlay = ({ node, onContinue }: NodeVisitOverlayProps) =>
                 </span>
                 <h1 className="node-visit__title">{info.label}</h1>
                 <p className="node-visit__summary">{info.tooltip}</p>
+                {node.kind === 'shop' && (
+                    <p className="node-visit__gold">You carry {gold} gold.</p>
+                )}
                 <button type="button" className="node-visit__button" onClick={onContinue}>
                     Continue
                 </button>

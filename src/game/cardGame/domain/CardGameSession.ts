@@ -68,6 +68,7 @@ export class CardGameSession
         enemyId: string = GAME_RULES.defaultEnemyId,
         startHealth?: number,
         deckDefinitionIds?: readonly string[],
+        trinkets: readonly string[] = [],
     )
     {
         this.enemyDefinition = getCardGameEnemyDefinitionOrThrow(enemyId);
@@ -78,7 +79,8 @@ export class CardGameSession
             shield: 0,
             poison: 0,
         };
-        const maxHealth = GAME_RULES.player.maxHealth;
+        const maxHealth = GAME_RULES.player.maxHealth
+            + (trinkets.includes('vitality-charm') ? 10 : 0);
         this.player = {
             health: startHealth !== undefined
                 ? Math.min(maxHealth, Math.max(1, Math.round(startHealth)))
@@ -93,7 +95,8 @@ export class CardGameSession
                 : buildPlayerDeck()),
         );
         this.rerollsRemaining = GAME_RULES.fightRerollsPerFight;
-        this.maxEnergy = Math.max(1, Math.round(GAME_RULES.energyPerTurn ?? 1));
+        const bonusEnergy = trinkets.includes('energy-cell') ? 1 : 0;
+        this.maxEnergy = Math.max(1, Math.round(GAME_RULES.energyPerTurn) + bonusEnergy);
         this.energy = this.maxEnergy;
         this.renewHand();
         this.queueNextEnemyTurn();

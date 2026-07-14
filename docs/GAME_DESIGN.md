@@ -26,9 +26,9 @@ in difficulty toward a boss (`warden`) in the final column.
 - **Node kinds** (`src/game/run/nodeKinds.ts`, `RunMapNode.kind`): `enemy` and `boss`
   are battles; `shop` and `event` are non-battle stops. Each kind has an icon
   (`NodeKindIcon`, from game-icons.net) and a hover tooltip on the map. First column
-  is always `enemy`, last column is the `boss`; middle columns are weighted-random
-  (`rollNodeKind`). Shop/event are **placeholders** for now — picking one shows
-  `NodeVisitOverlay` and advances the path with no battle (`App` phase `visit`).
+  is always `event` (for testing); last column is the `boss`; middle columns are weighted-random
+  (`rollNodeKind`). **Event nodes** open `RunEventOverlay` (`runEvents.ts`) — wheel,
+  icon matcher, healing, gambles, trinkets. Shop is still a placeholder (`NodeVisitOverlay`).
 - **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
 - **Deck persists and grows**: the run owns the deck as a list of card definition ids (`getDefaultDeckDefinitionIds`). Each battle builds instances from those ids (`buildDeckFromDefinitionIds`).
 - **Victory rewards**: defeating a (non-boss) enemy grants that node's reward. Today every node grants a **card reward** (`CardRewardOverlay` → pick from choices → card ids appended to the run deck).
@@ -36,7 +36,7 @@ in difficulty toward a boss (`warden`) in the final column.
 - The map regenerates each run.
 
 Flow: `map (pick node)` → `battle` → `win → reward → map` / `lose → defeat` / `boss win → victory`.
-Non-battle nodes: `map (pick shop/event)` → `visit` → `map`.
+Non-battle nodes: `map (pick shop)` → `visit` → `map`; `map (pick event)` → `visit (RunEventOverlay)` → `map`.
 
 ### Seeds & determinism
 
@@ -240,6 +240,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-14 | **Random run events.** Map `event` nodes now open `RunEventOverlay` with seeded encounters (`runEvents.ts`, `seedScope(seed, event:<nodeId>)`). Five events: **Wheel of Fate** (spin for gold/card/curse/trinket/heal/trap), **Sign Matcher** (pick the duplicated icon — card or damage), **Healing Spring**, **Cursed Idol** (trinket + Burden or gold), **Gambler's Offer** (HP for card or gold). First map column is now **all events** for easy testing. Run resources: **gold** + **trinkets** (`trinkets.ts`, `runResources.ts`) shown on the map; trinkets pass into battles (`START_BATTLE.trinkets`) — Vitality Charm (+10 max HP), Energy Cell (+1 energy/turn), Lucky Pouch (+8 gold on victory). Shop nodes remain a placeholder (`NodeVisitOverlay` shows gold). |
 | 2026-07-14 | **Curse / bad cards.** New card flags `unplayable` and `handEndPenalty` on `CardDefinition`. **Burden** — cannot be played, deals 5 damage if still in hand when the turn ends. **Fuse** — weak attack (power 2) that must be placed before end of turn or deals 8 damage. Penalties resolve in `CardGameSession.resolveHandEndPenalties` at end of player turn (`Game.resolveEnemyPhase`). Unplayable cards blocked in `placeCardFromHand` and `CardHandView` drag. New `curse` behavior (inert on board). **Saboteur** gains `curseHand` passive — slips 1 Burden into your hand after each enemy turn (can exceed hand size). |
 | 2026-07-07 | **Escalation risk/reward: enemy damage ramps with attacks per round.** Each extra attack the player makes in a round increases the enemy's next attack damage by `gameRules.enemyDamageRampPerAttack` (default 4; first attack is baseline). Ramp derives from spent energy (`CardGameSession.getAttacksThisRound` = `maxEnergy − energy`, `getEnemyDamageRamp`), is baked into attack steps at resolve time (`beginEnemyTurn` → `rampEnemyAction`), and is telegraphed live: after each attack `Game.onAttackResolved` re-shows the scaled intent (`getScaledEnemyIntent`). Attack intent tooltip notes the ramp. |
 | 2026-07-07 | **Enemy balance pass for the escalating turn** (`enemies.json`). Since a turn now lands up to `energyPerTurn` re-firing attacks, enemy `maxHealth` scaled ~2.3× (Raider 80→190, Thornward 72→170, Saboteur 64→150, Warden 95→220, Smokebinder 78→185) with moderate `attackDamage`/`shieldGain`/`attackChance` bumps so escalating shields don't trivialize them. Thornward's reflect 3→4 and Warden's high shield/Jammer act as natural counters to multi-attack re-firing. Tunable per taste. |

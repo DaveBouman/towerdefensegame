@@ -33,7 +33,7 @@ export const NODE_KIND_INFO: Record<RunMapNodeKind, NodeKindInfo> = {
     },
     event: {
         label: 'Random Event',
-        tooltip: 'An uncertain encounter \u2014 fortune or peril awaits. (Coming soon)',
+        tooltip: 'An uncertain encounter — wheel, riddles, healing, curses, or trinkets.',
         isBattle: false,
     },
 };

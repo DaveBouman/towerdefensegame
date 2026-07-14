@@ -69,7 +69,7 @@ export const generateRunMap = (): RunMap =>
             const kind: RunMapNodeKind = row === rows - 1
                 ? 'boss'
                 : row === 0
-                    ? 'enemy'
+                    ? 'event'
                     : rollNodeKind();
             const battle = isBattleKind(kind);
 

@@ -25,7 +25,7 @@ export interface GameEventMap {
     'reroll-confirm': void;
     'reroll-cancel': void;
     'reroll-state': RerollState;
-    'start-battle': { enemyId: string; startHealth: number; deck: string[]; seed: number };
+    'start-battle': { enemyId: string; startHealth: number; deck: string[]; seed: number; trinkets: string[] };
     'battle-won': { playerHealth: number };
     'battle-lost': void;
     'pile-view-open': PileViewPayload;

@@ -68,8 +68,8 @@ export class Game extends Scene
     }
 
     private onStartBattle = (
-        { enemyId, startHealth, deck, seed }:
-        { enemyId: string; startHealth: number; deck: string[]; seed: number },
+        { enemyId, startHealth, deck, seed, trinkets }:
+        { enemyId: string; startHealth: number; deck: string[]; seed: number; trinkets: string[] },
     ): void =>
     {
         if (this.battleActive)
@@ -77,10 +77,16 @@ export class Game extends Scene
             this.endBattle();
         }
 
-        this.startBattle(enemyId, startHealth, deck, seed);
+        this.startBattle(enemyId, startHealth, deck, seed, trinkets);
     };
 
-    private startBattle (enemyId: string, startHealth: number, deck: string[], seed: number): void
+    private startBattle (
+        enemyId: string,
+        startHealth: number,
+        deck: string[],
+        seed: number,
+        trinkets: string[],
+    ): void
     {
         // Install this battle's deterministic RNG stream before any card is dealt.
         reseed(seed);
@@ -91,7 +97,7 @@ export class Game extends Scene
         this.rerollModeActive = false;
         this.turnResolving = false;
         this.battleResolved = false;
-        this.session = new CardGameSession(enemyId, startHealth, deck);
+        this.session = new CardGameSession(enemyId, startHealth, deck, trinkets);
 
         this.handView = new CardHandView(this, layout, [ ...this.session.getHand() ], {
             onDragMove: (worldX, worldY) =>
