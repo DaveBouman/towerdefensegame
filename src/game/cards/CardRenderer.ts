@@ -1,7 +1,9 @@
 import { getCardDefinitionOrThrow, GAME_RULES, getChainStepDistance } from '../cardGame/config/cardRegistry';
 import type { CardInstance } from '../cardGame/domain/types';
 import { isEnemyOwnedCard, isFieldOwnedCard } from '../cardGame/domain/cardOwnership';
-import { uiTextStyle } from '../config/uiTypography';
+import { drawCornerBrackets } from '../config/cyberpunkUiGraphics';
+import { CYBER } from '../config/cyberpunkTheme';
+import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
 import { getCardBehaviorTextureKey } from '../../ui/icons/cardBehaviorIcons';
 import { ARROW_GLYPH, arrowLabelPosition, cornerEntryArrowPosition } from './cardArrows';
 import { cornerTargetDirections } from '../cardGame/domain/cardDirections';
@@ -45,17 +47,44 @@ export const buildCardGraphic = (
     const isFuse = visualKey === 'fuse';
     const handPenalty = definition.handEndPenalty ?? 0;
     const leapDistance = getChainStepDistance(definition);
+    const owned = isEnemyOwnedCard(card) || isFieldOwnedCard(card);
+    const borderWidth = owned ? 3 : 2;
 
+    const glow = scene.add.rectangle(width / 2, height / 2, width + 8, height + 8, style.border, 0.12);
     const body = scene.add.rectangle(width / 2, height / 2, width, height, style.fill);
 
-    body.setStrokeStyle(isEnemyOwnedCard(card) || isFieldOwnedCard(card) ? 3 : 2, style.border, 1);
+    body.setStrokeStyle(borderWidth, style.border, 1);
+
+    const inner = scene.add.rectangle(
+        width / 2,
+        height / 2,
+        width - 10,
+        height - 10,
+        CYBER.cardInner,
+        0.88,
+    );
+
+    const accent = scene.add.rectangle(width / 2, 5, width - 18, 2, style.border, 0.55);
+    const brackets = scene.add.graphics();
+
+    drawCornerBrackets(brackets, 3, 3, width - 6, height - 6, style.border, {
+        arm: Math.min(11, Math.round(width * 0.14)),
+        alpha: 0.95,
+    });
+
+    if (owned)
+    {
+        const ownershipTint = scene.add.rectangle(width / 2, height / 2, width - 6, height - 6, style.border, 0.08);
+
+        container.add(ownershipTint);
+    }
 
     const isCornerDefense = definition.id === 'corner-defense';
     const arrowPos = isCornerDefense
         ? cornerEntryArrowPosition(card.arrow, width, height)
         : arrowLabelPosition(card.arrow, width, height);
     const continueArrow = scene.add.text(arrowPos.x, arrowPos.y, ARROW_GLYPH[card.arrow], {
-        ...uiTextStyle(20, isLoopReset ? '#f1c40f' : '#ffffff', { bold: true }),
+        ...uiTextStyle(20, isLoopReset ? '#fcee0a' : '#ffffff', { bold: true }),
     }).setOrigin(0.5);
 
     const cardDecor: Phaser.GameObjects.GameObject[] = [ continueArrow ];
@@ -110,7 +139,7 @@ export const buildCardGraphic = (
         height * 0.62,
         isJoker ? '★' : isBoost ? `×${GAME_RULES.fieldBoost.nextStepMultiplier}` : isLoopReset ? '↺1' : isPoison ? `${definition.power}×→` : isFire ? `${definition.power}↔` : isCurse && handPenalty > 0 ? `-${handPenalty}` : isFuse && handPenalty > 0 ? `${definition.power}!` : String(definition.power),
         {
-            ...uiTextStyle(22, style.powerColor, { bold: true }),
+            ...uiDisplayTextStyle(22, style.powerColor, { bold: true }),
         },
     ).setOrigin(0.5);
 
@@ -126,12 +155,12 @@ export const buildCardGraphic = (
         continueArrow.setFontSize(24);
     }
 
-    container.add([ body, ...cardDecor, power ]);
+    container.add([ glow, body, inner, accent, brackets, ...cardDecor, power ]);
 
     if (leapDistance > 1)
     {
         const leapBadge = scene.add.text(width - 6, 6, String(leapDistance), {
-            ...uiTextStyle(12, '#ffffff', {
+            ...uiDisplayTextStyle(12, '#ffffff', {
                 bold: true,
                 backgroundColor: '#000000aa',
                 padding: { x: 4, y: 2 },

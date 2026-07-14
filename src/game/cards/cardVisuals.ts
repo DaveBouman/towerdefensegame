@@ -75,6 +75,6 @@ export const CARD_VISUALS: Record<string, CardVisualStyle> = {
     },
 };
 
-export const HAND_CARD_WIDTH = 80;
-export const HAND_CARD_HEIGHT = 108;
-export const HAND_CARD_GAP = 18;
+export const HAND_CARD_WIDTH = 86;
+export const HAND_CARD_HEIGHT = 118;
+export const HAND_CARD_GAP = 14;

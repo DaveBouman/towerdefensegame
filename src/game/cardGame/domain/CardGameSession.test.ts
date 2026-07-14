@@ -463,7 +463,7 @@ describe('CardGameSession enemy turn', () =>
         for (const slot of session.board.slotsInOrder())
         {
             const isHazard = slot.row === 0 && slot.col === 0;
-            const leaveEmpty = (slot.row === 0 && slot.col === 1) || (slot.row === 3 && slot.col === 3);
+            const leaveEmpty = (slot.row === 0 && slot.col === 1) || (slot.row === 4 && slot.col === 4);
 
             if (isHazard || leaveEmpty)
             {
@@ -475,7 +475,7 @@ describe('CardGameSession enemy turn', () =>
 
         const slot = session.placeEnemyHazard();
 
-        expect(slot).toEqual({ row: 3, col: 3 });
+        expect(slot).toEqual({ row: 4, col: 4 });
     });
 
     it('activates and expires the enemy Dead Zone field', () =>
@@ -489,8 +489,8 @@ describe('CardGameSession enemy turn', () =>
 
         expect(field).toEqual({ parity: 'even', multiplier: 0.5 });
         expect(session.getDampenField()).toEqual({ parity: 'even', multiplier: 0.5 });
-        // Half of a 4x4 board are even (row + col) tiles.
-        expect(session.getDampenedSlots()).toHaveLength(8);
+        // Half of a 5×5 board are even (row + col) tiles.
+        expect(session.getDampenedSlots()).toHaveLength(13);
 
         // The field lasts one player turn, then expires when the turn ends.
         session.tickDampenField();

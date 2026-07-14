@@ -149,6 +149,88 @@ body {
     transform: translateY(-1px);
 }
 
+.game-hud__energy-label {
+    font-family: var(--font-display);
+    color: var(--cp-cyan);
+    letter-spacing: 0.14em;
+}
+
+.game-hud__energy-pip {
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    border: 1px solid rgba(255, 45, 149, 0.45);
+    background: rgba(255, 45, 149, 0.12);
+    transform: rotate(45deg);
+}
+
+.game-hud__energy-pip--full {
+    border-color: var(--cp-cyan);
+    background: rgba(0, 232, 255, 0.85);
+    box-shadow: 0 0 10px rgba(0, 232, 255, 0.65);
+}
+
+.game-hud__energy-count {
+    font-family: var(--font-mono);
+    color: var(--cp-cyan);
+}
+
+.game-hud__start-wave {
+    padding: 10px 22px;
+    border: 1px solid var(--cp-cyan);
+    border-radius: 4px;
+    background: linear-gradient(180deg, rgba(0, 232, 255, 0.22) 0%, rgba(0, 232, 255, 0.06) 100%);
+    color: #d8fcff;
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    box-shadow: 0 0 18px rgba(0, 232, 255, 0.25);
+}
+
+.game-hud__start-wave:hover:not(:disabled) {
+    background: linear-gradient(180deg, rgba(0, 232, 255, 0.35) 0%, rgba(0, 232, 255, 0.12) 100%);
+    border-color: #7af0ff;
+    box-shadow: var(--cp-glow-cyan);
+}
+
+.game-hud__start-wave:disabled {
+    opacity: 0.4;
+    box-shadow: none;
+}
+
+.game-hud__reroll {
+    padding: 10px 18px;
+    border: 1px solid var(--cp-purple);
+    border-radius: 4px;
+    background: linear-gradient(180deg, rgba(168, 85, 247, 0.2) 0%, rgba(168, 85, 247, 0.05) 100%);
+    color: #e8d4ff;
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.game-hud__reroll:hover:not(:disabled) {
+    border-color: #c89bff;
+    box-shadow: 0 0 16px rgba(168, 85, 247, 0.45);
+}
+
+.game-hud__reroll-confirm {
+    border-color: var(--cp-magenta);
+    background: linear-gradient(180deg, rgba(255, 45, 149, 0.25) 0%, rgba(255, 45, 149, 0.08) 100%);
+    color: #ffd0e8;
+    font-family: var(--font-display);
+    text-transform: uppercase;
+}
+
+.game-hud__reroll-cancel {
+    border-color: rgba(0, 232, 255, 0.35);
+    color: var(--cp-text-muted);
+    font-family: var(--font-display);
+    text-transform: uppercase;
+}
+
 .run-map {
     background:
         radial-gradient(ellipse 90% 70% at 50% 30%, rgba(0, 232, 255, 0.06) 0%, transparent 60%),

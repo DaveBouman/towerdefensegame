@@ -1,12 +1,8 @@
-import { uiTextStyle } from '../config/uiTypography';
+import { CYBER } from '../config/cyberpunkTheme';
+import { drawCornerBrackets } from '../config/cyberpunkUiGraphics';
+import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
 import type { BoardLayout } from './boardLayout';
 
-const DECK_FILL = 0x243b55;
-const DECK_BORDER = 0x5dade2;
-const GRAVEYARD_FILL = 0x3d2b1f;
-const GRAVEYARD_BORDER = 0xc97b4a;
-const CARD_BACK = 0x1a1a2e;
-const CARD_BACK_BORDER = 0x6a6a8a;
 const STACK_WIDTH = 52;
 const STACK_HEIGHT = 72;
 const MAX_VISIBLE_STACK = 4;
@@ -32,31 +28,37 @@ export class CardPileView
     )
     {
         const { pileWidth, pileHeight } = layout;
-        const fill = kind === 'deck' ? DECK_FILL : GRAVEYARD_FILL;
-        const border = kind === 'deck' ? DECK_BORDER : GRAVEYARD_BORDER;
+        const fill = kind === 'deck' ? CYBER.deckFill : CYBER.graveFill;
+        const border = kind === 'deck' ? CYBER.deckBorder : CYBER.graveBorder;
+        const frameW = pileWidth + 12;
+        const frameH = pileHeight + 34;
 
         this.container = scene.add.container(x, y);
 
-        const frame = scene.add.rectangle(0, 0, pileWidth + 12, pileHeight + 34, fill, 0.92);
+        const frame = scene.add.rectangle(0, 0, frameW, frameH, fill, 0.94);
 
         frame.setOrigin(0, 0);
         frame.setStrokeStyle(2, border, 0.95);
         this.frame = frame;
         this.frameBorder = border;
 
+        const brackets = scene.add.graphics();
+
+        drawCornerBrackets(brackets, 4, 4, frameW - 8, frameH - 8, border, { arm: 10, alpha: 0.8 });
+
         this.stackContainer = scene.add.container(pileWidth / 2 + 6, 8);
 
-        this.emptyStack = scene.add.rectangle(0, 0, STACK_WIDTH, STACK_HEIGHT, CARD_BACK, 0.2);
-        this.emptyStack.setStrokeStyle(2, CARD_BACK_BORDER, 0.35);
+        this.emptyStack = scene.add.rectangle(0, 0, STACK_WIDTH, STACK_HEIGHT, CYBER.cardBack, 0.25);
+        this.emptyStack.setStrokeStyle(2, CYBER.cardBackBorder, 0.45);
         this.emptyStack.setOrigin(0.5, 0);
         this.stackContainer.add(this.emptyStack);
 
         for (let i = 0; i < MAX_VISIBLE_STACK; i++)
         {
             const offset = i * 3;
-            const card = scene.add.rectangle(offset, offset, STACK_WIDTH, STACK_HEIGHT, CARD_BACK, 1);
+            const card = scene.add.rectangle(offset, offset, STACK_WIDTH, STACK_HEIGHT, CYBER.cardBack, 1);
 
-            card.setStrokeStyle(2, CARD_BACK_BORDER, 0.95);
+            card.setStrokeStyle(2, CYBER.cardBackBorder, 0.95);
             card.setOrigin(0.5, 0);
             card.setVisible(false);
             this.stackCards.push(card);
@@ -64,14 +66,14 @@ export class CardPileView
         }
 
         this.countText = scene.add.text(pileWidth / 2 + 6, pileHeight + 16, '0', {
-            ...uiTextStyle(20, '#ffffff', { bold: true }),
+            ...uiDisplayTextStyle(20, '#ffffff', { bold: true }),
         }).setOrigin(0.5, 0);
 
         const title = scene.add.text(pileWidth / 2 + 6, pileHeight + 36, label, {
-            ...uiTextStyle(13, kind === 'deck' ? '#c8e6ff' : '#ffd9b8', { bold: true }),
+            ...uiTextStyle(13, kind === 'deck' ? '#7af0ff' : '#ffd4b8', { bold: true }),
         }).setOrigin(0.5, 0);
 
-        this.container.add([ frame, this.stackContainer, this.countText, title ]);
+        this.container.add([ frame, brackets, this.stackContainer, this.countText, title ]);
         this.applyCount(0);
     }
 

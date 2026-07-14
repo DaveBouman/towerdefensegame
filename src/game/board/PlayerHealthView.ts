@@ -1,6 +1,7 @@
 import type { PlayerState } from '../cardGame/domain/types';
+import { drawAvatarDiamond, drawCornerBrackets } from '../config/cyberpunkUiGraphics';
 import { CYBER } from '../config/cyberpunkTheme';
-import { uiTextStyle } from '../config/uiTypography';
+import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
 import { playFloatingText, playHitFlash as playHitFlashTween } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import type { BoardLayout } from './boardLayout';
 
@@ -12,6 +13,8 @@ export class PlayerHealthView
     private readonly healthBarFill: Phaser.GameObjects.Rectangle;
     private readonly healthBarWidth: number;
     private readonly healthBarHeight: number;
+    private readonly glowRing: Phaser.GameObjects.Rectangle;
+    private idleTween?: Phaser.Tweens.Tween;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -22,15 +25,36 @@ export class PlayerHealthView
         const { playerX, playerY, playerSize } = layout;
         const container = scene.add.container(playerX, playerY);
 
+        this.glowRing = scene.add.rectangle(
+            playerSize / 2,
+            playerSize / 2,
+            playerSize + 18,
+            playerSize + 18,
+            0x000000,
+            0,
+        );
+        this.glowRing.setStrokeStyle(3, CYBER.player, 0.45);
+
         const outline = scene.add.rectangle(0, 0, playerSize, playerSize);
 
         outline.setOrigin(0, 0);
-        outline.setStrokeStyle(2, CYBER.player, 0.75);
-        outline.setFillStyle(CYBER.player, 0.1);
+        outline.setStrokeStyle(2, CYBER.player, 0.85);
+        outline.setFillStyle(CYBER.player, 0.08);
 
-        const body = scene.add.rectangle(0, 0, playerSize, playerSize, CYBER.player);
+        const body = scene.add.rectangle(0, 0, playerSize, playerSize, CYBER.player, 0.18);
 
         body.setOrigin(0, 0);
+
+        const frame = scene.add.graphics();
+
+        drawCornerBrackets(frame, 2, 2, playerSize - 4, playerSize - 4, CYBER.player, {
+            arm: Math.round(playerSize * 0.16),
+            alpha: 0.95,
+        });
+
+        const avatar = scene.add.graphics();
+
+        drawAvatarDiamond(avatar, playerSize / 2, playerSize / 2 - 2, playerSize * 0.42, CYBER.player);
 
         const barInset = 10;
         this.healthBarHeight = 12;
@@ -55,18 +79,29 @@ export class PlayerHealthView
             1,
         ).setOrigin(0, 0);
 
-        this.healthText = scene.add.text(playerSize / 2, playerSize / 2 - 4, '', {
-            ...uiTextStyle(20, '#ffffff', { bold: true }),
+        this.healthText = scene.add.text(playerSize / 2, playerSize / 2 - 2, '', {
+            ...uiDisplayTextStyle(20, '#ffffff', { bold: true }),
         }).setOrigin(0.5);
 
-        const label = scene.add.text(playerSize / 2, playerSize + 14, 'You', {
-            ...uiTextStyle(16, '#7af0ff'),
+        const label = scene.add.text(playerSize / 2, playerSize + 16, 'RUNNER', {
+            ...uiDisplayTextStyle(14, '#7af0ff', { bold: true }),
         }).setOrigin(0.5, 0);
 
-        container.add([ outline, body, healthBarBg, this.healthBarFill, this.healthText, label ]);
+        container.add([
+            this.glowRing,
+            outline,
+            body,
+            frame,
+            avatar,
+            healthBarBg,
+            this.healthBarFill,
+            this.healthText,
+            label,
+        ]);
         this.container = container;
         this.body = body;
         this.setHealth(player);
+        this.startIdlePulse();
     }
 
     setHealth (player: PlayerState): void
@@ -81,8 +116,18 @@ export class PlayerHealthView
             : 0;
 
         this.healthText.setText(`${player.health}/${player.maxHealth}`);
-        this.healthBarFill.setScale(fraction, 1);
+        this.scene.tweens.add({
+            targets: this.healthBarFill,
+            scaleX: fraction,
+            duration: 220,
+            ease: 'Cubic.easeOut',
+        });
         this.healthBarFill.setVisible(player.health > 0);
+
+        const low = player.maxHealth > 0 && player.health / player.maxHealth <= 0.3;
+
+        this.glowRing.setStrokeStyle(3, CYBER.player, low ? 0.85 : 0.45);
+        this.body.setFillStyle(CYBER.player, low ? 0.32 : 0.18);
     }
 
     playHitFlash (): void
@@ -109,6 +154,21 @@ export class PlayerHealthView
 
     destroy (): void
     {
+        this.idleTween?.stop();
         this.container.destroy();
+    }
+
+    private startIdlePulse (): void
+    {
+        this.idleTween = this.scene.tweens.add({
+            targets: this.glowRing,
+            scaleX: 1.04,
+            scaleY: 1.04,
+            alpha: 0.92,
+            duration: 1400,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+        });
     }
 }

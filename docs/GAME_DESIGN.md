@@ -8,7 +8,7 @@
 
 ## What this game is
 
-A **4×4 card-chain combat** game built with Phaser + React, played across a
+A **5×5 card-chain combat** game built with Phaser + React, played across a
 branching **run map** (roguelite-style path of battles).
 
 - Player drags cards from hand onto a grid; arrows define activation order.
@@ -26,7 +26,9 @@ between the opening fight and the boss (`RUN_CONFIG.middleColumns`).
 
 - **Node kinds** (`src/game/run/nodeKinds.ts`, `RunMapNode.kind`): `enemy` and `boss`
   are battles; `shop` and `event` are non-battle stops. Each kind has an icon
-  (`NodeKindIcon`, from game-icons.net) and a hover tooltip on the map. First column
+  (`NodeKindIcon`, from game-icons.net) and a hover tooltip on the map. Map labels use
+  generic kind names (`mapNodeDisplay.ts`) — **Street Op**, **Lieutenant**, **Signal**, **Ripperdoc**,
+  **Warden** — except **Saboteur** (regular fights only) and **Warden**, which stay named. First column
   is always `enemy`; column 4 (row index 3) is always a **semi-boss** lieutenant fight
   (`smokebinder` / `saboteur`); last column is the `boss`; other middle columns are weighted-random
   (`rollNodeKind`: 70% enemy, 20% event, 10% shop). **Event nodes** open `RunEventOverlay` (`runEvents.ts`) — wheel,
@@ -112,7 +114,7 @@ battle, and emits `BATTLE_WON` / `BATTLE_LOST` back to React.
 | Map / end UI | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx` | Node picking, run results |
 | Event buses | `EventBus` (React↔Phaser shell, incl. `START_BATTLE`/`BATTLE_WON`/`BATTLE_LOST`), `CardGameEventBus` (in-game) |
 
-**Shared config:** `src/game/config/gridConfig.ts` (4×4 board), `uiTypography.ts`.
+**Shared config:** `src/game/config/gridConfig.ts` (5×5 board), `uiTypography.ts`.
 
 ---
 
@@ -242,6 +244,10 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-14 | **Combat UI polish.** Modernized fight layout: larger player (**RUNNER**) and enemy frames with neon brackets, glow rings, and diamond avatars; board neon panel backdrop; layered hand/board cards with corner accents; fanned hand with hover lift; cyberpunk deck/graveyard piles and shield badge; HUD energy pips and Attack/Reroll buttons aligned to neon theme (`cyberpunkUiGraphics.ts`, `uiDisplayTextStyle`). |
+| 2026-07-14 | **5×5 combat board.** Card grid expanded from 4×4 to 5×5 (`gridConfig.ts`, `tileSize` 80). Sign Matcher minigame stays 4×4. |
+| 2026-07-14 | **Map label polish.** Regular fights show as **Street Op** on the map. All semi-boss nodes always show **Lieutenant** (including saboteur lieutenants). |
+| 2026-07-14 | **Hidden map encounter names.** Map nodes show generic kind labels (Street Op, Lieutenant, Signal, Ripperdoc, Warden) instead of specific enemy/event titles. **Saboteur** (non-lieutenant) and **Warden** remain visible as named threats. |
 | 2026-07-14 | **Saboteur map branching.** Nodes fighting the saboteur always link to adjacent routes on the next column (up and/or down), so clearing them opens a vertical path change. |
 | 2026-07-14 | **Map node mix + semi-boss.** Middle columns roll 70% enemy / 20% event / 10% shop. Column 4 is always a **semi-boss** (`Lieutenant`: `smokebinder` or `saboteur`) with horned-skull map styling. |
 | 2026-07-14 | **Longer run map.** Nine columns now sit between the first fight and the boss (11 columns total). Enemy pools ramp across the longer path; branching uses a wider bell curve (`ROW_SIZES`). |

@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
-import { getCardGameEnemyDefinition } from '../../game/cardGame/config/enemyCatalog';
 import type { RunMap, RunMapNode } from '../../game/run/runMap';
+import { getMapNodeDisplay } from '../../game/run/mapNodeDisplay';
 import { getRunEvent } from '../../game/run/runEvents';
-import { NODE_KIND_INFO } from '../../game/run/nodeKinds';
 import { EventIcon } from './EventIcon';
 import { NodeKindIcon } from './NodeKindIcon';
 
@@ -202,15 +201,8 @@ export const RunMapOverlay = ({
                     const isCompleted = completed.has(node.id);
                     const isAvailable = available.has(node.id);
                     const isCurrent = node.id === currentNodeId;
-                    const info = NODE_KIND_INFO[node.kind];
-                    const enemy = node.enemyId ? getCardGameEnemyDefinition(node.enemyId) : undefined;
                     const event = node.eventId ? getRunEvent(node.eventId) : undefined;
-                    const label = enemy?.label ?? event?.title ?? info.label;
-                    const tooltipBody = enemy
-                        ? `${enemy.label}. ${info.tooltip}`
-                        : event
-                            ? `${event.title}. ${event.intro}`
-                            : info.tooltip;
+                    const { label, tooltipTitle, tooltipBody } = getMapNodeDisplay(node);
                     const classes = [ 'run-map__node', `run-map__node--${node.kind}` ];
 
                     if (isCompleted) classes.push('run-map__node--completed');
@@ -240,7 +232,7 @@ export const RunMapOverlay = ({
                             </span>
                             <span className="run-map__node-label">{label}</span>
                             <span className="run-map__tooltip" role="tooltip">
-                                <span className="run-map__tooltip-title">{event?.title ?? info.label}</span>
+                                <span className="run-map__tooltip-title">{tooltipTitle}</span>
                                 <span className="run-map__tooltip-body">{tooltipBody}</span>
                             </span>
                         </button>

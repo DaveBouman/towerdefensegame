@@ -2,6 +2,7 @@ import type { CardInstance } from '../cardGame/domain/types';
 import { getCardDefinitionOrThrow, isCardUnplayable } from '../cardGame/config/cardRegistry';
 import { buildCardGraphic } from '../cards/CardRenderer';
 import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
+import { CYBER } from '../config/cyberpunkTheme';
 import { HAND_CARD_GAP, HAND_CARD_HEIGHT, HAND_CARD_WIDTH } from '../cards/cardVisuals';
 import type { BoardLayout } from './boardLayout';
 
@@ -13,10 +14,14 @@ export interface CardHandDragHandlers {
     onPlaced?: () => void;
 }
 
+const HAND_FAN_SPREAD = 0.055;
+const HAND_FAN_DROP = 7;
+
 export class CardHandView
 {
     readonly container: Phaser.GameObjects.Container;
     private readonly slotContainers: Phaser.GameObjects.Container[] = [];
+    private readonly hoverOutlines: Phaser.GameObjects.Rectangle[] = [];
     private readonly selectedIndices = new Set<number>();
     private dragProxy?: Phaser.GameObjects.Container;
     private draggingIndex: number | null = null;
@@ -101,12 +106,28 @@ export class CardHandView
         }
 
         this.slotContainers.length = 0;
+        this.hoverOutlines.length = 0;
         this.container.removeAll(true);
+
+        const center = (this.hand.length - 1) / 2;
 
         this.hand.forEach((card, index) =>
         {
+            const offset = index - center;
             const x = index * (HAND_CARD_WIDTH + HAND_CARD_GAP);
-            const slot = this.scene.add.container(x, 0);
+            const y = Math.abs(offset) * HAND_FAN_DROP;
+            const slot = this.scene.add.container(x, y);
+            const hoverOutline = this.scene.add.rectangle(
+                HAND_CARD_WIDTH / 2,
+                HAND_CARD_HEIGHT / 2,
+                HAND_CARD_WIDTH + 10,
+                HAND_CARD_HEIGHT + 10,
+                CYBER.cyan,
+                0,
+            );
+            hoverOutline.setStrokeStyle(2, CYBER.cyan, 0);
+            hoverOutline.setVisible(false);
+
             const { container: graphic, hitArea } = buildCardGraphic(
                 this.scene,
                 card,
@@ -116,6 +137,8 @@ export class CardHandView
                     interactive: true,
                 },
             );
+
+            const unplayable = isCardUnplayable(getCardDefinitionOrThrow(card.definitionId));
 
             hitArea.on('pointerdown', (pointer: Phaser.Input.Pointer) =>
             {
@@ -128,15 +151,42 @@ export class CardHandView
                 this.beginDrag(index, card, pointer);
             });
 
+            if (!unplayable)
+            {
+                hitArea.on('pointerover', () =>
+                {
+                    if (this.draggingIndex !== null)
+                    {
+                        return;
+                    }
+
+                    hoverOutline.setVisible(true);
+                    hoverOutline.setStrokeStyle(2, CYBER.cyan, 0.9);
+                    slot.setY(y - 8);
+                });
+                hitArea.on('pointerout', () =>
+                {
+                    if (this.draggingIndex === index)
+                    {
+                        return;
+                    }
+
+                    hoverOutline.setVisible(false);
+                    this.updateSelectionVisuals();
+                });
+            }
+
             attachCardTooltip(this.scene, hitArea, card);
 
-            slot.add(graphic);
+            slot.add([ hoverOutline, graphic ]);
+            slot.setRotation(offset * HAND_FAN_SPREAD);
             this.container.add(slot);
             this.slotContainers.push(slot);
+            this.hoverOutlines.push(hoverOutline);
 
-            if (isCardUnplayable(getCardDefinitionOrThrow(card.definitionId)))
+            if (unplayable)
             {
-                slot.setAlpha(0.82);
+                slot.setAlpha(0.78);
             }
         });
 
@@ -160,12 +210,24 @@ export class CardHandView
 
     private updateSelectionVisuals (): void
     {
+        const center = (this.hand.length - 1) / 2;
+
         this.slotContainers.forEach((slot, index) =>
         {
             const selected = this.rerollMode && this.selectedIndices.has(index);
+            const offset = index - center;
+            const baseY = Math.abs(offset) * HAND_FAN_DROP;
 
-            slot.setY(selected ? -10 : 0);
-            slot.setScale(selected ? 1.06 : 1);
+            slot.setY(selected ? baseY - 14 : baseY);
+            slot.setScale(selected ? 1.08 : 1);
+
+            const outline = this.hoverOutlines[index];
+
+            if (outline)
+            {
+                outline.setStrokeStyle(2, selected ? CYBER.magenta : CYBER.cyan, selected ? 1 : 0);
+                outline.setVisible(selected);
+            }
         });
     }
 
@@ -191,6 +253,7 @@ export class CardHandView
         this.dragOffsetX = pointer.worldX - worldX;
         this.dragOffsetY = pointer.worldY - worldY;
         slot.setAlpha(0.25);
+        this.hoverOutlines[index]?.setVisible(false);
 
         const { container } = buildCardGraphic(this.scene, card, {
             width: HAND_CARD_WIDTH,
@@ -261,6 +324,7 @@ export class CardHandView
         if (index !== null)
         {
             this.slotContainers[index]?.setAlpha(1);
+            this.updateSelectionVisuals();
         }
     }
 }

@@ -1,5 +1,6 @@
 import { uiTextStyle } from '../config/uiTypography';
 import { CYBER } from '../config/cyberpunkTheme';
+import { drawCornerBrackets, drawNeonPanel } from '../config/cyberpunkUiGraphics';
 import { GRID_CONFIG } from '../config/gridConfig';
 import { buildCardGraphic } from '../cards/CardRenderer';
 import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
@@ -83,6 +84,37 @@ export class CardBoardView
         const { cols, rows, tileSize } = GRID_CONFIG;
         this.container = scene.add.container(layout.gridOffsetX, layout.gridOffsetY);
 
+        const panelPad = 14;
+        const panelW = cols * tileSize + panelPad * 2;
+        const panelH = rows * tileSize + panelPad * 2;
+        const backdrop = scene.add.graphics();
+
+        drawNeonPanel(
+            backdrop,
+            -panelPad,
+            -panelPad,
+            panelW,
+            panelH,
+            0x0a1018,
+            CYBER.cyan,
+            0.94,
+            0.35,
+        );
+        this.container.add(backdrop);
+
+        const slotBrackets = scene.add.graphics();
+
+        drawCornerBrackets(
+            slotBrackets,
+            -panelPad + 4,
+            -panelPad + 4,
+            panelW - 8,
+            panelH - 8,
+            CYBER.magenta,
+            { arm: 16, alpha: 0.45 },
+        );
+        this.container.add(slotBrackets);
+
         for (let row = 0; row < rows; row++)
         {
             this.slotBodies[row] = [];
@@ -98,7 +130,7 @@ export class CardBoardView
                 const slotSize = tileSize - SLOT_INSET * 2;
                 const slot = scene.add.rectangle(x, y, slotSize, slotSize, SLOT_FILL);
 
-                slot.setStrokeStyle(2, SLOT_BORDER, 0.9);
+                slot.setStrokeStyle(2, SLOT_BORDER, 0.75);
                 slot.setDepth(0);
                 this.container.add(slot);
                 this.slotBodies[row][col] = slot;

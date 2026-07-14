@@ -1,6 +1,7 @@
 import { ENEMY_PASSIVE_TEXTURE_KEY } from '../../ui/icons/enemyPassiveIcons';
+import { drawAvatarDiamond, drawCornerBrackets } from '../config/cyberpunkUiGraphics';
 import { CYBER } from '../config/cyberpunkTheme';
-import { uiTextStyle } from '../config/uiTypography';
+import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
 import type { EnemyState, EnemyTurnAction } from '../cardGame/domain/types';
 import type { EnemyPassiveConfig } from '../cardGame/enemyPassives/types';
 import {
@@ -61,6 +62,8 @@ export class EnemyTargetView
     private shieldTween?: Phaser.Tweens.Tween;
     private readonly enemySize: number;
     private displayedShield = 0;
+    private readonly threatRing: Phaser.GameObjects.Rectangle;
+    private idleTween?: Phaser.Tweens.Tween;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -71,6 +74,16 @@ export class EnemyTargetView
         const { enemyX, enemyY, enemySize } = layout;
         this.enemySize = enemySize;
         const container = scene.add.container(enemyX, enemyY);
+
+        this.threatRing = scene.add.rectangle(
+            enemySize / 2,
+            enemySize / 2,
+            enemySize + 22,
+            enemySize + 22,
+            0x000000,
+            0,
+        );
+        this.threatRing.setStrokeStyle(3, ENEMY_COLOR, 0.5);
 
         this.shieldRing = scene.add.rectangle(
             enemySize / 2,
@@ -86,12 +99,23 @@ export class EnemyTargetView
         this.outline = scene.add.rectangle(0, 0, enemySize, enemySize);
 
         this.outline.setOrigin(0, 0);
-        this.outline.setStrokeStyle(2, ENEMY_COLOR, 0.7);
-        this.outline.setFillStyle(ENEMY_COLOR, 0.12);
+        this.outline.setStrokeStyle(2, ENEMY_COLOR, 0.9);
+        this.outline.setFillStyle(ENEMY_COLOR, 0.1);
 
-        this.body = scene.add.rectangle(0, 0, enemySize, enemySize, ENEMY_COLOR);
+        this.body = scene.add.rectangle(0, 0, enemySize, enemySize, ENEMY_COLOR, 0.22);
 
         this.body.setOrigin(0, 0);
+
+        const frame = scene.add.graphics();
+
+        drawCornerBrackets(frame, 2, 2, enemySize - 4, enemySize - 4, ENEMY_COLOR, {
+            arm: Math.round(enemySize * 0.16),
+            alpha: 0.95,
+        });
+
+        const avatar = scene.add.graphics();
+
+        drawAvatarDiamond(avatar, enemySize / 2, enemySize / 2 - 2, enemySize * 0.4, ENEMY_COLOR);
 
         const barInset = 10;
         this.healthBarHeight = 12;
@@ -139,12 +163,12 @@ export class EnemyTargetView
         this.shieldBarFill.setVisible(false);
         this.shieldBarBg.setVisible(false);
 
-        this.healthText = scene.add.text(enemySize / 2, enemySize / 2 - 4, '', {
-            ...uiTextStyle(20, '#ffffff', { bold: true }),
+        this.healthText = scene.add.text(enemySize / 2, enemySize / 2 - 2, '', {
+            ...uiDisplayTextStyle(20, '#ffffff', { bold: true }),
         }).setOrigin(0.5);
 
-        const label = scene.add.text(enemySize / 2, enemySize + 14, 'Enemy', {
-            ...uiTextStyle(16, '#ff8ec4'),
+        const label = scene.add.text(enemySize / 2, enemySize + 16, 'TARGET', {
+            ...uiDisplayTextStyle(14, '#ff8ec4', { bold: true }),
         }).setOrigin(0.5, 0);
 
         this.enemyLabel = label;
@@ -174,9 +198,12 @@ export class EnemyTargetView
         this.poisonBadge.setVisible(false);
 
         container.add([
+            this.threatRing,
             this.shieldRing,
             this.outline,
             this.body,
+            frame,
+            avatar,
             this.shieldBarBg,
             this.shieldBarFill,
             healthBarBg,
@@ -188,6 +215,7 @@ export class EnemyTargetView
         ]);
         this.container = container;
         this.setHealth(enemy);
+        this.startIdlePulse();
     }
 
     setEnemyLabel (label: string): void
@@ -513,6 +541,7 @@ export class EnemyTargetView
         this.passiveIconsContainer?.destroy();
         this.passiveIconsContainer = undefined;
         this.shieldTween?.stop();
+        this.idleTween?.stop();
         this.container.destroy();
     }
 
@@ -535,8 +564,22 @@ export class EnemyTargetView
 
         this.shieldTween?.stop();
         this.shieldTween = undefined;
-        this.outline.setStrokeStyle(2, ENEMY_COLOR, 0.7);
-        this.body.setFillStyle(ENEMY_COLOR, 1);
+        this.outline.setStrokeStyle(2, ENEMY_COLOR, 0.9);
+        this.body.setFillStyle(ENEMY_COLOR, 0.22);
+    }
+
+    private startIdlePulse (): void
+    {
+        this.idleTween = this.scene.tweens.add({
+            targets: this.threatRing,
+            scaleX: 1.05,
+            scaleY: 1.05,
+            alpha: 0.88,
+            duration: 1200,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+        });
     }
 
     private startShieldPulse (): void

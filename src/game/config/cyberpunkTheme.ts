@@ -37,6 +37,15 @@ export const CYBER = {
     defendStroke: 0x7af0ff,
     buffGlow: 0xfcee0a,
     buffStroke: 0xfff566,
+    armor: 0x00ff9d,
+    armorBg: 0x0a1a14,
+    deckFill: 0x0a1420,
+    deckBorder: 0x00e8ff,
+    graveFill: 0x1a1018,
+    graveBorder: 0xff6b35,
+    cardBack: 0x0c1018,
+    cardBackBorder: 0x2a4a5a,
+    cardInner: 0x080c14,
 } as const;
 
 export const CYBER_BG_HEX = '#050a14';

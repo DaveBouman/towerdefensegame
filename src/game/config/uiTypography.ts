@@ -7,6 +7,9 @@ export const TEXT_RESOLUTION = typeof window !== 'undefined'
     ? Math.min(window.devicePixelRatio || 1, 2)
     : 1;
 
+/** Display / numeric font — Orbitron for power values and entity labels. */
+export const UI_DISPLAY_FONT_FAMILY = 'Orbitron, Rajdhani, system-ui, sans-serif';
+
 /** Multiplier applied to all Phaser canvas UI text sizes. */
 export const UI_FONT_SCALE = 1.15;
 
@@ -51,6 +54,20 @@ export const uiTextStyle = (
     {
         style.padding = options.padding;
     }
+
+    return style;
+};
+
+/** Orbitron-forward style for combat numbers and entity callouts. */
+export const uiDisplayTextStyle = (
+    fontSize: number,
+    color: string,
+    options: GameTextOptions = {},
+): Phaser.Types.GameObjects.Text.TextStyle =>
+{
+    const style = uiTextStyle(fontSize, color, options);
+
+    style.fontFamily = UI_DISPLAY_FONT_FAMILY;
 
     return style;
 };

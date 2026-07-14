@@ -17,8 +17,8 @@ export interface NodeKindInfo {
 
 export const NODE_KIND_INFO: Record<RunMapNodeKind, NodeKindInfo> = {
     enemy: {
-        label: 'Hostile',
-        tooltip: 'A street op. Flatline them to jack a card into your deck.',
+        label: 'Street Op',
+        tooltip: 'Routine chrome on the grid. Flatline them to jack a card into your deck.',
         isBattle: true,
     },
     'semi-boss': {
@@ -38,7 +38,7 @@ export const NODE_KIND_INFO: Record<RunMapNodeKind, NodeKindInfo> = {
     },
     event: {
         label: 'Signal',
-        tooltip: 'A known encounter — glyph matcher, fate spinner, neural drill, stasis patches, black ICE, and more.',
+        tooltip: 'An unknown signal on the grid. Jack in to see what you find.',
         isBattle: false,
     },
 };

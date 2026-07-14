@@ -70,10 +70,10 @@ export const computeBoardLayout = (
 {
     const { tileSize, cols, rows } = GRID_CONFIG;
     const { width: gridWidth, height: gridHeight } = getGridPixelSize();
-    const enemySize = Math.round(tileSize * 1.15);
-    const playerSize = enemySize;
-    const enemyGap = Math.round(tileSize * 0.45);
-    const handBandHeight = HAND_CARD_HEIGHT + 36;
+    const enemySize = Math.round(tileSize * 1.5);
+    const playerSize = Math.round(tileSize * 1.38);
+    const enemyGap = Math.round(tileSize * 0.55);
+    const handBandHeight = HAND_CARD_HEIGHT + 52;
     const hudTopInset = 56;
     const contentWidth = gridWidth + enemyGap + enemySize;
     const handY = canvasHeight - handBandHeight + 8;
