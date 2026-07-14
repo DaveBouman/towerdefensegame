@@ -67,6 +67,18 @@ const battleModTooltipLines = ({ definition }: CardTooltipContext): string[] =>
         'Stacks with enemy intents and other modifier cards.',
     ];
 
+    if (definition.battleModifier?.stat === 'player-damage-taken'
+        || definition.battleModifier?.stat === 'enemy-attack')
+    {
+        lines.push('Fractional damage rounds down in your favor.');
+    }
+
+    if (definition.battleModifier?.stat === 'player-armor'
+        || definition.battleModifier?.stat === 'player-damage-dealt')
+    {
+        lines.push('Fractional bonuses round up in your favor.');
+    }
+
     return lines;
 };
 

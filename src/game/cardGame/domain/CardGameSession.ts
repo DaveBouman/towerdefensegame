@@ -16,7 +16,8 @@ import {
 import { buildAttackSequence as buildRawAttackSequence, getUnchainedHazardSlots, planAttack } from '../combat/AttackPipeline';
 import {
     aggregateBattleModifiers,
-    applyBattleModifier,
+    applyPlayerBuffModifier,
+    scaleIncomingDamage,
     type BattleModifier,
     type BattleModifierDuration,
     type BattleModifierStat,
@@ -261,7 +262,7 @@ export class CardGameSession
 
                 return {
                     ...step,
-                    amount: applyBattleModifier(base, totals.enemyAttack),
+                    amount: scaleIncomingDamage(base, totals.enemyAttack, totals.playerDamageTaken),
                 };
             }),
         };
@@ -329,12 +330,12 @@ export class CardGameSession
 
     private scalePlayerDamageDealt (damage: number): number
     {
-        return applyBattleModifier(damage, this.getModifierTotals().playerDamageDealt);
+        return applyPlayerBuffModifier(damage, this.getModifierTotals().playerDamageDealt);
     }
 
     private scalePlayerArmorGain (armor: number): number
     {
-        return applyBattleModifier(armor, this.getModifierTotals().playerArmor);
+        return applyPlayerBuffModifier(armor, this.getModifierTotals().playerArmor);
     }
 
     getScaledArmorGain (armor: number): number
@@ -346,10 +347,7 @@ export class CardGameSession
     {
         const totals = this.getModifierTotals();
 
-        return applyBattleModifier(
-            applyBattleModifier(damage, totals.enemyAttack),
-            totals.playerDamageTaken,
-        );
+        return scaleIncomingDamage(damage, totals.enemyAttack, totals.playerDamageTaken);
     }
 
     /** The queued enemy turn scaled by the current round ramp (for telegraphing). */

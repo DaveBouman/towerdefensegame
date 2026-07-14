@@ -60,7 +60,7 @@ export const aggregateBattleModifiers = (
     return totals;
 };
 
-/** Applies stacked percentage modifiers to a base value (floored, never negative). */
+/** Applies stacked percentage modifiers to a base value (never negative). */
 export const applyBattleModifier = (base: number, deltaSum: number): number =>
 {
     if (base <= 0 || deltaSum === 0)
@@ -68,7 +68,56 @@ export const applyBattleModifier = (base: number, deltaSum: number): number =>
         return Math.max(0, base);
     }
 
-    return Math.max(0, Math.floor(base * (1 + deltaSum)));
+    const scaled = base * (1 + deltaSum);
+
+    if (deltaSum < 0)
+    {
+        // Reductions (Patch, Glitch) round down — defender takes less damage.
+        return Math.max(0, Math.floor(scaled));
+    }
+
+    // Increases round down too so extra damage never rounds up against the defender.
+    return Math.max(0, Math.floor(scaled));
+};
+
+/** Combines enemy-attack and damage-taken mods, rounding once in the defender's favor. */
+export const scaleIncomingDamage = (
+    damage: number,
+    enemyAttackDelta: number,
+    damageTakenDelta: number,
+): number =>
+{
+    if (damage <= 0)
+    {
+        return 0;
+    }
+
+    const multiplier = (1 + enemyAttackDelta) * (1 + damageTakenDelta);
+
+    if (multiplier === 1)
+    {
+        return damage;
+    }
+
+    return Math.max(0, Math.floor(damage * multiplier));
+};
+
+/** Scales armor or damage dealt — +% buffs round up in the player's favor. */
+export const applyPlayerBuffModifier = (base: number, deltaSum: number): number =>
+{
+    if (base <= 0 || deltaSum === 0)
+    {
+        return Math.max(0, base);
+    }
+
+    const scaled = base * (1 + deltaSum);
+
+    if (deltaSum > 0)
+    {
+        return Math.max(0, Math.ceil(scaled));
+    }
+
+    return Math.max(0, Math.floor(scaled));
 };
 
 export const formatBattleModifierDelta = (delta: number): string =>
