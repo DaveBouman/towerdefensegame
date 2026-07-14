@@ -197,6 +197,38 @@ describe('CardGameSession enemy turn', () =>
         expect(session.isEnemyDefeated()).toBe(false);
     });
 
+    it('runs each living enemy once per prepared phase', () =>
+    {
+        const session = new CardGameSession([ 'basic', 'basic', 'basic' ]);
+        const phase = session.prepareEnemyPhase();
+
+        expect(phase).toHaveLength(3);
+
+        const acted: string[] = [];
+
+        for (let i = 0; i < phase.length; i++)
+        {
+            const action = session.beginEnemyTurn();
+
+            expect(action).not.toBeNull();
+
+            if (action)
+            {
+                acted.push(action.instanceId!);
+                session.completeEnemyTurn(action);
+            }
+
+            if (i < phase.length - 1)
+            {
+                expect(session.hasMoreEnemyTurnsInPhase()).toBe(true);
+            }
+        }
+
+        expect(session.hasMoreEnemyTurnsInPhase()).toBe(false);
+        expect(acted).toHaveLength(3);
+        expect(new Set(acted).size).toBe(3);
+    });
+
     it('heals the player when salvage kills an enemy', () =>
     {
         const session = new CardGameSession('basic');
@@ -735,21 +767,23 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getEnemyDamageRamp()).toBe(perAttack * 2);
     });
 
-    it('bakes the round ramp into a scaled attack intent', () =>
+    it('bakes the round ramp into prepared enemy actions', () =>
     {
         const session = new CardGameSession();
         const perAttack = GAME_RULES.enemyDamageRampPerAttack;
 
-        // Force a known attack intent so the ramp is deterministic.
-        (session as unknown as { queuedEnemyTurn: unknown }).queuedEnemyTurn = {
+        session.spendEnergy();
+        session.spendEnergy();
+
+        const combatant = session.getCombatants()[0]!;
+
+        combatant.queuedTurn = {
             enemyId: 'basic',
+            instanceId: combatant.instanceId,
             steps: [ { kind: 'attack', amount: 10 } ],
         };
 
-        session.spendEnergy();
-        session.spendEnergy();
-
-        const scaled = session.getScaledEnemyIntent();
+        const [ scaled ] = session.prepareEnemyPhase();
 
         expect(scaled?.steps[0]).toEqual({ kind: 'attack', amount: 10 + perAttack });
     });

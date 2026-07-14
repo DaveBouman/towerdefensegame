@@ -672,26 +672,7 @@ export class CardGamePresenter
 
         if (prevResolved.behaviorId === 'battle-mod')
         {
-            this.session.addBattleModifierFromCard(prevStep.definitionId);
-
-            const definition = getCardDefinitionOrThrow(prevStep.definitionId);
-
-            if (definition.battleModifier)
-            {
-                const target = this.boardView.getCardVisualTarget(prevStep.slot);
-
-                if (target)
-                {
-                    playFloatingText(
-                        this.scene,
-                        target.wrapper,
-                        target.width / 2,
-                        target.height * 0.22,
-                        formatBattleModifierDelta(definition.battleModifier.delta),
-                        definition.battleModifier.delta > 0 ? '#fcee0a' : '#ff6b8a',
-                    );
-                }
-            }
+            this.applyBattleModFromStep(prevStep.definitionId, prevStep.slot);
         }
 
         if (prevResolved.damage > 0)
@@ -774,21 +755,7 @@ export class CardGamePresenter
 
         if (step.behaviorId === 'battle-mod')
         {
-            this.session.addBattleModifierFromCard(step.definitionId);
-
-            const definition = getCardDefinitionOrThrow(step.definitionId);
-
-            if (definition.battleModifier)
-            {
-                playFloatingText(
-                    this.scene,
-                    target.wrapper,
-                    target.width / 2,
-                    target.height * 0.22,
-                    formatBattleModifierDelta(definition.battleModifier.delta),
-                    definition.battleModifier.delta > 0 ? '#fcee0a' : '#ff6b8a',
-                );
-            }
+            this.applyBattleModFromStep(step.definitionId, step.slot);
         }
 
         if (boosted)
@@ -807,6 +774,34 @@ export class CardGamePresenter
 
         boostedBuffVisual.deactivate(this.scene, this.activeBoostBuff);
         this.activeBoostBuff = null;
+    }
+
+    private applyBattleModFromStep (definitionId: string, slot: SlotPosition): void
+    {
+        this.session.addBattleModifierFromCard(definitionId);
+
+        const definition = getCardDefinitionOrThrow(definitionId);
+
+        if (!definition.battleModifier)
+        {
+            return;
+        }
+
+        const visualTarget = this.boardView.getCardVisualTarget(slot);
+
+        if (!visualTarget)
+        {
+            return;
+        }
+
+        playFloatingText(
+            this.scene,
+            visualTarget.wrapper,
+            visualTarget.width / 2,
+            visualTarget.height * 0.22,
+            formatBattleModifierDelta(definition.battleModifier.delta),
+            definition.battleModifier.delta > 0 ? '#fcee0a' : '#ff6b8a',
+        );
     }
 
     private deactivateStep (step: ActivationStep): void

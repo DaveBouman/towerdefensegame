@@ -139,9 +139,6 @@ export const describeBattleModifierDuration = (duration: BattleModifierDuration 
         ? 'Lasts until your energy refills at the end of the round.'
         : 'Lasts through the enemy response, then expires.';
 
-export const isPersistentBattleModifier = (modifier: BattleModifier): boolean =>
-    modifier.duration === 'energy-round';
-
 export const describeBattleModifier = (
     stat: BattleModifierStat,
     delta: number,

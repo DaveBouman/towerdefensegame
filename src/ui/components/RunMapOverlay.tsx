@@ -29,7 +29,6 @@ interface RunMapOverlayProps {
     playerHealth: number;
     maxHealth: number;
     gold: number;
-    bodyModCount: number;
     seed: string;
     /** Whether the seed can still be changed (only before the first battle). */
     seedEditable: boolean;
@@ -45,7 +44,6 @@ export const RunMapOverlay = ({
     playerHealth,
     maxHealth,
     gold,
-    bodyModCount,
     seed,
     seedEditable,
     onSeedChange,
@@ -140,12 +138,6 @@ export const RunMapOverlay = ({
                         <span className="run-map__gold-label">Creds</span>
                         <span className="run-map__gold-value">{gold}</span>
                     </div>
-                    {bodyModCount > 0 && (
-                        <div className="run-map__body-mods" role="status">
-                            <span className="run-map__body-mods-label">Body Mods</span>
-                            <span className="run-map__body-mods-value">{bodyModCount}</span>
-                        </div>
-                    )}
                 </div>
             </div>
 

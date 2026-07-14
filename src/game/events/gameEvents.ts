@@ -15,5 +15,6 @@ export const GAME_EVENTS = {
     PUZZLE_RESOLVED: 'puzzle-resolved',
     BATTLE_WON: 'battle-won',
     BATTLE_LOST: 'battle-lost',
+    RUN_ATTACK_COUNT: 'run-attack-count',
     PILE_VIEW_OPEN: 'pile-view-open',
 } as const;

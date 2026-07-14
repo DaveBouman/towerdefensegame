@@ -18,7 +18,7 @@ export interface CardInstance {
     /** Loop arrow — where the chain jumps to replay earlier cards (loop-reset only). */
     loopArrow?: import('./cardDirections').CardDirection;
     owner?: CardOwner;
-    /** Set when a single-use card is played — it is destroyed instead of entering the discard pile. */
+    /** Set when a single-use card is played — destroyed for this battle, not sent to the graveyard. */
     exhausted?: boolean;
 }
 

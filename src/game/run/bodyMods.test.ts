@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isSeventhStrikeAttack, SEVENTH_STRIKE_INTERVAL } from './bodyMods';
+import { getMarkSevenProgress, isSeventhStrikeAttack, SEVENTH_STRIKE_INTERVAL } from './bodyMods';
 
 describe('isSeventhStrikeAttack', () =>
 {
@@ -11,5 +11,32 @@ describe('isSeventhStrikeAttack', () =>
         {
             expect(isSeventhStrikeAttack(attack)).toBe(attack % 7 === 0);
         }
+    });
+});
+
+describe('getMarkSevenProgress', () =>
+{
+    it('counts attacks toward the next proc within each cycle', () =>
+    {
+        expect(getMarkSevenProgress(0)).toEqual({
+            attacksInCycle: 0,
+            interval: 7,
+            nextAttackIsProc: false,
+        });
+        expect(getMarkSevenProgress(6)).toEqual({
+            attacksInCycle: 6,
+            interval: 7,
+            nextAttackIsProc: true,
+        });
+        expect(getMarkSevenProgress(7)).toEqual({
+            attacksInCycle: 0,
+            interval: 7,
+            nextAttackIsProc: false,
+        });
+        expect(getMarkSevenProgress(13)).toEqual({
+            attacksInCycle: 6,
+            interval: 7,
+            nextAttackIsProc: true,
+        });
     });
 });

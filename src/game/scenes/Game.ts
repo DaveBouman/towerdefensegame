@@ -240,12 +240,7 @@ export class Game extends Scene
         {
             this.session.placeFieldBoost();
         }
-        this.boardView.syncFromBoard(this.session.board);
-        this.boardView.setBlockedSlots(
-            this.session.getSilencedSlots(),
-            this.session.getBombDisabledSlots(),
-        );
-        this.boardView.setDampenedSlots(this.session.getDampenedSlots());
+        this.syncBoardFromSession();
 
         this.presenter = new CardGamePresenter(
             this,
@@ -327,13 +322,12 @@ export class Game extends Scene
 
         this.battleResolved = true;
         const playerHealth = this.session.getPlayer().health;
-        const exhaustedDefinitionIds = [ ...this.session.getExhaustedDefinitionIds() ];
         const runAttackCount = this.session.getRunAttackCount();
 
         this.time.delayedCall(900, () =>
         {
             this.endBattle();
-            EventBus.emit(GAME_EVENTS.BATTLE_WON, { playerHealth, exhaustedDefinitionIds, runAttackCount });
+            EventBus.emit(GAME_EVENTS.BATTLE_WON, { playerHealth, runAttackCount });
         });
     }
 
@@ -345,13 +339,12 @@ export class Game extends Scene
         }
 
         this.battleResolved = true;
-        const exhaustedDefinitionIds = [ ...this.session.getExhaustedDefinitionIds() ];
         const runAttackCount = this.session.getRunAttackCount();
 
         this.time.delayedCall(900, () =>
         {
             this.endBattle();
-            EventBus.emit(GAME_EVENTS.BATTLE_LOST, { exhaustedDefinitionIds, runAttackCount });
+            EventBus.emit(GAME_EVENTS.BATTLE_LOST, { runAttackCount });
         });
     }
 
@@ -392,6 +385,21 @@ export class Game extends Scene
 
         this.deckView?.setStack(deckSize, this.session.getDeckTopCard() ?? null);
         this.graveyardView?.setStack(discardSize, this.session.getDiscardTopCard() ?? null);
+    }
+
+    private syncBoardFromSession (): void
+    {
+        if (!this.session || !this.boardView)
+        {
+            return;
+        }
+
+        this.boardView.syncFromBoard(this.session.board);
+        this.boardView.setBlockedSlots(
+            this.session.getSilencedSlots(),
+            this.session.getBombDisabledSlots(),
+        );
+        this.boardView.setDampenedSlots(this.session.getDampenedSlots());
     }
 
     private openPileView (kind: 'deck' | 'graveyard'): void
@@ -459,6 +467,13 @@ export class Game extends Scene
             return;
         }
 
+        if (!this.session.isPuzzleMode())
+        {
+            EventBus.emit(GAME_EVENTS.RUN_ATTACK_COUNT, {
+                runAttackCount: this.session.getRunAttackCount(),
+            });
+        }
+
         this.presenter.playAttack(chainStart, (sequence) =>
         {
             this.onAttackResolved(sequence);
@@ -519,12 +534,7 @@ export class Game extends Scene
         this.session.spendEnergy();
         this.session.releaseAttackLock();
 
-        this.boardView.syncFromBoard(this.session.board);
-        this.boardView.setBlockedSlots(
-            this.session.getSilencedSlots(),
-            this.session.getBombDisabledSlots(),
-        );
-        this.boardView.setDampenedSlots(this.session.getDampenedSlots());
+        this.syncBoardFromSession();
         this.enemySquad.syncFromSession(this.session);
         this.armorView?.setArmor(this.session.getPlayer().shield);
         this.syncPileViews();
@@ -607,12 +617,7 @@ export class Game extends Scene
 
         this.session.clearBoard();
         this.session.tickDampenField();
-        this.boardView.syncFromBoard(this.session.board);
-        this.boardView.setBlockedSlots(
-            this.session.getSilencedSlots(),
-            this.session.getBombDisabledSlots(),
-        );
-        this.boardView.setDampenedSlots(this.session.getDampenedSlots());
+        this.syncBoardFromSession();
         this.graveyardView?.pulse();
         this.syncPileViews();
         this.enemySquad.syncFromSession(this.session);
@@ -657,12 +662,7 @@ export class Game extends Scene
             this.handView?.syncHand(this.session!.getHand());
             this.armorView?.setArmor(this.session!.getPlayer().shield);
             this.session!.placeFieldBoost();
-            this.boardView?.syncFromBoard(this.session!.board);
-            this.boardView?.setBlockedSlots(
-                this.session!.getSilencedSlots(),
-                this.session!.getBombDisabledSlots(),
-            );
-            this.boardView?.setDampenedSlots(this.session!.getDampenedSlots());
+            this.syncBoardFromSession();
             this.syncPileViews();
             this.session!.releaseAttackLock();
             this.turnResolving = false;
@@ -689,7 +689,16 @@ export class Game extends Scene
             if (!this.presenter)
             {
                 this.session!.completeEnemyTurn(enemyTurn);
-                playEnemyResponse();
+
+                if (this.session!.hasMoreEnemyTurnsInPhase())
+                {
+                    playEnemyResponse();
+                }
+                else
+                {
+                    finishEnemyPhase();
+                }
+
                 return;
             }
 
@@ -703,7 +712,14 @@ export class Game extends Scene
                     return;
                 }
 
-                playEnemyResponse();
+                if (this.session!.hasMoreEnemyTurnsInPhase())
+                {
+                    playEnemyResponse();
+                }
+                else
+                {
+                    finishEnemyPhase();
+                }
             });
         };
 

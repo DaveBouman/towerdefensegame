@@ -27,7 +27,7 @@ import {
     type RunMapNode,
 } from './game/run/runMap';
 import { rollCardReward, BATTLE_REWARD_RULES, PUZZLE_TRIAL_RULES, type CardReward } from './game/run/rewards';
-import { removeCardsFromDeck } from './game/run/deck';
+import { BodyModsPanel } from './ui/components/BodyModsPanel';
 import {
     createRandomSeed,
     deriveSeed,
@@ -182,11 +182,9 @@ function App()
 
         const onBattleWon = ({
             playerHealth: remaining,
-            exhaustedDefinitionIds = [],
             runAttackCount: nextRunAttackCount,
         }: {
             playerHealth: number;
-            exhaustedDefinitionIds?: string[];
             runAttackCount: number;
         }): void =>
         {
@@ -199,11 +197,6 @@ function App()
 
             setPlayerHealth(healed);
             setGold((prev) => prev + getVictoryGoldBonus(bodyModsRef.current));
-
-            if (exhaustedDefinitionIds.length > 0)
-            {
-                setDeck((prev) => removeCardsFromDeck(prev, exhaustedDefinitionIds));
-            }
 
             if (node)
             {
@@ -232,21 +225,22 @@ function App()
         };
 
         const onBattleLost = ({
-            exhaustedDefinitionIds = [],
             runAttackCount: nextRunAttackCount,
         }: {
-            exhaustedDefinitionIds?: string[];
             runAttackCount: number;
         }): void =>
         {
             setRunAttackCount(nextRunAttackCount);
-
-            if (exhaustedDefinitionIds.length > 0)
-            {
-                setDeck((prev) => removeCardsFromDeck(prev, exhaustedDefinitionIds));
-            }
-
             setPhase('defeat');
+        };
+
+        const onRunAttackCount = ({
+            runAttackCount: nextRunAttackCount,
+        }: {
+            runAttackCount: number;
+        }): void =>
+        {
+            setRunAttackCount(nextRunAttackCount);
         };
 
         const onPuzzleResolved = ({
@@ -313,6 +307,7 @@ function App()
         EventBus.on(GAME_EVENTS.SCENE_READY, onSceneReady);
         EventBus.on(GAME_EVENTS.BATTLE_WON, onBattleWon);
         EventBus.on(GAME_EVENTS.BATTLE_LOST, onBattleLost);
+        EventBus.on(GAME_EVENTS.RUN_ATTACK_COUNT, onRunAttackCount);
         EventBus.on(GAME_EVENTS.PUZZLE_RESOLVED, onPuzzleResolved);
 
         return () =>
@@ -320,6 +315,7 @@ function App()
             EventBus.off(GAME_EVENTS.SCENE_READY, onSceneReady);
             EventBus.off(GAME_EVENTS.BATTLE_WON, onBattleWon);
             EventBus.off(GAME_EVENTS.BATTLE_LOST, onBattleLost);
+            EventBus.off(GAME_EVENTS.RUN_ATTACK_COUNT, onRunAttackCount);
             EventBus.off(GAME_EVENTS.PUZZLE_RESOLVED, onPuzzleResolved);
         };
     }, []);
@@ -525,6 +521,13 @@ function App()
     return (
         <div id="app">
             <PhaserGame />
+            {bodyMods.length > 0 && phase !== 'victory' && phase !== 'defeat' && (
+                <BodyModsPanel
+                    bodyMods={bodyMods}
+                    runAttackCount={runAttackCount}
+                    className="body-mods-panel--persistent"
+                />
+            )}
             {phase === 'battle' && <GameHud />}
             {(phase === 'puzzle') && (
                 <>
@@ -541,7 +544,6 @@ function App()
                     playerHealth={playerHealth}
                     maxHealth={runMaxHealth}
                     gold={gold}
-                    bodyModCount={bodyMods.length}
                     seed={seed}
                     seedEditable={path.length === 0}
                     onSeedChange={applySeed}

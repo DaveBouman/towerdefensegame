@@ -1,4 +1,5 @@
 import { BODY_MOD_IDS, isSeventhStrikeAttack } from '../../run/bodyMods';
+import { getBattleEnergyBonus, getRunMaxHealth } from '../../run/runResources';
 import { GRID_CONFIG } from '../../config/gridConfig';
 import {
     GAME_RULES,
@@ -73,7 +74,7 @@ export class CardGameSession
     private readonly hand: CardInstance[] = [];
     private readonly deck: CardInstance[] = [];
     private readonly discard: CardInstance[] = [];
-    /** Definition ids removed from the run deck when this battle ends (single-use cards). */
+    /** Definition ids exhausted (played) this battle — battle-scoped only. */
     private readonly exhaustedDefinitionIds: string[] = [];
     private readonly combatants: EnemyCombatant[] = [];
     private attackTargetId: string | null = null;
@@ -91,6 +92,7 @@ export class CardGameSession
     private readonly battleModifiers: BattleModifier[] = [];
     private queuedEnemyTurn: EnemyTurnAction | null = null;
     private enemyPhaseQueue: EnemyTurnAction[] = [];
+    private enemyPhasePrepared = false;
     private rerollsRemaining: number;
     private readonly puzzleMode: PuzzleModeConfig | null;
     private puzzleFinished = false;
@@ -121,8 +123,7 @@ export class CardGameSession
         }
 
         this.board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
-        const maxHealth = GAME_RULES.player.maxHealth
-            + (bodyMods.includes(BODY_MOD_IDS.chromeHeart) ? 10 : 0);
+        const maxHealth = getRunMaxHealth(bodyMods);
         this.player = {
             health: startHealth !== undefined
                 ? Math.min(maxHealth, Math.max(1, Math.round(startHealth)))
@@ -137,7 +138,7 @@ export class CardGameSession
                 : buildPlayerDeck()),
         );
         this.rerollsRemaining = puzzleMode ? 0 : GAME_RULES.fightRerollsPerFight;
-        const bonusEnergy = bodyMods.includes(BODY_MOD_IDS.overclockCell) ? 1 : 0;
+        const bonusEnergy = getBattleEnergyBonus(bodyMods);
         this.maxEnergy = puzzleMode
             ? 1
             : Math.max(1, Math.round(GAME_RULES.energyPerTurn) + bonusEnergy);
@@ -214,7 +215,7 @@ export class CardGameSession
         return this.discard.length > 0 ? this.discard[this.discard.length - 1] : undefined;
     }
 
-    /** Single-use cards played this battle — remove one copy each from the run deck when the fight ends. */
+    /** Single-use cards played this battle (for tests and debugging). */
     getExhaustedDefinitionIds (): readonly string[]
     {
         return [ ...this.exhaustedDefinitionIds ];
@@ -374,12 +375,6 @@ export class CardGameSession
         const totals = this.getModifierTotals();
 
         return scaleIncomingDamage(damage, totals.enemyAttack, totals.playerDamageTaken);
-    }
-
-    /** The queued enemy turn scaled by the current round ramp (for telegraphing). */
-    getScaledEnemyIntent (): EnemyTurnAction | null
-    {
-        return this.queuedEnemyTurn ? this.rampEnemyAction(this.queuedEnemyTurn) : null;
     }
 
     /** Spends one energy for an attack. Returns false when none remains. */
@@ -1266,15 +1261,15 @@ export class CardGameSession
         this.doubleDamageThisAttack = false;
     }
 
-    /** @deprecated Use releaseAttackLock — player round ends in Game.onEndTurn, not here. */
-    finishPlayerTurn (): void
-    {
-        this.releaseAttackLock();
-    }
-
     hasQueuedEnemyTurn (): boolean
     {
         return this.getLivingCombatants().some((combatant) => combatant.queuedTurn !== null);
+    }
+
+    /** True while more combatants remain in the current prepared enemy phase. */
+    hasMoreEnemyTurnsInPhase (): boolean
+    {
+        return this.enemyPhaseQueue.length > 0;
     }
 
     prepareEnemyPhase (): EnemyTurnAction[]
@@ -1293,6 +1288,8 @@ export class CardGameSession
             .filter((combatant) => combatant.queuedTurn !== null)
             .map((combatant) => this.rampEnemyAction(combatant.queuedTurn!));
 
+        this.enemyPhasePrepared = this.enemyPhaseQueue.length > 0;
+
         return [ ...this.enemyPhaseQueue ];
     }
 
@@ -1305,7 +1302,17 @@ export class CardGameSession
 
         if (this.enemyPhaseQueue.length === 0)
         {
-            this.enemyPhaseQueue = this.prepareEnemyPhase();
+            if (this.enemyPhasePrepared)
+            {
+                return null;
+            }
+
+            const prepared = this.prepareEnemyPhase();
+
+            if (prepared.length === 0)
+            {
+                return null;
+            }
         }
 
         const next = this.enemyPhaseQueue.shift();
@@ -1352,6 +1359,7 @@ export class CardGameSession
     finishEnemyPhase (): void
     {
         this.enemyPhaseQueue.length = 0;
+        this.enemyPhasePrepared = false;
         this.enemyTurnInProgress = false;
 
         const allPassives = this.getLivingCombatants().flatMap((entry) => entry.definition.passives);

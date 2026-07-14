@@ -234,7 +234,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             'When played, discards up to 2 cards from the left of your hand into the graveyard.',
             'Includes unplayable curse cards.',
             'If your hand has fewer than 2 cards, discards as many as remain.',
-            'Single use — removed from your deck for the rest of the run after playing.',
+            'Single use this fight — destroyed instead of going to the graveyard.',
             'Neutral on the chain — no direct attack or defend effect.',
         ],
     })),
@@ -243,7 +243,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         lines: [
             `Deals ${ctx.definition.power} damage when activated in the chain.`,
             `Heal ${ctx.definition.healOnKill ?? 0} HP if this card's damage kills an enemy.`,
-            'Destroyed after use — removed from your run deck when the battle ends.',
+            'Destroyed after use this fight — does not enter the graveyard.',
         ],
     })),
     provider('shiv', (ctx) => ({

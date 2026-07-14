@@ -41,11 +41,20 @@ export interface GameEventMap {
     'reroll-confirm': void;
     'reroll-cancel': void;
     'reroll-state': RerollState;
-    'start-battle': { enemyId: string; startHealth: number; deck: string[]; seed: number; bodyMods: string[]; runAttackCount: number };
+    'start-battle': {
+        enemyId?: string;
+        enemyIds?: string[];
+        startHealth: number;
+        deck: string[];
+        seed: number;
+        bodyMods: string[];
+        runAttackCount: number;
+    };
     'start-puzzle': { puzzleId: string; startHealth: number; seed: number; bodyMods: string[]; runAttackCount: number };
     'puzzle-state': PuzzleState;
     'puzzle-resolved': PuzzleResolvedPayload;
-    'battle-won': { playerHealth: number; exhaustedDefinitionIds?: string[]; runAttackCount: number };
-    'battle-lost': { exhaustedDefinitionIds?: string[]; runAttackCount: number };
+    'battle-won': { playerHealth: number; runAttackCount: number };
+    'battle-lost': { runAttackCount: number };
+    'run-attack-count': { runAttackCount: number };
     'pile-view-open': PileViewPayload;
 }

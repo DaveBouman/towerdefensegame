@@ -32,7 +32,7 @@ export interface CardDefinition {
     handEndPenalty?: number;
     /** After this card is played from hand, discard up to this many cards from the left of hand. */
     discardFromHandOnPlay?: number;
-    /** When true, playing this card removes one copy from the run deck for the rest of the match. */
+    /** When true, the card is destroyed for this battle only (not returned to the draw pile). */
     exhaustOnPlay?: boolean;
     /** Heal the player by this amount when this card's damage kills an enemy. */
     healOnKill?: number;

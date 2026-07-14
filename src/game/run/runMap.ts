@@ -57,9 +57,6 @@ export const RUN_CONFIG = {
 /** Elite enemies used for the fixed semi-boss column. */
 const SEMI_BOSS_ENEMY_POOL: readonly string[] = [ 'smokebinder', 'saboteur' ];
 
-/** Temporary: first-column fights use three weak grunts for multi-target testing. */
-const FIRST_COLUMN_ENEMY_IDS: readonly string[] = [ 'test-grunt', 'test-grunt', 'test-grunt' ];
-
 /** Enemy pools per column, ramping in difficulty. Last column is the boss. */
 const ROW_ENEMY_POOLS: readonly (readonly string[])[] = [
     [ 'basic' ],
@@ -201,7 +198,7 @@ export const generateRunMap = (): RunMap =>
                         ? pickRandom(SEMI_BOSS_ENEMY_POOL)
                         : pickRandom(ROW_ENEMY_POOLS[row] ?? ROW_ENEMY_POOLS[0]!)
                     : undefined,
-                enemyIds: battle && row === 0 ? [ ...FIRST_COLUMN_ENEMY_IDS ] : undefined,
+                enemyIds: battle && row === 0 ? [ 'basic', 'basic' ] : undefined,
                 reward: battle ? { ...DEFAULT_CARD_REWARD } : undefined,
                 nextIds: [] as string[],
             } satisfies RunMapNode;

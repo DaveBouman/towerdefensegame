@@ -22,6 +22,26 @@ export const SEVENTH_STRIKE_INTERVAL = 7;
 export const isSeventhStrikeAttack = (attackNumber: number): boolean =>
     attackNumber > 0 && attackNumber % SEVENTH_STRIKE_INTERVAL === 0;
 
+export interface MarkSevenProgress {
+    /** Attacks completed in the current 7-attack cycle (0–6). */
+    attacksInCycle: number;
+    interval: number;
+    /** True when the next attack will trigger double damage. */
+    nextAttackIsProc: boolean;
+}
+
+/** Progress toward the next Mark VII proc for run-wide attack counters. */
+export const getMarkSevenProgress = (runAttackCount: number): MarkSevenProgress =>
+{
+    const attacksInCycle = runAttackCount % SEVENTH_STRIKE_INTERVAL;
+
+    return {
+        attacksInCycle,
+        interval: SEVENTH_STRIKE_INTERVAL,
+        nextAttackIsProc: attacksInCycle === SEVENTH_STRIKE_INTERVAL - 1,
+    };
+};
+
 export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
     {
         id: BODY_MOD_IDS.chromeHeart,
