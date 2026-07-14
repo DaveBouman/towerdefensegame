@@ -99,7 +99,7 @@ const CARD_BLURBS: Record<string, string> = {
     lacerate: 'Lunge + bleed — skip a tile and stack attack bonuses.',
     scorch: 'Corner fire — hooks around a bend while igniting alternation.',
     bramble: 'Corner fortify — bends the chain while stacking defend bonuses.',
-    glitch: 'Enemy attack -10% for the rest of the chain and enemy response.',
+    glitch: 'Enemy attack -10% for the rest of the energy round (until energy refills).',
     hardwire: 'Shield gained +10% from defend cards and armor effects.',
     patch: 'Damage taken -10% from enemy attacks and reflect damage.',
     overclock: 'Damage dealt +10% from your attack steps and bonuses.',

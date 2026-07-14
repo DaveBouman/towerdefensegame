@@ -18,6 +18,7 @@ import {
     aggregateBattleModifiers,
     applyBattleModifier,
     type BattleModifier,
+    type BattleModifierDuration,
     type BattleModifierStat,
 } from '../combat/battleModifiers';
 import { planEnemyTurn } from '../combat/enemyTurn';
@@ -266,14 +267,19 @@ export class CardGameSession
         };
     }
 
-    addBattleModifier (stat: BattleModifierStat, delta: number, source: BattleModifier['source']): void
+    addBattleModifier (
+        stat: BattleModifierStat,
+        delta: number,
+        source: BattleModifier['source'],
+        duration: BattleModifierDuration = 'enemy-turn',
+    ): void
     {
         if (delta === 0)
         {
             return;
         }
 
-        this.battleModifiers.push({ stat, delta, source });
+        this.battleModifiers.push({ stat, delta, source, duration });
     }
 
     addBattleModifierFromCard (definitionId: string): void
@@ -289,6 +295,7 @@ export class CardGameSession
             definition.battleModifier.stat,
             definition.battleModifier.delta,
             'player',
+            definition.battleModifier.duration ?? 'enemy-turn',
         );
     }
 
@@ -305,6 +312,14 @@ export class CardGameSession
     clearBattleModifiers (): void
     {
         this.battleModifiers.length = 0;
+    }
+
+    clearTransientBattleModifiers (): void
+    {
+        const persistent = this.battleModifiers.filter((modifier) => modifier.duration === 'energy-round');
+
+        this.battleModifiers.length = 0;
+        this.battleModifiers.push(...persistent);
     }
 
     private getModifierTotals ()
@@ -1209,12 +1224,15 @@ export class CardGameSession
             if (this.energy <= 0)
             {
                 this.resetEnergy();
+                this.clearBattleModifiers();
+            }
+            else
+            {
+                this.clearTransientBattleModifiers();
             }
 
             this.applyEnemyCurseHand();
         }
-
-        this.clearBattleModifiers();
     }
 
     /** Clears player cards from the board at end of player round (before the enemy acts). */

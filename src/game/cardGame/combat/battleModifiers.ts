@@ -7,11 +7,15 @@ export type BattleModifierStat =
     | 'player-armor'
     | 'player-damage-dealt';
 
+/** How long an applied modifier stays active. */
+export type BattleModifierDuration = 'enemy-turn' | 'energy-round';
+
 export interface BattleModifier {
     stat: BattleModifierStat;
     /** Fractional delta — e.g. 0.1 = +10%, -0.1 = -10%. */
     delta: number;
     source: 'player' | 'enemy';
+    duration?: BattleModifierDuration;
 }
 
 export interface BattleModifierTotals {
@@ -80,6 +84,14 @@ export const BATTLE_MODIFIER_LABELS: Record<BattleModifierStat, string> = {
     'player-armor': 'Shield gained',
     'player-damage-dealt': 'Damage dealt',
 };
+
+export const describeBattleModifierDuration = (duration: BattleModifierDuration = 'enemy-turn'): string =>
+    duration === 'energy-round'
+        ? 'Lasts until your energy refills at the end of the round.'
+        : 'Lasts through the enemy response, then expires.';
+
+export const isPersistentBattleModifier = (modifier: BattleModifier): boolean =>
+    modifier.duration === 'energy-round';
 
 export const describeBattleModifier = (
     stat: BattleModifierStat,

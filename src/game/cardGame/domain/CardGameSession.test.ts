@@ -183,6 +183,43 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getPlayer().shield).toBe(11);
     });
 
+    it('keeps glitch active across enemy turns until energy resets', () =>
+    {
+        const session = new CardGameSession('basic');
+
+        session.addBattleModifierFromCard('glitch');
+        session.spendEnergy();
+
+        const action = session.beginEnemyTurn();
+
+        expect(action).not.toBeNull();
+
+        if (action)
+        {
+            session.completeEnemyTurn(action);
+        }
+
+        session.resolveEnemyAttack(10);
+
+        expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth - 9);
+
+        for (let i = session.getEnergy(); i > 0; i--)
+        {
+            session.spendEnergy();
+        }
+
+        const resetAction = session.beginEnemyTurn();
+
+        if (resetAction)
+        {
+            session.completeEnemyTurn(resetAction);
+        }
+
+        session.resolveEnemyAttack(10);
+
+        expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth - 19);
+    });
+
     it('does not double-apply armor granted during the chain when completing the attack', () =>
     {
         const session = new CardGameSession();

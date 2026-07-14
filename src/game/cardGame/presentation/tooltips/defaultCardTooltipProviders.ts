@@ -1,5 +1,5 @@
 import { GAME_RULES, getChainStepDistance } from '../../config/cardRegistry';
-import { describeBattleModifier } from '../../combat/battleModifiers';
+import { describeBattleModifier, describeBattleModifierDuration } from '../../combat/battleModifiers';
 import { ARROW_GLYPH } from '../../../cards/cardArrows';
 import { isEnemyOwnedCard } from '../../domain/cardOwnership';
 import type { CardTooltipContent, CardTooltipContext, CardTooltipProvider } from './types';
@@ -55,6 +55,7 @@ const provider = (id: string, getTooltip: (ctx: CardTooltipContext) => CardToolt
 
 const battleModTooltipLines = ({ definition }: CardTooltipContext): string[] =>
 {
+    const duration = definition.battleModifier?.duration ?? 'enemy-turn';
     const lines = [
         definition.battleModifier
             ? `Applies ${describeBattleModifier(
@@ -62,7 +63,7 @@ const battleModTooltipLines = ({ definition }: CardTooltipContext): string[] =>
                 definition.battleModifier.delta,
             )} when activated in the chain.`
             : 'Applies a battle modifier when activated in the chain.',
-        'Lasts through the enemy response, then expires.',
+        describeBattleModifierDuration(duration),
         'Stacks with enemy intents and other modifier cards.',
     ];
 

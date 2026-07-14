@@ -38,6 +38,7 @@ export interface CardDefinition {
     battleModifier?: {
         stat: import('../combat/battleModifiers').BattleModifierStat;
         delta: number;
+        duration?: import('../combat/battleModifiers').BattleModifierDuration;
     };
 }
 
