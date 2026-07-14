@@ -817,6 +817,8 @@ export class CardGameSession
                 shieldAbsorbed,
                 healthDamage,
                 thornsDamage: reflect.healthDamage + reflect.shieldAbsorbed,
+                thornsShieldAbsorbed: reflect.shieldAbsorbed,
+                thornsHealthDamage: reflect.healthDamage,
             };
         }
 

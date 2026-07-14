@@ -59,6 +59,12 @@ export const REWARD_CARD_POOL: readonly string[] = [
     'surge',
     'corner-strike',
     'corner-defense',
+    'shiv',
+    'miasma',
+    'cinder',
+    'lacerate',
+    'scorch',
+    'bramble',
     'courier',
 ];
 
@@ -82,6 +88,12 @@ const CARD_BLURBS: Record<string, string> = {
     surge: 'Overload — damage per skill card, doubled with a Joker.',
     'corner-strike': 'Hooks around the corner to a forward-diagonal tile.',
     'corner-defense': 'Defend card that turns the corner to the next tile.',
+    shiv: 'Diagonal bleed starter — rewards attack-heavy routes from the corners.',
+    miasma: 'Diagonal poison trail — angles your toxin through the grid.',
+    cinder: 'Diagonal fire — starts alternation chains from off-axis tiles.',
+    lacerate: 'Lunge + bleed — skip a tile and stack attack bonuses.',
+    scorch: 'Corner fire — hooks around a bend while igniting alternation.',
+    bramble: 'Corner fortify — bends the chain while stacking defend bonuses.',
     courier: 'Discards 2 hand cards to the graveyard when played. Single use per run.',
 };
 

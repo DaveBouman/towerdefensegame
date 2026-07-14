@@ -314,17 +314,17 @@ export class EnemyTargetView
         });
 
         this.intentContainer = this.scene.add.container(0, 0, parts);
+        this.intentContainer.setAlpha(0.92);
+        this.intentContainer.setScale(0.96);
         this.container.add(this.intentContainer);
 
         this.intentTween = this.scene.tweens.add({
             targets: this.intentContainer,
-            alpha: { from: 0.5, to: 1 },
-            scaleX: { from: 0.98, to: 1.02 },
-            scaleY: { from: 0.98, to: 1.02 },
-            duration: phase === 'executing' ? 140 : 260,
-            ease: 'Sine.easeInOut',
-            yoyo: true,
-            repeat: -1,
+            alpha: 1,
+            scaleX: 1,
+            scaleY: 1,
+            duration: phase === 'executing' ? 160 : 220,
+            ease: 'Cubic.easeOut',
         });
     }
 
@@ -354,6 +354,17 @@ export class EnemyTargetView
     ): Phaser.GameObjects.GameObject[]
     {
         const chipWidth = this.measureIntentChipWidth(visual);
+        const chipBg = this.scene.add.rectangle(
+            x + chipWidth / 2,
+            y,
+            chipWidth,
+            INTENT_CHIP_HEIGHT,
+            phase === 'executing' ? 0x221828 : 0x14101c,
+            0.94,
+        );
+
+        chipBg.setStrokeStyle(1.5, visual.tint, phase === 'executing' ? 0.85 : 0.55);
+
         const hitArea = this.scene.add.rectangle(
             x + chipWidth / 2,
             y,
@@ -365,7 +376,7 @@ export class EnemyTargetView
 
         attachEnemyIntentTooltip(this.scene, hitArea, visual.step, phase);
 
-        const parts: Phaser.GameObjects.GameObject[] = [ hitArea ];
+        const parts: Phaser.GameObjects.GameObject[] = [ chipBg, hitArea ];
         const iconX = visual.amountLabel ? x + INTENT_ICON_SIZE / 2 + 4 : x + chipWidth / 2;
 
         if (this.scene.textures.exists(visual.textureKey))

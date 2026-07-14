@@ -175,6 +175,63 @@
       "arrowPool": "orthogonal",
       "discardFromHandOnPlay": 2,
       "exhaustOnPlay": true
+    },
+    {
+      "id": "shiv",
+      "label": "Shiv",
+      "power": 4,
+      "behaviorId": "attack",
+      "visualId": "shiv",
+      "arrowPool": "diagonal",
+      "chainAbilityIds": [ "bleed" ]
+    },
+    {
+      "id": "miasma",
+      "label": "Miasma",
+      "power": 2,
+      "behaviorId": "poison",
+      "visualId": "miasma",
+      "arrowPool": "diagonal",
+      "chainAbilityIds": [ "poison-trail" ]
+    },
+    {
+      "id": "cinder",
+      "label": "Cinder",
+      "power": 4,
+      "behaviorId": "fire",
+      "visualId": "cinder",
+      "arrowPool": "diagonal",
+      "chainAbilityIds": [ "fire-alternation" ]
+    },
+    {
+      "id": "lacerate",
+      "label": "Lacerate",
+      "power": 5,
+      "behaviorId": "attack",
+      "visualId": "lacerate",
+      "arrowPool": "orthogonal",
+      "chainStepDistance": 2,
+      "chainAbilityIds": [ "bleed" ]
+    },
+    {
+      "id": "scorch",
+      "label": "Scorch",
+      "power": 7,
+      "behaviorId": "fire",
+      "visualId": "scorch",
+      "arrowPool": "orthogonal",
+      "cornerTurn": true,
+      "chainAbilityIds": [ "fire-alternation" ]
+    },
+    {
+      "id": "bramble",
+      "label": "Bramble",
+      "power": 4,
+      "behaviorId": "defend",
+      "visualId": "bramble",
+      "arrowPool": "orthogonal",
+      "cornerTurn": true,
+      "chainAbilityIds": [ "fortify" ]
     }
   ]
 }

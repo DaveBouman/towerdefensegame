@@ -25,6 +25,25 @@ const effects = new Map<string, CardVisualEffect>([
     [ curseGlowVisual.id, curseGlowVisual ],
 ]);
 
+const VISUAL_ALIASES: Record<string, string> = {
+    shiv: 'attack',
+    lacerate: 'attack',
+    miasma: 'poison',
+    cinder: 'fire',
+    scorch: 'fire',
+    bramble: 'defend',
+};
+
+for (const [ alias, baseId ] of Object.entries(VISUAL_ALIASES))
+{
+    const base = effects.get(baseId);
+
+    if (base)
+    {
+        effects.set(alias, { ...base, id: alias });
+    }
+}
+
 export const registerCardVisualEffect = (effect: CardVisualEffect): void =>
 {
     effects.set(effect.id, effect);

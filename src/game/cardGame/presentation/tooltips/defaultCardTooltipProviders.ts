@@ -200,6 +200,53 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             'Neutral on the chain — no direct attack or defend effect.',
         ],
     })),
+    provider('shiv', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            ...attackLines(ctx),
+            `Bleed: +${GAME_RULES.chainAbilities.bleed.bonusPerExtraAttack} damage for each attack in the chain beyond ${GAME_RULES.chainAbilities.bleed.attackThreshold}.`,
+            'Uses diagonal arrows.',
+        ],
+    })),
+    provider('miasma', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Defend cards after this lose armor and add ${ctx.definition.power} poison stack(s) each to the enemy.`,
+            'Poison damages the enemy at the start of each of its turns, then weakens by 1.',
+            'Uses diagonal arrows.',
+        ],
+    })),
+    provider('cinder', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Deals ${ctx.definition.power} damage when activated in the chain.`,
+            `+${GAME_RULES.chainAbilities.fireAlternation.bonusDamagePerAlternatingStep} bonus damage per alternating attack/defend step after this (needs 2+).`,
+            'Uses diagonal arrows.',
+        ],
+    })),
+    provider('lacerate', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            ...attackLines(ctx),
+            `Bleed: +${GAME_RULES.chainAbilities.bleed.bonusPerExtraAttack} damage for each attack in the chain beyond ${GAME_RULES.chainAbilities.bleed.attackThreshold}.`,
+        ],
+    })),
+    provider('scorch', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Deals ${ctx.definition.power} damage when activated in the chain.`,
+            'Turns the corner: steps one tile along the arrow, then hooks to a forward-diagonal tile.',
+            `+${GAME_RULES.chainAbilities.fireAlternation.bonusDamagePerAlternatingStep} bonus damage per alternating attack/defend step after this (needs 2+).`,
+        ],
+    })),
+    provider('bramble', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Grants ${ctx.definition.power} armor when activated in the chain.`,
+            'Turns the corner: steps one tile along the arrow, then continues to the next card around the bend.',
+            `Fortify: +${GAME_RULES.chainAbilities.fortify.armorPerExtraDefend} armor for each defend in the chain beyond ${GAME_RULES.chainAbilities.fortify.defendThreshold}.`,
+        ],
+    })),
     provider('default', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: [ 'Follow the arrow to continue the chain.' ],

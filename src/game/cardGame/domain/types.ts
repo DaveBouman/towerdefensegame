@@ -70,6 +70,8 @@ export interface DamageResult {
     shieldAbsorbed: number;
     healthDamage: number;
     thornsDamage?: number;
+    thornsShieldAbsorbed?: number;
+    thornsHealthDamage?: number;
 }
 
 export interface PlacedCard {

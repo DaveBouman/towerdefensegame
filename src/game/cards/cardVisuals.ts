@@ -73,6 +73,42 @@ export const CARD_VISUALS: Record<string, CardVisualStyle> = {
         labelColor: '#7af0ff',
         powerColor: '#00c4dc',
     },
+    shiv: {
+        fill: 0x1a0820,
+        border: 0xff2d95,
+        labelColor: '#ffc0e0',
+        powerColor: '#ff6eb8',
+    },
+    miasma: {
+        fill: 0x081a14,
+        border: 0x39ff14,
+        labelColor: '#b8ffb0',
+        powerColor: '#7dff5a',
+    },
+    cinder: {
+        fill: 0x1a1008,
+        border: 0xff9f43,
+        labelColor: '#ffe0b8',
+        powerColor: '#ffb347',
+    },
+    lacerate: {
+        fill: 0x200810,
+        border: 0xe74c3c,
+        labelColor: '#ffb0a8',
+        powerColor: '#ff6b5a',
+    },
+    scorch: {
+        fill: 0x281008,
+        border: 0xff4500,
+        labelColor: '#ffd0a0',
+        powerColor: '#ff8c42',
+    },
+    bramble: {
+        fill: 0x081a10,
+        border: 0x2ecc71,
+        labelColor: '#b8ffd0',
+        powerColor: '#58d68d',
+    },
 };
 
 export const HAND_CARD_WIDTH = 86;

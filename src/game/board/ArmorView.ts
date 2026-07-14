@@ -40,6 +40,41 @@ export class ArmorView
         this.container.setVisible(armor > 0);
     }
 
+    showShieldGain (amount: number): void
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        const popup = this.scene.add.text(0, -28, `+${amount}`, {
+            ...uiDisplayTextStyle(22, '#58d68d', { bold: true }),
+        }).setOrigin(0.5, 1);
+
+        this.container.add(popup);
+
+        this.scene.tweens.add({
+            targets: popup,
+            y: -54,
+            alpha: 0,
+            duration: 700,
+            ease: 'Cubic.easeOut',
+            onComplete: () => popup.destroy(),
+        });
+
+        this.scene.tweens.killTweensOf(this.container);
+        this.container.setScale(1);
+
+        this.scene.tweens.add({
+            targets: this.container,
+            scaleX: 1.1,
+            scaleY: 1.1,
+            duration: 140,
+            ease: 'Back.easeOut',
+            yoyo: true,
+        });
+    }
+
     showShieldAbsorb (amount: number): void
     {
         if (amount <= 0)

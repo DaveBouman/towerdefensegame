@@ -16,6 +16,7 @@ import type { ActivationStep, AttackSequence, AttackStep, EnemyTurnAction, Enemy
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
 import { boostedBuffVisual } from './visualEffects/boostedBuffVisual';
+import { playFloatingText } from './visualEffects/visualEffectTweens';
 import { getCardVisualEffectOrThrow } from './visualEffects/visualEffectRegistry';
 import type { CardVisualTarget } from './visualEffects/types';
 import type { ArmorView } from '../../board/ArmorView';
@@ -64,7 +65,7 @@ export class CardGamePresenter
         this.deactivateBoostBuff();
         this.boardView.setChainStartActive(false);
         this.boardView.hideJokerDirectionPicker();
-        this.setDisplayedArmor(0);
+        this.setDisplayedArmor(this.session.getPlayer().shield);
 
         const board = this.session.board;
         const chain: ActivationStep[] = [];
@@ -228,17 +229,23 @@ export class CardGamePresenter
             this.attackTimer = this.scene.time.delayedCall(stepMs, runStep);
         };
 
-        const runStep = (): void =>
+        const finishActiveStep = (): void =>
         {
-            if (activeStep)
+            if (!activeStep)
             {
-                this.grantStepArmor(activeStep, chain);
-                this.deactivateStep(activeStep);
-                activeStep = null;
+                return;
             }
 
+            this.grantStepArmor(activeStep, chain);
+            this.deactivateStep(activeStep);
+            activeStep = null;
+        };
+
+        const runStep = (): void =>
+        {
             if (!current)
             {
+                finishActiveStep();
                 finalize();
                 return;
             }
@@ -247,6 +254,7 @@ export class CardGamePresenter
 
             if (!step)
             {
+                finishActiveStep();
                 finalize();
                 return;
             }
@@ -278,12 +286,25 @@ export class CardGamePresenter
 
             const definition = getCardDefinitionOrThrow(step.definitionId);
 
+            const proceedAfterStep = (): void =>
+            {
+                finishActiveStep();
+
+                if (chain.length >= GAME_RULES.maxChainSteps)
+                {
+                    finalize();
+                    return;
+                }
+
+                scheduleNext(getNextChainSlotFromStep(board, step));
+            };
+
             if (isJokerDefinition(definition))
             {
                 this.boardView.showJokerDirectionPicker(step.slot, (direction) =>
                 {
                     applyJokerChosenDirection(step, direction);
-                    scheduleNext(getNextChainSlotFromStep(board, step));
+                    this.attackTimer = this.scene.time.delayedCall(stepMs, proceedAfterStep);
                 });
 
                 return;
@@ -291,11 +312,16 @@ export class CardGamePresenter
 
             if (chain.length >= GAME_RULES.maxChainSteps)
             {
-                finalize();
+                this.attackTimer = this.scene.time.delayedCall(stepMs, () =>
+                {
+                    finishActiveStep();
+                    finalize();
+                });
+
                 return;
             }
 
-            scheduleNext(getNextChainSlotFromStep(board, step));
+            this.attackTimer = this.scene.time.delayedCall(stepMs, proceedAfterStep);
         };
 
         runStep();
@@ -454,6 +480,21 @@ export class CardGamePresenter
 
         this.session.grantPlayerShield(resolvedStep.armor);
         this.setDisplayedArmor(this.session.getPlayer().shield);
+        this.armorView.showShieldGain(resolvedStep.armor);
+
+        const target = this.boardView.getCardVisualTarget(step.slot);
+
+        if (target)
+        {
+            playFloatingText(
+                this.scene,
+                target.wrapper,
+                target.width / 2,
+                target.height * 0.22,
+                `+${resolvedStep.armor}`,
+                '#58d68d',
+            );
+        }
     }
 
     private setDisplayedArmor (armor: number): void
@@ -482,8 +523,17 @@ export class CardGamePresenter
             const player = this.session.getPlayer();
             this.playerView.setHealth(player);
             this.setDisplayedArmor(player.shield);
-            this.playerView.playHitFlash();
-            this.playerView.showDamageNumber(result.thornsDamage!);
+
+            if ((result.thornsShieldAbsorbed ?? 0) > 0)
+            {
+                this.armorView.showShieldAbsorb(result.thornsShieldAbsorbed!);
+            }
+
+            if ((result.thornsHealthDamage ?? 0) > 0)
+            {
+                this.playerView.playHitFlash();
+                this.playerView.showDamageNumber(result.thornsHealthDamage!);
+            }
         }
     }
 
