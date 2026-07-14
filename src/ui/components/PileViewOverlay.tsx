@@ -2,19 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { EventBus } from '../../game/EventBus';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
 import type { PileCardEntry, PileViewPayload } from '../../game/events/gameEventMap';
-import { CARD_VISUALS } from '../../game/cards/cardVisuals';
+import { CardChip } from './CardChip';
 
 interface GroupedPileCard {
     entry: PileCardEntry;
     count: number;
 }
-
-const behaviorColor = (behaviorId: string): string =>
-{
-    const border = CARD_VISUALS[behaviorId]?.border ?? CARD_VISUALS.attack.border;
-
-    return `#${border.toString(16).padStart(6, '0')}`;
-};
 
 const groupCards = (cards: readonly PileCardEntry[]): GroupedPileCard[] =>
 {
@@ -84,6 +77,7 @@ export const PileViewOverlay = () =>
     }
 
     const close = (): void => setPayload(null);
+    const isDeck = payload.kind === 'deck';
 
     return (
         <div className="pile-view" role="dialog" aria-modal="true" onClick={close}>
@@ -101,20 +95,25 @@ export const PileViewOverlay = () =>
                 ) : (
                     <ul className="pile-view__grid">
                         {groups.map(({ entry, count }) => (
-                            <li
-                                key={entry.definitionId}
-                                className="pile-view__card"
-                                style={{ borderColor: behaviorColor(entry.behaviorId) }}
-                            >
-                                {count > 1 && <span className="pile-view__badge">×{count}</span>}
-                                <span className="pile-view__card-label">{entry.label}</span>
-                                <span className="pile-view__card-power">{entry.power}</span>
+                            <li key={entry.definitionId} className="pile-view__card">
+                                <CardChip
+                                    definitionId={entry.definitionId}
+                                    label={entry.label}
+                                    power={entry.power}
+                                    behaviorId={entry.behaviorId}
+                                    size="pile"
+                                    countBadge={count}
+                                />
                             </li>
                         ))}
                     </ul>
                 )}
 
-                <p className="pile-view__hint">Draw order is hidden.</p>
+                <p className="pile-view__hint">
+                    {isDeck
+                        ? 'Grouped alphabetically — draw order is hidden.'
+                        : 'Most recent discard is on top of the pile.'}
+                </p>
             </div>
         </div>
     );

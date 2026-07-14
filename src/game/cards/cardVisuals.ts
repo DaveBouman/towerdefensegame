@@ -78,3 +78,7 @@ export const CARD_VISUALS: Record<string, CardVisualStyle> = {
 export const HAND_CARD_WIDTH = 86;
 export const HAND_CARD_HEIGHT = 118;
 export const HAND_CARD_GAP = 14;
+
+/** Scaled-down cards for deck/graveyard stacks (same aspect as hand cards). */
+export const PILE_CARD_WIDTH = 58;
+export const PILE_CARD_HEIGHT = 78;

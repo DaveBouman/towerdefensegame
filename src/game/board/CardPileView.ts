@@ -1,22 +1,25 @@
+import { buildCardBackGraphic, buildCardGraphic } from '../cards/CardRenderer';
+import { PILE_CARD_HEIGHT, PILE_CARD_WIDTH } from '../cards/cardVisuals';
 import { CYBER } from '../config/cyberpunkTheme';
 import { drawCornerBrackets } from '../config/cyberpunkUiGraphics';
 import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
+import type { CardInstance } from '../cardGame/domain/types';
 import type { BoardLayout } from './boardLayout';
 
-const STACK_WIDTH = 52;
-const STACK_HEIGHT = 72;
 const MAX_VISIBLE_STACK = 4;
+const STACK_OFFSET = 2;
+const WELL_PAD = 6;
 
 export class CardPileView
 {
     readonly container: Phaser.GameObjects.Container;
     private readonly countText: Phaser.GameObjects.Text;
     private readonly stackContainer: Phaser.GameObjects.Container;
-    private readonly stackCards: Phaser.GameObjects.Rectangle[] = [];
-    private readonly emptyStack: Phaser.GameObjects.Rectangle;
+    private readonly stackSlots: Phaser.GameObjects.Container[] = [];
     private readonly frame: Phaser.GameObjects.Rectangle;
     private frameBorder = 0xffffff;
     private count = 0;
+    private readonly kind: 'deck' | 'graveyard';
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -27,11 +30,16 @@ export class CardPileView
         kind: 'deck' | 'graveyard',
     )
     {
+        this.kind = kind;
         const { pileWidth, pileHeight } = layout;
         const fill = kind === 'deck' ? CYBER.deckFill : CYBER.graveFill;
         const border = kind === 'deck' ? CYBER.deckBorder : CYBER.graveBorder;
         const frameW = pileWidth + 12;
         const frameH = pileHeight + 34;
+        const cardOptions = {
+            width: PILE_CARD_WIDTH,
+            height: PILE_CARD_HEIGHT,
+        };
 
         this.container = scene.add.container(x, y);
 
@@ -46,23 +54,33 @@ export class CardPileView
 
         drawCornerBrackets(brackets, 4, 4, frameW - 8, frameH - 8, border, { arm: 10, alpha: 0.8 });
 
-        this.stackContainer = scene.add.container(pileWidth / 2 + 6, 8);
+        const maxStackDepth = (MAX_VISIBLE_STACK - 1) * STACK_OFFSET;
+        const stackX = Math.round((frameW - PILE_CARD_WIDTH - maxStackDepth) / 2);
+        const stackY = Math.round((pileHeight - PILE_CARD_HEIGHT - maxStackDepth) / 2) + WELL_PAD;
 
-        this.emptyStack = scene.add.rectangle(0, 0, STACK_WIDTH, STACK_HEIGHT, CYBER.cardBack, 0.25);
-        this.emptyStack.setStrokeStyle(2, CYBER.cardBackBorder, 0.45);
-        this.emptyStack.setOrigin(0.5, 0);
-        this.stackContainer.add(this.emptyStack);
+        this.stackContainer = scene.add.container(stackX, stackY);
+
+        const stackMaskShape = scene.add.graphics();
+
+        stackMaskShape.fillStyle(0xffffff);
+        stackMaskShape.fillRect(WELL_PAD, WELL_PAD, pileWidth, pileHeight);
+        stackMaskShape.setVisible(false);
+        this.stackContainer.setMask(stackMaskShape.createGeometryMask());
 
         for (let i = 0; i < MAX_VISIBLE_STACK; i++)
         {
-            const offset = i * 3;
-            const card = scene.add.rectangle(offset, offset, STACK_WIDTH, STACK_HEIGHT, CYBER.cardBack, 1);
+            const offset = i * STACK_OFFSET;
+            const slot = scene.add.container(offset, offset);
+            const { container: graphic } = buildCardBackGraphic(
+                scene,
+                cardOptions,
+                kind === 'deck' ? CYBER.cyan : CYBER.graveBorder,
+            );
 
-            card.setStrokeStyle(2, CYBER.cardBackBorder, 0.95);
-            card.setOrigin(0.5, 0);
-            card.setVisible(false);
-            this.stackCards.push(card);
-            this.stackContainer.add(card);
+            slot.add(graphic);
+            slot.setVisible(false);
+            this.stackSlots.push(slot);
+            this.stackContainer.add(slot);
         }
 
         this.countText = scene.add.text(pileWidth / 2 + 6, pileHeight + 16, '0', {
@@ -73,8 +91,8 @@ export class CardPileView
             ...uiTextStyle(13, kind === 'deck' ? '#7af0ff' : '#ffd4b8', { bold: true }),
         }).setOrigin(0.5, 0);
 
-        this.container.add([ frame, brackets, this.stackContainer, this.countText, title ]);
-        this.applyCount(0);
+        this.container.add([ frame, brackets, stackMaskShape, this.stackContainer, this.countText, title ]);
+        this.applyStack(0, null);
     }
 
     /** Makes the pile clickable to inspect its contents. */
@@ -110,7 +128,17 @@ export class CardPileView
             return;
         }
 
-        this.applyCount(count);
+        this.applyStack(count, null);
+    }
+
+    setStack (count: number, previewCard: CardInstance | null): void
+    {
+        if (!this.isActive())
+        {
+            return;
+        }
+
+        this.applyStack(count, previewCard);
     }
 
     pulse (): void
@@ -143,30 +171,49 @@ export class CardPileView
         return this.container.active && this.scene.sys !== null;
     }
 
-    private applyCount (count: number): void
+    private applyStack (count: number, previewCard: CardInstance | null): void
     {
         this.count = Math.max(0, count);
         this.countText.setText(String(this.count));
 
-        if (this.count === 0)
-        {
-            this.emptyStack.setVisible(true);
+        const cardOptions = {
+            width: PILE_CARD_WIDTH,
+            height: PILE_CARD_HEIGHT,
+        };
+        const visibleCards = Math.min(this.count, MAX_VISIBLE_STACK);
+        const showTopFace = this.kind === 'graveyard' && previewCard !== null;
 
-            for (const card of this.stackCards)
+        for (let i = 0; i < this.stackSlots.length; i++)
+        {
+            const slot = this.stackSlots[i]!;
+            const isVisible = i < visibleCards;
+            const isTop = isVisible && i === visibleCards - 1;
+
+            slot.setVisible(isVisible);
+
+            if (!isVisible)
             {
-                card.setVisible(false);
+                continue;
             }
 
-            return;
-        }
+            slot.removeAll(true);
 
-        this.emptyStack.setVisible(false);
+            if (isTop && showTopFace)
+            {
+                const { container } = buildCardGraphic(this.scene, previewCard!, cardOptions);
 
-        const visibleCards = Math.min(this.count, MAX_VISIBLE_STACK);
+                slot.add(container);
+            }
+            else
+            {
+                const { container } = buildCardBackGraphic(
+                    this.scene,
+                    cardOptions,
+                    this.kind === 'deck' ? CYBER.cyan : CYBER.graveBorder,
+                );
 
-        for (let i = 0; i < this.stackCards.length; i++)
-        {
-            this.stackCards[i].setVisible(i < visibleCards);
+                slot.add(container);
+            }
         }
     }
 }

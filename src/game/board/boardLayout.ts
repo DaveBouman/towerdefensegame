@@ -83,11 +83,15 @@ export const computeBoardLayout = (
     const handWidth = HAND_CARD_WIDTH * GAME_RULES.handSize + HAND_CARD_GAP * (GAME_RULES.handSize - 1);
     const pileWidth = 64;
     const pileHeight = 88;
-    const pileMargin = 16;
     const pileFrameWidth = pileWidth + 12;
-    const pileY = Math.round(handY + (handBandHeight - pileHeight) / 2);
-    const deckX = pileMargin;
-    const graveyardX = canvasWidth - pileFrameWidth - pileMargin;
+    const pileFrameHeight = pileHeight + 34;
+    const playableTop = hudTopInset;
+    const playableBottom = handY;
+    const pileCenterY = playableTop + (playableBottom - playableTop) * (2 / 3);
+    const pileY = Math.round(Math.min(pileCenterY - pileFrameHeight / 2, handY - pileFrameHeight - 12));
+    const pileSideInset = Math.max(48, Math.round(canvasWidth * 0.05));
+    const deckX = pileSideInset;
+    const graveyardX = canvasWidth - pileFrameWidth - pileSideInset;
 
     return {
         canvasWidth,

@@ -492,6 +492,50 @@ describe('AttackPipeline', () =>
         expect(computeHazardDamage(board, chain)).toBe(0);
     });
 
+    it('converts a trap at chain start when the chain continues to an attack', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('hazard', 'right', 'enemy'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('attack', 'left'));
+
+        const sequence = planAttack(board, { row: 0, col: 0 });
+
+        expect(sequence.chain).toHaveLength(2);
+        expect(sequence.chain[0]?.damage).toBe(4);
+        expect(sequence.chain[1]?.damage).toBe(6);
+        expect(sequence.totalDamage).toBe(10);
+        expect(sequence.hazardDamage).toBe(0);
+    });
+
+    it('disarms a lone trap at chain start without dealing damage', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('hazard', 'right', 'enemy'));
+
+        const sequence = planAttack(board, { row: 0, col: 0 });
+
+        expect(sequence.chain).toHaveLength(1);
+        expect(sequence.chain[0]?.damage).toBe(0);
+        expect(sequence.totalDamage).toBe(0);
+        expect(sequence.hazardDamage).toBe(0);
+    });
+
+    it('converts a trap at chain start into armor when the chain continues to defend', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('hazard', 'right', 'enemy'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('defend', 'left'));
+
+        const sequence = planAttack(board, { row: 0, col: 0 });
+
+        expect(sequence.chain[0]?.damage).toBe(0);
+        expect(sequence.chain[0]?.armor).toBe(4);
+        expect(sequence.chain[1]?.armor).toBe(3);
+    });
+
     it('ignores enemy hazards for off-chain player bonuses', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));

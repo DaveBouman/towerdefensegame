@@ -439,9 +439,20 @@ body {
 }
 
 .pile-view__card {
-    border-radius: 4px;
-    border: 1px solid var(--cp-border);
-    background: linear-gradient(180deg, rgba(15, 22, 40, 0.95) 0%, rgba(8, 12, 22, 0.95) 100%);
+    border: none;
+    background: transparent;
+    padding: 0;
+}
+
+.pile-view__card .card-chip {
+    box-shadow:
+        0 0 18px color-mix(in srgb, var(--card-border) 40%, transparent),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.pile-view__card-label,
+.pile-view__card-power {
+    display: none;
 }
 
 @keyframes cp-neon-pulse {

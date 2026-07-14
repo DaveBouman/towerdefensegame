@@ -128,78 +128,91 @@ export class CardGamePresenter
                 || abilitySlots.length > 0
                 || sequence.disarmResults.length > 0;
 
-            if (!hasEndEffects)
+            const finishSequence = (): void =>
             {
                 onComplete(sequence);
+            };
+
+            if (!hasEndEffects)
+            {
+                finishSequence();
                 return;
             }
 
-            for (const slot of offChainSlots)
+            try
             {
-                this.boardView.bringCardToFront(slot);
-            }
-
-            for (const slot of hazardSlots)
-            {
-                this.boardView.bringCardToFront(slot);
-            }
-
-            for (const slot of abilitySlots)
-            {
-                this.boardView.bringCardToFront(slot);
-            }
-
-            if (sequence.abilityArmorGain > 0)
-            {
-                this.session.grantPlayerShield(sequence.abilityArmorGain);
-            }
-
-            if (sequence.offChainArmor > 0)
-            {
-                this.session.grantPlayerShield(sequence.offChainArmor);
-            }
-
-            if (sequence.offChainArmor > 0 || sequence.abilityArmorGain > 0)
-            {
-                this.setDisplayedArmor(this.session.getPlayer().shield);
-            }
-
-            if (sequence.offChainDamage > 0)
-            {
-                this.applyEnemyHitResult(this.session.dealAttackDamage(sequence.offChainDamage));
-            }
-
-            if (sequence.abilityEnemyDamage > 0)
-            {
-                this.applyEnemyHitResult(this.session.dealAttackDamage(sequence.abilityEnemyDamage));
-            }
-
-            if (sequence.abilityPoisonStacks > 0)
-            {
-                this.enemyView.showPoisonApplied(sequence.abilityPoisonStacks);
-            }
-
-            const playerAbilityDamage = sequence.abilityPlayerDamage + sequence.hazardDamage;
-
-            if (playerAbilityDamage > 0)
-            {
-                const result = this.session.resolveHazardDamage(playerAbilityDamage);
-                this.playerView.setHealth(result.player);
-                this.setDisplayedArmor(result.player.shield);
-
-                if (result.shieldAbsorbed > 0)
+                for (const slot of offChainSlots)
                 {
-                    this.armorView.showShieldAbsorb(result.shieldAbsorbed);
+                    this.boardView.bringCardToFront(slot);
                 }
 
-                if (result.healthDamage > 0)
+                for (const slot of hazardSlots)
                 {
-                    this.playerView.playHitFlash();
-                    this.playerView.showDamageNumber(result.healthDamage);
+                    this.boardView.bringCardToFront(slot);
+                }
+
+                for (const slot of abilitySlots)
+                {
+                    this.boardView.bringCardToFront(slot);
+                }
+
+                if (sequence.abilityArmorGain > 0)
+                {
+                    this.session.grantPlayerShield(sequence.abilityArmorGain);
+                }
+
+                if (sequence.offChainArmor > 0)
+                {
+                    this.session.grantPlayerShield(sequence.offChainArmor);
+                }
+
+                if (sequence.offChainArmor > 0 || sequence.abilityArmorGain > 0)
+                {
+                    this.setDisplayedArmor(this.session.getPlayer().shield);
+                }
+
+                if (sequence.offChainDamage > 0)
+                {
+                    this.applyEnemyHitResult(this.session.dealAttackDamage(sequence.offChainDamage));
+                }
+
+                if (sequence.abilityEnemyDamage > 0)
+                {
+                    this.applyEnemyHitResult(this.session.dealAttackDamage(sequence.abilityEnemyDamage));
+                }
+
+                if (sequence.abilityPoisonStacks > 0)
+                {
+                    this.enemyView.showPoisonApplied(sequence.abilityPoisonStacks);
+                }
+
+                const playerAbilityDamage = sequence.abilityPlayerDamage + sequence.hazardDamage;
+
+                if (playerAbilityDamage > 0)
+                {
+                    const result = this.session.resolveHazardDamage(playerAbilityDamage);
+                    this.playerView.setHealth(result.player);
+                    this.setDisplayedArmor(result.player.shield);
+
+                    if (result.shieldAbsorbed > 0)
+                    {
+                        this.armorView.showShieldAbsorb(result.shieldAbsorbed);
+                    }
+
+                    if (result.healthDamage > 0)
+                    {
+                        this.playerView.playHitFlash();
+                        this.playerView.showDamageNumber(result.healthDamage);
+                    }
                 }
             }
+            catch
+            {
+                finishSequence();
+                return;
+            }
 
-            this.scene.time.delayedCall(400, () => onComplete(sequence));
+            this.attackTimer = this.scene.time.delayedCall(400, finishSequence);
         };
 
         const scheduleNext = (next: SlotPosition | null): void =>
@@ -208,7 +221,7 @@ export class CardGamePresenter
 
             if (!current)
             {
-                this.scene.time.delayedCall(stepMs, finalize);
+                this.attackTimer = this.scene.time.delayedCall(stepMs, finalize);
                 return;
             }
 

@@ -12,7 +12,9 @@ describe('boardLayout', () =>
         expect(layout.enemyX).toBeGreaterThan(layout.gridOffsetX + layout.gridWidth);
         expect(layout.gridOffsetX).toBeLessThan((layout.canvasWidth - layout.gridWidth) / 2);
         expect(layout.handY).toBeGreaterThan(layout.gridOffsetY + layout.gridHeight);
-        expect(layout.deckX).toBe(16);
+        expect(layout.deckY + layout.pileHeight + 34).toBeLessThan(layout.handY);
+        expect(layout.deckY).toBeGreaterThan(layout.gridOffsetY);
+        expect(layout.deckX).toBeGreaterThanOrEqual(48);
         expect(layout.graveyardX).toBeGreaterThan(layout.handCenterX);
         expect(layout.graveyardX).toBeGreaterThan(layout.deckX);
     });

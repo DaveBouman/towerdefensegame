@@ -185,3 +185,49 @@ export const buildCardGraphicFromDefinition = (
     options: CardVisualOptions,
 ): CardGraphic =>
     buildCardGraphic(scene, { instanceId: 'preview', definitionId, arrow: 'right' }, options);
+
+/** Face-down stack card — same chrome as hand cards, used on the draw pile. */
+export const buildCardBackGraphic = (
+    scene: Phaser.Scene,
+    options: CardVisualOptions,
+    accentColor: number = CYBER.cyan,
+): CardGraphic =>
+{
+    const { width, height, interactive = false } = options;
+    const container = scene.add.container(0, 0);
+
+    const glow = scene.add.rectangle(width / 2, height / 2, width + 8, height + 8, accentColor, 0.1);
+    const body = scene.add.rectangle(width / 2, height / 2, width, height, CYBER.cardBack, 1);
+
+    body.setStrokeStyle(2, CYBER.cardBackBorder, 1);
+
+    const inner = scene.add.rectangle(
+        width / 2,
+        height / 2,
+        width - 10,
+        height - 10,
+        CYBER.cardInner,
+        0.9,
+    );
+
+    const accent = scene.add.rectangle(width / 2, 5, width - 18, 2, accentColor, 0.45);
+    const brackets = scene.add.graphics();
+
+    drawCornerBrackets(brackets, 3, 3, width - 6, height - 6, accentColor, {
+        arm: Math.min(11, Math.round(width * 0.14)),
+        alpha: 0.85,
+    });
+
+    const mark = scene.add.text(width / 2, height / 2, '◈', {
+        ...uiDisplayTextStyle(Math.round(width * 0.28), `#${accentColor.toString(16).padStart(6, '0')}`, { bold: true }),
+    }).setOrigin(0.5);
+
+    container.add([ glow, body, inner, accent, brackets, mark ]);
+
+    if (interactive)
+    {
+        body.setInteractive({ useHandCursor: true });
+    }
+
+    return { container, hitArea: body };
+};

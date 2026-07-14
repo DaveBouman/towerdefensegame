@@ -375,13 +375,45 @@ const applyChainStacking = (chain: ActivationStep[]): ActivationStep[] =>
  * like the type they became. Runs before stacking so the conversion is fully
  * "that type". Unchained traps still explode (see `computeHazardDamage`).
  */
+const convertHazardStep = (
+    step: ActivationStep,
+    hazardPower: number,
+    asDefend: boolean,
+): ActivationStep => ({
+    ...step,
+    behaviorId: asDefend ? 'defend' : 'attack',
+    damage: asDefend ? 0 : hazardPower,
+    armor: asDefend ? hazardPower : 0,
+});
+
 export const applyBombConversion = (chain: ActivationStep[]): ActivationStep[] =>
 {
     const converted: ActivationStep[] = [];
 
     chain.forEach((step, index) =>
     {
-        if (index === 0 || !isHazardDefinition(getCardDefinitionOrThrow(step.definitionId)))
+        const definition = getCardDefinitionOrThrow(step.definitionId);
+
+        if (!isHazardDefinition(definition))
+        {
+            converted.push(step);
+
+            return;
+        }
+
+        const hazardPower = definition.power;
+
+        // Chain starts on a trap then routes onward — convert from the next card's type.
+        if (index === 0 && chain.length > 1)
+        {
+            const nextBehavior = getCardDefinitionOrThrow(chain[index + 1]!.definitionId).behaviorId;
+
+            converted.push(convertHazardStep(step, hazardPower, nextBehavior === 'defend'));
+
+            return;
+        }
+
+        if (index === 0)
         {
             converted.push(step);
 
@@ -389,15 +421,8 @@ export const applyBombConversion = (chain: ActivationStep[]): ActivationStep[] =
         }
 
         const previous = converted[index - 1]!;
-        const hazardPower = getCardDefinitionOrThrow(step.definitionId).power;
-        const asDefend = previous.behaviorId === 'defend';
 
-        converted.push({
-            ...step,
-            behaviorId: asDefend ? 'defend' : 'attack',
-            damage: asDefend ? 0 : hazardPower,
-            armor: asDefend ? hazardPower : 0,
-        });
+        converted.push(convertHazardStep(step, hazardPower, previous.behaviorId === 'defend'));
     });
 
     return converted;

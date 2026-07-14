@@ -341,8 +341,8 @@ export class Game extends Scene
             return;
         }
 
-        this.deckView?.setCount(deckSize);
-        this.graveyardView?.setCount(discardSize);
+        this.deckView?.setStack(deckSize, this.session.getDeckTopCard() ?? null);
+        this.graveyardView?.setStack(discardSize, this.session.getDiscardTopCard() ?? null);
     };
 
     private syncPileViews (): void
@@ -354,8 +354,8 @@ export class Game extends Scene
 
         const { deckSize, discardSize } = this.session.getPileCounts();
 
-        this.deckView?.setCount(deckSize);
-        this.graveyardView?.setCount(discardSize);
+        this.deckView?.setStack(deckSize, this.session.getDeckTopCard() ?? null);
+        this.graveyardView?.setStack(discardSize, this.session.getDiscardTopCard() ?? null);
     }
 
     private openPileView (kind: 'deck' | 'graveyard'): void
@@ -428,12 +428,18 @@ export class Game extends Scene
      */
     private onAttackResolved (sequence: import('../cardGame/domain/types').AttackSequence): void
     {
-        if (!this.session || !this.boardView || !this.enemyView || this.turnResolving)
+        if (!this.session)
         {
             return;
         }
 
         this.session.completeAttack(sequence);
+
+        if (!this.boardView || !this.enemyView || this.turnResolving)
+        {
+            this.session.releaseAttackLock();
+            return;
+        }
 
         if (this.session.isPuzzleMode())
         {

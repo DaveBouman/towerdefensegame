@@ -64,3 +64,8 @@ export const getCardBehaviorTextureKey = (behaviorId: string): string | null =>
     behaviorId in CARD_BEHAVIOR_TEXTURE_KEY
         ? CARD_BEHAVIOR_TEXTURE_KEY[behaviorId as CardBehaviorIconId]
         : null;
+
+export const getCardBehaviorIconSvg = (behaviorId: string): string | null =>
+    behaviorId in CARD_BEHAVIOR_SVG_RAW
+        ? CARD_BEHAVIOR_SVG_RAW[behaviorId as CardBehaviorIconId]
+        : null;

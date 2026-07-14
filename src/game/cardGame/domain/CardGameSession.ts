@@ -186,6 +186,18 @@ export class CardGameSession
         return this.discard.map((card) => card.definitionId);
     }
 
+    /** Next card that would be drawn (`deck.pop()`). */
+    getDeckTopCard (): CardInstance | undefined
+    {
+        return this.deck.length > 0 ? this.deck[this.deck.length - 1] : undefined;
+    }
+
+    /** Most recently discarded card. */
+    getDiscardTopCard (): CardInstance | undefined
+    {
+        return this.discard.length > 0 ? this.discard[this.discard.length - 1] : undefined;
+    }
+
     /** Single-use cards played this battle — remove one copy each from the run deck on victory. */
     getExhaustedDefinitionIds (): readonly string[]
     {
