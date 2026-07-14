@@ -16,7 +16,7 @@ export const getMultiEnemySlotSize = (layout: BoardLayout): number =>
     );
 
 export const getMultiEnemySlotGap = (size: number): number =>
-    Math.round(size * 0.22);
+    Math.round(size * 0.28);
 
 /** Horizontal space reserved to the right of the board for a row of enemy targets. */
 export const computeEnemyColumnWidth = (

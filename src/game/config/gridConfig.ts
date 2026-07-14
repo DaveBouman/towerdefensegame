@@ -26,3 +26,12 @@ export const getViewportPixelSize = (_config: GridConfig = VIEWPORT_CONFIG): Gri
         height: window.innerHeight,
     };
 };
+
+/** Enemy traps may only be placed in this many rightmost columns. */
+export const TRAP_PLACEMENT_COLUMN_COUNT = 3;
+
+export const getTrapPlacementMinColumn = (cols = GRID_CONFIG.cols): number =>
+    cols - TRAP_PLACEMENT_COLUMN_COUNT;
+
+export const isTrapPlacementColumn = (col: number, cols = GRID_CONFIG.cols): boolean =>
+    col >= getTrapPlacementMinColumn(cols);

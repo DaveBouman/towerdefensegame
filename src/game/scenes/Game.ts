@@ -486,8 +486,8 @@ export class Game extends Scene
     };
 
     /**
-     * After a chain resolves: spend energy, then the enemy responds before the player
-     * can attack again. When energy runs out, the next enemy turn starts a fresh round.
+     * After a chain resolves: spend energy, then the enemy responds only once
+     * the player has spent all energy for the round.
      */
     private onAttackResolved (sequence: import('../cardGame/domain/types').AttackSequence): void
     {
@@ -552,12 +552,23 @@ export class Game extends Scene
             return;
         }
 
+        if (this.session.getEnergy() > 0)
+        {
+            this.session.refillHand();
+            this.handView?.syncHand(this.session.getHand());
+            this.session.placeFieldBoost();
+            this.syncBoardFromSession();
+            this.syncPileViews();
+            this.emitAttackReadiness();
+            return;
+        }
+
         this.emitAttackReadiness();
         this.endPlayerRound();
     }
 
     /**
-     * After each player attack: graveyard animation, board clear, then one enemy turn.
+     * End of player round (energy depleted): graveyard animation, board clear, enemy phase.
      */
     private endPlayerRound = (): void =>
     {
@@ -807,6 +818,14 @@ export class Game extends Scene
 
         this.enemySquad?.syncFromSession(this.session);
         this.enemySquad?.syncTargetPrompt(this.session);
+
+        if (!this.turnResolving
+            && !this.session.isEnemyTurnInProgress()
+            && !this.session.isEnemyDefeated())
+        {
+            this.enemySquad?.showAllIntents(this.session);
+        }
+
         EventBus.emit(GAME_EVENTS.CARD_ATTACK_READY, this.session.getAttackReadiness());
         this.emitTurnState();
     }

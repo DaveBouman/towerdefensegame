@@ -1,6 +1,6 @@
 import { BODY_MOD_IDS, isSeventhStrikeAttack } from '../../run/bodyMods';
 import { getBattleEnergyBonus, getRunMaxHealth } from '../../run/runResources';
-import { GRID_CONFIG } from '../../config/gridConfig';
+import { GRID_CONFIG, isTrapPlacementColumn } from '../../config/gridConfig';
 import {
     GAME_RULES,
     getCardDefinitionOrThrow,
@@ -1525,7 +1525,7 @@ export class CardGameSession
         };
     }
 
-    /** Places an enemy trap on a random empty board slot, avoiding tiles next to another trap when possible. */
+    /** Places an enemy trap on a random empty slot in the last three columns, avoiding tiles next to another trap when possible. */
     placeEnemyHazard (): SlotPosition | null
     {
         const hazardId = GAME_RULES.hazard.definitionId;
@@ -1538,7 +1538,10 @@ export class CardGameSession
 
             if (card === null)
             {
-                emptySlots.push({ ...slot });
+                if (isTrapPlacementColumn(slot.col))
+                {
+                    emptySlots.push({ ...slot });
+                }
             }
             else if (card.definitionId === hazardId)
             {
@@ -1556,7 +1559,7 @@ export class CardGameSession
                 Math.abs(hazard.row - candidate.row) <= 1
                 && Math.abs(hazard.col - candidate.col) <= 1);
 
-        // Prefer spacing traps apart; fall back to any empty slot on a crowded board.
+        // Prefer spacing traps apart; fall back to any eligible empty slot on a crowded board.
         const spacedSlots = emptySlots.filter((candidate) => !isAdjacentToHazard(candidate));
         const candidates = spacedSlots.length > 0 ? spacedSlots : emptySlots;
 

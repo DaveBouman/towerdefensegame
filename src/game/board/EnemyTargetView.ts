@@ -16,9 +16,9 @@ import type { BoardLayout } from './boardLayout';
 const PASSIVE_ICON_SIZE = 26;
 const PASSIVE_ICON_GAP = 4;
 const INTENT_ICON_SIZE = 28;
-const INTENT_CHIP_HEIGHT = 40;
-const INTENT_CHIP_GAP = 10;
-const INTENT_PLUS_GAP = 6;
+const INTENT_AMOUNT_FONT_SIZE = 18;
+const INTENT_STEP_GAP = 10;
+const INTENT_STACK_GAP = 3;
 
 const PASSIVE_ROW_COLORS: Record<EnemyPassiveConfig['id'], number> = {
     thorns: 0xf39c12,
@@ -59,6 +59,7 @@ export class EnemyTargetView
     private passiveIconsContainer?: Phaser.GameObjects.Container;
     private intentContainer?: Phaser.GameObjects.Container;
     private intentTween?: Phaser.Tweens.Tween;
+    private intentAnchorY = 0;
     private shieldTween?: Phaser.Tweens.Tween;
     private readonly enemySize: number;
     private displayedShield = 0;
@@ -303,115 +304,242 @@ export class EnemyTargetView
         this.clearIntent();
 
         const steps = getEnemyIntentStepVisuals(action, phase);
-        const intentY = this.getIntentRowY();
-        const rowWidth = this.measureIntentRowWidth(steps);
-        const startX = this.enemySize / 2 - rowWidth / 2;
+
+        if (steps.length === 0)
+        {
+            return;
+        }
+
+        const metrics = this.getIntentMetrics();
+        const { rows, rowWidths, rowHeights } = this.layoutIntentStepRows(steps, metrics);
+        const rowGap = Math.max(4, metrics.stepGap - 2);
+        const totalHeight = rowHeights.reduce((sum, height) => sum + height, 0)
+            + Math.max(0, rows.length - 1) * rowGap;
+        const widestRow = rowWidths.reduce((max, width) => Math.max(max, width), 0);
+        const fitScale = this.getIntentFitScale(widestRow);
         const parts: Phaser.GameObjects.GameObject[] = [];
 
-        let x = startX;
+        let rowTop = -totalHeight / 2;
 
-        steps.forEach((visual, index) =>
+        rows.forEach((row, rowIndex) =>
         {
-            if (index > 0)
+            const rowWidth = rowWidths[rowIndex]!;
+            const rowHeight = rowHeights[rowIndex]!;
+            const rowCenterY = rowTop + rowHeight / 2;
+            let x = -rowWidth / 2;
+
+            row.forEach((visual) =>
             {
-                const plus = this.scene.add.text(x + INTENT_PLUS_GAP, intentY, '+', {
-                    ...uiTextStyle(17, '#a8a8c8', { bold: true }),
-                }).setOrigin(0, 0.5);
+                parts.push(...this.buildIntentStep(visual, x, rowCenterY, phase, metrics));
+                x += this.measureIntentStepWidth(visual, metrics) + metrics.stepGap;
+            });
 
-                parts.push(plus);
-                x += INTENT_PLUS_GAP + 12;
-            }
-
-            parts.push(...this.buildIntentChip(visual, x, intentY, phase));
-            x += this.measureIntentChipWidth(visual) + INTENT_CHIP_GAP;
+            rowTop += rowHeight + rowGap;
         });
 
+        this.intentAnchorY = -(totalHeight / 2 + Math.round(this.enemySize * 0.28) + 10);
         this.intentContainer = this.scene.add.container(0, 0, parts);
-        this.intentContainer.setAlpha(0.92);
-        this.intentContainer.setScale(0.96);
-        this.container.add(this.intentContainer);
-        this.container.bringToTop(this.intentContainer);
+        this.intentContainer.setAlpha(0);
+        this.intentContainer.setScale(fitScale);
+        this.intentContainer.setDepth(500);
+        this.syncIntentWorldPosition();
 
         this.intentTween = this.scene.tweens.add({
             targets: this.intentContainer,
             alpha: 1,
-            scaleX: 1,
-            scaleY: 1,
+            scaleX: fitScale,
+            scaleY: fitScale,
             duration: phase === 'executing' ? 160 : 220,
             ease: 'Cubic.easeOut',
         });
     }
 
-    private getIntentRowY (): number
+    private getIntentMetrics (): {
+        scale: number;
+        iconSize: number;
+        stepGap: number;
+        stepWidthStacked: number;
+        stepWidthIconOnly: number;
+        amountFontSize: number;
+        stackGap: number;
+        stepHeightStacked: number;
+        stepHeightIconOnly: number;
+    }
     {
-        return -(INTENT_CHIP_HEIGHT / 2 + Math.round(this.enemySize * 0.42) + 16);
+        const scale = Math.max(0.94, Math.min(1.08, this.enemySize / 108));
+
+        const iconSize = Math.max(22, Math.round(INTENT_ICON_SIZE * scale));
+        const amountFontSize = Math.max(16, Math.round(INTENT_AMOUNT_FONT_SIZE * scale));
+        const stackGap = Math.max(2, Math.round(INTENT_STACK_GAP * scale));
+        const stepWidthStacked = Math.max(iconSize, Math.round(40 * scale));
+        const stepWidthIconOnly = iconSize;
+
+        return {
+            scale,
+            iconSize,
+            stepGap: Math.max(6, Math.round(INTENT_STEP_GAP * scale)),
+            stepWidthStacked,
+            stepWidthIconOnly,
+            amountFontSize,
+            stackGap,
+            stepHeightStacked: iconSize + stackGap + amountFontSize,
+            stepHeightIconOnly: iconSize,
+        };
     }
 
-    private measureIntentChipWidth (visual: EnemyIntentStepVisual): number
+    private getIntentFitScale (rowWidth: number): number
     {
-        return visual.amountLabel ? 62 : 44;
-    }
-
-    private measureIntentRowWidth (steps: EnemyIntentStepVisual[]): number
-    {
-        if (steps.length === 0)
+        if (rowWidth <= 0)
         {
-            return 0;
+            return 1;
         }
 
-        let width = steps.reduce((sum, step) => sum + this.measureIntentChipWidth(step), 0);
-        width += (steps.length - 1) * (INTENT_CHIP_GAP + INTENT_PLUS_GAP + 12);
+        const maxWidth = this.enemySize + 4;
 
-        return width;
+        return Math.max(0.9, Math.min(1.08, maxWidth / rowWidth));
     }
 
-    private buildIntentChip (
+    private measureIntentStepHeight (
+        visual: EnemyIntentStepVisual,
+        metrics: ReturnType<EnemyTargetView['getIntentMetrics']>,
+    ): number
+    {
+        return visual.amountLabel ? metrics.stepHeightStacked : metrics.stepHeightIconOnly;
+    }
+
+    private getIntentRowHeight (
+        steps: EnemyIntentStepVisual[],
+        metrics: ReturnType<EnemyTargetView['getIntentMetrics']>,
+    ): number
+    {
+        return steps.reduce(
+            (max, step) => Math.max(max, this.measureIntentStepHeight(step, metrics)),
+            metrics.stepHeightIconOnly,
+        );
+    }
+
+    private layoutIntentStepRows (
+        steps: EnemyIntentStepVisual[],
+        metrics: ReturnType<EnemyTargetView['getIntentMetrics']>,
+    ): {
+        rows: EnemyIntentStepVisual[][];
+        rowWidths: number[];
+        rowHeights: number[];
+    }
+    {
+        const maxRowWidth = this.enemySize + 4;
+        const rows: EnemyIntentStepVisual[][] = [];
+        const rowWidths: number[] = [];
+        const rowHeights: number[] = [];
+        let currentRow: EnemyIntentStepVisual[] = [];
+        let currentWidth = 0;
+
+        const pushRow = (): void =>
+        {
+            if (currentRow.length === 0)
+            {
+                return;
+            }
+
+            rows.push(currentRow);
+            rowWidths.push(currentWidth);
+            rowHeights.push(this.getIntentRowHeight(currentRow, metrics));
+            currentRow = [];
+            currentWidth = 0;
+        };
+
+        for (const visual of steps)
+        {
+            const stepWidth = this.measureIntentStepWidth(visual, metrics);
+            const gap = currentRow.length > 0 ? metrics.stepGap : 0;
+            const nextWidth = currentWidth + gap + stepWidth;
+
+            if (currentRow.length > 0 && nextWidth > maxRowWidth)
+            {
+                pushRow();
+            }
+
+            if (currentRow.length > 0)
+            {
+                currentWidth += metrics.stepGap;
+            }
+
+            currentRow.push(visual);
+            currentWidth += stepWidth;
+        }
+
+        pushRow();
+
+        return { rows, rowWidths, rowHeights };
+    }
+
+    private syncIntentWorldPosition (): void
+    {
+        if (!this.intentContainer)
+        {
+            return;
+        }
+
+        this.intentContainer.setPosition(
+            this.container.x + this.enemySize / 2,
+            this.container.y + this.intentAnchorY,
+        );
+    }
+
+    private measureIntentStepWidth (
+        visual: EnemyIntentStepVisual,
+        metrics: ReturnType<EnemyTargetView['getIntentMetrics']>,
+    ): number
+    {
+        return visual.amountLabel ? metrics.stepWidthStacked : metrics.stepWidthIconOnly;
+    }
+
+    private buildIntentStep (
         visual: EnemyIntentStepVisual,
         x: number,
         y: number,
         phase: 'upcoming' | 'executing',
+        metrics: ReturnType<EnemyTargetView['getIntentMetrics']>,
     ): Phaser.GameObjects.GameObject[]
     {
-        const chipWidth = this.measureIntentChipWidth(visual);
-        const chipBg = this.scene.add.rectangle(
-            x + chipWidth / 2,
-            y,
-            chipWidth,
-            INTENT_CHIP_HEIGHT,
-            phase === 'executing' ? 0x221828 : 0x14101c,
-            0.94,
-        );
-
-        chipBg.setStrokeStyle(1.5, visual.tint, phase === 'executing' ? 0.85 : 0.55);
-
+        const stepWidth = this.measureIntentStepWidth(visual, metrics);
+        const stepHeight = visual.amountLabel ? metrics.stepHeightStacked : metrics.stepHeightIconOnly;
+        const centerX = x + stepWidth / 2;
         const hitArea = this.scene.add.rectangle(
-            x + chipWidth / 2,
+            centerX,
             y,
-            chipWidth,
-            INTENT_CHIP_HEIGHT,
+            stepWidth,
+            stepHeight,
             0x000000,
             0,
         );
 
         attachEnemyIntentTooltip(this.scene, hitArea, visual.step, phase);
 
-        const parts: Phaser.GameObjects.GameObject[] = [ chipBg, hitArea ];
-        const iconX = visual.amountLabel ? x + INTENT_ICON_SIZE / 2 + 4 : x + chipWidth / 2;
+        const parts: Phaser.GameObjects.GameObject[] = [ hitArea ];
+        const iconY = visual.amountLabel
+            ? y - (metrics.amountFontSize + metrics.stackGap) / 2
+            : y;
 
         if (this.scene.textures.exists(visual.textureKey))
         {
-            const icon = this.scene.add.image(iconX, y, visual.textureKey);
-            icon.setDisplaySize(INTENT_ICON_SIZE, INTENT_ICON_SIZE);
+            const icon = this.scene.add.image(centerX, iconY, visual.textureKey);
+            icon.setDisplaySize(metrics.iconSize, metrics.iconSize);
             icon.setOrigin(0.5);
             icon.setTint(visual.tint);
+            icon.setAlpha(phase === 'executing' ? 1 : 0.95);
             parts.push(icon);
         }
 
         if (visual.amountLabel)
         {
-            const label = this.scene.add.text(x + chipWidth - 4, y, visual.amountLabel, {
-                ...uiTextStyle(20, visual.textColor, { bold: true }),
-            }).setOrigin(1, 0.5);
+            const labelY = iconY + metrics.iconSize / 2 + metrics.stackGap;
+            const label = this.scene.add.text(centerX, labelY, visual.amountLabel, {
+                ...uiDisplayTextStyle(metrics.amountFontSize, visual.textColor, {
+                    bold: true,
+                    strokeColor: '#0a0a14',
+                }),
+            }).setOrigin(0.5, 0);
 
             parts.push(label);
         }
@@ -568,6 +696,7 @@ export class EnemyTargetView
     reposition (x: number, y: number): void
     {
         this.container.setPosition(x, y);
+        this.syncIntentWorldPosition();
     }
 
     setSelected (selected: boolean): void
@@ -646,10 +775,10 @@ export class EnemyTargetView
     setDefeated (defeated: boolean): void
     {
         this.container.setAlpha(defeated ? 0.28 : 1);
-        this.clearIntent();
 
         if (defeated)
         {
+            this.clearIntent();
             this.setTargetPrompt(false);
             this.setSelected(false);
             this.setTargetClickHandler(null);

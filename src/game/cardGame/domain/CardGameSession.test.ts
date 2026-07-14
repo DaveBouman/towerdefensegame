@@ -658,10 +658,43 @@ describe('CardGameSession enemy turn', () =>
         const slot = session.placeEnemyHazard();
 
         expect(slot).not.toBeNull();
+        expect(slot!.col).toBeGreaterThanOrEqual(2);
         expect(session.board.getCardAt(slot!)).toMatchObject({
             definitionId: 'hazard',
             owner: 'enemy',
         });
+    });
+
+    it('places enemy hazards only in the last three columns', () =>
+    {
+        const session = new CardGameSession();
+
+        session.board.clear();
+
+        for (const slot of session.board.slotsInOrder())
+        {
+            if (slot.col < 2)
+            {
+                session.board.placeCard(slot, createCardInstance('attack', 'right'));
+            }
+        }
+
+        const slot = session.placeEnemyHazard();
+
+        expect(slot).not.toBeNull();
+        expect(slot!.col).toBeGreaterThanOrEqual(2);
+
+        session.board.clear();
+
+        for (const slot of session.board.slotsInOrder())
+        {
+            if (slot.col >= 2)
+            {
+                session.board.placeCard(slot, createCardInstance('attack', 'right'));
+            }
+        }
+
+        expect(session.placeEnemyHazard()).toBeNull();
     });
 
     it('prefers to place enemy hazards away from existing traps', () =>
@@ -669,13 +702,13 @@ describe('CardGameSession enemy turn', () =>
         const session = new CardGameSession();
 
         session.board.clear();
-        session.board.placeCard({ row: 0, col: 0 }, createCardInstance('hazard', 'right', 'enemy'));
+        session.board.placeCard({ row: 0, col: 2 }, createCardInstance('hazard', 'right', 'enemy'));
 
-        // Leave one empty tile adjacent to the trap and one far away; fill the rest.
+        // Leave one eligible empty tile adjacent to the trap and one far away; fill the rest.
         for (const slot of session.board.slotsInOrder())
         {
-            const isHazard = slot.row === 0 && slot.col === 0;
-            const leaveEmpty = (slot.row === 0 && slot.col === 1) || (slot.row === 4 && slot.col === 4);
+            const isHazard = slot.row === 0 && slot.col === 2;
+            const leaveEmpty = (slot.row === 0 && slot.col === 3) || (slot.row === 4 && slot.col === 4);
 
             if (isHazard || leaveEmpty)
             {
