@@ -10,7 +10,7 @@ const REJECT_MESSAGES: Record<NonNullable<AttackReadiness['reason']>, string> = 
     'player-defeated': 'You were defeated.',
     'no-cards-on-board': 'Place cards on the board first.',
     'no-energy': 'Out of energy — wait for the next round.',
-    'no-target': 'Select an enemy target first.',
+    'no-target': 'Lock a target first — click an enemy panel on the right.',
 };
 
 const DEFAULT_REROLL_STATE: RerollState = {
@@ -90,6 +90,8 @@ export const GameHud = () =>
         return () => window.clearTimeout(timer);
     }, [ rejectMessage ]);
 
+    const needsTarget = readiness.reason === 'no-target';
+
     return (
         <aside className="game-hud">
             <div className="game-hud__energy" title="Attacks left this turn">
@@ -113,10 +115,17 @@ export const GameHud = () =>
             <p className="game-hud__deploy-hint">
                 {rerollState.rerollModeActive
                     ? 'Click hand cards to select, then confirm reroll.'
-                    : turnState.energy > 0
-                        ? 'Place cards and attack — the enemy strikes back after each attack. Extra attacks this round make the enemy hit harder.'
-                        : 'Out of energy — the enemy acts, then your energy refills.'}
+                    : needsTarget
+                        ? 'Multiple hostiles detected — click an enemy panel to lock your target, then Attack.'
+                        : turnState.energy > 0
+                            ? 'Place cards and attack — the enemy strikes back after each attack. Extra attacks this round make the enemy hit harder.'
+                            : 'Out of energy — the enemy acts, then your energy refills.'}
             </p>
+            {needsTarget && (
+                <p className="game-hud__target-prompt" role="status">
+                    No target locked — click an enemy on the right
+                </p>
+            )}
             {rerollState.rerollModeActive ? (
                 <div className="game-hud__reroll-actions">
                     <button
@@ -147,14 +156,26 @@ export const GameHud = () =>
             )}
             <button
                 type="button"
-                className="game-hud__start-wave"
+                className={
+                    needsTarget
+                        ? 'game-hud__start-wave game-hud__start-wave--needs-target'
+                        : 'game-hud__start-wave'
+                }
                 disabled={!readiness.canAttack || rerollState.rerollModeActive}
+                title={needsTarget ? 'Select an enemy target before attacking' : undefined}
                 onClick={() => EventBus.emit(GAME_EVENTS.ATTACK)}
             >
-                Attack
+                {needsTarget ? 'Select Target' : 'Attack'}
             </button>
             {rejectMessage && (
-                <p className="game-hud__deploy-hint" role="status">
+                <p
+                    className={
+                        rejectMessage.includes('target')
+                            ? 'game-hud__reject-message game-hud__reject-message--target'
+                            : 'game-hud__reject-message'
+                    }
+                    role="alert"
+                >
                     {rejectMessage}
                 </p>
             )}

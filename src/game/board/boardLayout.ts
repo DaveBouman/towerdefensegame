@@ -1,6 +1,7 @@
 import { GRID_CONFIG, getGridPixelSize } from '../config/gridConfig';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import { HAND_CARD_GAP, HAND_CARD_HEIGHT, HAND_CARD_WIDTH } from '../cards/cardVisuals';
+import { computeEnemyColumnWidth } from './enemySquadLayout';
 
 export interface BoardLayout {
     canvasWidth: number;
@@ -73,9 +74,10 @@ export const computeBoardLayout = (
     const enemySize = Math.round(tileSize * 1.5);
     const playerSize = Math.round(tileSize * 1.38);
     const enemyGap = Math.round(tileSize * 0.55);
+    const enemyColumnWidth = computeEnemyColumnWidth(enemySize, tileSize);
     const handBandHeight = HAND_CARD_HEIGHT + 52;
     const hudTopInset = 56;
-    const contentWidth = gridWidth + enemyGap + enemySize;
+    const contentWidth = gridWidth + enemyGap + enemyColumnWidth;
     const handY = canvasHeight - handBandHeight + 8;
     const availableHeight = canvasHeight - hudTopInset - handBandHeight;
     const gridOffsetX = Math.round((canvasWidth - contentWidth) / 2 - tileSize * 0.35);

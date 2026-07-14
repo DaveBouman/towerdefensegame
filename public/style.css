@@ -127,6 +127,44 @@ html, body, #root {
     -webkit-font-smoothing: antialiased;
 }
 
+.game-hud__target-prompt {
+    color: #fcee0a;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: center;
+    padding: 6px 14px;
+    border: 1px solid rgba(252, 238, 10, 0.55);
+    border-radius: 4px;
+    background: rgba(42, 36, 0, 0.72);
+    box-shadow: 0 0 18px rgba(252, 238, 10, 0.18);
+    animation: target-prompt-pulse 1.4s ease-in-out infinite;
+}
+
+.game-hud__reject-message {
+    color: #f0e4b8;
+    font-size: 15px;
+    font-weight: 500;
+    max-width: 320px;
+    text-align: center;
+    line-height: 1.55;
+}
+
+.game-hud__reject-message--target {
+    color: #fcee0a;
+    font-weight: 700;
+    padding: 6px 14px;
+    border: 1px solid rgba(252, 238, 10, 0.45);
+    border-radius: 4px;
+    background: rgba(42, 36, 0, 0.65);
+}
+
+@keyframes target-prompt-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.72; }
+}
+
 .game-hud__energy {
     display: flex;
     align-items: center;
@@ -210,6 +248,14 @@ html, body, #root {
 .game-hud__start-wave:hover:not(:disabled) {
     background: #243a52;
     border-color: #5dade2;
+}
+
+.game-hud__start-wave--needs-target:disabled {
+    opacity: 0.9;
+    cursor: not-allowed;
+    border-color: rgba(252, 238, 10, 0.55);
+    background: rgba(42, 36, 0, 0.85);
+    color: #fcee0a;
 }
 
 .game-hud__start-wave:disabled {

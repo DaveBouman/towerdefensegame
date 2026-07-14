@@ -23,6 +23,7 @@ import {
     type BattleModifierDuration,
     type BattleModifierStat,
 } from '../combat/battleModifiers';
+import { collectBattleModifierApplications } from '../combat/chainBattleModifiers';
 import { planEnemyTurn } from '../combat/enemyTurn';
 import {
     applyEnemyPassivesToSequence,
@@ -42,6 +43,7 @@ import { randomInBoundsDirectionForPool } from '../domain/cardDirections';
 import { createCardInstance } from '../domain/createCardInstance';
 import { createEnemyCombatant, isCombatantAlive, normalizeEnemyIds } from './enemyCombatants';
 import type {
+    ActivationStep,
     AttackReadiness,
     AttackSequence,
     CardInstance,
@@ -320,6 +322,14 @@ export class CardGameSession
         );
     }
 
+    applyBattleModifiersFromChain (chain: readonly ActivationStep[]): void
+    {
+        for (const definitionId of collectBattleModifierApplications(chain))
+        {
+            this.addBattleModifierFromCard(definitionId);
+        }
+    }
+
     addBattleModifierFromEnemyStep (step: import('../domain/types').EnemyTurnStep): void
     {
         if (step.kind !== 'battle-mod' || step.modifierStat === undefined || step.modifierDelta === undefined)
@@ -363,6 +373,19 @@ export class CardGameSession
     private scalePlayerArmorGain (armor: number): number
     {
         return applyPlayerBuffModifier(armor, this.getModifierTotals().playerArmor);
+    }
+
+    /** Enemy turn telegraph with ramp + active battle modifiers baked in. */
+    getTelegraphedEnemyTurn (instanceId: string): EnemyTurnAction | null
+    {
+        const combatant = this.getCombatant(instanceId);
+
+        if (!combatant?.queuedTurn)
+        {
+            return null;
+        }
+
+        return this.rampEnemyAction(combatant.queuedTurn);
     }
 
     getScaledArmorGain (armor: number): number

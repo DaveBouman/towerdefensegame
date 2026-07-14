@@ -97,6 +97,33 @@ export class EnemySquadView
         }
 
         this.setSelected(session.getAttackTargetId());
+        this.syncTargetPrompt(session);
+    }
+
+    syncTargetPrompt (session: CardGameSession): void
+    {
+        const needsTarget = session.hasMultipleEnemies()
+            && !session.hasValidAttackTarget()
+            && !session.isEnemyDefeated()
+            && !session.isPlayerDefeated()
+            && !session.isAttackInProgress()
+            && !session.isEnemyTurnInProgress();
+
+        for (const entry of this.entries)
+        {
+            const alive = isCombatantAlive(entry.combatant);
+            const selected = entry.combatant.instanceId === session.getAttackTargetId();
+
+            entry.view.setTargetPrompt(needsTarget && alive && !selected);
+        }
+    }
+
+    flashTargetPrompt (): void
+    {
+        for (const entry of this.entries)
+        {
+            entry.view.flashTargetPrompt();
+        }
     }
 
     setSelected (instanceId: string | null): void
@@ -146,13 +173,15 @@ export class EnemySquadView
     {
         for (const combatant of session.getCombatants())
         {
-            if (!isCombatantAlive(combatant) || !combatant.queuedTurn)
+            const action = session.getTelegraphedEnemyTurn(combatant.instanceId);
+
+            if (!isCombatantAlive(combatant) || !action)
             {
                 this.clearIntent(combatant.instanceId);
                 continue;
             }
 
-            this.showIntent(combatant.instanceId, combatant.queuedTurn, phase);
+            this.showIntent(combatant.instanceId, action, phase);
         }
     }
 

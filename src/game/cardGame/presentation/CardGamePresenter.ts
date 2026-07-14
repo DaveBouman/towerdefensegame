@@ -98,7 +98,6 @@ export class CardGamePresenter
 
             if (activeStep)
             {
-                this.grantStepArmor(activeStep, chain);
                 this.deactivateStep(activeStep);
                 activeStep = null;
             }
@@ -242,7 +241,6 @@ export class CardGamePresenter
                 return;
             }
 
-            this.grantStepArmor(activeStep, chain);
             this.deactivateStep(activeStep);
             activeStep = null;
         };
@@ -289,6 +287,7 @@ export class CardGamePresenter
             }
 
             this.activateStep(step, boosted);
+            this.grantStepArmor(step, chain);
 
             const proceedAfterStep = (): void =>
             {
@@ -779,6 +778,7 @@ export class CardGamePresenter
     private applyBattleModFromStep (definitionId: string, slot: SlotPosition): void
     {
         this.session.addBattleModifierFromCard(definitionId);
+        this.enemySquad.showAllIntents(this.session);
 
         const definition = getCardDefinitionOrThrow(definitionId);
 

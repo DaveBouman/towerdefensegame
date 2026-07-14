@@ -6,7 +6,40 @@ export interface EnemySlotLayout {
     size: number;
 }
 
-/** Positions enemy targets to the right of the board — stacked when there are several. */
+/** Max enemies shown in a horizontal row beside the board (used for layout width). */
+export const MAX_ENEMY_COLUMN_SLOTS = 3;
+
+export const getMultiEnemySlotSize = (layout: BoardLayout): number =>
+    Math.max(
+        Math.round(layout.enemySize * 0.82),
+        Math.round(layout.tileSize * 1.15),
+    );
+
+export const getMultiEnemySlotGap = (size: number): number =>
+    Math.round(size * 0.22);
+
+/** Horizontal space reserved to the right of the board for a row of enemy targets. */
+export const computeEnemyColumnWidth = (
+    enemySize: number,
+    tileSize: number,
+    slotCount = MAX_ENEMY_COLUMN_SLOTS,
+): number =>
+{
+    if (slotCount <= 1)
+    {
+        return enemySize;
+    }
+
+    const size = Math.max(
+        Math.round(enemySize * 0.82),
+        Math.round(tileSize * 1.15),
+    );
+    const gap = getMultiEnemySlotGap(size);
+
+    return slotCount * size + (slotCount - 1) * gap;
+};
+
+/** Positions enemy targets in a row to the right of the board, left → right. */
 export const computeEnemySlots = (
     layout: BoardLayout,
     count: number,
@@ -26,18 +59,13 @@ export const computeEnemySlots = (
         } ];
     }
 
-    const size = Math.max(
-        Math.round(layout.enemySize * 0.82),
-        Math.round(layout.tileSize * 1.15),
-    );
-    const gap = Math.round(size * 0.22);
-    const totalHeight = count * size + (count - 1) * gap;
-    const anchorY = layout.enemyY + layout.enemySize / 2;
-    const startY = Math.round(anchorY - totalHeight / 2);
+    const size = getMultiEnemySlotSize(layout);
+    const gap = getMultiEnemySlotGap(size);
+    const y = layout.enemyY + Math.round((layout.enemySize - size) / 2);
 
     return Array.from({ length: count }, (_unused, index) => ({
-        x: layout.enemyX + Math.round((layout.enemySize - size) / 2),
-        y: startY + index * (size + gap),
+        x: layout.enemyX + index * (size + gap),
+        y,
         size,
     }));
 };

@@ -184,6 +184,40 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getPlayer().shield).toBe(11);
     });
 
+    it('stacks patch from patch then echo for 20% less incoming damage', () =>
+    {
+        const session = new CardGameSession('basic');
+
+        session.beginAttack();
+        session.applyBattleModifiersFromChain([
+            {
+                slot: { row: 0, col: 0 },
+                card: { instanceId: 'patch-1', definitionId: 'patch', arrow: 'right' },
+                definitionId: 'patch',
+                behaviorId: 'battle-mod',
+                visualId: 'patch',
+                arrow: 'right',
+                exitArrow: 'right',
+                damage: 0,
+                armor: 0,
+            },
+            {
+                slot: { row: 0, col: 1 },
+                card: { instanceId: 'echo-1', definitionId: 'echo', arrow: 'right' },
+                definitionId: 'echo',
+                behaviorId: 'echo',
+                visualId: 'echo',
+                arrow: 'right',
+                exitArrow: 'right',
+                damage: 0,
+                armor: 0,
+            },
+        ]);
+        session.resolveEnemyAttack(10);
+
+        expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth - 8);
+    });
+
     it('deals damage to a selected enemy in multi-enemy fights', () =>
     {
         const session = new CardGameSession([ 'basic', 'basic' ]);

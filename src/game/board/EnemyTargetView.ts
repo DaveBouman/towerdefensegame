@@ -63,7 +63,11 @@ export class EnemyTargetView
     private readonly enemySize: number;
     private displayedShield = 0;
     private readonly threatRing: Phaser.GameObjects.Rectangle;
+    private readonly targetPromptBadge: Phaser.GameObjects.Text;
     private idleTween?: Phaser.Tweens.Tween;
+    private targetPromptTween?: Phaser.Tweens.Tween;
+    private targetPromptActive = false;
+    private selected = false;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -173,6 +177,14 @@ export class EnemyTargetView
 
         this.enemyLabel = label;
 
+        this.targetPromptBadge = scene.add.text(enemySize / 2, -10, 'LOCK TARGET', {
+            ...uiDisplayTextStyle(12, '#fcee0a', {
+                bold: true,
+                backgroundColor: '#2a2400cc',
+                padding: { x: 8, y: 4 },
+            }),
+        }).setOrigin(0.5, 1).setVisible(false);
+
         const badgeBg = scene.add.rectangle(0, 0, 108, 30, 0x152535);
 
         badgeBg.setStrokeStyle(2, ENEMY_SHIELD_COLOR, 0.95);
@@ -185,7 +197,7 @@ export class EnemyTargetView
             ...uiTextStyle(19, '#ffffff', { bold: true }),
         }).setOrigin(1, 0.5);
 
-        this.shieldBadge = scene.add.container(enemySize / 2, -22, [ badgeBg, badgeLabel, this.shieldValueText ]);
+        this.shieldBadge = scene.add.container(enemySize / 2, enemySize + 52, [ badgeBg, badgeLabel, this.shieldValueText ]);
         this.shieldBadge.setVisible(false);
 
         this.poisonBadge = scene.add.text(enemySize - 6, 6, '', {
@@ -210,6 +222,7 @@ export class EnemyTargetView
             this.healthBarFill,
             this.healthText,
             label,
+            this.targetPromptBadge,
             this.shieldBadge,
             this.poisonBadge,
         ]);
@@ -290,7 +303,7 @@ export class EnemyTargetView
         this.clearIntent();
 
         const steps = getEnemyIntentStepVisuals(action, phase);
-        const intentY = -66;
+        const intentY = this.getIntentRowY();
         const rowWidth = this.measureIntentRowWidth(steps);
         const startX = this.enemySize / 2 - rowWidth / 2;
         const parts: Phaser.GameObjects.GameObject[] = [];
@@ -317,6 +330,7 @@ export class EnemyTargetView
         this.intentContainer.setAlpha(0.92);
         this.intentContainer.setScale(0.96);
         this.container.add(this.intentContainer);
+        this.container.bringToTop(this.intentContainer);
 
         this.intentTween = this.scene.tweens.add({
             targets: this.intentContainer,
@@ -326,6 +340,11 @@ export class EnemyTargetView
             duration: phase === 'executing' ? 160 : 220,
             ease: 'Cubic.easeOut',
         });
+    }
+
+    private getIntentRowY (): number
+    {
+        return -(INTENT_CHIP_HEIGHT / 2 + Math.round(this.enemySize * 0.42) + 16);
     }
 
     private measureIntentChipWidth (visual: EnemyIntentStepVisual): number
@@ -553,8 +572,75 @@ export class EnemyTargetView
 
     setSelected (selected: boolean): void
     {
-        this.threatRing.setStrokeStyle(3, selected ? 0xfcee0a : ENEMY_COLOR, selected ? 1 : 0.5);
-        this.threatRing.setVisible(selected || this.displayedShield > 0);
+        this.selected = selected;
+
+        if (selected)
+        {
+            this.setTargetPrompt(false);
+        }
+
+        this.applyThreatRingStyle();
+    }
+
+    setTargetPrompt (active: boolean): void
+    {
+        if (!active)
+        {
+            if (!this.targetPromptActive)
+            {
+                return;
+            }
+
+            this.targetPromptActive = false;
+            this.targetPromptTween?.stop();
+            this.targetPromptTween = undefined;
+            this.targetPromptBadge.setVisible(false);
+            this.idleTween?.resume();
+            this.applyThreatRingStyle();
+
+            return;
+        }
+
+        if (this.selected || this.targetPromptActive)
+        {
+            return;
+        }
+
+        this.targetPromptActive = true;
+        this.targetPromptBadge.setVisible(true);
+        this.idleTween?.pause();
+        this.threatRing.setVisible(true);
+        this.threatRing.setStrokeStyle(4, 0xfcee0a, 1);
+        this.threatRing.setScale(1);
+        this.threatRing.setAlpha(1);
+        this.targetPromptTween = this.scene.tweens.add({
+            targets: this.threatRing,
+            alpha: { from: 0.45, to: 1 },
+            scaleX: { from: 1, to: 1.1 },
+            scaleY: { from: 1, to: 1.1 },
+            duration: 420,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+        });
+    }
+
+    flashTargetPrompt (): void
+    {
+        if (!this.targetPromptActive)
+        {
+            return;
+        }
+
+        this.scene.tweens.add({
+            targets: this.targetPromptBadge,
+            scaleX: { from: 1, to: 1.14 },
+            scaleY: { from: 1, to: 1.14 },
+            duration: 120,
+            yoyo: true,
+            repeat: 2,
+            ease: 'Sine.easeOut',
+        });
     }
 
     setDefeated (defeated: boolean): void
@@ -564,6 +650,7 @@ export class EnemyTargetView
 
         if (defeated)
         {
+            this.setTargetPrompt(false);
             this.setSelected(false);
             this.setTargetClickHandler(null);
         }
@@ -590,6 +677,7 @@ export class EnemyTargetView
         this.passiveIconsContainer = undefined;
         this.shieldTween?.stop();
         this.idleTween?.stop();
+        this.targetPromptTween?.stop();
         this.container.destroy();
     }
 
@@ -614,6 +702,19 @@ export class EnemyTargetView
         this.shieldTween = undefined;
         this.outline.setStrokeStyle(2, ENEMY_COLOR, 0.9);
         this.body.setFillStyle(ENEMY_COLOR, 0.22);
+    }
+
+    private applyThreatRingStyle (): void
+    {
+        if (this.targetPromptActive)
+        {
+            return;
+        }
+
+        this.threatRing.setScale(1);
+        this.threatRing.setAlpha(1);
+        this.threatRing.setStrokeStyle(3, this.selected ? 0xfcee0a : ENEMY_COLOR, this.selected ? 1 : 0.5);
+        this.threatRing.setVisible(this.selected || this.displayedShield > 0);
     }
 
     private startIdlePulse (): void

@@ -133,7 +133,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: [
             'Re-activates the previous chain card when this step resolves.',
-            'Repeats its damage, armor, and battle modifiers — then this card activates normally.',
+            'Repeats its damage, armor, and battle modifiers — Echo on Patch stacks to -20% damage taken.',
             'Does nothing when it is the first card in the chain.',
         ],
     })),

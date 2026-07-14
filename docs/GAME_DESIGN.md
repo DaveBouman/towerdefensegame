@@ -248,6 +248,10 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-14 | **Per-step chain activation.** Battle modifiers and defend armor apply when each card activates during the attack animation (not batched at `completeAttack`). Enemy intents refresh live as modifiers land; Echo replays apply on the Echo step. |
+| 2026-07-14 | **Enemy row layout.** Multiple hostiles align left-to-right from the board edge (layout reserves width for 3 slots). Turn intent chips sit above each enemy panel, clear of the frame and shield badge. |
+| 2026-07-14 | **Echo + Patch stacking.** Battle modifiers now resolve from the full chain in `completeAttack` (`chainBattleModifiers.ts`), so Patch → Echo correctly stacks to -20% damage taken. Presenter still shows per-step modifier VFX only. |
+| 2026-07-14 | **Multi-enemy targeting UX.** Fights with multiple hostiles now lay out enemies left-to-right. When no target is locked, HUD shows a persistent prompt, the Attack button reads **Select Target**, and living enemies pulse with a **LOCK TARGET** badge until clicked. |
 | 2026-07-14 | **Multi-enemy phase loop fix.** After the last enemy in a prepared phase acted, `playEnemyResponse` no longer called `beginEnemyTurn` again (which re-queued every living enemy and caused endless attacks). `hasMoreEnemyTurnsInPhase` gates the loop; `beginEnemyTurn` returns null when the prepared queue is drained. |
 | 2026-07-14 | **Unified pile card visuals.** Deck/graveyard stacks and the pile inspector now use the same card chrome as the hand (`buildCardGraphic` / `buildCardBackGraphic`, React `CardChip`). Graveyard shows the top discard face-up; deck shows face-down backs. |
 | 2026-07-14 | **Combat UI polish.** Modernized fight layout: larger player (**RUNNER**) and enemy frames with neon brackets, glow rings, and diamond avatars; board neon panel backdrop; layered hand/board cards with corner accents; fanned hand with hover lift; cyberpunk deck/graveyard piles and shield badge; HUD energy pips and Attack/Reroll buttons aligned to neon theme (`cyberpunkUiGraphics.ts`, `uiDisplayTextStyle`). |

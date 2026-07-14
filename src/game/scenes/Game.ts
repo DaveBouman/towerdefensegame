@@ -448,6 +448,11 @@ export class Game extends Scene
 
         if (!readiness.canAttack)
         {
+            if (readiness.reason === 'no-target')
+            {
+                this.enemySquad?.flashTargetPrompt();
+            }
+
             EventBus.emit(GAME_EVENTS.ATTACK_REJECTED, { reason: readiness.reason });
             return;
         }
@@ -801,6 +806,7 @@ export class Game extends Scene
         }
 
         this.enemySquad?.syncFromSession(this.session);
+        this.enemySquad?.syncTargetPrompt(this.session);
         EventBus.emit(GAME_EVENTS.CARD_ATTACK_READY, this.session.getAttackReadiness());
         this.emitTurnState();
     }
