@@ -949,6 +949,27 @@ describe('CardGameSession enemy turn', () =>
         expect(penalty.totalDamage).toBe(8);
         expect(penalty.penalizedCards).toEqual([ { definitionId: 'fuse', damage: 8 } ]);
         expect(session.getPlayer().health).toBe(healthBefore - 8);
+        expect(session.getHand().some((card) => card.definitionId === 'fuse')).toBe(false);
+        expect(session.getDiscardDefinitionIds()).not.toContain('fuse');
+        expect(session.getExhaustedDefinitionIds()).toContain('fuse');
+    });
+
+    it('resolves hand-end penalties after each attack, not only when energy is depleted', () =>
+    {
+        const session = new CardGameSession();
+        const healthBefore = session.getPlayer().health;
+
+        session.addCardToHand('burden', true);
+        session.spendEnergy();
+
+        expect(session.getEnergy()).toBeGreaterThan(0);
+
+        const penalty = session.resolveHandEndPenalties();
+
+        expect(penalty.totalDamage).toBe(5);
+        expect(session.getPlayer().health).toBe(healthBefore - 5);
+        expect(session.getHand().some((card) => card.definitionId === 'burden')).toBe(false);
+        expect(session.getEnergy()).toBeGreaterThan(0);
     });
 
     it('adds curse cards to the hand after an enemy turn when the passive is active', () =>

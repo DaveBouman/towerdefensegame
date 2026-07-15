@@ -1,11 +1,10 @@
 import type { CardGameSession } from '../domain/CardGameSession';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
-import { formatBattleModifierDelta } from '../combat/battleModifiers';
 import type { ActivationStep, AttackSequence, EnemyTurnAction, SlotPosition } from '../domain/types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
+import { playBattleModifierFloatingLabel } from './battleModifierFloatingLabel';
 import { boostedBuffVisual } from './visualEffects/boostedBuffVisual';
-import { playFloatingText } from './visualEffects/visualEffectTweens';
 import { getCardVisualEffectOrThrow } from './visualEffects/visualEffectRegistry';
 import type { CardVisualTarget } from './visualEffects/types';
 import type { ArmorView } from '../../board/ArmorView';
@@ -234,13 +233,13 @@ export class CardGamePresenter
             return;
         }
 
-        playFloatingText(
+        playBattleModifierFloatingLabel(
             this.scene,
             visualTarget.wrapper,
             visualTarget.width / 2,
             visualTarget.height * 0.22,
-            formatBattleModifierDelta(definition.battleModifier.delta),
-            definition.battleModifier.delta > 0 ? '#fcee0a' : '#ff6b8a',
+            definition.battleModifier.stat,
+            definition.battleModifier.delta,
         );
     }
 

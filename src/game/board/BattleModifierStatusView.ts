@@ -6,6 +6,10 @@ import {
 } from '../cardGame/combat/battleModifierDisplay';
 import { CYBER } from '../config/cyberpunkTheme';
 import { uiDisplayTextStyle } from '../config/uiTypography';
+import {
+    attachDomTooltip,
+    getGameTooltipController,
+} from '../cardGame/presentation/tooltips/GameTooltipController';
 import type { BoardLayout } from './boardLayout';
 
 const ICON_SIZE = 22;
@@ -16,7 +20,6 @@ export class BattleModifierStatusView
 {
     readonly container: Phaser.GameObjects.Container;
     private iconsContainer?: Phaser.GameObjects.Container;
-    private tooltip?: Phaser.GameObjects.Container;
     private playerSize = 0;
 
     constructor (
@@ -43,7 +46,7 @@ export class BattleModifierStatusView
 
     setModifiers (modifiers: readonly BattleModifier[]): void
     {
-        this.hideTooltip();
+        getGameTooltipController(this.scene).hide();
         this.iconsContainer?.destroy();
         this.iconsContainer = undefined;
 
@@ -69,7 +72,7 @@ export class BattleModifierStatusView
 
     destroy (): void
     {
-        this.hideTooltip();
+        getGameTooltipController(this.scene).hide();
         this.container.destroy();
     }
 
@@ -96,7 +99,7 @@ export class BattleModifierStatusView
         }
 
         const label = this.scene.add.text(x, y + ICON_SIZE / 2 - 1, formatModifierBadgeLabel(entry.delta), {
-            ...uiDisplayTextStyle(BADGE_FONT_SIZE, entry.tint, {
+            ...uiDisplayTextStyle(BADGE_FONT_SIZE, entry.textColor, {
                 bold: true,
                 strokeColor: '#0a0a14',
             }),
@@ -104,55 +107,20 @@ export class BattleModifierStatusView
 
         parts.push(label);
 
-        hitArea.setInteractive({ useHandCursor: true });
+        attachDomTooltip(this.scene, hitArea, () => ({
+            title: entry.tooltipTitle,
+            lines: entry.tooltipLines,
+        }));
+
         hitArea.on('pointerover', () =>
         {
             ring.setStrokeStyle(2, CYBER.yellow, 1);
-            this.showTooltip(entry, x, y - ICON_SIZE);
         });
         hitArea.on('pointerout', () =>
         {
             ring.setStrokeStyle(2, entry.tint, 0.95);
-            this.hideTooltip();
         });
 
         return parts;
-    }
-
-    private showTooltip (entry: BattleModifierDisplayEntry, x: number, y: number): void
-    {
-        this.hideTooltip();
-
-        const title = this.scene.add.text(0, 0, entry.tooltipTitle, {
-            ...uiDisplayTextStyle(13, entry.tint, { bold: true }),
-        }).setOrigin(0, 0);
-        const lines = entry.tooltipLines.map((line, index) =>
-            this.scene.add.text(0, 18 + index * 16, line, {
-                ...uiDisplayTextStyle(11, '#d8d8ee'),
-            }).setOrigin(0, 0),
-        );
-        const width = Math.max(title.width, ...lines.map((line) => line.width)) + 16;
-        const height = 18 + lines.length * 16 + 10;
-        const background = this.scene.add.rectangle(
-            width / 2,
-            height / 2,
-            width,
-            height,
-            0x101018,
-            0.96,
-        );
-
-        background.setStrokeStyle(1.5, entry.tint, 0.8);
-
-        this.tooltip = this.scene.add.container(x, y, [ background, title, ...lines ]);
-        this.tooltip.setDepth(600);
-        this.container.add(this.tooltip);
-        this.container.bringToTop(this.tooltip);
-    }
-
-    private hideTooltip (): void
-    {
-        this.tooltip?.destroy();
-        this.tooltip = undefined;
     }
 }

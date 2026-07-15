@@ -19,10 +19,10 @@ import type { CardBoardView } from '../../../board/CardBoardView';
 import type { EnemySquadView } from '../../../board/EnemySquadView';
 import { applyEnemyHitResult, type CombatHitVisualDeps } from './combatHitVisuals';
 import { playEndOfChainEffects } from './chainEndEffects';
+import { playBattleModifierFloatingLabel } from '../battleModifierFloatingLabel';
 import { boostedBuffVisual } from '../visualEffects/boostedBuffVisual';
 import { playFloatingText } from '../visualEffects/visualEffectTweens';
 import { getCardVisualEffectOrThrow } from '../visualEffects/visualEffectRegistry';
-import { formatBattleModifierDelta } from '../../combat/battleModifiers';
 
 export interface ChainPlaybackDeps extends CombatHitVisualDeps
 {
@@ -294,13 +294,13 @@ export function runChainPlayback (
             return;
         }
 
-        playFloatingText(
+        playBattleModifierFloatingLabel(
             deps.scene,
             visualTarget.wrapper,
             visualTarget.width / 2,
             visualTarget.height * 0.22,
-            formatBattleModifierDelta(definition.battleModifier.delta),
-            definition.battleModifier.delta > 0 ? '#fcee0a' : '#ff6b8a',
+            definition.battleModifier.stat,
+            definition.battleModifier.delta,
         );
     };
 

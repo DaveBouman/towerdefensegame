@@ -9,10 +9,7 @@ import { PlayerHealthView } from '../board/PlayerHealthView';
 import { CardGameSession } from '../cardGame/domain/CardGameSession';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
 import type { SlotPosition } from '../cardGame/domain/types';
-import { destroyCardTooltipController } from '../cardGame/presentation/tooltips/CardTooltipController';
-import { destroyEnemyIntentTooltipController } from '../cardGame/presentation/tooltips/EnemyIntentTooltipController';
-import { destroyCombatTraitTooltipController } from '../cardGame/presentation/tooltips/CombatTraitTooltipController';
-import { destroyEnemyPassiveTooltipController } from '../cardGame/presentation/tooltips/EnemyPassiveTooltipController';
+import { destroyGameTooltipController } from '../cardGame/presentation/tooltips/GameTooltipController';
 import { preloadEnemyPassiveIcons } from '../cardGame/presentation/icons/preloadEnemyPassiveIcons';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
@@ -305,10 +302,7 @@ export class Game extends Scene
         this.armorView?.destroy();
         this.deckView?.destroy();
         this.graveyardView?.destroy();
-        destroyCardTooltipController();
-        destroyEnemyPassiveTooltipController();
-        destroyCombatTraitTooltipController();
-        destroyEnemyIntentTooltipController();
+        destroyGameTooltipController();
         this.presenter = undefined;
         this.boardView = undefined;
         this.handView = undefined;
@@ -611,11 +605,12 @@ export class Game extends Scene
             return;
         }
 
-        if (!this.session.isEnemyDefeated() && this.session.getEnergy() <= 0)
+        if (!this.session.isEnemyDefeated())
         {
             this.session.resolveHandEndPenalties();
             this.playerView?.setHealth(this.session.getPlayer());
             this.armorView?.setArmor(this.session.getPlayer().shield);
+            this.handView?.syncHand(this.session.getHand());
 
             if (this.session.isPlayerDefeated())
             {

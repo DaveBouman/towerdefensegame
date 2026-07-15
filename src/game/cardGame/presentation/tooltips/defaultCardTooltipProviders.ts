@@ -215,7 +215,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: [
             'Cannot be played on the board.',
-            `Still in hand at end of turn: you take ${ctx.definition.handEndPenalty ?? 0} damage.`,
+            `Still in hand at end of turn: you take ${ctx.definition.handEndPenalty ?? 0} damage, then it is removed.`,
             'Reroll it away or end your turn early to discard it.',
         ],
     })),
@@ -223,7 +223,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: [
             `Weak attack — deals ${ctx.definition.power} damage if placed and chained.`,
-            `Still in hand at end of turn: you take ${ctx.definition.handEndPenalty ?? 0} damage.`,
+            `Still in hand at end of turn: you take ${ctx.definition.handEndPenalty ?? 0} damage, then it is removed.`,
             'Place it on the board before ending your turn to defuse it.',
         ],
     })),

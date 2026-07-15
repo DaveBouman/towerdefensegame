@@ -51,6 +51,20 @@ const MOD_TEXTURE_BY_STAT: Record<BattleModifierStat, keyof typeof ENEMY_INTENT_
     'player-damage-dealt': 'dampen-field',
 };
 
+/** Active battle-modifier chips reuse the enemy battle-mod intent palette. */
+export const getActiveBattleModifierVisual = (
+    stat: BattleModifierStat,
+): Pick<EnemyIntentStepVisual, 'textureKey' | 'tint' | 'textColor'> =>
+{
+    const style = INTENT_STYLE['battle-mod'].executing;
+
+    return {
+        textureKey: ENEMY_INTENT_TEXTURE_KEY[MOD_TEXTURE_BY_STAT[stat]],
+        tint: style.tint,
+        textColor: style.text,
+    };
+};
+
 export const getEnemyIntentStepVisuals = (
     action: EnemyTurnAction,
     phase: 'upcoming' | 'executing',

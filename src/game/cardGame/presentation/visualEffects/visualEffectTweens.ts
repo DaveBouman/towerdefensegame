@@ -1,5 +1,9 @@
-import { uiTextStyle } from '../../../config/uiTypography';
+import { uiTextStyle, uiDisplayTextStyle } from '../../../config/uiTypography';
 import { clearWrapperData } from './cardOverlay';
+
+/** Matches enemy intent amount labels (`EnemyTargetView`). */
+export const INTENT_LABEL_FLOAT_FONT_SIZE = 18;
+export const INTENT_LABEL_STROKE_COLOR = '#0a0a14';
 
 export interface CardGlowPulseTweens {
     scaleTween: Phaser.Tweens.Tween;
@@ -99,6 +103,46 @@ export const playHitFlash = (
         onComplete: () =>
         {
             body.setFillStyle(restoreColor, restoreAlpha);
+        },
+    });
+};
+
+export const playIntentLabelFloatingText = (
+    scene: Phaser.Scene,
+    parent: Phaser.GameObjects.Container,
+    x: number,
+    y: number,
+    text: string,
+    color: string,
+): void =>
+{
+    const popup = scene.add.text(x, y, text, {
+        ...uiDisplayTextStyle(INTENT_LABEL_FLOAT_FONT_SIZE, color, {
+            bold: true,
+            strokeColor: INTENT_LABEL_STROKE_COLOR,
+        }),
+    }).setOrigin(0.5, 1).setAlpha(0);
+
+    parent.add(popup);
+
+    scene.tweens.add({
+        targets: popup,
+        alpha: 1,
+        y: y - 10,
+        duration: 110,
+        ease: 'Quad.easeOut',
+        onComplete: () =>
+        {
+            scene.tweens.add({
+                targets: popup,
+                y: y - 48,
+                alpha: 0,
+                scaleX: 1.12,
+                scaleY: 1.12,
+                duration: 620,
+                ease: 'Cubic.easeIn',
+                onComplete: () => popup.destroy(),
+            });
         },
     });
 };

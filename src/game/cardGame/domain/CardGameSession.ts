@@ -421,15 +421,17 @@ export class CardGameSession
 
     /**
      * Damages the player for each hand card with a hand-end penalty still held
-     * when the turn ends. Returns the breakdown without discarding the cards.
+     * when the turn ends, then exhausts those cards (battle-scoped removal).
      */
     resolveHandEndPenalties (): HandPenaltyResult
     {
         const penalizedCards: { definitionId: string; damage: number }[] = [];
+        const penalizedIndices: number[] = [];
         let totalDamage = 0;
 
-        for (const card of this.deckHand.getHand())
+        for (let handIndex = 0; handIndex < this.deckHand.getHandLength(); handIndex++)
         {
+            const card = this.deckHand.getHand()[handIndex]!;
             const definition = getCardDefinitionOrThrow(card.definitionId);
             const damage = getCardHandEndPenalty(definition);
 
@@ -439,12 +441,18 @@ export class CardGameSession
             }
 
             penalizedCards.push({ definitionId: card.definitionId, damage });
+            penalizedIndices.push(handIndex);
             totalDamage += damage;
         }
 
         if (totalDamage > 0)
         {
             this.resolveEnemyAttack(totalDamage);
+        }
+
+        for (const card of this.deckHand.exhaustHandCardsAt(penalizedIndices))
+        {
+            this.exhaustedDefinitionIds.push(card.definitionId);
         }
 
         return { totalDamage, penalizedCards };

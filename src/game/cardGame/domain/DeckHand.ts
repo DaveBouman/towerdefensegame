@@ -191,6 +191,38 @@ export class DeckHand
         return this.hand.splice(handIndex, 1)[0];
     }
 
+    /** Removes hand cards without sending them to the discard pile (battle exhaust). */
+    exhaustHandCardsAt (handIndices: readonly number[]): CardInstance[]
+    {
+        if (handIndices.length === 0)
+        {
+            return [];
+        }
+
+        const uniqueIndices = [ ...new Set(handIndices) ].sort((a, b) => b - a);
+        const removed: CardInstance[] = [];
+
+        for (const index of uniqueIndices)
+        {
+            if (index < 0 || index >= this.hand.length)
+            {
+                continue;
+            }
+
+            const card = this.hand.splice(index, 1)[0]!;
+
+            card.exhausted = true;
+            removed.push(card);
+        }
+
+        if (removed.length > 0)
+        {
+            this.emitHandChanged();
+        }
+
+        return removed;
+    }
+
     setHandCardAt (handIndex: number, card: CardInstance): void
     {
         this.hand[handIndex] = card;

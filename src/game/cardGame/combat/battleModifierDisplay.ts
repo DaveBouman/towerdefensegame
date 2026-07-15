@@ -1,25 +1,16 @@
 import type { BattleModifier, BattleModifierStat } from './battleModifiers';
 import { BATTLE_MODIFIER_LABELS, describeBattleModifier, formatBattleModifierDelta } from './battleModifiers';
-import { ENEMY_INTENT_TEXTURE_KEY } from '../../../ui/icons/enemyIntentIcons';
+import { getActiveBattleModifierVisual } from '../presentation/enemyIntentVisuals';
 
 export interface BattleModifierDisplayEntry {
     stat: BattleModifierStat;
     delta: number;
     textureKey: string;
     tint: number;
+    textColor: string;
     tooltipTitle: string;
     tooltipLines: string[];
 }
-
-const STAT_TEXTURE: Record<BattleModifierStat, string> = {
-    'enemy-attack': ENEMY_INTENT_TEXTURE_KEY.attack,
-    'player-damage-taken': ENEMY_INTENT_TEXTURE_KEY.shield,
-    'player-armor': ENEMY_INTENT_TEXTURE_KEY.shield,
-    'player-damage-dealt': ENEMY_INTENT_TEXTURE_KEY.attack,
-};
-
-const BUFF_TINT = 0x7af0c8;
-const DEBUFF_TINT = 0xff6b8a;
 
 /** Whether the net delta is good for the player. */
 export const isPlayerBeneficialModifier = (stat: BattleModifierStat, delta: number): boolean =>
@@ -56,18 +47,19 @@ export const summarizeBattleModifiers = (
             continue;
         }
 
-        const beneficial = isPlayerBeneficialModifier(stat, delta);
+        const visual = getActiveBattleModifierVisual(stat);
 
         entries.push({
             stat,
             delta,
-            textureKey: STAT_TEXTURE[stat],
-            tint: beneficial ? BUFF_TINT : DEBUFF_TINT,
-            tooltipTitle: beneficial ? 'Buff' : 'Debuff',
+            textureKey: visual.textureKey,
+            tint: visual.tint,
+            textColor: visual.textColor,
+            tooltipTitle: 'Battle modifier',
             tooltipLines: [
-                describeBattleModifier(stat, delta),
+                `${describeBattleModifier(stat, delta)} until your energy refills.`,
                 BATTLE_MODIFIER_LABELS[stat],
-                'Lasts until your energy refills at the end of the round.',
+                'Stacks with other modifiers and cards in the chain.',
             ],
         });
     }
