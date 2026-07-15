@@ -1040,7 +1040,8 @@ describe('CardGameSession enemy turn', () =>
             session.board.placeCard(slot, createCardInstance('attack', 'right'));
         }
 
-        session['silencedSlots'].add(`${silencedSlot.row},${silencedSlot.col}`);
+        (session as unknown as { fieldEffects: { markSlotSilencedForTest: (slot: typeof silencedSlot) => void } })
+            .fieldEffects.markSlotSilencedForTest(silencedSlot);
 
         const slot = session.placeFieldBoost();
 

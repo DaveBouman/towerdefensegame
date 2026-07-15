@@ -1,6 +1,5 @@
-import { BODY_MOD_IDS, isSeventhStrikeAttack } from '../../run/bodyMods';
 import { getBattleEnergyBonus, getRunMaxHealth } from '../../run/runResources';
-import { GRID_CONFIG, isTrapPlacementColumn } from '../../config/gridConfig';
+import { GRID_CONFIG } from '../../config/gridConfig';
 import {
     GAME_RULES,
     getCardDefinitionOrThrow,
@@ -8,47 +7,34 @@ import {
     getCardHandEndPenalty,
     getCardDiscardFromHandCount,
     isCardExhaustOnPlay,
-    getCardHealOnKill,
     type CardDefinition,
 } from '../config/cardRegistry';
 import {
     type LoadedCardGameEnemyDefinition,
 } from '../config/enemyCatalog';
-import { buildAttackSequence as buildRawAttackSequence, getUnchainedHazardSlots, planAttack } from '../combat/AttackPipeline';
+import { buildAttackSequence as buildRawAttackSequence, planAttack } from '../combat/AttackPipeline';
 import {
     aggregateBattleModifiers,
-    applyPlayerBuffModifier,
     scaleIncomingDamage,
     type BattleModifier,
     type BattleModifierDuration,
     type BattleModifierStat,
 } from '../combat/battleModifiers';
-import {
-    getEnemyAllyActions,
-    mergeAllyStepsIntoTurn,
-    planAllySupportSteps,
-} from '../combat/enemyAllySupport';
 import { collectBattleModifierApplications } from '../combat/chainBattleModifiers';
-import { planEnemyTurn } from '../combat/enemyTurn';
 import {
     applyEnemyPassivesToSequence,
-    applyTileDampening,
-    computeThornsReflectDamage,
-    isDampenedTile,
-    placeSilenceTiles,
-    resolvePostAttackPassives,
     type DampenField,
 } from '../enemyPassives/applyEnemyPassives';
 import { getEnemyPassive } from '../enemyPassives/defaults';
-import { applyCombatHitMitigation, applyEnemyHitMitigation } from '../combat/combatTraits/mitigation';
 import { collectCombatTraitsFromBodyMods } from '../combat/combatTraits/collect';
 import { getCombatTrait } from '../combat/combatTraits/defaults';
 import type { CombatTraitConfig } from '../combat/combatTraits/types';
-import { slotKey } from '../domain/cardDirections';
-import { buildDeckFromDefinitionIds, buildPlayerDeck, shuffleInPlace } from '../domain/buildPlayerDeck';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
+import { CombatResolver } from '../domain/CombatResolver';
+import { DeckHand } from '../domain/DeckHand';
+import { EnemyPhaseController } from '../domain/EnemyPhaseController';
+import { FieldEffects } from '../domain/FieldEffects';
 import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
-import { pickFieldCardArrow, reconcileFieldCardArrows } from '../domain/fieldCardArrows';
 import { createCardInstance } from '../domain/createCardInstance';
 import { createEnemyCombatant, isCombatantAlive, normalizeEnemyIds } from './enemyCombatants';
 import type {
@@ -67,7 +53,6 @@ import type {
 } from './types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
-import { pickRandom } from '../../random/rng';
 import type { CardDirection } from './cardDirections';
 
 export interface PuzzleModeConfig {
@@ -82,35 +67,21 @@ export interface PuzzleModeConfig {
 export class CardGameSession
 {
     readonly board: BoardModel;
-    private readonly hand: CardInstance[] = [];
-    private readonly deck: CardInstance[] = [];
-    private readonly discard: CardInstance[] = [];
+    private readonly deckHand: DeckHand;
+    private readonly fieldEffects: FieldEffects;
+    private readonly combat: CombatResolver;
+    private readonly enemyPhase: EnemyPhaseController;
     /** Definition ids exhausted (played) this battle — battle-scoped only. */
     private readonly exhaustedDefinitionIds: string[] = [];
     private readonly combatants: EnemyCombatant[] = [];
     private attackTargetId: string | null = null;
-    private enemyTurnsTaken = 0;
-    private dampenField: (DampenField & { turnsRemaining: number }) | null = null;
-    private readonly silencedSlots = new Set<string>();
-    private readonly bombDisabledSlots = new Set<string>();
     private player: PlayerState;
     private energy: number;
     private readonly maxEnergy: number;
-    private attackInProgress = false;
-    private enemyTurnInProgress = false;
-    private damageDealtThisAttack = 0;
-    private armorGrantedThisAttack = 0;
     private readonly battleModifiers: BattleModifier[] = [];
-    private queuedEnemyTurn: EnemyTurnAction | null = null;
-    private enemyPhaseQueue: EnemyTurnAction[] = [];
-    private enemyPhasePrepared = false;
-    private rerollsRemaining: number;
     private readonly puzzleMode: PuzzleModeConfig | null;
     private puzzleFinished = false;
     private readonly bodyMods: readonly string[];
-    private runAttackCount: number;
-    private doubleDamageThisAttack = false;
-    private playerHitsBlockedRemaining?: number;
     private chainStart: SlotPosition = {
         row: GAME_RULES.activationStart.row,
         col: GAME_RULES.activationStartColumn,
@@ -127,21 +98,12 @@ export class CardGameSession
     {
         this.puzzleMode = puzzleMode;
         this.bodyMods = bodyMods;
-        this.runAttackCount = Math.max(0, Math.round(runAttackCount));
 
         for (const [ index, definitionId ] of normalizeEnemyIds(enemyIds).entries())
         {
             this.combatants.push(createEnemyCombatant(`enemy-${index}`, definitionId));
         }
 
-        const hitWard = getCombatTrait(collectCombatTraitsFromBodyMods(bodyMods), 'hitWard');
-
-        if (hitWard)
-        {
-            this.playerHitsBlockedRemaining = hitWard.hitsBlocked;
-        }
-
-        this.board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
         const maxHealth = getRunMaxHealth(bodyMods);
         this.player = {
             health: startHealth !== undefined
@@ -151,12 +113,52 @@ export class CardGameSession
             shield: 0,
         };
 
-        this.deck.push(
-            ...(deckDefinitionIds && deckDefinitionIds.length > 0
-                ? buildDeckFromDefinitionIds(deckDefinitionIds)
-                : buildPlayerDeck()),
+        this.board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+        this.fieldEffects = new FieldEffects(this.board);
+        this.deckHand = new DeckHand(
+            deckDefinitionIds,
+            puzzleMode ? 0 : GAME_RULES.fightRerollsPerFight,
         );
-        this.rerollsRemaining = puzzleMode ? 0 : GAME_RULES.fightRerollsPerFight;
+        this.combat = new CombatResolver({
+            board: this.board,
+            fieldEffects: this.fieldEffects,
+            bodyMods: this.bodyMods,
+            puzzleMode: this.puzzleMode,
+            battleModifiers: this.battleModifiers,
+            player: this.player,
+            getCombatants: () => this.combatants,
+            getLivingCombatants: () => this.getLivingCombatants(),
+            getCombatant: (instanceId) => this.getCombatant(instanceId),
+            getCombatantOrThrow: (instanceId) => this.getCombatantOrThrow(instanceId),
+            getTargetCombatant: () => this.getTargetCombatant(),
+            getAttackTargetId: () => this.getAttackTargetId(),
+            setAttackTargetId: (instanceId) => { this.attackTargetId = instanceId; },
+            ensureAttackTarget: () => this.ensureAttackTarget(),
+            resolveAttackTargetId: (explicit) => this.resolveAttackTargetId(explicit),
+        }, runAttackCount);
+        this.enemyPhase = new EnemyPhaseController({
+            combatants: this.combatants,
+            getLivingCombatants: () => this.getLivingCombatants(),
+            getCombatant: (instanceId) => this.getCombatant(instanceId),
+            isEnemyDefeated: () => this.isEnemyDefeated(),
+            isPlayerDefeated: () => this.isPlayerDefeated(),
+            getPlayer: () => this.getPlayer(),
+            getEnemy: (instanceId) => this.getEnemy(instanceId),
+            rampEnemyAction: (action) => this.rampEnemyAction(action),
+            applySilenceTilesFromPassives: () =>
+            {
+                const passives = this.getLivingCombatants().flatMap((entry) => entry.definition.passives);
+                this.fieldEffects.applySilenceTiles(passives);
+            },
+        });
+
+        const hitWard = getCombatTrait(collectCombatTraitsFromBodyMods(bodyMods), 'hitWard');
+
+        if (hitWard)
+        {
+            this.combat.initPlayerHitWard(hitWard.hitsBlocked);
+        }
+
         const bonusEnergy = getBattleEnergyBonus(bodyMods);
         this.maxEnergy = puzzleMode
             ? 1
@@ -165,73 +167,62 @@ export class CardGameSession
 
         if (puzzleMode)
         {
-            this.deck.length = 0;
-            this.discard.length = 0;
-            this.hand.length = 0;
-
-            for (const spec of puzzleMode.handCards)
-            {
-                this.hand.push(createCardInstance(
+            this.deckHand.initPuzzleHand(
+                puzzleMode.handCards.map((spec) => createCardInstance(
                     spec.definitionId,
                     spec.arrow,
                     'player',
                     spec.loopArrow,
-                ));
-            }
-
-            this.queuedEnemyTurn = null;
-            CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
-            this.emitPilesChanged();
+                )),
+            );
+            this.enemyPhase.clearQueuedTurn();
         }
         else
         {
             this.renewHand();
-            this.queueNextEnemyTurn();
+            this.enemyPhase.queueNextEnemyTurn();
         }
 
-        this.emitRerollsChanged();
+        this.deckHand.emitRerollsChanged();
     }
 
     getDeckSize (): number
     {
-        return this.deck.length;
+        return this.deckHand.getDeckSize();
     }
 
     getDiscardSize (): number
     {
-        return this.discard.length;
+        return this.deckHand.getDiscardSize();
     }
 
     getPileCounts (): { deckSize: number; discardSize: number }
     {
-        return {
-            deckSize: this.deck.length,
-            discardSize: this.discard.length,
-        };
+        return this.deckHand.getPileCounts();
     }
 
     /** Draw-pile card definition ids (order intentionally not implied — callers should group/sort). */
     getDeckDefinitionIds (): string[]
     {
-        return this.deck.map((card) => card.definitionId);
+        return this.deckHand.getDeckDefinitionIds();
     }
 
     /** Discard-pile card definition ids. */
     getDiscardDefinitionIds (): string[]
     {
-        return this.discard.map((card) => card.definitionId);
+        return this.deckHand.getDiscardDefinitionIds();
     }
 
     /** Next card that would be drawn (`deck.pop()`). */
     getDeckTopCard (): CardInstance | undefined
     {
-        return this.deck.length > 0 ? this.deck[this.deck.length - 1] : undefined;
+        return this.deckHand.getDeckTopCard();
     }
 
     /** Most recently discarded card. */
     getDiscardTopCard (): CardInstance | undefined
     {
-        return this.discard.length > 0 ? this.discard[this.discard.length - 1] : undefined;
+        return this.deckHand.getDiscardTopCard();
     }
 
     /** Single-use cards played this battle (for tests and debugging). */
@@ -243,13 +234,13 @@ export class CardGameSession
     /** Run-wide attack counter (increments each time the player starts an attack). */
     getRunAttackCount (): number
     {
-        return this.runAttackCount;
+        return this.combat.getRunAttackCount();
     }
 
     /** Whether the current attack has Mark VII double damage active. */
     isDoubleDamageThisAttack (): boolean
     {
-        return this.doubleDamageThisAttack;
+        return this.combat.isDoubleDamageThisAttack();
     }
 
     getEnergy (): number
@@ -364,25 +355,17 @@ export class CardGameSession
 
     getPlayerCombatTraits (): readonly CombatTraitConfig[]
     {
-        return collectCombatTraitsFromBodyMods(this.bodyMods);
+        return this.combat.getPlayerCombatTraits();
     }
 
     resolveAllyHeal (amount: number, targetInstanceId: string): EnemyState
     {
-        const combatant = this.getCombatantOrThrow(targetInstanceId);
-        const heal = Math.max(0, amount);
-
-        combatant.state.health = Math.min(
-            combatant.state.maxHealth,
-            combatant.state.health + heal,
-        );
-
-        return { ...combatant.state };
+        return this.combat.resolveAllyHeal(amount, targetInstanceId);
     }
 
     resolveAllyShield (amount: number, targetInstanceId: string): EnemyState
     {
-        return this.resolveEnemyShield(amount, targetInstanceId);
+        return this.combat.resolveAllyShield(amount, targetInstanceId);
     }
 
     clearBattleModifiers (): void
@@ -395,51 +378,15 @@ export class CardGameSession
         // All battle modifiers last the full energy round.
     }
 
-    private getModifierTotals ()
-    {
-        return aggregateBattleModifiers(this.battleModifiers);
-    }
-
-    private scalePlayerDamageDealt (damage: number): number
-    {
-        let scaled = applyPlayerBuffModifier(damage, this.getModifierTotals().playerDamageDealt);
-
-        if (this.doubleDamageThisAttack)
-        {
-            scaled *= 2;
-        }
-
-        return scaled;
-    }
-
-    private scalePlayerArmorGain (armor: number): number
-    {
-        return applyPlayerBuffModifier(armor, this.getModifierTotals().playerArmor);
-    }
-
     /** Enemy turn telegraph with ramp + active battle modifiers baked in. */
     getTelegraphedEnemyTurn (instanceId: string): EnemyTurnAction | null
     {
-        const combatant = this.getCombatant(instanceId);
-
-        if (!combatant?.queuedTurn)
-        {
-            return null;
-        }
-
-        return this.rampEnemyAction(combatant.queuedTurn);
+        return this.enemyPhase.getTelegraphedEnemyTurn(instanceId);
     }
 
     getScaledArmorGain (armor: number): number
     {
-        return this.scalePlayerArmorGain(armor);
-    }
-
-    private scaleEnemyAttackDamage (damage: number): number
-    {
-        const totals = this.getModifierTotals();
-
-        return scaleIncomingDamage(damage, totals.enemyAttack, totals.playerDamageTaken);
+        return this.combat.getScaledArmorGain(armor);
     }
 
     /** Spends one energy for an attack. Returns false when none remains. */
@@ -463,31 +410,13 @@ export class CardGameSession
     /** Tops the hand back up to the full hand size without discarding held cards. */
     refillHand (): void
     {
-        const missing = GAME_RULES.handSize - this.hand.length;
-
-        if (missing <= 0)
-        {
-            return;
-        }
-
-        this.hand.push(...this.drawCards(missing));
-
-        CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
-        this.emitPilesChanged();
+        this.deckHand.refillHand();
     }
 
     /** Adds a card to the hand (used by curse passives and future events). */
     addCardToHand (definitionId: string, ignoreHandLimit = false): boolean
     {
-        if (!ignoreHandLimit && this.hand.length >= GAME_RULES.handSize)
-        {
-            return false;
-        }
-
-        this.hand.push(createCardInstance(definitionId));
-        CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
-
-        return true;
+        return this.deckHand.addCardToHand(definitionId, ignoreHandLimit);
     }
 
     /**
@@ -499,7 +428,7 @@ export class CardGameSession
         const penalizedCards: { definitionId: string; damage: number }[] = [];
         let totalDamage = 0;
 
-        for (const card of this.hand)
+        for (const card of this.deckHand.getHand())
         {
             const definition = getCardDefinitionOrThrow(card.definitionId);
             const damage = getCardHandEndPenalty(definition);
@@ -540,135 +469,33 @@ export class CardGameSession
         }
     }
 
-    private emitPilesChanged (): void
-    {
-        CardGameEventBus.emit(CARD_GAME_EVENTS.PILES_CHANGED, this.getPileCounts());
-    }
-
-    private emitRerollsChanged (): void
-    {
-        CardGameEventBus.emit(CARD_GAME_EVENTS.REROLLS_CHANGED, {
-            rerollsRemaining: this.rerollsRemaining,
-            maxRerollsPerFight: GAME_RULES.fightRerollsPerFight,
-        });
-    }
-
     getRerollsRemaining (): number
     {
-        return this.rerollsRemaining;
+        return this.deckHand.getRerollsRemaining();
     }
 
     canReroll (): boolean
     {
-        return this.canEditBoard() && this.rerollsRemaining > 0;
+        return this.canEditBoard() && this.deckHand.getRerollsRemaining() > 0;
     }
 
     /** Discards selected hand cards and draws replacements. Uses one fight reroll. */
     rerollHandCards (handIndices: number[]): boolean
     {
-        if (!this.canReroll() || handIndices.length === 0)
+        if (!this.canReroll())
         {
             return false;
         }
 
-        const uniqueIndices = [ ...new Set(handIndices) ].sort((a, b) => a - b);
-
-        for (const index of uniqueIndices)
-        {
-            if (index < 0 || index >= this.hand.length)
-            {
-                return false;
-            }
-        }
-
-        const toDiscard = uniqueIndices.map((index) => this.hand[index]!);
-
-        this.discard.push(...toDiscard);
-
-        const drawn = this.drawCards(toDiscard.length);
-
-        if (drawn.length < toDiscard.length)
-        {
-            return false;
-        }
-
-        uniqueIndices.forEach((handIndex, i) =>
-        {
-            this.hand[handIndex] = drawn[i]!;
-        });
-
-        this.rerollsRemaining -= 1;
-
-        CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
-        this.emitPilesChanged();
-        this.emitRerollsChanged();
-
-        return true;
-    }
-
-    private reshuffleDiscardIntoDeck (): void
-    {
-        if (this.discard.length === 0)
-        {
-            return;
-        }
-
-        const recyclable = this.discard.splice(0).filter((card) => !card.exhausted);
-
-        if (recyclable.length === 0)
-        {
-            return;
-        }
-
-        this.deck.push(...recyclable);
-        shuffleInPlace(this.deck);
-    }
-
-    private drawCards (count: number): CardInstance[]
-    {
-        const drawn: CardInstance[] = [];
-
-        for (let i = 0; i < count; i++)
-        {
-            if (this.deck.length === 0)
-            {
-                this.reshuffleDiscardIntoDeck();
-            }
-
-            const card = this.deck.pop();
-
-            if (!card)
-            {
-                break;
-            }
-
-            drawn.push(card);
-        }
-
-        return drawn;
+        return this.deckHand.rerollHandCards(handIndices);
     }
 
     /** Discards the current hand and draws a fresh one for the next player turn. */
     renewHand (): void
     {
         this.player.shield = 0;
-
-        if (this.hand.length > 0)
-        {
-            const leavingHand = this.hand.splice(0);
-            const recyclable = leavingHand.filter((card) => !card.exhausted);
-
-            if (recyclable.length > 0)
-            {
-                this.discard.push(...recyclable);
-            }
-        }
-
-        this.hand.push(...this.drawCards(GAME_RULES.handSize));
-
-        CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
+        this.deckHand.renewHand();
         CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: this.player.shield });
-        this.emitPilesChanged();
     }
 
     getChainStartSlot (): SlotPosition
@@ -678,7 +505,7 @@ export class CardGameSession
 
     setChainStartSlot (slot: SlotPosition): boolean
     {
-        if (this.attackInProgress || this.enemyTurnInProgress)
+        if (this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress())
         {
             return false;
         }
@@ -861,32 +688,32 @@ export class CardGameSession
 
     getHand (): readonly CardInstance[]
     {
-        return this.hand;
+        return this.deckHand.getHand();
     }
 
     getSilencedSlots (): SlotPosition[]
     {
-        return this.board.slotsInOrder().filter((slot) => this.silencedSlots.has(slotKey(slot)));
+        return this.fieldEffects.getSilencedSlots();
     }
 
     getBombDisabledSlots (): SlotPosition[]
     {
-        return this.board.slotsInOrder().filter((slot) => this.bombDisabledSlots.has(slotKey(slot)));
+        return this.fieldEffects.getBombDisabledSlots();
     }
 
     isSlotSilenced (slot: SlotPosition): boolean
     {
-        return this.silencedSlots.has(slotKey(slot));
+        return this.fieldEffects.isSlotSilenced(slot);
     }
 
     isSlotBombDisabled (slot: SlotPosition): boolean
     {
-        return this.bombDisabledSlots.has(slotKey(slot));
+        return this.fieldEffects.isSlotBombDisabled(slot);
     }
 
     isSlotBlockedForPlayer (slot: SlotPosition): boolean
     {
-        return this.isSlotSilenced(slot) || this.isSlotBombDisabled(slot);
+        return this.fieldEffects.isSlotBlockedForPlayer(slot);
     }
 
     buildAttackSequence (
@@ -901,75 +728,32 @@ export class CardGameSession
             target.definition.passives,
         );
 
-        return this.dampenField ? applyTileDampening(sequence, this.dampenField) : sequence;
+        return this.fieldEffects.applyDampeningToSequence(sequence);
     }
 
     /** Casts the Dead Zone field (from the dampenTiles ability) for the coming player turns. */
     activateDampenField (): DampenField | null
     {
-        for (const combatant of this.getLivingCombatants())
-        {
-            const dampen = getEnemyPassive(combatant.definition.passives, 'dampenTiles');
+        const passives = this.getLivingCombatants().flatMap((combatant) => combatant.definition.passives);
 
-            if (!dampen)
-            {
-                continue;
-            }
-
-            this.dampenField = {
-                parity: dampen.parity,
-                multiplier: dampen.multiplier,
-                turnsRemaining: Math.max(1, dampen.duration),
-            };
-
-            return { parity: dampen.parity, multiplier: dampen.multiplier };
-        }
-
-        return null;
+        return this.fieldEffects.activateDampenField(passives);
     }
 
     getDampenField (): DampenField | null
     {
-        return this.dampenField
-            ? { parity: this.dampenField.parity, multiplier: this.dampenField.multiplier }
-            : null;
+        return this.fieldEffects.getDampenField();
     }
 
     /** Ages the Dead Zone field by one player turn, expiring it when it runs out. */
     tickDampenField (): void
     {
-        if (!this.dampenField)
-        {
-            return;
-        }
-
-        this.dampenField.turnsRemaining -= 1;
-
-        if (this.dampenField.turnsRemaining <= 0)
-        {
-            this.dampenField = null;
-        }
+        this.fieldEffects.tickDampenField();
     }
 
     /** Tiles currently weakened by the Dead Zone field (empty when inactive). */
     getDampenedSlots (): SlotPosition[]
     {
-        if (!this.dampenField)
-        {
-            return [];
-        }
-
-        const slots: SlotPosition[] = [];
-
-        for (const slot of this.board.slotsInOrder())
-        {
-            if (isDampenedTile(slot, this.dampenField.parity))
-            {
-                slots.push({ ...slot });
-            }
-        }
-
-        return slots;
+        return this.fieldEffects.getDampenedSlots();
     }
 
     getPlayer (): PlayerState
@@ -979,12 +763,12 @@ export class CardGameSession
 
     isAttackInProgress (): boolean
     {
-        return this.attackInProgress;
+        return this.combat.isAttackInProgress();
     }
 
     isEnemyTurnInProgress (): boolean
     {
-        return this.enemyTurnInProgress;
+        return this.enemyPhase.isEnemyTurnInProgress();
     }
 
     isEnemyDefeated (): boolean
@@ -999,71 +783,27 @@ export class CardGameSession
 
     getQueuedEnemyTurn (instanceId?: string): EnemyTurnAction | null
     {
-        if (instanceId)
-        {
-            const combatant = this.getCombatant(instanceId);
-
-            return combatant?.queuedTurn ? { ...combatant.queuedTurn } : null;
-        }
-
-        const living = this.getLivingCombatants()[0];
-
-        return living?.queuedTurn ? { ...living.queuedTurn } : null;
+        return this.enemyPhase.getQueuedEnemyTurn(instanceId);
     }
 
     getQueuedEnemyTurns (): EnemyTurnAction[]
     {
-        return this.getLivingCombatants()
-            .filter((combatant) => combatant.queuedTurn !== null)
-            .map((combatant) => ({ ...combatant.queuedTurn! }));
+        return this.enemyPhase.getQueuedEnemyTurns();
     }
 
     queueNextEnemyTurn (): EnemyTurnAction
     {
-        for (const combatant of this.combatants)
-        {
-            if (!isCombatantAlive(combatant))
-            {
-                combatant.queuedTurn = null;
-                continue;
-            }
-
-            const baseTurn = planEnemyTurn({
-                enemy: combatant.definition,
-                enemyState: combatant.state,
-                enrageStacks: combatant.enrageStacks,
-                turnsTaken: combatant.turnsTaken,
-            });
-            const allySteps = planAllySupportSteps(
-                combatant,
-                this.getLivingCombatants(),
-                getEnemyAllyActions(combatant.definition),
-            );
-
-            combatant.queuedTurn = {
-                ...baseTurn,
-                steps: mergeAllyStepsIntoTurn(baseTurn.steps, allySteps),
-                instanceId: combatant.instanceId,
-                enemyId: combatant.definitionId,
-            };
-        }
-
-        this.queuedEnemyTurn = this.getQueuedEnemyTurn();
-
-        return this.queuedEnemyTurn ? { ...this.queuedEnemyTurn } : {
-            enemyId: this.combatants[0]?.definitionId ?? GAME_RULES.defaultEnemyId,
-            steps: [],
-        };
+        return this.enemyPhase.queueNextEnemyTurn();
     }
 
     getAttackReadiness (): AttackReadiness
     {
-        if (this.attackInProgress)
+        if (this.combat.isAttackInProgress())
         {
             return { canAttack: false, reason: 'attack-in-progress' };
         }
 
-        if (this.enemyTurnInProgress)
+        if (this.enemyPhase.isEnemyTurnInProgress())
         {
             return { canAttack: false, reason: 'enemy-turn' };
         }
@@ -1112,32 +852,19 @@ export class CardGameSession
 
     beginAttack (): SlotPosition | null
     {
-        if (this.attackInProgress || this.enemyTurnInProgress || this.isEnemyDefeated() || this.isPlayerDefeated())
+        if (this.combat.isAttackInProgress()
+            || this.enemyPhase.isEnemyTurnInProgress()
+            || this.isEnemyDefeated()
+            || this.isPlayerDefeated())
         {
             return null;
         }
 
         const chain = planAttack(this.board, this.chainStart).chain;
 
-        if (chain.length === 0)
+        if (!this.combat.beginAttack(chain.length))
         {
             return null;
-        }
-
-        this.attackInProgress = true;
-        this.damageDealtThisAttack = 0;
-        this.armorGrantedThisAttack = 0;
-        this.doubleDamageThisAttack = false;
-
-        if (!this.puzzleMode)
-        {
-            this.runAttackCount += 1;
-
-            if (this.bodyMods.includes(BODY_MOD_IDS.markSeven)
-                && isSeventhStrikeAttack(this.runAttackCount))
-            {
-                this.doubleDamageThisAttack = true;
-            }
         }
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_STARTED, { chainStart: { ...this.chainStart } });
@@ -1147,342 +874,66 @@ export class CardGameSession
 
     emitAttackStep (stepIndex: number, sequence: AttackSequence): void
     {
-        const step = sequence.steps[stepIndex];
-
-        if (!step)
-        {
-            return;
-        }
-
-        CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_STEP, { step, stepIndex, sequence });
+        this.combat.emitAttackStep(stepIndex, sequence);
     }
 
-    /** Grants player shield during an attack (called as each defend step finishes). */
     grantPlayerShield (amount: number): void
     {
-        const scaled = this.scalePlayerArmorGain(amount);
-
-        if (scaled <= 0)
-        {
-            return;
-        }
-
-        this.player.shield += scaled;
-        this.armorGrantedThisAttack += amount;
-        CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: this.player.shield });
+        this.combat.grantPlayerShield(amount);
     }
 
     healPlayer (amount: number): void
     {
-        if (amount <= 0)
-        {
-            return;
-        }
-
-        this.player.health = Math.min(this.player.maxHealth, this.player.health + amount);
-        CardGameEventBus.emit(CARD_GAME_EVENTS.PLAYER_HEALED, { player: this.getPlayer(), amount });
+        this.combat.healPlayer(amount);
     }
 
-    /** Applies attack damage to a specific enemy's shield first, then health. */
     dealAttackDamage (
         damage: number,
         targetInstanceId?: string,
         sourceDefinitionId?: string,
     ): DamageResult
     {
-        const targetId = this.resolveAttackTargetId(targetInstanceId);
-        const combatant = this.getCombatantOrThrow(targetId);
-        const scaledDamage = this.scalePlayerDamageDealt(damage);
-
-        if (scaledDamage <= 0)
-        {
-            return {
-                enemy: { ...combatant.state },
-                shieldAbsorbed: 0,
-                healthDamage: 0,
-                targetInstanceId: targetId,
-            };
-        }
-
-        const mitigation = applyEnemyHitMitigation(combatant, scaledDamage);
-
-        if (mitigation.blocked)
-        {
-            return {
-                enemy: { ...combatant.state },
-                shieldAbsorbed: 0,
-                healthDamage: 0,
-                targetInstanceId: targetId,
-                damageBlocked: true,
-            };
-        }
-
-        const effectiveDamage = mitigation.damage;
-
-        if (effectiveDamage <= 0)
-        {
-            return {
-                enemy: { ...combatant.state },
-                shieldAbsorbed: 0,
-                healthDamage: 0,
-                targetInstanceId: targetId,
-            };
-        }
-
-        const wasAlive = isCombatantAlive(combatant);
-        const shieldAbsorbed = Math.min(combatant.state.shield, effectiveDamage);
-        const healthDamage = effectiveDamage - shieldAbsorbed;
-
-        combatant.state.shield -= shieldAbsorbed;
-        combatant.state.health = Math.max(0, combatant.state.health - healthDamage);
-        this.damageDealtThisAttack += effectiveDamage;
-
-        const enemyKilled = wasAlive && combatant.state.health <= 0;
-        let healOnKill = 0;
-
-        if (enemyKilled)
-        {
-            if (this.attackTargetId === targetId)
-            {
-                this.attackTargetId = null;
-            }
-
-            CardGameEventBus.emit(CARD_GAME_EVENTS.ENEMY_DEFEATED, {
-                enemy: { ...combatant.state },
-                instanceId: targetId,
-            });
-
-            if (sourceDefinitionId)
-            {
-                const sourceDefinition = getCardDefinitionOrThrow(sourceDefinitionId);
-                healOnKill = getCardHealOnKill(sourceDefinition);
-
-                if (healOnKill > 0)
-                {
-                    this.healPlayer(healOnKill);
-                }
-            }
-        }
-
-        const thornsDamage = computeThornsReflectDamage(
-            combatant.definition.passives,
-            effectiveDamage,
-        );
-
-        if (thornsDamage > 0)
-        {
-            const reflect = this.resolveEnemyAttack(thornsDamage);
-
-            return {
-                enemy: { ...combatant.state },
-                shieldAbsorbed,
-                healthDamage,
-                targetInstanceId: targetId,
-                enemyKilled,
-                healOnKill: healOnKill > 0 ? healOnKill : undefined,
-                thornsDamage: reflect.healthDamage + reflect.shieldAbsorbed,
-                thornsShieldAbsorbed: reflect.shieldAbsorbed,
-                thornsHealthDamage: reflect.healthDamage,
-            };
-        }
-
-        return {
-            enemy: { ...combatant.state },
-            shieldAbsorbed,
-            healthDamage,
-            targetInstanceId: targetId,
-            enemyKilled,
-            healOnKill: healOnKill > 0 ? healOnKill : undefined,
-        };
+        return this.combat.dealAttackDamage(damage, targetInstanceId, sourceDefinitionId);
     }
 
     completeAttack (sequence: AttackSequence): void
     {
-        const remainingDamage = sequence.totalDamage - this.damageDealtThisAttack;
-
-        if (remainingDamage > 0)
-        {
-            this.dealAttackDamage(remainingDamage);
-        }
-
-        const target = this.getTargetCombatant();
-        const postAttack = resolvePostAttackPassives(
-            this.board,
-            sequence,
-            target.definition.passives,
-        );
-
-        target.enrageStacks = postAttack.enrageStacks;
-
-        if (postAttack.jammerShield > 0)
-        {
-            this.resolveEnemyShield(postAttack.jammerShield, target.instanceId);
-        }
-
-        if (postAttack.loopHunterDamage > 0)
-        {
-            this.resolveEnemyAttack(postAttack.loopHunterDamage);
-        }
-
-        this.bombDisabledSlots.clear();
-        for (const slot of getUnchainedHazardSlots(this.board, sequence.chain))
-        {
-            this.bombDisabledSlots.add(slotKey(slot));
-        }
-
-        const totalArmor = sequence.chain.reduce((sum, step) => sum + step.armor, 0)
-            + sequence.offChainArmor
-            + sequence.abilityArmorGain;
-        const remainingArmor = Math.max(0, totalArmor - this.armorGrantedThisAttack);
-
-        this.player.shield += this.scalePlayerArmorGain(remainingArmor);
-
-        if (sequence.abilityPoisonStacks > 0)
-        {
-            target.state.poison = (target.state.poison ?? 0) + sequence.abilityPoisonStacks;
-        }
-
-        this.damageDealtThisAttack = 0;
-        this.armorGrantedThisAttack = 0;
-
-        CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_COMPLETED, {
-            sequence,
-            enemy: this.getEnemy(target.instanceId),
-        });
-        CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: this.player.shield });
+        this.combat.completeAttack(sequence);
     }
 
-    /** Releases the attack lock so the player can edit the board between attacks in a round. */
     releaseAttackLock (): void
     {
-        this.attackInProgress = false;
-        this.doubleDamageThisAttack = false;
+        this.combat.releaseAttackLock();
     }
 
     hasQueuedEnemyTurn (): boolean
     {
-        return this.getLivingCombatants().some((combatant) => combatant.queuedTurn !== null);
+        return this.enemyPhase.hasQueuedEnemyTurn();
     }
 
-    /** True while more combatants remain in the current prepared enemy phase. */
     hasMoreEnemyTurnsInPhase (): boolean
     {
-        return this.enemyPhaseQueue.length > 0;
+        return this.enemyPhase.hasMoreEnemyTurnsInPhase();
     }
 
     prepareEnemyPhase (): EnemyTurnAction[]
     {
-        if (this.isEnemyDefeated() || this.isPlayerDefeated())
-        {
-            return [];
-        }
-
-        if (!this.hasQueuedEnemyTurn())
-        {
-            this.queueNextEnemyTurn();
-        }
-
-        this.enemyPhaseQueue = this.getLivingCombatants()
-            .filter((combatant) => combatant.queuedTurn !== null)
-            .map((combatant) => this.rampEnemyAction(combatant.queuedTurn!));
-
-        this.enemyPhasePrepared = this.enemyPhaseQueue.length > 0;
-
-        return [ ...this.enemyPhaseQueue ];
+        return this.enemyPhase.prepareEnemyPhase();
     }
 
     beginEnemyTurn (): EnemyTurnAction | null
     {
-        if (this.enemyTurnInProgress || this.isEnemyDefeated() || this.isPlayerDefeated())
-        {
-            return null;
-        }
-
-        if (this.enemyPhaseQueue.length === 0)
-        {
-            if (this.enemyPhasePrepared)
-            {
-                return null;
-            }
-
-            const prepared = this.prepareEnemyPhase();
-
-            if (prepared.length === 0)
-            {
-                return null;
-            }
-        }
-
-        const next = this.enemyPhaseQueue.shift();
-
-        if (!next)
-        {
-            return null;
-        }
-
-        const combatant = next.instanceId
-            ? this.getCombatant(next.instanceId)
-            : this.getLivingCombatants()[0];
-
-        if (!combatant)
-        {
-            return null;
-        }
-
-        combatant.state.shield = 0;
-        combatant.queuedTurn = null;
-        this.queuedEnemyTurn = next;
-        this.enemyTurnInProgress = true;
-        CardGameEventBus.emit(CARD_GAME_EVENTS.ENEMY_TURN_STARTED, { action: next });
-
-        return next;
+        return this.enemyPhase.beginEnemyTurn();
     }
 
     completeSingleEnemyTurn (action: EnemyTurnAction): void
     {
-        const combatant = action.instanceId
-            ? this.getCombatant(action.instanceId)
-            : this.getLivingCombatants()[0];
-
-        if (combatant)
-        {
-            combatant.turnsTaken += 1;
-            combatant.enrageStacks = 0;
-        }
-
-        this.queuedEnemyTurn = null;
-        this.enemyTurnInProgress = false;
+        this.enemyPhase.completeSingleEnemyTurn(action);
     }
 
-    /** Enemy-side cleanup after all combatants in the current phase have acted. */
     completeEnemyPhase (): void
     {
-        this.enemyPhaseQueue.length = 0;
-        this.enemyPhasePrepared = false;
-        this.enemyTurnInProgress = false;
-
-        const allPassives = this.getLivingCombatants().flatMap((entry) => entry.definition.passives);
-
-        placeSilenceTiles(this.board, this.silencedSlots, allPassives);
-
-        CardGameEventBus.emit(CARD_GAME_EVENTS.ENEMY_TURN_COMPLETED, {
-            action: { enemyId: GAME_RULES.defaultEnemyId, steps: [] },
-            enemy: this.getEnemy(),
-            player: this.getPlayer(),
-        });
-
-        if (this.isPlayerDefeated())
-        {
-            CardGameEventBus.emit(CARD_GAME_EVENTS.PLAYER_DEFEATED, { player: this.getPlayer() });
-            return;
-        }
-
-        this.enemyTurnsTaken += 1;
-
-        if (!this.isEnemyDefeated())
-        {
-            this.queueNextEnemyTurn();
-        }
+        this.enemyPhase.completeEnemyPhase();
     }
 
     /** Refreshes the player between attacks in the same energy round (board persists). */
@@ -1533,225 +984,52 @@ export class CardGameSession
 
     resolveEnemyAttack (damage: number): PlayerDamageResult
     {
-        const scaledDamage = this.scaleEnemyAttackDamage(damage);
-
-        if (scaledDamage <= 0)
-        {
-            return {
-                player: this.getPlayer(),
-                shieldAbsorbed: 0,
-                healthDamage: 0,
-            };
-        }
-
-        const mitigation = applyCombatHitMitigation(
-            this.getPlayerCombatTraits(),
-            scaledDamage,
-            this.playerHitsBlockedRemaining,
-        );
-
-        this.playerHitsBlockedRemaining = mitigation.hitsBlockedRemaining;
-
-        if (mitigation.result.blocked)
-        {
-            return {
-                player: this.getPlayer(),
-                shieldAbsorbed: 0,
-                healthDamage: 0,
-            };
-        }
-
-        const effectiveDamage = mitigation.result.damage;
-
-        if (effectiveDamage <= 0)
-        {
-            return {
-                player: this.getPlayer(),
-                shieldAbsorbed: 0,
-                healthDamage: 0,
-            };
-        }
-
-        const shieldAbsorbed = Math.min(this.player.shield, effectiveDamage);
-        const healthDamage = effectiveDamage - shieldAbsorbed;
-
-        this.player.shield -= shieldAbsorbed;
-        this.player.health = Math.max(0, this.player.health - healthDamage);
-
-        CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: this.player.shield });
-
-        return {
-            player: this.getPlayer(),
-            shieldAbsorbed,
-            healthDamage,
-        };
+        return this.combat.resolveEnemyAttack(damage);
     }
 
     resolveEnemyShield (shield: number, instanceId?: string): EnemyState
     {
-        const combatant = instanceId
-            ? this.getCombatantOrThrow(instanceId)
-            : this.getTargetCombatant();
-
-        combatant.state.shield += shield;
-
-        return { ...combatant.state };
+        return this.combat.resolveEnemyShield(shield, instanceId);
     }
 
     getEnemyPoison (instanceId?: string): number
     {
-        const combatant = instanceId
-            ? this.getCombatant(instanceId)
-            : this.getTargetCombatant();
-
-        return combatant?.state.poison ?? 0;
+        return this.combat.getEnemyPoison(instanceId);
     }
 
-    /**
-     * Applies one poison tick to an enemy (poison ignores shield) then decays the
-     * stack count by 1. Called at the start of each enemy turn.
-     */
     tickPoison (instanceId?: string): DamageResult
     {
-        const combatant = instanceId
-            ? this.getCombatantOrThrow(instanceId)
-            : this.getTargetCombatant();
-        const stacks = combatant.state.poison ?? 0;
-
-        if (stacks <= 0)
-        {
-            return {
-                enemy: { ...combatant.state },
-                shieldAbsorbed: 0,
-                healthDamage: 0,
-                targetInstanceId: combatant.instanceId,
-            };
-        }
-
-        const wasAlive = isCombatantAlive(combatant);
-        const healthDamage = Math.min(combatant.state.health, stacks);
-
-        combatant.state.health = Math.max(0, combatant.state.health - stacks);
-        combatant.state.poison = Math.max(0, stacks - 1);
-
-        const enemyKilled = wasAlive && combatant.state.health <= 0;
-
-        if (enemyKilled)
-        {
-            if (this.attackTargetId === combatant.instanceId)
-            {
-                this.attackTargetId = null;
-            }
-
-            CardGameEventBus.emit(CARD_GAME_EVENTS.ENEMY_DEFEATED, {
-                enemy: { ...combatant.state },
-                instanceId: combatant.instanceId,
-            });
-        }
-
-        return {
-            enemy: { ...combatant.state },
-            shieldAbsorbed: 0,
-            healthDamage,
-            targetInstanceId: combatant.instanceId,
-            enemyKilled,
-        };
+        return this.combat.tickPoison(instanceId);
     }
 
     /** Places an enemy trap on a random empty slot in the last three columns, avoiding tiles next to another trap when possible. */
     placeEnemyHazard (): SlotPosition | null
     {
-        const hazardId = GAME_RULES.hazard.definitionId;
-        const emptySlots: SlotPosition[] = [];
-        const hazardSlots: SlotPosition[] = [];
-
-        for (const slot of this.board.slotsInOrder())
-        {
-            const card = this.board.getCardAt(slot);
-
-            if (card === null)
-            {
-                if (isTrapPlacementColumn(slot.col))
-                {
-                    emptySlots.push({ ...slot });
-                }
-            }
-            else if (card.definitionId === hazardId)
-            {
-                hazardSlots.push({ ...slot });
-            }
-        }
-
-        if (emptySlots.length === 0)
-        {
-            return null;
-        }
-
-        const isAdjacentToHazard = (candidate: SlotPosition): boolean =>
-            hazardSlots.some((hazard) =>
-                Math.abs(hazard.row - candidate.row) <= 1
-                && Math.abs(hazard.col - candidate.col) <= 1);
-
-        // Prefer spacing traps apart; fall back to any eligible empty slot on a crowded board.
-        const spacedSlots = emptySlots.filter((candidate) => !isAdjacentToHazard(candidate));
-        const candidates = spacedSlots.length > 0 ? spacedSlots : emptySlots;
-
-        const slot = pickRandom(candidates);
-        const hazardDefinition = getCardDefinitionOrThrow(GAME_RULES.hazard.definitionId);
-        const hazardArrow = pickFieldCardArrow(this.board, slot, hazardDefinition.arrowPool);
-        const card = createCardInstance(GAME_RULES.hazard.definitionId, hazardArrow, 'enemy');
-
-        this.board.placeCard(slot, card);
-        reconcileFieldCardArrows(this.board, slot);
-
-        return slot;
+        return this.fieldEffects.placeEnemyHazard();
     }
 
     /** Places a field boost on a random empty board slot (any row/column). */
     placeFieldBoost (): SlotPosition | null
     {
-        const emptySlots: SlotPosition[] = [];
-
-        for (const slot of this.board.slotsInOrder())
-        {
-            if (this.board.isEmpty(slot))
-            {
-                emptySlots.push({ ...slot });
-            }
-        }
-
-        if (emptySlots.length === 0)
-        {
-            return null;
-        }
-
-        const slot = pickRandom(emptySlots);
-        const boostDefinition = getCardDefinitionOrThrow(GAME_RULES.fieldBoost.definitionId);
-        const boostArrow = pickFieldCardArrow(this.board, slot, boostDefinition.arrowPool);
-        const card = createCardInstance(GAME_RULES.fieldBoost.definitionId, boostArrow, 'field');
-
-        this.board.placeCard(slot, card);
-        reconcileFieldCardArrows(this.board, slot);
-
-        return slot;
+        return this.fieldEffects.placeFieldBoost();
     }
 
     /** Trap explosions hit the player after the chain resolves. */
     resolveHazardDamage (damage: number): PlayerDamageResult
     {
-        return this.resolveEnemyAttack(damage);
+        return this.combat.resolveHazardDamage(damage);
     }
 
     completeEnemyTurn (action: EnemyTurnAction): void
     {
-        this.completeSingleEnemyTurn(action);
+        this.enemyPhase.completeSingleEnemyTurn(action);
 
-        if (this.enemyPhaseQueue.length > 0)
+        if (this.enemyPhase.hasMoreEnemyTurnsInPhase())
         {
             return;
         }
 
-        this.completeEnemyPhase();
+        this.enemyPhase.completeEnemyPhase();
 
         if (this.energy > 0)
         {
@@ -1762,45 +1040,40 @@ export class CardGameSession
     /** Clears player cards from the board at end of player round (before the enemy acts). */
     clearBoard (): void
     {
+        const toDiscard: CardInstance[] = [];
+
         for (const slot of this.board.slotsInOrder())
         {
             const card = this.board.getCardAt(slot);
 
-            if (card && isPlayerOwnedCard(card))
+            if (card && isPlayerOwnedCard(card) && !card.exhausted)
             {
-                if (!card.exhausted)
-                {
-                    this.discard.push(card);
-                }
+                toDiscard.push(card);
             }
         }
 
         this.board.clear();
-        this.emitPilesChanged();
+        this.deckHand.discardToPile(toDiscard);
     }
 
     cancelAttack (): void
     {
-        this.damageDealtThisAttack = 0;
-        this.armorGrantedThisAttack = 0;
-        this.attackInProgress = false;
-        CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_CANCELLED);
+        this.combat.cancelAttack();
     }
 
     cancelEnemyTurn (): void
     {
-        this.enemyTurnInProgress = false;
-        CardGameEventBus.emit(CARD_GAME_EVENTS.ENEMY_TURN_CANCELLED);
+        this.enemyPhase.cancelEnemyTurn();
     }
 
     placeCardFromHand (handIndex: number, slot: SlotPosition): boolean
     {
-        if (this.attackInProgress || this.enemyTurnInProgress)
+        if (this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress())
         {
             return false;
         }
 
-        const card = this.hand[handIndex];
+        const card = this.deckHand.getHandCard(handIndex);
 
         if (!card)
         {
@@ -1838,60 +1111,27 @@ export class CardGameSession
                 return false;
             }
 
-            this.hand.splice(handIndex, 1);
+            this.deckHand.removeHandCardAt(handIndex);
             this.markExhaustedIfNeeded(card, definition);
             CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card });
-            CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
-            this.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
+            this.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
 
             return true;
         }
 
         this.board.removeCard(slot);
         this.board.placeCard(slot, card);
-        this.hand[handIndex] = existing;
+        this.deckHand.setHandCardAt(handIndex, existing);
         this.markExhaustedIfNeeded(card, definition);
         CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card });
-        CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
-        this.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
+        this.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
 
         return true;
     }
 
-    /** Discards up to `count` cards from the left of hand into the graveyard. */
-    private discardFromHandOnPlay (count: number): void
-    {
-        if (count <= 0)
-        {
-            return;
-        }
-
-        const discarded = this.hand.splice(0, Math.min(count, this.hand.length));
-
-        if (discarded.length === 0)
-        {
-            return;
-        }
-
-        this.discard.push(...discarded);
-        CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
-        this.emitPilesChanged();
-    }
-
-    private markExhaustedIfNeeded (card: CardInstance, definition: CardDefinition): void
-    {
-        if (!isCardExhaustOnPlay(definition))
-        {
-            return;
-        }
-
-        card.exhausted = true;
-        this.exhaustedDefinitionIds.push(definition.id);
-    }
-
     removeCardFromBoard (slot: SlotPosition): boolean
     {
-        if (this.attackInProgress || this.enemyTurnInProgress)
+        if (this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress())
         {
             return false;
         }
@@ -1908,15 +1148,25 @@ export class CardGameSession
             return false;
         }
 
-        this.hand.push(card);
-        CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, { hand: [ ...this.hand ] });
+        this.deckHand.returnCardToHand(card);
 
         return true;
     }
 
+    private markExhaustedIfNeeded (card: CardInstance, definition: CardDefinition): void
+    {
+        if (!isCardExhaustOnPlay(definition))
+        {
+            return;
+        }
+
+        card.exhausted = true;
+        this.exhaustedDefinitionIds.push(definition.id);
+    }
+
     moveCardOnBoard (from: SlotPosition, to: SlotPosition): boolean
     {
-        if (this.attackInProgress || this.enemyTurnInProgress)
+        if (this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress())
         {
             return false;
         }
@@ -1950,7 +1200,7 @@ export class CardGameSession
 
     swapCardsOnBoard (a: SlotPosition, b: SlotPosition): boolean
     {
-        if (this.attackInProgress || this.enemyTurnInProgress)
+        if (this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress())
         {
             return false;
         }
@@ -1974,6 +1224,6 @@ export class CardGameSession
             return false;
         }
 
-        return !this.attackInProgress && !this.enemyTurnInProgress;
+        return !this.combat.isAttackInProgress() && !this.enemyPhase.isEnemyTurnInProgress();
     }
 }

@@ -106,6 +106,10 @@ battle, and emits `BATTLE_WON` / `BATTLE_LOST` back to React.
 | Run controller | `src/App.tsx` | Map/battle/end phases, carry-over HP, node picks |
 | Run map | `src/game/run/runMap.ts` | Graph generation, reachability, run config |
 | Session | `src/game/cardGame/domain/CardGameSession.ts` | Turn flow, board state, combat orchestration (accepts carry-over HP) |
+| Deck / hand | `src/game/cardGame/domain/DeckHand.ts` | Draw pile, hand, discard, rerolls |
+| Field effects | `src/game/cardGame/domain/FieldEffects.ts` | Dampen field, silenced/bomb slots, hazard/boost placement |
+| Combat | `src/game/cardGame/domain/CombatResolver.ts` | Attack damage, player damage, shields, poison |
+| Enemy phase | `src/game/cardGame/domain/EnemyPhaseController.ts` | Enemy turn queue, phase prep, telegraph ramp |
 | Combat | `src/game/cardGame/combat/AttackPipeline.ts` | Chain resolution, type streaks, off-chain bonus |
 | Enemy AI | `src/game/cardGame/combat/enemyTurn.ts` | Intent, attack/shield, hazard placement |
 | Passives | `src/game/cardGame/enemyPassives/` | Per-enemy counter-play |
@@ -250,6 +254,9 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-15 | **Phase 2 god-object split.** Extracted `CombatResolver` (attack/damage/shield/poison) and `EnemyPhaseController` (enemy turn queue and phase lifecycle) from `CardGameSession`. Chain walk playback moved to `presentation/playback/chainPlayback.ts`. Session and presenter remain thin facades; public API unchanged. |
+| 2026-07-15 | **Phase 1 god-object split.** Extracted `DeckHand` (deck/hand/discard/rerolls) and `FieldEffects` (dampen field, silenced/bomb-disabled slots, hazard/boost placement) from `CardGameSession`. Split `CardGamePresenter` playback into `presentation/playback/` (`combatHitVisuals`, `chainEndEffects`, `enemyTurnPlayback`). Session public API unchanged. |
+| 2026-07-15 | **Chain ability visuals.** Skill abilities (fire alternation, poison trail, bleed, fortify, overload) now resolve visually in chain order at the end of an attack — each ability card re-highlights and shows its payoff before the next. Echo cards flash briefly, then replay the copied step as the main beat instead of overlapping both cards. |
 | 2026-07-15 | **Trap/boost arrow reconciliation.** Field boosts and enemy traps now pick arrows that prefer chaining through adjacent ambient cards, and automatically break two-step ping-pong loops (trap ↓ boost + boost ↑ trap) by reassigning the boost's exit arrow (`fieldCardArrows.ts`). |
 | 2026-07-15 | **Combat trait icons.** Shared trait system (`combatTraits/`) with dedicated icon row below enemy names (`CombatTraitRowView`) and below **RUNNER** for body-mod traits. Traits configured on enemies via `combatTraits` in `enemies.json` or on body mods via `combatTraits` in `bodyMods.ts`. **Damage Cap** and **Hit Ward** moved out of enemy passives; example body mod **Reactive Plating** grants Hit Ward (2 hits). |
 | 2026-07-15 | **Enemy damage mitigation traits.** **Damage Cap** — each card hit deals at most 5 damage; **Hit Ward** — first 3 card hits deal no damage. Combat logic in `combatTraits/mitigation.ts`; blocked hits show floating **BLOCKED** text. Added to **Thornward** (cap) and **Warden** (ward). |
