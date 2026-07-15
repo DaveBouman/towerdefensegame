@@ -2,6 +2,7 @@ import { ENEMY_PASSIVE_TEXTURE_KEY } from '../../ui/icons/enemyPassiveIcons';
 import { drawAvatarDiamond, drawCornerBrackets } from '../config/cyberpunkUiGraphics';
 import { CYBER } from '../config/cyberpunkTheme';
 import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
+import type { CombatTraitConfig } from '../cardGame/combat/combatTraits/types';
 import type { EnemyState, EnemyTurnAction } from '../cardGame/domain/types';
 import type { EnemyPassiveConfig } from '../cardGame/enemyPassives/types';
 import {
@@ -11,6 +12,12 @@ import {
 import { attachEnemyPassiveTooltip } from '../cardGame/presentation/tooltips/EnemyPassiveTooltipController';
 import { attachEnemyIntentTooltip } from '../cardGame/presentation/tooltips/EnemyIntentTooltipController';
 import { playFloatingText, playHitFlash as playHitFlashTween } from '../cardGame/presentation/visualEffects/visualEffectTweens';
+import {
+    COMBAT_TRAIT_ICON_GAP,
+    COMBAT_TRAIT_ICON_SIZE,
+    COMBAT_TRAIT_ROW_BELOW_LABEL,
+    CombatTraitRowView,
+} from './CombatTraitRowView';
 import type { BoardLayout } from './boardLayout';
 
 const PASSIVE_ICON_SIZE = 26;
@@ -56,6 +63,9 @@ export class EnemyTargetView
     private readonly shieldValueText: Phaser.GameObjects.Text;
     private readonly poisonBadge: Phaser.GameObjects.Text;
     private readonly enemyLabel: Phaser.GameObjects.Text;
+    private readonly combatTraitRowView: CombatTraitRowView;
+    private combatTraitCount = 0;
+    private passiveCount = 0;
     private passiveIconsContainer?: Phaser.GameObjects.Container;
     private intentContainer?: Phaser.GameObjects.Container;
     private intentTween?: Phaser.Tweens.Tween;
@@ -178,6 +188,13 @@ export class EnemyTargetView
 
         this.enemyLabel = label;
 
+        this.combatTraitRowView = new CombatTraitRowView(
+            scene,
+            container,
+            enemySize,
+            enemySize + 16 + COMBAT_TRAIT_ROW_BELOW_LABEL,
+        );
+
         this.targetPromptBadge = scene.add.text(enemySize / 2, -10, 'LOCK TARGET', {
             ...uiDisplayTextStyle(12, '#fcee0a', {
                 bold: true,
@@ -237,6 +254,13 @@ export class EnemyTargetView
         this.enemyLabel.setText(label);
     }
 
+    setCombatTraits (traits: readonly CombatTraitConfig[]): void
+    {
+        this.combatTraitCount = traits.length;
+        this.combatTraitRowView.setTraits(traits);
+        this.updateShieldBadgePosition();
+    }
+
     setEnemyPassives (allPassives: readonly EnemyPassiveConfig[]): void
     {
         this.passiveIconsContainer?.destroy();
@@ -245,6 +269,9 @@ export class EnemyTargetView
         // Event-style abilities are surfaced via the turn intent, not the passive row.
         const passives = allPassives.filter((passive) => passive.id !== 'dampenTiles');
 
+        this.passiveCount = passives.length;
+        this.updateShieldBadgePosition();
+
         if (passives.length === 0)
         {
             return;
@@ -252,7 +279,7 @@ export class EnemyTargetView
 
         const rowWidth = passives.length * PASSIVE_ICON_SIZE + (passives.length - 1) * PASSIVE_ICON_GAP;
         const startX = this.enemySize / 2 - rowWidth / 2 + PASSIVE_ICON_SIZE / 2;
-        const y = this.enemySize + 34;
+        const y = this.getPassiveRowY();
         const icons: Phaser.GameObjects.GameObject[] = [];
 
         passives.forEach((passive, index) =>
@@ -694,6 +721,11 @@ export class EnemyTargetView
         this.showFloatingNumber(`-${absorbed} shield`, '#aed6f1');
     }
 
+    showHitBlocked (): void
+    {
+        this.showFloatingNumber('BLOCKED', '#bdc3c7');
+    }
+
     playEnemyAttackPulse (): void
     {
         this.scene.tweens.killTweensOf(this.container);
@@ -823,12 +855,40 @@ export class EnemyTargetView
     destroy (): void
     {
         this.clearIntent();
+        this.combatTraitRowView.destroy();
         this.passiveIconsContainer?.destroy();
         this.passiveIconsContainer = undefined;
         this.shieldTween?.stop();
         this.idleTween?.stop();
         this.targetPromptTween?.stop();
         this.container.destroy();
+    }
+
+    private getTraitRowY (): number
+    {
+        return this.enemySize + 16 + COMBAT_TRAIT_ROW_BELOW_LABEL;
+    }
+
+    private getPassiveRowY (): number
+    {
+        if (this.combatTraitCount === 0)
+        {
+            return this.getTraitRowY();
+        }
+
+        return this.getTraitRowY() + COMBAT_TRAIT_ICON_SIZE + COMBAT_TRAIT_ICON_GAP + 4;
+    }
+
+    private updateShieldBadgePosition (): void
+    {
+        const belowTraits = this.combatTraitCount > 0
+            ? COMBAT_TRAIT_ICON_SIZE + 8
+            : 0;
+        const belowPassives = this.passiveCount > 0
+            ? PASSIVE_ICON_SIZE + 8
+            : 0;
+
+        this.shieldBadge.setY(this.getTraitRowY() + belowTraits + belowPassives + 10);
     }
 
     private applyShieldVisuals (): void

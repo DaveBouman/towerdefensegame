@@ -1,3 +1,4 @@
+import { COMBAT_TRAIT_ICON_ENTRIES } from '../../../../ui/icons/combatTraitIcons';
 import { ENEMY_INTENT_ICON_ENTRIES } from '../../../../ui/icons/enemyIntentIcons';
 import { ENEMY_PASSIVE_ICON_ENTRIES } from '../../../../ui/icons/enemyPassiveIcons';
 import { CARD_BEHAVIOR_ICON_ENTRIES } from '../../../../ui/icons/cardBehaviorIcons';
@@ -47,6 +48,7 @@ const rasterizeSvgToTexture = (
     });
 
 const GAME_ICON_ENTRIES = [
+    ...COMBAT_TRAIT_ICON_ENTRIES,
     ...ENEMY_PASSIVE_ICON_ENTRIES,
     ...ENEMY_INTENT_ICON_ENTRIES,
     ...CARD_BEHAVIOR_ICON_ENTRIES,

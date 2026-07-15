@@ -1,4 +1,5 @@
 import { pickRandom } from '../random/rng';
+import type { CombatTraitInput } from '../cardGame/combat/combatTraits/types';
 
 /** Run-long cybernetic implants collected from events and ripperdocs. */
 export interface BodyModDefinition {
@@ -7,6 +8,8 @@ export interface BodyModDefinition {
     blurb: string;
     /** Short effect line shown in UI. */
     effect: string;
+    /** Optional combat traits granted for the rest of the run (shown below RUNNER). */
+    combatTraits?: CombatTraitInput[];
 }
 
 export const BODY_MOD_IDS = {
@@ -14,6 +17,7 @@ export const BODY_MOD_IDS = {
     overclockCell: 'overclock-cell',
     credSiphon: 'cred-siphon',
     markSeven: 'mark-seven',
+    reactivePlating: 'reactive-plating',
 } as const;
 
 /** Attacks that trigger Mark VII's double-damage proc (7th, 14th, …). */
@@ -66,6 +70,13 @@ export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
         label: 'Mark VII',
         blurb: 'Neural strike firmware overclocks every seventh combat swing.',
         effect: 'Every 7th attack deals double damage.',
+    },
+    {
+        id: BODY_MOD_IDS.reactivePlating,
+        label: 'Reactive Plating',
+        blurb: 'Subdermal impact mesh hardens on first contact, then vents.',
+        effect: 'First 2 card hits each fight deal no damage to you.',
+        combatTraits: [ { id: 'hitWard', hitsBlocked: 2 } ],
     },
 ];
 

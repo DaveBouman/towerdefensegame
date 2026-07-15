@@ -2,6 +2,7 @@ import {
     getCardGameEnemyDefinitionOrThrow,
     type LoadedCardGameEnemyDefinition,
 } from '../config/enemyCatalog';
+import { initializeEnemyHitMitigation } from '../combat/combatTraits/mitigation';
 import type { EnemyCombatant, EnemyState } from './types';
 
 export const createEnemyCombatant = (
@@ -10,8 +11,7 @@ export const createEnemyCombatant = (
 ): EnemyCombatant =>
 {
     const definition = getCardGameEnemyDefinitionOrThrow(definitionId);
-
-    return {
+    const combatant: EnemyCombatant = {
         instanceId,
         definitionId,
         definition,
@@ -20,6 +20,10 @@ export const createEnemyCombatant = (
         turnsTaken: 0,
         enrageStacks: 0,
     };
+
+    initializeEnemyHitMitigation(combatant);
+
+    return combatant;
 };
 
 export const createEnemyState = (

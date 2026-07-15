@@ -13,7 +13,9 @@ import { BODY_MOD_IDS } from '../../run/bodyMods';
 import { getDefaultCardGameEnemy } from '../config/enemyCatalog';
 import { CardGameSession } from './CardGameSession';
 import { createCardInstance, resetCardInstanceCounter } from './createCardInstance';
-import { getInBoundsDirections, randomInBoundsDirectionForPool } from './cardDirections';
+import { getInBoundsDirections } from './cardDirections';
+import { BoardModel, createEmptyBoard } from './BoardModel';
+import { pickFieldCardArrow } from './fieldCardArrows';
 import { GRID_CONFIG } from '../../config/gridConfig';
 import type { AttackSequence } from './types';
 
@@ -169,9 +171,57 @@ describe('CardGameSession enemy turn', () =>
         session.grantPlayerShield(5);
         const result = session.dealAttackDamage(10);
 
+        expect(result.healthDamage + result.shieldAbsorbed).toBe(5);
         expect(result.thornsDamage).toBe(4);
         expect(session.getPlayer().shield).toBe(1);
         expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth);
+    });
+
+    it('caps damage per card hit for enemies with damageCap', () =>
+    {
+        const session = new CardGameSession('thornward');
+
+        session.beginAttack();
+        const result = session.dealAttackDamage(20);
+
+        expect(result.healthDamage + result.shieldAbsorbed).toBe(5);
+        expect(session.getEnemy().health).toBe(170 - 5);
+    });
+
+    it('blocks the first three card hits for enemies with hitWard', () =>
+    {
+        const session = new CardGameSession('warden');
+
+        session.beginAttack();
+
+        for (let hit = 0; hit < 3; hit++)
+        {
+            const result = session.dealAttackDamage(10);
+
+            expect(result.damageBlocked).toBe(true);
+            expect(result.healthDamage).toBe(0);
+            expect(result.shieldAbsorbed).toBe(0);
+            expect(session.getEnemy().health).toBe(220);
+        }
+
+        const fourth = session.dealAttackDamage(10);
+
+        expect(fourth.damageBlocked).toBeUndefined();
+        expect(fourth.healthDamage).toBe(10);
+    });
+
+    it('blocks the first enemy hits against the player from hitWard body mods', () =>
+    {
+        const session = new CardGameSession('basic', undefined, undefined, [ 'reactive-plating' ]);
+
+        const first = session.resolveEnemyAttack(10);
+        const second = session.resolveEnemyAttack(10);
+        const third = session.resolveEnemyAttack(10);
+
+        expect(first.healthDamage).toBe(0);
+        expect(second.healthDamage).toBe(0);
+        expect(third.healthDamage).toBe(10);
+        expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth - 10);
     });
 
     it('applies battle modifiers to enemy attacks and player armor', () =>
@@ -1000,16 +1050,12 @@ describe('CardGameSession enemy turn', () =>
 
     it('never assigns off-board arrows to field boosts on corner slots', () =>
     {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
         const slot = { row: 0, col: 0 };
 
         for (let i = 0; i < 50; i++)
         {
-            const arrow = randomInBoundsDirectionForPool(
-                slot,
-                GRID_CONFIG.rows,
-                GRID_CONFIG.cols,
-                'orthogonal',
-            );
+            const arrow = pickFieldCardArrow(board, slot, 'orthogonal');
 
             expect(getInBoundsDirections(slot, GRID_CONFIG.rows, GRID_CONFIG.cols)).toContain(arrow);
             expect([ 'up', 'left', 'up-left' ]).not.toContain(arrow);

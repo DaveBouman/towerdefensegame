@@ -19,6 +19,9 @@
       "hazardsPerTurn": 1,
       "passives": [
         { "id": "thorns", "reflectDamage": 4 }
+      ],
+      "combatTraits": [
+        { "id": "damageCap", "maxPerCard": 5 }
       ]
     },
     {
@@ -48,6 +51,9 @@
         "wetBlanket",
         "jammer",
         "lastStand"
+      ],
+      "combatTraits": [
+        { "id": "hitWard", "hitsBlocked": 3 }
       ]
     },
     {

@@ -43,6 +43,8 @@ export interface EnemyCombatant {
     queuedTurn: EnemyTurnAction | null;
     turnsTaken: number;
     enrageStacks: number;
+    /** Remaining fully blocked hits from the hitWard passive. */
+    hitsBlockedRemaining?: number;
 }
 
 export interface PlayerState {
@@ -99,6 +101,7 @@ export interface DamageResult {
     thornsDamage?: number;
     thornsShieldAbsorbed?: number;
     thornsHealthDamage?: number;
+    damageBlocked?: boolean;
 }
 
 export interface PlacedCard {

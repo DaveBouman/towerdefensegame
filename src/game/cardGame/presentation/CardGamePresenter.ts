@@ -656,6 +656,11 @@ export class CardGamePresenter
         enemyView?.setHealth(result.enemy);
         this.enemySquad.syncFromSession(this.session);
 
+        if (result.damageBlocked)
+        {
+            enemyView?.showHitBlocked();
+        }
+
         if (result.shieldAbsorbed > 0)
         {
             enemyView?.showShieldAbsorb(result.shieldAbsorbed);

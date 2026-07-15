@@ -1,8 +1,13 @@
 import type { PlayerState } from '../cardGame/domain/types';
+import type { CombatTraitConfig } from '../cardGame/combat/combatTraits/types';
 import { drawAvatarDiamond, drawCornerBrackets } from '../config/cyberpunkUiGraphics';
 import { CYBER } from '../config/cyberpunkTheme';
 import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
 import { playFloatingText, playHitFlash as playHitFlashTween } from '../cardGame/presentation/visualEffects/visualEffectTweens';
+import {
+    COMBAT_TRAIT_ROW_BELOW_LABEL,
+    CombatTraitRowView,
+} from './CombatTraitRowView';
 import type { BoardLayout } from './boardLayout';
 
 export class PlayerHealthView
@@ -14,6 +19,8 @@ export class PlayerHealthView
     private readonly healthBarWidth: number;
     private readonly healthBarHeight: number;
     private readonly glowRing: Phaser.GameObjects.Rectangle;
+    private readonly combatTraitRowView: CombatTraitRowView;
+    private readonly playerSize: number;
     private idleTween?: Phaser.Tweens.Tween;
 
     constructor (
@@ -23,6 +30,7 @@ export class PlayerHealthView
     )
     {
         const { playerX, playerY, playerSize } = layout;
+        this.playerSize = playerSize;
         const container = scene.add.container(playerX, playerY);
 
         this.glowRing = scene.add.rectangle(
@@ -86,6 +94,13 @@ export class PlayerHealthView
         const label = scene.add.text(playerSize / 2, playerSize + 16, 'RUNNER', {
             ...uiDisplayTextStyle(14, '#7af0ff', { bold: true }),
         }).setOrigin(0.5, 0);
+
+        this.combatTraitRowView = new CombatTraitRowView(
+            scene,
+            container,
+            playerSize,
+            playerSize + 16 + COMBAT_TRAIT_ROW_BELOW_LABEL,
+        );
 
         container.add([
             this.glowRing,
@@ -152,9 +167,15 @@ export class PlayerHealthView
         );
     }
 
+    setCombatTraits (traits: readonly CombatTraitConfig[]): void
+    {
+        this.combatTraitRowView.setTraits(traits);
+    }
+
     destroy (): void
     {
         this.idleTween?.stop();
+        this.combatTraitRowView.destroy();
         this.container.destroy();
     }
 

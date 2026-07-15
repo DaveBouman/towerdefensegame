@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-07-14
+**Last updated:** 2026-07-15
 
 ---
 
@@ -163,15 +163,16 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | **Curse cards** | `cards.json` (`unplayable`, `handEndPenalty`), `CardGameSession.resolveHandEndPenalties` | Bad cards that clog the hand — **Burden** (unplayable, 5 dmg if held at end of turn), **Fuse** (weak attack, 8 dmg if not placed by end of turn). **Saboteur** adds Burdens via `curseHand` passive |
 | Shield layer | Both sides | Absorbs before HP (poison bypasses shield) |
 | Enemy passives | `enemyPassives/` | See enemy roster below |
+| Combat traits | `combat/combatTraits/` | Defensive abilities (Damage Cap, Hit Ward) with icons below the enemy name; also grantable via `combatTraits` on enemies or body mods |
 
 ### Enemy roster (`cardGame/config/enemies.json`)
 
 | ID | Counter-play |
 |----|--------------|
 | `basic` | Raider — baseline (HP 190, atk 13, 65% attack), no passives |
-| `thornward` | Thorns — reflects 4 damage on attack (punishes multi-attack re-firing) |
+| `thornward` | Thorns — reflects 4 damage on attack; **Damage Cap** trait — each card hit deals at most 5 damage |
 | `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile, **Curse Hand** (adds Burden to hand each turn) — trap pressure snowballs. On the run map, saboteur nodes always connect to an adjacent route up or down on the next column. |
-| `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps) |
+| `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps); **Hit Ward** trait — first 3 card hits deal no damage |
 | `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (punishes loop-reset), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
 | `field-medic` | Low personal threat — **ally support** in multi-enemy fights: heals weakest ally, can shield the most shielded ally (`allyActions` in `enemies.json`) |
 
@@ -249,6 +250,9 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-07-15 | **Trap/boost arrow reconciliation.** Field boosts and enemy traps now pick arrows that prefer chaining through adjacent ambient cards, and automatically break two-step ping-pong loops (trap ↓ boost + boost ↑ trap) by reassigning the boost's exit arrow (`fieldCardArrows.ts`). |
+| 2026-07-15 | **Combat trait icons.** Shared trait system (`combatTraits/`) with dedicated icon row below enemy names (`CombatTraitRowView`) and below **RUNNER** for body-mod traits. Traits configured on enemies via `combatTraits` in `enemies.json` or on body mods via `combatTraits` in `bodyMods.ts`. **Damage Cap** and **Hit Ward** moved out of enemy passives; example body mod **Reactive Plating** grants Hit Ward (2 hits). |
+| 2026-07-15 | **Enemy damage mitigation traits.** **Damage Cap** — each card hit deals at most 5 damage; **Hit Ward** — first 3 card hits deal no damage. Combat logic in `combatTraits/mitigation.ts`; blocked hits show floating **BLOCKED** text. Added to **Thornward** (cap) and **Warden** (ward). |
 | 2026-07-14 | **Trap column restriction.** Enemy traps only spawn in the last three board columns (`gridConfig.isTrapPlacementColumn`, `placeEnemyHazard`). |
 | 2026-07-14 | **Enemy intent layout.** Boxless telegraph: large tinted icon with Orbitron value below (dark stroke, no chip frame). Multi-step turns wrap onto extra rows within each panel so every step stays visible (no overlap with neighboring enemies). |
 | 2026-07-14 | **Enemy intent during player turn.** `setDefeated(false)` no longer clears intent chips; `emitAttackReadiness` re-telegraphs upcoming enemy turns while the player deploys (hidden during enemy phase resolution). |

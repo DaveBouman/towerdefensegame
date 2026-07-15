@@ -1,4 +1,5 @@
 import type { CardGameSession } from '../cardGame/domain/CardGameSession';
+import { getEnemyCombatTraits } from '../cardGame/combat/combatTraits/collect';
 import type { EnemyCombatant, EnemyTurnAction } from '../cardGame/domain/types';
 import { isCombatantAlive } from '../cardGame/domain/enemyCombatants';
 import type { BoardLayout } from './boardLayout';
@@ -37,6 +38,7 @@ export class EnemySquadView
             const view = new EnemyTargetView(this.scene, slotLayout, combatant.state);
 
             view.setEnemyLabel(combatant.definition.label);
+            view.setCombatTraits(getEnemyCombatTraits(combatant.definition));
             view.setEnemyPassives(combatant.definition.passives);
             view.reposition(slot.x, slot.y);
             view.setTargetClickHandler(() => this.onEnemyClicked(combatant.instanceId));

@@ -1,8 +1,10 @@
 import { GAME_RULES } from './cardRegistry';
 import enemiesData from './enemies.json';
 import { normalizeEnemyPassives } from '../enemyPassives/defaults';
-import type { EnemyPassiveConfig, EnemyPassiveInput } from '../enemyPassives/types';
+import type { EnemyPassiveInput } from '../enemyPassives/types';
 import type { EnemyAllyActionDefinition } from '../combat/enemyAllySupport';
+import { normalizeCombatTraits } from '../combat/combatTraits/defaults';
+import type { CombatTraitInput } from '../combat/combatTraits/types';
 
 export interface CardGameEnemyDefinition {
     id: string;
@@ -15,17 +17,21 @@ export interface CardGameEnemyDefinition {
     /** Traps placed on the board every enemy turn. */
     hazardsPerTurn: number;
     passives?: EnemyPassiveInput[];
+    /** Defensive combat traits shown as icons below the enemy name. */
+    combatTraits?: CombatTraitInput[];
     /** Optional ally-support actions used in multi-enemy fights. */
     allyActions?: EnemyAllyActionDefinition[];
 }
 
-export interface LoadedCardGameEnemyDefinition extends Omit<CardGameEnemyDefinition, 'passives'> {
-    passives: EnemyPassiveConfig[];
+export interface LoadedCardGameEnemyDefinition extends Omit<CardGameEnemyDefinition, 'passives' | 'combatTraits'> {
+    passives: import('../enemyPassives/types').EnemyPassiveConfig[];
+    combatTraits: import('../combat/combatTraits/types').CombatTraitConfig[];
 }
 
 const loadEnemy = (enemy: CardGameEnemyDefinition): LoadedCardGameEnemyDefinition => ({
     ...enemy,
     passives: normalizeEnemyPassives(enemy.passives),
+    combatTraits: normalizeCombatTraits(enemy.combatTraits),
 });
 
 const definitions = new Map<string, LoadedCardGameEnemyDefinition>(

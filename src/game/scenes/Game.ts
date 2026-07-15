@@ -11,6 +11,7 @@ import { GAME_RULES, getCardDefinitionOrThrow } from '../cardGame/config/cardReg
 import type { SlotPosition } from '../cardGame/domain/types';
 import { destroyCardTooltipController } from '../cardGame/presentation/tooltips/CardTooltipController';
 import { destroyEnemyIntentTooltipController } from '../cardGame/presentation/tooltips/EnemyIntentTooltipController';
+import { destroyCombatTraitTooltipController } from '../cardGame/presentation/tooltips/CombatTraitTooltipController';
 import { destroyEnemyPassiveTooltipController } from '../cardGame/presentation/tooltips/EnemyPassiveTooltipController';
 import { preloadEnemyPassiveIcons } from '../cardGame/presentation/icons/preloadEnemyPassiveIcons';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
@@ -216,6 +217,7 @@ export class Game extends Scene
         });
 
         this.playerView = new PlayerHealthView(this, layout, this.session.getPlayer());
+        this.playerView.setCombatTraits(this.session.getPlayerCombatTraits());
         this.battleModifierView = new BattleModifierStatusView(this, layout);
         this.battleModifierView.setModifiers(this.session.getBattleModifiers());
         this.enemySquad = new EnemySquadView(
@@ -305,6 +307,7 @@ export class Game extends Scene
         this.graveyardView?.destroy();
         destroyCardTooltipController();
         destroyEnemyPassiveTooltipController();
+        destroyCombatTraitTooltipController();
         destroyEnemyIntentTooltipController();
         this.presenter = undefined;
         this.boardView = undefined;

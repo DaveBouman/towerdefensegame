@@ -24,6 +24,21 @@ export const CARD_DIRECTIONS: readonly CardDirection[] = [
 
 export const ORTHOGONAL_DIRECTIONS: readonly CardDirection[] = [ 'up', 'down', 'left', 'right' ];
 
+export const oppositeDirection = (direction: CardDirection): CardDirection =>
+{
+    switch (direction)
+    {
+        case 'up': return 'down';
+        case 'down': return 'up';
+        case 'left': return 'right';
+        case 'right': return 'left';
+        case 'up-left': return 'down-right';
+        case 'up-right': return 'down-left';
+        case 'down-left': return 'up-right';
+        case 'down-right': return 'up-left';
+    }
+};
+
 export const DIAGONAL_DIRECTIONS: readonly CardDirection[] = [
     'up-left',
     'up-right',

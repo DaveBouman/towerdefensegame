@@ -40,11 +40,15 @@ import {
     type DampenField,
 } from '../enemyPassives/applyEnemyPassives';
 import { getEnemyPassive } from '../enemyPassives/defaults';
+import { applyCombatHitMitigation, applyEnemyHitMitigation } from '../combat/combatTraits/mitigation';
+import { collectCombatTraitsFromBodyMods } from '../combat/combatTraits/collect';
+import { getCombatTrait } from '../combat/combatTraits/defaults';
+import type { CombatTraitConfig } from '../combat/combatTraits/types';
 import { slotKey } from '../domain/cardDirections';
 import { buildDeckFromDefinitionIds, buildPlayerDeck, shuffleInPlace } from '../domain/buildPlayerDeck';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
-import { randomInBoundsDirectionForPool } from '../domain/cardDirections';
+import { pickFieldCardArrow, reconcileFieldCardArrows } from '../domain/fieldCardArrows';
 import { createCardInstance } from '../domain/createCardInstance';
 import { createEnemyCombatant, isCombatantAlive, normalizeEnemyIds } from './enemyCombatants';
 import type {
@@ -106,6 +110,7 @@ export class CardGameSession
     private readonly bodyMods: readonly string[];
     private runAttackCount: number;
     private doubleDamageThisAttack = false;
+    private playerHitsBlockedRemaining?: number;
     private chainStart: SlotPosition = {
         row: GAME_RULES.activationStart.row,
         col: GAME_RULES.activationStartColumn,
@@ -127,6 +132,13 @@ export class CardGameSession
         for (const [ index, definitionId ] of normalizeEnemyIds(enemyIds).entries())
         {
             this.combatants.push(createEnemyCombatant(`enemy-${index}`, definitionId));
+        }
+
+        const hitWard = getCombatTrait(collectCombatTraitsFromBodyMods(bodyMods), 'hitWard');
+
+        if (hitWard)
+        {
+            this.playerHitsBlockedRemaining = hitWard.hitsBlocked;
         }
 
         this.board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
@@ -348,6 +360,11 @@ export class CardGameSession
     getBattleModifiers (): readonly BattleModifier[]
     {
         return [ ...this.battleModifiers ];
+    }
+
+    getPlayerCombatTraits (): readonly CombatTraitConfig[]
+    {
+        return collectCombatTraitsFromBodyMods(this.bodyMods);
     }
 
     resolveAllyHeal (amount: number, targetInstanceId: string): EnemyState
@@ -1187,13 +1204,38 @@ export class CardGameSession
             };
         }
 
+        const mitigation = applyEnemyHitMitigation(combatant, scaledDamage);
+
+        if (mitigation.blocked)
+        {
+            return {
+                enemy: { ...combatant.state },
+                shieldAbsorbed: 0,
+                healthDamage: 0,
+                targetInstanceId: targetId,
+                damageBlocked: true,
+            };
+        }
+
+        const effectiveDamage = mitigation.damage;
+
+        if (effectiveDamage <= 0)
+        {
+            return {
+                enemy: { ...combatant.state },
+                shieldAbsorbed: 0,
+                healthDamage: 0,
+                targetInstanceId: targetId,
+            };
+        }
+
         const wasAlive = isCombatantAlive(combatant);
-        const shieldAbsorbed = Math.min(combatant.state.shield, scaledDamage);
-        const healthDamage = scaledDamage - shieldAbsorbed;
+        const shieldAbsorbed = Math.min(combatant.state.shield, effectiveDamage);
+        const healthDamage = effectiveDamage - shieldAbsorbed;
 
         combatant.state.shield -= shieldAbsorbed;
         combatant.state.health = Math.max(0, combatant.state.health - healthDamage);
-        this.damageDealtThisAttack += scaledDamage;
+        this.damageDealtThisAttack += effectiveDamage;
 
         const enemyKilled = wasAlive && combatant.state.health <= 0;
         let healOnKill = 0;
@@ -1224,7 +1266,7 @@ export class CardGameSession
 
         const thornsDamage = computeThornsReflectDamage(
             combatant.definition.passives,
-            scaledDamage,
+            effectiveDamage,
         );
 
         if (thornsDamage > 0)
@@ -1502,8 +1544,36 @@ export class CardGameSession
             };
         }
 
-        const shieldAbsorbed = Math.min(this.player.shield, scaledDamage);
-        const healthDamage = scaledDamage - shieldAbsorbed;
+        const mitigation = applyCombatHitMitigation(
+            this.getPlayerCombatTraits(),
+            scaledDamage,
+            this.playerHitsBlockedRemaining,
+        );
+
+        this.playerHitsBlockedRemaining = mitigation.hitsBlockedRemaining;
+
+        if (mitigation.result.blocked)
+        {
+            return {
+                player: this.getPlayer(),
+                shieldAbsorbed: 0,
+                healthDamage: 0,
+            };
+        }
+
+        const effectiveDamage = mitigation.result.damage;
+
+        if (effectiveDamage <= 0)
+        {
+            return {
+                player: this.getPlayer(),
+                shieldAbsorbed: 0,
+                healthDamage: 0,
+            };
+        }
+
+        const shieldAbsorbed = Math.min(this.player.shield, effectiveDamage);
+        const healthDamage = effectiveDamage - shieldAbsorbed;
 
         this.player.shield -= shieldAbsorbed;
         this.player.health = Math.max(0, this.player.health - healthDamage);
@@ -1628,15 +1698,11 @@ export class CardGameSession
 
         const slot = pickRandom(candidates);
         const hazardDefinition = getCardDefinitionOrThrow(GAME_RULES.hazard.definitionId);
-        const hazardArrow = randomInBoundsDirectionForPool(
-            slot,
-            GRID_CONFIG.rows,
-            GRID_CONFIG.cols,
-            hazardDefinition.arrowPool,
-        );
+        const hazardArrow = pickFieldCardArrow(this.board, slot, hazardDefinition.arrowPool);
         const card = createCardInstance(GAME_RULES.hazard.definitionId, hazardArrow, 'enemy');
 
         this.board.placeCard(slot, card);
+        reconcileFieldCardArrows(this.board, slot);
 
         return slot;
     }
@@ -1661,15 +1727,11 @@ export class CardGameSession
 
         const slot = pickRandom(emptySlots);
         const boostDefinition = getCardDefinitionOrThrow(GAME_RULES.fieldBoost.definitionId);
-        const boostArrow = randomInBoundsDirectionForPool(
-            slot,
-            GRID_CONFIG.rows,
-            GRID_CONFIG.cols,
-            boostDefinition.arrowPool,
-        );
+        const boostArrow = pickFieldCardArrow(this.board, slot, boostDefinition.arrowPool);
         const card = createCardInstance(GAME_RULES.fieldBoost.definitionId, boostArrow, 'field');
 
         this.board.placeCard(slot, card);
+        reconcileFieldCardArrows(this.board, slot);
 
         return slot;
     }
