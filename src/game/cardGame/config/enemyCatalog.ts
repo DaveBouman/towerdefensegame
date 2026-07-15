@@ -2,6 +2,7 @@ import { GAME_RULES } from './cardRegistry';
 import enemiesData from './enemies.json';
 import { normalizeEnemyPassives } from '../enemyPassives/defaults';
 import type { EnemyPassiveConfig, EnemyPassiveInput } from '../enemyPassives/types';
+import type { EnemyAllyActionDefinition } from '../combat/enemyAllySupport';
 
 export interface CardGameEnemyDefinition {
     id: string;
@@ -14,6 +15,8 @@ export interface CardGameEnemyDefinition {
     /** Traps placed on the board every enemy turn. */
     hazardsPerTurn: number;
     passives?: EnemyPassiveInput[];
+    /** Optional ally-support actions used in multi-enemy fights. */
+    allyActions?: EnemyAllyActionDefinition[];
 }
 
 export interface LoadedCardGameEnemyDefinition extends Omit<CardGameEnemyDefinition, 'passives'> {

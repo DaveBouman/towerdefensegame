@@ -65,6 +65,29 @@
       ]
     },
     {
+      "id": "field-medic",
+      "label": "Field Medic",
+      "maxHealth": 140,
+      "attackDamage": 8,
+      "shieldGain": 10,
+      "attackChance": 0.35,
+      "hazardsPerTurn": 0,
+      "allyActions": [
+        {
+          "kind": "heal-ally",
+          "amount": 14,
+          "chance": 0.85,
+          "target": "lowest-health"
+        },
+        {
+          "kind": "shield-ally",
+          "amount": 8,
+          "chance": 0.45,
+          "target": "highest-shield"
+        }
+      ]
+    },
+    {
       "id": "training-dummy",
       "label": "Training Dummy",
       "maxHealth": 99999,

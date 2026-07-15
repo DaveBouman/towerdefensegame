@@ -4,6 +4,7 @@ import { CardBoardView } from '../board/CardBoardView';
 import { CardHandView } from '../board/CardHandView';
 import { CardPileView } from '../board/CardPileView';
 import { EnemySquadView } from '../board/EnemySquadView';
+import { BattleModifierStatusView } from '../board/BattleModifierStatusView';
 import { PlayerHealthView } from '../board/PlayerHealthView';
 import { CardGameSession } from '../cardGame/domain/CardGameSession';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
@@ -33,6 +34,7 @@ export class Game extends Scene
     private handView?: CardHandView;
     private enemySquad?: EnemySquadView;
     private playerView?: PlayerHealthView;
+    private battleModifierView?: BattleModifierStatusView;
     private armorView?: ArmorView;
     private deckView?: CardPileView;
     private graveyardView?: CardPileView;
@@ -214,6 +216,8 @@ export class Game extends Scene
         });
 
         this.playerView = new PlayerHealthView(this, layout, this.session.getPlayer());
+        this.battleModifierView = new BattleModifierStatusView(this, layout);
+        this.battleModifierView.setModifiers(this.session.getBattleModifiers());
         this.enemySquad = new EnemySquadView(
             this,
             layout,
@@ -250,6 +254,7 @@ export class Game extends Scene
             this.enemySquad,
             this.playerView,
             this.armorView,
+            this.battleModifierView,
         );
         this.presenter.bind();
 
@@ -282,6 +287,7 @@ export class Game extends Scene
             graveyard: this.graveyardView.container,
         });
         this.enemySquad.applyLayout(this.layout);
+        this.battleModifierView?.reposition(this.layout);
     };
 
     private endBattle (): void
@@ -293,6 +299,7 @@ export class Game extends Scene
         this.handView?.destroy();
         this.enemySquad?.destroy();
         this.playerView?.destroy();
+        this.battleModifierView?.destroy();
         this.armorView?.destroy();
         this.deckView?.destroy();
         this.graveyardView?.destroy();
@@ -304,6 +311,7 @@ export class Game extends Scene
         this.handView = undefined;
         this.enemySquad = undefined;
         this.playerView = undefined;
+        this.battleModifierView = undefined;
         this.armorView = undefined;
         this.deckView = undefined;
         this.graveyardView = undefined;
@@ -809,6 +817,7 @@ export class Game extends Scene
 
         this.enemySquad?.syncFromSession(this.session);
         this.enemySquad?.syncTargetPrompt(this.session);
+        this.battleModifierView?.setModifiers(this.session.getBattleModifiers());
 
         if (!this.turnResolving
             && !this.session.isEnemyTurnInProgress()

@@ -57,13 +57,22 @@ export interface PlayerDamageResult {
     healthDamage: number;
 }
 
-export type EnemyTurnKind = 'attack' | 'shield' | 'place-hazard' | 'dampen-field' | 'battle-mod';
+export type EnemyTurnKind =
+    | 'attack'
+    | 'shield'
+    | 'place-hazard'
+    | 'dampen-field'
+    | 'battle-mod'
+    | 'heal-ally'
+    | 'shield-ally';
 
 export interface EnemyTurnStep {
     kind: EnemyTurnKind;
     amount?: number;
     modifierStat?: import('../combat/battleModifiers').BattleModifierStat;
     modifierDelta?: number;
+    /** Ally support target (multi-enemy fights). */
+    targetInstanceId?: string;
 }
 
 export interface EnemyTurnAction {

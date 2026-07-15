@@ -23,6 +23,11 @@ import {
     type BattleModifierDuration,
     type BattleModifierStat,
 } from '../combat/battleModifiers';
+import {
+    getEnemyAllyActions,
+    mergeAllyStepsIntoTurn,
+    planAllySupportSteps,
+} from '../combat/enemyAllySupport';
 import { collectBattleModifierApplications } from '../combat/chainBattleModifiers';
 import { planEnemyTurn } from '../combat/enemyTurn';
 import {
@@ -294,7 +299,7 @@ export class CardGameSession
         stat: BattleModifierStat,
         delta: number,
         source: BattleModifier['source'],
-        duration: BattleModifierDuration = 'enemy-turn',
+        duration: BattleModifierDuration = 'energy-round',
     ): void
     {
         if (delta === 0)
@@ -318,7 +323,7 @@ export class CardGameSession
             definition.battleModifier.stat,
             definition.battleModifier.delta,
             'player',
-            definition.battleModifier.duration ?? 'enemy-turn',
+            definition.battleModifier.duration ?? 'energy-round',
         );
     }
 
@@ -337,7 +342,30 @@ export class CardGameSession
             return;
         }
 
-        this.addBattleModifier(step.modifierStat, step.modifierDelta, 'enemy');
+        this.addBattleModifier(step.modifierStat, step.modifierDelta, 'enemy', 'energy-round');
+    }
+
+    getBattleModifiers (): readonly BattleModifier[]
+    {
+        return [ ...this.battleModifiers ];
+    }
+
+    resolveAllyHeal (amount: number, targetInstanceId: string): EnemyState
+    {
+        const combatant = this.getCombatantOrThrow(targetInstanceId);
+        const heal = Math.max(0, amount);
+
+        combatant.state.health = Math.min(
+            combatant.state.maxHealth,
+            combatant.state.health + heal,
+        );
+
+        return { ...combatant.state };
+    }
+
+    resolveAllyShield (amount: number, targetInstanceId: string): EnemyState
+    {
+        return this.resolveEnemyShield(amount, targetInstanceId);
     }
 
     clearBattleModifiers (): void
@@ -347,10 +375,7 @@ export class CardGameSession
 
     clearTransientBattleModifiers (): void
     {
-        const persistent = this.battleModifiers.filter((modifier) => modifier.duration === 'energy-round');
-
-        this.battleModifiers.length = 0;
-        this.battleModifiers.push(...persistent);
+        // All battle modifiers last the full energy round.
     }
 
     private getModifierTotals ()
@@ -986,13 +1011,21 @@ export class CardGameSession
                 continue;
             }
 
+            const baseTurn = planEnemyTurn({
+                enemy: combatant.definition,
+                enemyState: combatant.state,
+                enrageStacks: combatant.enrageStacks,
+                turnsTaken: combatant.turnsTaken,
+            });
+            const allySteps = planAllySupportSteps(
+                combatant,
+                this.getLivingCombatants(),
+                getEnemyAllyActions(combatant.definition),
+            );
+
             combatant.queuedTurn = {
-                ...planEnemyTurn({
-                    enemy: combatant.definition,
-                    enemyState: combatant.state,
-                    enrageStacks: combatant.enrageStacks,
-                    turnsTaken: combatant.turnsTaken,
-                }),
+                ...baseTurn,
+                steps: mergeAllyStepsIntoTurn(baseTurn.steps, allySteps),
                 instanceId: combatant.instanceId,
                 enemyId: combatant.definitionId,
             };

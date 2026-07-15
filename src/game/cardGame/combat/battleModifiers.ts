@@ -8,7 +8,7 @@ export type BattleModifierStat =
     | 'player-damage-dealt';
 
 /** How long an applied modifier stays active. */
-export type BattleModifierDuration = 'enemy-turn' | 'energy-round';
+export type BattleModifierDuration = 'energy-round';
 
 export interface BattleModifier {
     stat: BattleModifierStat;
@@ -134,10 +134,8 @@ export const BATTLE_MODIFIER_LABELS: Record<BattleModifierStat, string> = {
     'player-damage-dealt': 'Damage dealt',
 };
 
-export const describeBattleModifierDuration = (duration: BattleModifierDuration = 'enemy-turn'): string =>
-    duration === 'energy-round'
-        ? 'Lasts until your energy refills at the end of the round.'
-        : 'Lasts through the enemy response, then expires.';
+export const describeBattleModifierDuration = (): string =>
+    'Lasts until your energy refills at the end of the round.';
 
 export const describeBattleModifier = (
     stat: BattleModifierStat,

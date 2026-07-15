@@ -240,7 +240,7 @@
       "behaviorId": "battle-mod",
       "visualId": "glitch",
       "arrowPool": "orthogonal",
-      "battleModifier": { "stat": "enemy-attack", "delta": -0.1, "duration": "energy-round" }
+      "battleModifier": { "stat": "enemy-attack", "delta": -0.1 }
     },
     {
       "id": "hardwire",

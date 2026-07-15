@@ -71,11 +71,31 @@ export const resolveEnemyIntentTooltip = (
                 title: 'Battle modifier',
                 lines: [
                     upcoming
-                        ? `Will apply ${label} for the rest of this enemy turn and your next attacks.`
+                        ? `Will apply ${label} until your energy refills.`
                         : `Applies ${label}.`,
                     'Stacks with other modifiers and cards in the chain.',
                 ],
             };
         }
+        case 'heal-ally':
+            return {
+                title: 'Ally heal',
+                lines: [
+                    upcoming
+                        ? `Will heal an ally for ${step.amount ?? 0} HP.`
+                        : `Heals an ally for ${step.amount ?? 0} HP.`,
+                    'Targets the weakest living ally when multiple hostiles are present.',
+                ],
+            };
+        case 'shield-ally':
+            return {
+                title: 'Ally shield',
+                lines: [
+                    upcoming
+                        ? `Will grant an ally +${step.amount ?? 0} shield.`
+                        : `Grants an ally +${step.amount ?? 0} shield.`,
+                    'Targets the weakest living ally when multiple hostiles are present.',
+                ],
+            };
     }
 };

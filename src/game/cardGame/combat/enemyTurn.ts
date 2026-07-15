@@ -28,6 +28,22 @@ export const describeEnemyStep = (
             : { title: 'Trap', color: '#ff9f43' };
     }
 
+    if (step.kind === 'heal-ally')
+    {
+        return {
+            title: `Heal ally ${step.amount ?? 0}`,
+            color: '#7af0c8',
+        };
+    }
+
+    if (step.kind === 'shield-ally')
+    {
+        return {
+            title: `Shield ally +${step.amount ?? 0}`,
+            color: '#5dade2',
+        };
+    }
+
     if (phase === 'executing')
     {
         return step.kind === 'attack'

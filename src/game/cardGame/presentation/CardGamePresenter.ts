@@ -26,7 +26,7 @@ import type { ArmorView } from '../../board/ArmorView';
 import type { CardBoardView } from '../../board/CardBoardView';
 import type { CardHandView } from '../../board/CardHandView';
 import type { EnemySquadView } from '../../board/EnemySquadView';
-import type { PlayerHealthView } from '../../board/PlayerHealthView';
+import type { BattleModifierStatusView } from '../../board/BattleModifierStatusView';
 
 export class CardGamePresenter
 {
@@ -43,7 +43,13 @@ export class CardGamePresenter
         private readonly enemySquad: EnemySquadView,
         private readonly playerView: PlayerHealthView,
         private readonly armorView: ArmorView,
+        private readonly battleModifierView?: BattleModifierStatusView,
     ) {}
+
+    private syncBattleModifierStatus (): void
+    {
+        this.battleModifierView?.setModifiers(this.session.getBattleModifiers());
+    }
 
     bind (): void
     {
@@ -475,6 +481,7 @@ export class CardGamePresenter
             this.scene.time.delayedCall(turnMs, () =>
             {
                 this.session.addBattleModifierFromEnemyStep(step);
+                this.syncBattleModifierStatus();
 
                 if (step.modifierStat !== undefined && step.modifierDelta !== undefined)
                 {
@@ -489,23 +496,61 @@ export class CardGamePresenter
             return;
         }
 
-        this.scene.time.delayedCall(turnMs / 2, () =>
+        if (step.kind === 'heal-ally' || step.kind === 'shield-ally')
         {
-            const enemy = this.session.resolveEnemyShield(step.amount ?? 0, instanceId);
+            const targetId = step.targetInstanceId;
+            const targetView = targetId ? this.enemySquad.getView(targetId) : enemyView;
 
-            enemyView?.setHealth(enemy);
-            enemyView?.showShieldGain(step.amount ?? 0);
-        });
+            enemyView?.playEnemyAttackPulse();
 
-        this.scene.time.delayedCall(turnMs, () =>
-        {
-            if (instanceId)
+            this.scene.time.delayedCall(turnMs, () =>
             {
-                enemyView?.setHealth(this.session.getEnemy(instanceId));
-            }
+                if (!targetId)
+                {
+                    onComplete();
+                    return;
+                }
 
-            onComplete();
-        });
+                if (step.kind === 'heal-ally')
+                {
+                    const healed = this.session.resolveAllyHeal(step.amount ?? 0, targetId);
+                    targetView?.setHealth(healed);
+                    targetView?.showHealGain(step.amount ?? 0);
+                }
+                else
+                {
+                    const shielded = this.session.resolveAllyShield(step.amount ?? 0, targetId);
+                    targetView?.setHealth(shielded);
+                    targetView?.showShieldGain(step.amount ?? 0);
+                }
+
+                this.enemySquad.syncFromSession(this.session);
+                onComplete();
+            });
+
+            return;
+        }
+
+        if (step.kind === 'shield')
+        {
+            this.scene.time.delayedCall(turnMs / 2, () =>
+            {
+                const enemy = this.session.resolveEnemyShield(step.amount ?? 0, instanceId);
+
+                enemyView?.setHealth(enemy);
+                enemyView?.showShieldGain(step.amount ?? 0);
+            });
+
+            this.scene.time.delayedCall(turnMs, () =>
+            {
+                if (instanceId)
+                {
+                    enemyView?.setHealth(this.session.getEnemy(instanceId));
+                }
+
+                onComplete();
+            });
+        }
     }
 
     private dealStepDamage (
@@ -778,6 +823,7 @@ export class CardGamePresenter
     private applyBattleModFromStep (definitionId: string, slot: SlotPosition): void
     {
         this.session.addBattleModifierFromCard(definitionId);
+        this.syncBattleModifierStatus();
         this.enemySquad.showAllIntents(this.session);
 
         const definition = getCardDefinitionOrThrow(definitionId);

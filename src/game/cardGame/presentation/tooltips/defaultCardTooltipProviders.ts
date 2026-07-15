@@ -55,7 +55,6 @@ const provider = (id: string, getTooltip: (ctx: CardTooltipContext) => CardToolt
 
 const battleModTooltipLines = ({ definition }: CardTooltipContext): string[] =>
 {
-    const duration = definition.battleModifier?.duration ?? 'enemy-turn';
     const lines = [
         definition.battleModifier
             ? `Applies ${describeBattleModifier(
@@ -63,7 +62,7 @@ const battleModTooltipLines = ({ definition }: CardTooltipContext): string[] =>
                 definition.battleModifier.delta,
             )} when activated in the chain.`
             : 'Applies a battle modifier when activated in the chain.',
-        describeBattleModifierDuration(duration),
+        describeBattleModifierDuration(),
         'Stacks with enemy intents and other modifier cards.',
     ];
 

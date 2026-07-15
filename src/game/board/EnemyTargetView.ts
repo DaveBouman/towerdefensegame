@@ -642,6 +642,27 @@ export class EnemyTargetView
         this.showFloatingNumber(`-${damage}`, '#ff7675');
     }
 
+    showHealGain (heal: number): void
+    {
+        this.showFloatingNumber(`+${heal} HP`, '#7af0c8');
+
+        this.scene.tweens.killTweensOf(this.body);
+        this.body.setFillStyle(0x2a6b58, 0.55);
+
+        this.scene.tweens.add({
+            targets: this.container,
+            scaleX: 1.08,
+            scaleY: 1.08,
+            duration: 140,
+            ease: 'Back.easeOut',
+            yoyo: true,
+            onComplete: () =>
+            {
+                this.body.setFillStyle(ENEMY_COLOR, 0.22);
+            },
+        });
+    }
+
     showShieldGain (shield: number): void
     {
         this.showFloatingNumber(`+${shield} shield`, '#aed6f1');
