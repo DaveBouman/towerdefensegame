@@ -159,6 +159,15 @@ export function runChainPlayback (
         activeStep = null;
     };
 
+    /** Keeps each card's activation visual visible for at least one chain step. */
+    const scheduleStepCompletion = (callback: () => void, activatedAt: number): void =>
+    {
+        const elapsed = deps.scene.time.now - activatedAt;
+        const remaining = Math.max(0, stepMs - elapsed);
+
+        deps.scheduleAttackTimer(callback, remaining);
+    };
+
     const grantStepArmor = (step: ActivationStep): void =>
     {
         const stepIndex = chain.indexOf(step);
@@ -397,16 +406,19 @@ export function runChainPlayback (
 
             if (replay)
             {
+                const stepActivatedAt = deps.scene.time.now;
+
                 deps.activateStep(step, boosted);
-                finishActiveStep();
                 replayPriorStep(replay, () =>
                 {
                     grantStepArmor(step);
-                    proceedAfterStep();
+                    scheduleStepCompletion(proceedAfterStep, stepActivatedAt);
                 });
                 return;
             }
         }
+
+        const stepActivatedAt = deps.scene.time.now;
 
         deps.activateStep(step, boosted);
         grantStepArmor(step);
@@ -417,7 +429,7 @@ export function runChainPlayback (
                 resolvedStep.damage,
                 definition.id,
                 resolvedStep,
-                proceedAfterStep,
+                () => scheduleStepCompletion(proceedAfterStep, stepActivatedAt),
             );
             return;
         }
@@ -427,7 +439,7 @@ export function runChainPlayback (
             deps.boardView.showJokerDirectionPicker(step.slot, (direction) =>
             {
                 applyJokerChosenDirection(step, direction);
-                deps.scheduleAttackTimer(proceedAfterStep, stepMs);
+                scheduleStepCompletion(proceedAfterStep, stepActivatedAt);
             });
 
             return;
@@ -435,16 +447,16 @@ export function runChainPlayback (
 
         if (chain.length >= GAME_RULES.maxChainSteps)
         {
-            deps.scheduleAttackTimer(() =>
+            scheduleStepCompletion(() =>
             {
                 finishActiveStep();
                 finalize();
-            }, stepMs);
+            }, stepActivatedAt);
 
             return;
         }
 
-        deps.scheduleAttackTimer(proceedAfterStep, stepMs);
+        scheduleStepCompletion(proceedAfterStep, stepActivatedAt);
     };
 
     runStep();
