@@ -105,8 +105,9 @@ battle, and emits `BATTLE_WON` / `BATTLE_LOST` back to React.
 |-------|------|------|
 | Run controller | `src/App.tsx` | Map/battle/end phases, carry-over HP, node picks |
 | Run map | `src/game/run/runMap.ts` | Graph generation, reachability, run config |
-| Session | `src/game/cardGame/domain/CardGameSession.ts` | Turn flow, board state, combat orchestration (accepts carry-over HP) |
+| Session | `src/game/cardGame/domain/CardGameSession.ts` | Turn flow / combat orchestration facade (delegates to DeckHand, FieldEffects, CombatResolver, EnemyPhaseController, BoardEditController) |
 | Deck / hand | `src/game/cardGame/domain/DeckHand.ts` | Draw pile, hand, discard, rerolls |
+| Board edits | `src/game/cardGame/domain/BoardEditController.ts` | Place / remove / move / swap while combat is idle |
 | Field effects | `src/game/cardGame/domain/FieldEffects.ts` | Dampen field, silenced/bomb slots, hazard/boost placement |
 | Combat | `src/game/cardGame/domain/CombatResolver.ts` | Attack damage, player damage, shields, poison |
 | Enemy phase | `src/game/cardGame/domain/EnemyPhaseController.ts` | Enemy turn queue, phase prep, telegraph ramp |
@@ -302,6 +303,9 @@ Each enemy should force a **different deck shape and chain strategy**.
 | 2026-07-14 | **Courier + exhaust cards + smaller hand.** **Courier** discards up to 2 cards from the left of hand into the graveyard when played (includes unplayable curse cards). New `discardFromHandOnPlay` and `exhaustOnPlay` on `CardDefinition` — exhaust cards are destroyed for that fight only (not graveyard, not reshuffled). Starting hand **8** (`gameRules.handSize`). |
 | 2026-07-14 | **Corner Defense readability.** Single arrow tucked in the card corner (no dual hook preview); tooltip copy simplified. Corner Strike keeps the hook preview. |
 | 2026-07-14 | **Player round gating.** Board persists until all energy is spent; the enemy responds after **each** attack. `endPlayerRound` / board clear runs only when `energy === 0` (after that attack's enemy response). |
+| 2026-07-21 | **Draw pile matches discard inspector.** Deck and graveyard pile views share the same logic: face-up chips with chain arrows, grouped by definition+arrow, top of pile listed first. Only the pile source/title differs. |
+| 2026-07-21 | **Dedup / modularize.** Card activation glows collapse to `glowVisualFactory` + `glowVisuals` (12 near-clones → config). Tooltip controllers are attach-only wrappers over `GameTooltipController`. Board place/move/swap/remove extracted to `BoardEditController`. Shared `formatCardPowerLabel` for Phaser + React chips. |
+| 2026-07-21 | **Graveyard shows card arrows.** Discard pile inspector includes each card's chain direction (`CardChip` arrow glyphs). Same-definition cards with different arrows stay separate groups; newest discard listed first. Phaser pile face-up preview scales arrow size with card width. |
 | 2026-07-21 | **Traps clear after each attack.** Disarmed (chain-included) and detonated (unchained) enemy traps are removed from the board in `FieldEffects.resolveHazardsAfterAttack` when the attack completes — so they no longer linger across multi-energy attacks. Unchained traps still scorch their tile for the rest of the energy round. |
 | 2026-07-21 | **Attack lock through enemy response.** The attack lock is no longer released between chain resolve and the enemy phase — that gap let a second Attack start and leave the lock stuck (`attack-in-progress` on the next energy). Lock clears only when the player may act again (`unlockPlayerInput`). Enemy phase playback extracted to `enemyPhasePlayback.ts`; chain timers now replace (not stack). |
 | 2026-07-21 | **Distinct applied battle-modifier chips.** Active modifiers sit below the player/enemy panels (enemy-attack under enemies; armor/damage-taken/damage-dealt under the player). Each stat uses its own color; % labels are green for player buffs and red for debuffs. Enemy intent battle-mod icons use the same per-stat colors. |

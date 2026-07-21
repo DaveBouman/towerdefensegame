@@ -6,6 +6,9 @@ export interface PileCardEntry {
     label: string;
     power: number;
     behaviorId: string;
+    /** Present on graveyard entries so inspectors show chain direction. */
+    arrow?: import('../cardGame/domain/cardDirections').CardDirection;
+    loopArrow?: import('../cardGame/domain/cardDirections').CardDirection;
 }
 
 export interface PileViewPayload {

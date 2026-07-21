@@ -1953,6 +1953,43 @@ html, body, #root {
     text-shadow: 0 0 12px color-mix(in srgb, var(--card-border, #00e8ff) 50%, transparent);
 }
 
+.card-chip__arrow {
+    position: absolute;
+    z-index: 1;
+    font-family: Orbitron, Rajdhani, system-ui, sans-serif;
+    font-weight: 700;
+    line-height: 1;
+    color: #ffffff;
+    text-shadow: 0 1px 2px #0a0a14;
+    pointer-events: none;
+}
+
+.card-chip--pile .card-chip__arrow {
+    font-size: 14px;
+}
+
+.card-chip--hand .card-chip__arrow {
+    font-size: 18px;
+}
+
+.card-chip__arrow--loop {
+    color: #e8daef;
+    font-size: 11px;
+}
+
+.card-chip--pile .card-chip__arrow--loop {
+    font-size: 10px;
+}
+
+.card-chip__arrow--up { top: 6%; left: 50%; transform: translateX(-50%); }
+.card-chip__arrow--down { bottom: 6%; left: 50%; transform: translateX(-50%); }
+.card-chip__arrow--left { top: 50%; left: 8%; transform: translateY(-50%); }
+.card-chip__arrow--right { top: 50%; right: 8%; transform: translateY(-50%); }
+.card-chip__arrow--up-left { top: 8%; left: 10%; }
+.card-chip__arrow--up-right { top: 8%; right: 10%; }
+.card-chip__arrow--down-left { bottom: 8%; left: 10%; }
+.card-chip__arrow--down-right { bottom: 8%; right: 10%; }
+
 .card-chip__badge {
     position: absolute;
     top: 4px;

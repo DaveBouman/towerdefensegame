@@ -1,4 +1,4 @@
-import { getCardDefinitionOrThrow, GAME_RULES, getChainStepDistance } from '../cardGame/config/cardRegistry';
+import { getCardDefinitionOrThrow, getChainStepDistance } from '../cardGame/config/cardRegistry';
 import type { CardInstance } from '../cardGame/domain/types';
 import { isEnemyOwnedCard, isFieldOwnedCard } from '../cardGame/domain/cardOwnership';
 import { drawCornerBrackets } from '../config/cyberpunkUiGraphics';
@@ -8,6 +8,7 @@ import { getCardBehaviorTextureKey } from '../../ui/icons/cardBehaviorIcons';
 import { ARROW_GLYPH, arrowLabelPosition, cornerEntryArrowPosition } from './cardArrows';
 import { cornerTargetDirections } from '../cardGame/domain/cardDirections';
 import { CARD_VISUALS } from './cardVisuals';
+import { formatCardPowerLabel } from './cardVisualUtils';
 
 export interface CardVisualOptions {
     width: number;
@@ -39,13 +40,7 @@ export const buildCardGraphic = (
     const { width, height, interactive = false } = options;
     const container = scene.add.container(0, 0);
     const isJoker = definition.behaviorId === 'joker';
-    const isBoost = definition.behaviorId === 'boost';
     const isLoopReset = definition.behaviorId === 'loop-reset';
-    const isPoison = definition.behaviorId === 'poison';
-    const isFire = definition.behaviorId === 'fire';
-    const isCurse = definition.behaviorId === 'curse';
-    const isFuse = visualKey === 'fuse';
-    const handPenalty = definition.handEndPenalty ?? 0;
     const leapDistance = getChainStepDistance(definition);
     const owned = isEnemyOwnedCard(card) || isFieldOwnedCard(card);
     const borderWidth = owned ? 3 : 2;
@@ -83,8 +78,9 @@ export const buildCardGraphic = (
     const arrowPos = isCornerDefense
         ? cornerEntryArrowPosition(card.arrow, width, height)
         : arrowLabelPosition(card.arrow, width, height);
+    const arrowFontSize = Math.max(12, Math.round(width * 0.32));
     const continueArrow = scene.add.text(arrowPos.x, arrowPos.y, ARROW_GLYPH[card.arrow], {
-        ...uiTextStyle(20, isLoopReset ? '#fcee0a' : '#ffffff', { bold: true }),
+        ...uiTextStyle(arrowFontSize, isLoopReset ? '#fcee0a' : '#ffffff', { bold: true }),
     }).setOrigin(0.5);
 
     const cardDecor: Phaser.GameObjects.GameObject[] = [ continueArrow ];
@@ -137,7 +133,7 @@ export const buildCardGraphic = (
     const power = scene.add.text(
         width / 2,
         height * 0.62,
-        isJoker ? '★' : isBoost ? `×${GAME_RULES.fieldBoost.nextStepMultiplier}` : isLoopReset ? '↺1' : isPoison ? `${definition.power}×→` : isFire ? `${definition.power}↔` : isCurse && handPenalty > 0 ? `-${handPenalty}` : isFuse && handPenalty > 0 ? `${definition.power}!` : String(definition.power),
+        formatCardPowerLabel(definition),
         {
             ...uiDisplayTextStyle(22, style.powerColor, { bold: true }),
         },

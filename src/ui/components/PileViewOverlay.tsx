@@ -9,13 +9,18 @@ interface GroupedPileCard {
     count: number;
 }
 
+const groupKey = (entry: PileCardEntry): string =>
+    `${entry.definitionId}:${entry.arrow ?? ''}:${entry.loopArrow ?? ''}`;
+
+/** Groups identical face+arrow cards; preserves first-seen order (top of pile first). */
 const groupCards = (cards: readonly PileCardEntry[]): GroupedPileCard[] =>
 {
     const groups = new Map<string, GroupedPileCard>();
 
     for (const entry of cards)
     {
-        const existing = groups.get(entry.definitionId);
+        const key = groupKey(entry);
+        const existing = groups.get(key);
 
         if (existing)
         {
@@ -23,11 +28,11 @@ const groupCards = (cards: readonly PileCardEntry[]): GroupedPileCard[] =>
         }
         else
         {
-            groups.set(entry.definitionId, { entry, count: 1 });
+            groups.set(key, { entry, count: 1 });
         }
     }
 
-    return [ ...groups.values() ].sort((a, b) => a.entry.label.localeCompare(b.entry.label));
+    return [ ...groups.values() ];
 };
 
 export const PileViewOverlay = () =>
@@ -95,12 +100,14 @@ export const PileViewOverlay = () =>
                 ) : (
                     <ul className="pile-view__grid">
                         {groups.map(({ entry, count }) => (
-                            <li key={entry.definitionId} className="pile-view__card">
+                            <li key={groupKey(entry)} className="pile-view__card">
                                 <CardChip
                                     definitionId={entry.definitionId}
                                     label={entry.label}
                                     power={entry.power}
                                     behaviorId={entry.behaviorId}
+                                    arrow={entry.arrow}
+                                    loopArrow={entry.loopArrow}
                                     size="pile"
                                     countBadge={count}
                                 />
@@ -111,8 +118,8 @@ export const PileViewOverlay = () =>
 
                 <p className="pile-view__hint">
                     {isDeck
-                        ? 'Grouped alphabetically — draw order is hidden.'
-                        : 'Most recent discard is on top of the pile.'}
+                        ? 'Top of pile first (next draw). Arrow shows chain direction.'
+                        : 'Top of pile first (newest discard). Arrow shows chain direction.'}
                 </p>
             </div>
         </div>

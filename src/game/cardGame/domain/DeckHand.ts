@@ -65,9 +65,21 @@ export class DeckHand
         return this.deck.map((card) => card.definitionId);
     }
 
+    /** Draw pile cards — last entry is next to draw (`deck.pop()`). */
+    getDeckCards (): readonly CardInstance[]
+    {
+        return this.deck;
+    }
+
     getDiscardDefinitionIds (): string[]
     {
         return this.discard.map((card) => card.definitionId);
+    }
+
+    /** Discard pile cards newest-last (top of pile is the last entry). */
+    getDiscardCards (): readonly CardInstance[]
+    {
+        return this.discard;
     }
 
     getDeckTopCard (): CardInstance | undefined

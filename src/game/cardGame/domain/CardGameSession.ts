@@ -3,11 +3,7 @@ import { GRID_CONFIG } from '../../config/gridConfig';
 import {
     GAME_RULES,
     getCardDefinitionOrThrow,
-    isCardUnplayable,
     getCardHandEndPenalty,
-    getCardDiscardFromHandCount,
-    isCardExhaustOnPlay,
-    type CardDefinition,
 } from '../config/cardRegistry';
 import {
     type LoadedCardGameEnemyDefinition,
@@ -29,12 +25,13 @@ import { getEnemyPassive } from '../enemyPassives/defaults';
 import { collectCombatTraitsFromBodyMods } from '../combat/combatTraits/collect';
 import { getCombatTrait } from '../combat/combatTraits/defaults';
 import type { CombatTraitConfig } from '../combat/combatTraits/types';
+import { BoardEditController } from '../domain/BoardEditController';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { CombatResolver } from '../domain/CombatResolver';
 import { DeckHand } from '../domain/DeckHand';
 import { EnemyPhaseController } from '../domain/EnemyPhaseController';
 import { FieldEffects } from '../domain/FieldEffects';
-import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
+import { isPlayerOwnedCard } from '../domain/cardOwnership';
 import { createCardInstance } from '../domain/createCardInstance';
 import { createEnemyCombatant, isCombatantAlive, normalizeEnemyIds } from './enemyCombatants';
 import type {
@@ -71,6 +68,7 @@ export class CardGameSession
     private readonly fieldEffects: FieldEffects;
     private readonly combat: CombatResolver;
     private readonly enemyPhase: EnemyPhaseController;
+    private readonly boardEdit: BoardEditController;
     /** Definition ids exhausted (played) this battle — battle-scoped only. */
     private readonly exhaustedDefinitionIds: string[] = [];
     private readonly combatants: EnemyCombatant[] = [];
@@ -151,6 +149,17 @@ export class CardGameSession
                 this.fieldEffects.applySilenceTiles(passives);
             },
         });
+        this.boardEdit = new BoardEditController({
+            board: this.board,
+            deckHand: this.deckHand,
+            isBusy: () => this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress(),
+            isPuzzleFinished: () => this.puzzleFinished,
+            isSlotBlockedForPlayer: (slot) => this.isSlotBlockedForPlayer(slot),
+            onCardExhausted: (definitionId) =>
+            {
+                this.exhaustedDefinitionIds.push(definitionId);
+            },
+        });
 
         const hitWard = getCombatTrait(collectCombatTraitsFromBodyMods(bodyMods), 'hitWard');
 
@@ -201,16 +210,28 @@ export class CardGameSession
         return this.deckHand.getPileCounts();
     }
 
-    /** Draw-pile card definition ids (order intentionally not implied — callers should group/sort). */
+    /** Draw-pile card definition ids. */
     getDeckDefinitionIds (): string[]
     {
         return this.deckHand.getDeckDefinitionIds();
+    }
+
+    /** Draw pile cards (includes arrow / loopArrow for inspectors). */
+    getDeckCards (): readonly CardInstance[]
+    {
+        return this.deckHand.getDeckCards();
     }
 
     /** Discard-pile card definition ids. */
     getDiscardDefinitionIds (): string[]
     {
         return this.deckHand.getDiscardDefinitionIds();
+    }
+
+    /** Discard pile cards (includes arrow / loopArrow for inspectors). */
+    getDiscardCards (): readonly CardInstance[]
+    {
+        return this.deckHand.getDiscardCards();
     }
 
     /** Next card that would be drawn (`deck.pop()`). */
@@ -1076,162 +1097,26 @@ export class CardGameSession
 
     placeCardFromHand (handIndex: number, slot: SlotPosition): boolean
     {
-        if (this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress())
-        {
-            return false;
-        }
-
-        const card = this.deckHand.getHandCard(handIndex);
-
-        if (!card)
-        {
-            return false;
-        }
-
-        const definition = getCardDefinitionOrThrow(card.definitionId);
-
-        if (isCardUnplayable(definition))
-        {
-            return false;
-        }
-
-        if (card.exhausted)
-        {
-            return false;
-        }
-
-        const existing = this.board.getCardAt(slot);
-
-        if (existing && (isEnemyOwnedCard(existing) || isFieldOwnedCard(existing)))
-        {
-            return false;
-        }
-
-        if (!existing)
-        {
-            if (this.isSlotBlockedForPlayer(slot))
-            {
-                return false;
-            }
-
-            if (!this.board.placeCard(slot, card))
-            {
-                return false;
-            }
-
-            this.deckHand.removeHandCardAt(handIndex);
-            this.markExhaustedIfNeeded(card, definition);
-            CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card });
-            this.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
-
-            return true;
-        }
-
-        this.board.removeCard(slot);
-        this.board.placeCard(slot, card);
-        this.deckHand.setHandCardAt(handIndex, existing);
-        this.markExhaustedIfNeeded(card, definition);
-        CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card });
-        this.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
-
-        return true;
+        return this.boardEdit.placeCardFromHand(handIndex, slot);
     }
 
     removeCardFromBoard (slot: SlotPosition): boolean
     {
-        if (this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress())
-        {
-            return false;
-        }
-
-        const card = this.board.removeCard(slot);
-
-        if (!card || isEnemyOwnedCard(card) || isFieldOwnedCard(card))
-        {
-            if (card)
-            {
-                this.board.placeCard(slot, card);
-            }
-
-            return false;
-        }
-
-        this.deckHand.returnCardToHand(card);
-
-        return true;
-    }
-
-    private markExhaustedIfNeeded (card: CardInstance, definition: CardDefinition): void
-    {
-        if (!isCardExhaustOnPlay(definition))
-        {
-            return;
-        }
-
-        card.exhausted = true;
-        this.exhaustedDefinitionIds.push(definition.id);
+        return this.boardEdit.removeCardFromBoard(slot);
     }
 
     moveCardOnBoard (from: SlotPosition, to: SlotPosition): boolean
     {
-        if (this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress())
-        {
-            return false;
-        }
-
-        const card = this.board.getCardAt(from);
-
-        if (!card || isEnemyOwnedCard(card) || isFieldOwnedCard(card))
-        {
-            return false;
-        }
-
-        const target = this.board.getCardAt(to);
-
-        if (target && (isEnemyOwnedCard(target) || isFieldOwnedCard(target)))
-        {
-            return false;
-        }
-
-        if (!target && this.isSlotBlockedForPlayer(to))
-        {
-            return false;
-        }
-
-        if (!this.board.moveCard(from, to))
-        {
-            return false;
-        }
-
-        return true;
+        return this.boardEdit.moveCardOnBoard(from, to);
     }
 
     swapCardsOnBoard (a: SlotPosition, b: SlotPosition): boolean
     {
-        if (this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress())
-        {
-            return false;
-        }
-
-        const cardA = this.board.getCardAt(a);
-        const cardB = this.board.getCardAt(b);
-
-        if (!cardA || isEnemyOwnedCard(cardA) || isFieldOwnedCard(cardA)
-            || (cardB && (isEnemyOwnedCard(cardB) || isFieldOwnedCard(cardB))))
-        {
-            return false;
-        }
-
-        return this.board.swapCards(a, b);
+        return this.boardEdit.swapCardsOnBoard(a, b);
     }
 
     canEditBoard (): boolean
     {
-        if (this.puzzleFinished)
-        {
-            return false;
-        }
-
-        return !this.combat.isAttackInProgress() && !this.enemyPhase.isEnemyTurnInProgress();
+        return this.boardEdit.canEditBoard();
     }
 }

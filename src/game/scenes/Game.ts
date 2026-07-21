@@ -419,19 +419,22 @@ export class Game extends Scene
             return;
         }
 
-        const definitionIds = kind === 'deck'
-            ? this.session.getDeckDefinitionIds()
-            : this.session.getDiscardDefinitionIds();
+        const source = kind === 'deck'
+            ? this.session.getDeckCards()
+            : this.session.getDiscardCards();
 
-        const cards = definitionIds.map((definitionId) =>
+        // Top of pile first (next draw / newest discard).
+        const cards = [ ...source ].reverse().map((card) =>
         {
-            const definition = getCardDefinitionOrThrow(definitionId);
+            const definition = getCardDefinitionOrThrow(card.definitionId);
 
             return {
-                definitionId,
+                definitionId: card.definitionId,
                 label: definition.label,
                 power: definition.power,
                 behaviorId: definition.behaviorId,
+                arrow: card.arrow,
+                loopArrow: card.loopArrow,
             };
         });
 

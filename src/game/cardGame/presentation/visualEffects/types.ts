@@ -1,4 +1,4 @@
-import type { SlotPosition } from '../domain/types';
+import type { SlotPosition } from '../../domain/types';
 
 export interface CardVisualTarget {
     slot: SlotPosition;
