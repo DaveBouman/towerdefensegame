@@ -41,6 +41,7 @@ export class CardGamePresenter
 
     private scheduleAttackTimer (callback: () => void, delayMs: number): void
     {
+        this.clearAttackTimer();
         this.attackTimer = this.scene.time.delayedCall(delayMs, callback);
     }
 

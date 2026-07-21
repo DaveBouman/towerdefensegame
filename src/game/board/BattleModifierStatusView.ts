@@ -11,50 +11,88 @@ import {
     getGameTooltipController,
 } from '../cardGame/presentation/tooltips/GameTooltipController';
 import type { BoardLayout } from './boardLayout';
+import { COMBAT_TRAIT_ICON_SIZE, COMBAT_TRAIT_ROW_BELOW_LABEL } from './CombatTraitRowView';
+import { computeEnemySlots } from './enemySquadLayout';
 
 const ICON_SIZE = 22;
 const ICON_GAP = 6;
 const BADGE_FONT_SIZE = 11;
+/** Clears name label + trait row so chips sit under the combatant panel. */
+const BELOW_PANEL_OFFSET = 16 + COMBAT_TRAIT_ROW_BELOW_LABEL + COMBAT_TRAIT_ICON_SIZE + 10;
 
 export class BattleModifierStatusView
 {
-    readonly container: Phaser.GameObjects.Container;
-    private iconsContainer?: Phaser.GameObjects.Container;
-    private playerSize = 0;
+    private readonly playerContainer: Phaser.GameObjects.Container;
+    private readonly enemyContainer: Phaser.GameObjects.Container;
+    private playerIcons?: Phaser.GameObjects.Container;
+    private enemyIcons?: Phaser.GameObjects.Container;
+    private enemyCount = 1;
 
     constructor (
         private readonly scene: Phaser.Scene,
         layout: BoardLayout,
+        enemyCount = 1,
     )
     {
-        this.playerSize = layout.playerSize;
-        this.container = scene.add.container(
-            layout.playerX + layout.playerSize / 2,
-            layout.playerY - 34,
-        );
-        this.container.setDepth(480);
+        this.enemyCount = Math.max(1, enemyCount);
+        this.playerContainer = scene.add.container(0, 0);
+        this.enemyContainer = scene.add.container(0, 0);
+        this.playerContainer.setDepth(480);
+        this.enemyContainer.setDepth(480);
+        this.reposition(layout, this.enemyCount);
     }
 
-    reposition (layout: BoardLayout): void
+    reposition (layout: BoardLayout, enemyCount = this.enemyCount): void
     {
-        this.playerSize = layout.playerSize;
-        this.container.setPosition(
+        this.enemyCount = Math.max(1, enemyCount);
+
+        this.playerContainer.setPosition(
             layout.playerX + layout.playerSize / 2,
-            layout.playerY - 34,
+            layout.playerY + layout.playerSize + BELOW_PANEL_OFFSET,
+        );
+
+        const slots = computeEnemySlots(layout, this.enemyCount);
+        const first = slots[0]!;
+        const last = slots[slots.length - 1]!;
+        const centerX = (first.x + last.x + last.size) / 2;
+
+        this.enemyContainer.setPosition(
+            centerX,
+            first.y + first.size + BELOW_PANEL_OFFSET,
         );
     }
 
     setModifiers (modifiers: readonly BattleModifier[]): void
     {
         getGameTooltipController(this.scene).hide();
-        this.iconsContainer?.destroy();
-        this.iconsContainer = undefined;
+        this.playerIcons?.destroy();
+        this.enemyIcons?.destroy();
+        this.playerIcons = undefined;
+        this.enemyIcons = undefined;
 
         const entries = summarizeBattleModifiers(modifiers);
+        const playerEntries = entries.filter((entry) => entry.anchor === 'player');
+        const enemyEntries = entries.filter((entry) => entry.anchor === 'enemy');
 
+        this.playerIcons = this.mountRow(this.playerContainer, playerEntries);
+        this.enemyIcons = this.mountRow(this.enemyContainer, enemyEntries);
+    }
+
+    destroy (): void
+    {
+        getGameTooltipController(this.scene).hide();
+        this.playerContainer.destroy();
+        this.enemyContainer.destroy();
+    }
+
+    private mountRow (
+        parent: Phaser.GameObjects.Container,
+        entries: readonly BattleModifierDisplayEntry[],
+    ): Phaser.GameObjects.Container | undefined
+    {
         if (entries.length === 0)
         {
-            return;
+            return undefined;
         }
 
         const rowWidth = entries.length * ICON_SIZE + (entries.length - 1) * ICON_GAP;
@@ -66,14 +104,11 @@ export class BattleModifierStatusView
             parts.push(...this.buildIcon(entry, startX + index * (ICON_SIZE + ICON_GAP), 0));
         });
 
-        this.iconsContainer = this.scene.add.container(0, 0, parts);
-        this.container.add(this.iconsContainer);
-    }
+        const row = this.scene.add.container(0, 0, parts);
 
-    destroy (): void
-    {
-        getGameTooltipController(this.scene).hide();
-        this.container.destroy();
+        parent.add(row);
+
+        return row;
     }
 
     private buildIcon (
@@ -92,6 +127,7 @@ export class BattleModifierStatusView
         if (this.scene.textures.exists(entry.textureKey))
         {
             const icon = this.scene.add.image(x, y - 3, entry.textureKey);
+
             icon.setDisplaySize(ICON_SIZE - 4, ICON_SIZE - 4);
             icon.setOrigin(0.5);
             icon.setTint(entry.tint);

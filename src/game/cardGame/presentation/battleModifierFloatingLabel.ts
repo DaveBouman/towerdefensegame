@@ -1,5 +1,6 @@
 import type { BattleModifierStat } from '../combat/battleModifiers';
 import { formatBattleModifierDelta } from '../combat/battleModifiers';
+import { isPlayerBeneficialModifier } from '../combat/battleModifierDisplay';
 import { getActiveBattleModifierVisual } from './enemyIntentVisuals';
 import { playIntentLabelFloatingText } from './visualEffects/visualEffectTweens';
 
@@ -13,6 +14,7 @@ export const playBattleModifierFloatingLabel = (
 ): void =>
 {
     const visual = getActiveBattleModifierVisual(stat);
+    const beneficial = isPlayerBeneficialModifier(stat, delta);
 
     playIntentLabelFloatingText(
         scene,
@@ -20,6 +22,6 @@ export const playBattleModifierFloatingLabel = (
         x,
         y,
         formatBattleModifierDelta(delta),
-        visual.textColor,
+        beneficial ? '#00ff9d' : visual.textColor,
     );
 };

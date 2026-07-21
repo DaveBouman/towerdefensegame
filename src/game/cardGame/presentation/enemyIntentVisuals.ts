@@ -51,12 +51,20 @@ const MOD_TEXTURE_BY_STAT: Record<BattleModifierStat, keyof typeof ENEMY_INTENT_
     'player-damage-dealt': 'dampen-field',
 };
 
-/** Active battle-modifier chips reuse the enemy battle-mod intent palette. */
+/** Distinct palette per stat so applied chips read as “what” at a glance. */
+const ACTIVE_MOD_STYLE: Record<BattleModifierStat, { tint: number; text: string }> = {
+    'enemy-attack': { tint: 0xff9f43, text: '#ffb347' },
+    'player-damage-taken': { tint: 0xff6b6b, text: '#ff8a84' },
+    'player-armor': { tint: 0x5dade2, text: '#8ec8ff' },
+    'player-damage-dealt': { tint: 0x00e8ff, text: '#7af0ff' },
+};
+
+/** Active / telegraphed battle-modifier visuals — color encodes the affected stat. */
 export const getActiveBattleModifierVisual = (
     stat: BattleModifierStat,
 ): Pick<EnemyIntentStepVisual, 'textureKey' | 'tint' | 'textColor'> =>
 {
-    const style = INTENT_STYLE['battle-mod'].executing;
+    const style = ACTIVE_MOD_STYLE[stat];
 
     return {
         textureKey: ENEMY_INTENT_TEXTURE_KEY[MOD_TEXTURE_BY_STAT[stat]],
@@ -73,15 +81,15 @@ export const getEnemyIntentStepVisuals = (
     {
         if (step.kind === 'battle-mod')
         {
-            const style = INTENT_STYLE['battle-mod'][phase];
             const stat = step.modifierStat ?? 'enemy-attack';
             const delta = step.modifierDelta ?? 0;
+            const visual = getActiveBattleModifierVisual(stat);
 
             return {
                 step,
-                textureKey: ENEMY_INTENT_TEXTURE_KEY[MOD_TEXTURE_BY_STAT[stat]],
-                tint: style.tint,
-                textColor: style.text,
+                textureKey: visual.textureKey,
+                tint: visual.tint,
+                textColor: visual.textColor,
                 amountLabel: formatBattleModifierDelta(delta),
             };
         }

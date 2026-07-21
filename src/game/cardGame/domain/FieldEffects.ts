@@ -120,13 +120,34 @@ export class FieldEffects
         return slots;
     }
 
-    markUnchainedHazardsAfterAttack (chain: AttackSequence['chain']): void
+    /**
+     * After an attack: scorch tiles of traps that exploded (not in the chain),
+     * and remove every enemy trap from the board (disarmed or detonated).
+     */
+    resolveHazardsAfterAttack (chain: AttackSequence['chain']): void
     {
         this.bombDisabledSlots.clear();
 
         for (const slot of getUnchainedHazardSlots(this.board, chain))
         {
             this.bombDisabledSlots.add(slotKey(slot));
+        }
+
+        this.removeEnemyHazardsFromBoard();
+    }
+
+    private removeEnemyHazardsFromBoard (): void
+    {
+        const hazardId = GAME_RULES.hazard.definitionId;
+
+        for (const slot of this.board.slotsInOrder())
+        {
+            const card = this.board.getCardAt(slot);
+
+            if (card?.definitionId === hazardId && card.owner === 'enemy')
+            {
+                this.board.removeCard(slot);
+            }
         }
     }
 

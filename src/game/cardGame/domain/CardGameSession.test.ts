@@ -640,6 +640,45 @@ describe('CardGameSession enemy turn', () =>
         expect(session.beginAttack()).toEqual({ row: 0, col: 0 });
     });
 
+    it('keeps the attack lock after completeAttack until releaseAttackLock', () =>
+    {
+        const session = new CardGameSession();
+
+        session.board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        expect(session.beginAttack()).toEqual({ row: 0, col: 0 });
+
+        session.completeAttack({
+            chain: [],
+            steps: [],
+            totalDamage: 0,
+            offChainDamage: 0,
+            offChainArmor: 0,
+            hazardDamage: 0,
+            chainAbilityEffects: [],
+            abilityEnemyDamage: 0,
+            abilityPlayerDamage: 0,
+            abilityArmorGain: 0,
+            abilityPoisonStacks: 0,
+            disarmResults: [],
+            stackMultipliers: {},
+            stepMs: 0,
+            durationMs: 0,
+        });
+
+        expect(session.isAttackInProgress()).toBe(true);
+        expect(session.getAttackReadiness()).toEqual({
+            canAttack: false,
+            reason: 'attack-in-progress',
+        });
+        expect(session.beginAttack()).toBeNull();
+
+        session.spendEnergy();
+        session.releaseAttackLock();
+
+        expect(session.isAttackInProgress()).toBe(false);
+        expect(session.getAttackReadiness().canAttack).toBe(true);
+    });
+
     it('uses the selected left-column tile as the chain start', () =>
     {
         const session = new CardGameSession();
@@ -1006,6 +1045,7 @@ describe('CardGameSession enemy turn', () =>
         expect(sequence.hazardDamage).toBeGreaterThan(0);
         session.completeAttack(sequence);
 
+        expect(session.board.getCardAt(trapSlot)).toBeNull();
         expect(session.isSlotBombDisabled(trapSlot)).toBe(true);
         expect(session.placeCardFromHand(0, trapSlot)).toBe(false);
 
@@ -1013,6 +1053,26 @@ describe('CardGameSession enemy turn', () =>
         session.completeAttack(emptySequence());
 
         expect(session.isSlotBombDisabled(trapSlot)).toBe(false);
+    });
+
+    it('removes disarmed traps from the board after they are included in the chain', () =>
+    {
+        const session = new CardGameSession();
+        const trapSlot = { row: 0, col: 1 };
+
+        session.board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        session.board.placeCard(trapSlot, createCardInstance('hazard', 'left', 'enemy'));
+
+        const sequence = session.planAttack()!;
+
+        expect(sequence.chain.some((step) => step.definitionId === 'hazard')).toBe(true);
+        expect(sequence.hazardDamage).toBe(0);
+
+        session.completeAttack(sequence);
+
+        expect(session.board.getCardAt(trapSlot)).toBeNull();
+        expect(session.isSlotBombDisabled(trapSlot)).toBe(false);
+        expect(session.placeCardFromHand(0, trapSlot)).toBe(true);
     });
 
     it('places a field boost on a random empty slot', () =>

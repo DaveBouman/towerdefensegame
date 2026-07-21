@@ -12,6 +12,7 @@ import type { SlotPosition } from '../cardGame/domain/types';
 import { destroyGameTooltipController } from '../cardGame/presentation/tooltips/GameTooltipController';
 import { preloadEnemyPassiveIcons } from '../cardGame/presentation/icons/preloadEnemyPassiveIcons';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
+import { resolveEnemyPhasePlayback } from '../cardGame/presentation/playback/enemyPhasePlayback';
 import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../cardGame/events/cardGameEvents';
 import { EventBus } from '../EventBus';
@@ -215,7 +216,11 @@ export class Game extends Scene
 
         this.playerView = new PlayerHealthView(this, layout, this.session.getPlayer());
         this.playerView.setCombatTraits(this.session.getPlayerCombatTraits());
-        this.battleModifierView = new BattleModifierStatusView(this, layout);
+        this.battleModifierView = new BattleModifierStatusView(
+            this,
+            layout,
+            this.session.getCombatants().length,
+        );
         this.battleModifierView.setModifiers(this.session.getBattleModifiers());
         this.enemySquad = new EnemySquadView(
             this,
@@ -286,7 +291,7 @@ export class Game extends Scene
             graveyard: this.graveyardView.container,
         });
         this.enemySquad.applyLayout(this.layout);
-        this.battleModifierView?.reposition(this.layout);
+        this.battleModifierView?.reposition(this.layout, this.session?.getCombatants().length ?? 1);
     };
 
     private endBattle (): void
@@ -493,6 +498,7 @@ export class Game extends Scene
     /**
      * After a chain resolves: spend energy, then the enemy responds. The board
      * persists until all energy for the round is spent.
+     * Attack lock stays held through the enemy response so a second Attack cannot start.
      */
     private onAttackResolved (sequence: import('../cardGame/domain/types').AttackSequence): void
     {
@@ -505,14 +511,13 @@ export class Game extends Scene
 
         if (!this.boardView || !this.enemySquad || this.turnResolving)
         {
-            this.session.releaseAttackLock();
+            this.unlockPlayerInput();
             return;
         }
 
         if (this.session.isPuzzleMode())
         {
             this.session.spendEnergy();
-            this.session.releaseAttackLock();
             this.session.finishPuzzle();
 
             this.boardView.syncFromBoard(this.session.board);
@@ -525,7 +530,7 @@ export class Game extends Scene
             const puzzleId = this.activePuzzleId ?? 'unknown';
             const damageTarget = this.session.getPuzzleDamageTarget() ?? 0;
 
-            this.emitAttackReadiness();
+            this.unlockPlayerInput();
 
             this.time.delayedCall(900, () =>
             {
@@ -542,7 +547,6 @@ export class Game extends Scene
         }
 
         this.session.spendEnergy();
-        this.session.releaseAttackLock();
 
         this.syncBoardFromSession();
         this.enemySquad.syncFromSession(this.session);
@@ -552,23 +556,29 @@ export class Game extends Scene
         if (this.session.isEnemyDefeated())
         {
             this.enemySquad.clearIntent();
-            this.emitAttackReadiness();
+            this.unlockPlayerInput();
             this.winBattle();
             return;
         }
 
-        this.beginPostAttackPhase();
+        this.beginPostAttackPhase({ fromAttack: true });
     }
 
     /** Enemy response after each attack; board clear only when energy is depleted. */
-    private beginPostAttackPhase (): void
+    private beginPostAttackPhase (options: { fromAttack?: boolean } = {}): void
     {
         if (!this.session || !this.boardView || this.turnResolving)
         {
             return;
         }
 
-        if (this.session.isAttackInProgress() || this.session.isEnemyTurnInProgress())
+        // Attack lock is intentionally held when coming from onAttackResolved.
+        if (!options.fromAttack && this.session.isAttackInProgress())
+        {
+            return;
+        }
+
+        if (this.session.isEnemyTurnInProgress())
         {
             return;
         }
@@ -598,146 +608,49 @@ export class Game extends Scene
         this.endPlayerRound();
     };
 
+    /** Releases attack lock and re-enables player input. */
+    private unlockPlayerInput (): void
+    {
+        this.session?.releaseAttackLock();
+        this.turnResolving = false;
+        this.emitAttackReadiness();
+    }
+
     private resolveEnemyPhase (): void
     {
         if (!this.session || !this.boardView || !this.enemySquad)
         {
+            this.unlockPlayerInput();
             return;
         }
 
-        if (!this.session.isEnemyDefeated())
-        {
-            this.session.resolveHandEndPenalties();
-            this.playerView?.setHealth(this.session.getPlayer());
-            this.armorView?.setArmor(this.session.getPlayer().shield);
-            this.handView?.syncHand(this.session.getHand());
-
-            if (this.session.isPlayerDefeated())
+        resolveEnemyPhasePlayback({
+            session: this.session,
+            boardView: this.boardView,
+            handView: this.handView,
+            enemySquad: this.enemySquad,
+            playerView: this.playerView,
+            armorView: this.armorView,
+            graveyardView: this.graveyardView,
+            presenter: this.presenter,
+            syncBoardFromSession: () => this.syncBoardFromSession(),
+            syncPileViews: () => this.syncPileViews(),
+            onPhaseSettled: (result) =>
             {
-                this.session.releaseAttackLock();
-                this.turnResolving = false;
-                this.emitAttackReadiness();
-                this.loseBattle();
-                return;
-            }
-        }
+                this.unlockPlayerInput();
 
-        const finishEnemyPhase = (): void =>
-        {
-            this.playerView?.setHealth(this.session!.getPlayer());
-            this.enemySquad?.syncFromSession(this.session!);
-
-            if (this.session!.isPlayerDefeated())
-            {
-                this.session!.releaseAttackLock();
-                this.turnResolving = false;
-                this.emitAttackReadiness();
-                this.loseBattle();
-                return;
-            }
-
-            if (this.session!.isEnemyDefeated())
-            {
-                this.enemySquad?.clearIntent();
-                this.session!.releaseAttackLock();
-                this.turnResolving = false;
-                this.emitAttackReadiness();
-                this.winBattle();
-                return;
-            }
-
-            if (this.session!.getEnergy() > 0)
-            {
-                this.enemySquad?.showAllIntents(this.session!);
-                this.handView?.syncHand(this.session!.getHand());
-                this.armorView?.setArmor(this.session!.getPlayer().shield);
-                this.session!.placeFieldBoost();
-                this.syncBoardFromSession();
-                this.syncPileViews();
-                this.session!.releaseAttackLock();
-                this.turnResolving = false;
-                this.emitAttackReadiness();
-                return;
-            }
-
-            const graveyardTarget = this.graveyardView?.getReceivePosition() ?? { x: 0, y: 0 };
-
-            this.boardView!.animateCardsToGraveyard(graveyardTarget.x, graveyardTarget.y, () =>
-            {
-                this.session!.clearBoard();
-                this.session!.tickDampenField();
-                this.syncBoardFromSession();
-                this.graveyardView?.pulse();
-                this.syncPileViews();
-                this.session!.finishPlayerRound();
-                this.enemySquad?.showAllIntents(this.session!);
-                this.handView?.syncHand(this.session!.getHand());
-                this.armorView?.setArmor(this.session!.getPlayer().shield);
-                this.session!.placeFieldBoost();
-                this.syncBoardFromSession();
-                this.syncPileViews();
-                this.session!.releaseAttackLock();
-                this.turnResolving = false;
-                this.emitAttackReadiness();
-            });
-        };
-
-        const playEnemyResponse = (): void =>
-        {
-            const enemyTurn = this.session!.beginEnemyTurn();
-
-            if (!enemyTurn)
-            {
-                finishEnemyPhase();
-                return;
-            }
-
-            const instanceId = enemyTurn.instanceId ?? this.session!.getLivingCombatants()[0]?.instanceId;
-
-            if (instanceId)
-            {
-                this.enemySquad?.showIntent(instanceId, enemyTurn, 'executing');
-            }
-
-            if (!this.presenter)
-            {
-                this.session!.completeEnemyTurn(enemyTurn);
-
-                if (this.session!.hasMoreEnemyTurnsInPhase())
+                if (result.kind === 'player-defeated')
                 {
-                    playEnemyResponse();
-                }
-                else
-                {
-                    finishEnemyPhase();
-                }
-
-                return;
-            }
-
-            this.presenter.playEnemyTurn(enemyTurn, () =>
-            {
-                this.enemySquad?.syncFromSession(this.session!);
-
-                if (this.session!.isPlayerDefeated() || this.session!.isEnemyDefeated())
-                {
-                    finishEnemyPhase();
+                    this.loseBattle();
                     return;
                 }
 
-                if (this.session!.hasMoreEnemyTurnsInPhase())
+                if (result.kind === 'enemy-defeated')
                 {
-                    playEnemyResponse();
+                    this.winBattle();
                 }
-                else
-                {
-                    finishEnemyPhase();
-                }
-            });
-        };
-
-        this.session.prepareEnemyPhase();
-        playEnemyResponse();
+            },
+        });
     }
 
     private onRerollsChanged = (): void =>

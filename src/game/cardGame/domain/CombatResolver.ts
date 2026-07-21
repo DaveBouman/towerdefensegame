@@ -303,7 +303,7 @@ export class CombatResolver
             this.resolveEnemyAttack(postAttack.loopHunterDamage);
         }
 
-        this.ctx.fieldEffects.markUnchainedHazardsAfterAttack(sequence.chain);
+        this.ctx.fieldEffects.resolveHazardsAfterAttack(sequence.chain);
 
         const totalArmor = sequence.chain.reduce((sum, step) => sum + step.armor, 0)
             + sequence.offChainArmor

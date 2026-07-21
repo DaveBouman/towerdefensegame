@@ -2,15 +2,22 @@ import type { BattleModifier, BattleModifierStat } from './battleModifiers';
 import { BATTLE_MODIFIER_LABELS, describeBattleModifier, formatBattleModifierDelta } from './battleModifiers';
 import { getActiveBattleModifierVisual } from '../presentation/enemyIntentVisuals';
 
+export type BattleModifierAnchor = 'player' | 'enemy';
+
 export interface BattleModifierDisplayEntry {
     stat: BattleModifierStat;
     delta: number;
+    beneficial: boolean;
+    anchor: BattleModifierAnchor;
     textureKey: string;
     tint: number;
     textColor: string;
     tooltipTitle: string;
     tooltipLines: string[];
 }
+
+const BENEFICIAL_TEXT = '#00ff9d';
+const HARMFUL_TEXT = '#ff8a84';
 
 /** Whether the net delta is good for the player. */
 export const isPlayerBeneficialModifier = (stat: BattleModifierStat, delta: number): boolean =>
@@ -26,6 +33,10 @@ export const isPlayerBeneficialModifier = (stat: BattleModifierStat, delta: numb
             return delta > 0;
     }
 };
+
+/** Enemy-attack attaches under the enemy; all other stats under the player. */
+export const getBattleModifierAnchor = (stat: BattleModifierStat): BattleModifierAnchor =>
+    (stat === 'enemy-attack' ? 'enemy' : 'player');
 
 export const summarizeBattleModifiers = (
     modifiers: readonly BattleModifier[],
@@ -47,18 +58,21 @@ export const summarizeBattleModifiers = (
             continue;
         }
 
+        const beneficial = isPlayerBeneficialModifier(stat, delta);
         const visual = getActiveBattleModifierVisual(stat);
 
         entries.push({
             stat,
             delta,
+            beneficial,
+            anchor: getBattleModifierAnchor(stat),
             textureKey: visual.textureKey,
             tint: visual.tint,
-            textColor: visual.textColor,
-            tooltipTitle: 'Battle modifier',
+            textColor: beneficial ? BENEFICIAL_TEXT : HARMFUL_TEXT,
+            tooltipTitle: BATTLE_MODIFIER_LABELS[stat],
             tooltipLines: [
                 `${describeBattleModifier(stat, delta)} until your energy refills.`,
-                BATTLE_MODIFIER_LABELS[stat],
+                beneficial ? 'Buff for you.' : 'Debuff for you.',
                 'Stacks with other modifiers and cards in the chain.',
             ],
         });
