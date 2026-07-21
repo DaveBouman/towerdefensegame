@@ -12,8 +12,11 @@ interface GroupedPileCard {
 const groupKey = (entry: PileCardEntry): string =>
     `${entry.definitionId}:${entry.arrow ?? ''}:${entry.loopArrow ?? ''}`;
 
-/** Groups identical face+arrow cards; preserves first-seen order (top of pile first). */
-const groupCards = (cards: readonly PileCardEntry[]): GroupedPileCard[] =>
+/** Groups identical face+arrow cards; optionally sorts alphabetically (draw pile). */
+const groupCards = (
+    cards: readonly PileCardEntry[],
+    sortAlphabetically: boolean,
+): GroupedPileCard[] =>
 {
     const groups = new Map<string, GroupedPileCard>();
 
@@ -32,7 +35,24 @@ const groupCards = (cards: readonly PileCardEntry[]): GroupedPileCard[] =>
         }
     }
 
-    return [ ...groups.values() ];
+    const grouped = [ ...groups.values() ];
+
+    if (sortAlphabetically)
+    {
+        grouped.sort((a, b) =>
+        {
+            const byLabel = a.entry.label.localeCompare(b.entry.label);
+
+            if (byLabel !== 0)
+            {
+                return byLabel;
+            }
+
+            return groupKey(a.entry).localeCompare(groupKey(b.entry));
+        });
+    }
+
+    return grouped;
 };
 
 export const PileViewOverlay = () =>
@@ -71,8 +91,9 @@ export const PileViewOverlay = () =>
         return () => window.removeEventListener('keydown', onKey);
     }, [ payload ]);
 
+    const isDeck = payload?.kind === 'deck';
     const groups = useMemo(
-        () => (payload ? groupCards(payload.cards) : []),
+        () => (payload ? groupCards(payload.cards, payload.kind === 'deck') : []),
         [ payload ],
     );
 
@@ -82,7 +103,6 @@ export const PileViewOverlay = () =>
     }
 
     const close = (): void => setPayload(null);
-    const isDeck = payload.kind === 'deck';
 
     return (
         <div className="pile-view" role="dialog" aria-modal="true" onClick={close}>
@@ -118,7 +138,7 @@ export const PileViewOverlay = () =>
 
                 <p className="pile-view__hint">
                     {isDeck
-                        ? 'Top of pile first (next draw). Arrow shows chain direction.'
+                        ? 'Grouped alphabetically — draw order is hidden. Arrow shows chain direction.'
                         : 'Top of pile first (newest discard). Arrow shows chain direction.'}
                 </p>
             </div>

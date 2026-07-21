@@ -423,8 +423,9 @@ export class Game extends Scene
             ? this.session.getDeckCards()
             : this.session.getDiscardCards();
 
-        // Top of pile first (next draw / newest discard).
-        const cards = [ ...source ].reverse().map((card) =>
+        // Graveyard: newest on top. Deck: order is scrambled in the overlay (alphabetical).
+        const ordered = kind === 'graveyard' ? [ ...source ].reverse() : [ ...source ];
+        const cards = ordered.map((card) =>
         {
             const definition = getCardDefinitionOrThrow(card.definitionId);
 
