@@ -145,7 +145,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | Max chain steps | 24 | `gameRules.json` |
 | Off-chain bonus | +2 damage (attack) / +2 armor (defend) on board but not in chain | `gameRules.json` |
 | Type streak | +15% per duplicate attack/defend in streak | `gameRules.json` |
-| Field boost | Random boost on empty tile; doubles next chain step | `gameRules.json` |
+| Field boost | Random boost on empty tile; multiplies next chain step (boosts stack: ×2 each) | `gameRules.json` |
 | Resolution speed | Chain step 800ms, enemy turn 800ms (snappy) | `gameRules.json` |
 
 ---
@@ -255,6 +255,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-08-04 | **Boost stacking.** Consecutive field boosts multiply on the next consuming card (Boost→Boost→Attack = ×4). Jokers still pass the stack through. Ability payoffs (fire/poison/etc.) use the same stacked multiplier. |
 | 2026-08-04 | **Mid-chain retarget prompts.** When the locked target dies and other enemies remain, the chain pauses and living hosts show **LOCK TARGET** until you click one (auto-continues if only one is left; leftover chain damage is skipped if none remain). |
 | 2026-08-04 | **Attack lock / second-attack fix.** Killing the last enemy mid-chain no longer stalls waiting for a target (held the attack lock forever). Removed duplicate `turnResolving` scene flag — session `isBusy()` / attack lock is the single gate. HUD readiness updates as soon as an attack starts. |
 | 2026-08-04 | **Enemy HP retune.** Combat enemies sit around ~40 HP (`enemies.json`: Raider 40, Thornward 38, Saboteur 36, Smokebinder 42, Field Medic 34, Warden 48). Training Dummy unchanged. |

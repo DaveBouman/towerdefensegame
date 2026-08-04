@@ -206,8 +206,9 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
     provider('boost', () => ({
         title: 'Boost',
         lines: [
-            `Doubles the next card's effect (×${GAME_RULES.fieldBoost.nextStepMultiplier}) — attack, defend, fire, poison, and other specials.`,
-            'Jokers pass the boost through to the following card.',
+            `Multiplies the next card's effect by ×${GAME_RULES.fieldBoost.nextStepMultiplier} — attack, defend, fire, poison, and other specials.`,
+            'Boosts stack: Boost → Boost → Attack is ×4 (each boost multiplies).',
+            'Jokers pass the boost stack through to the following card.',
             'Field card — spawns on a random empty tile anywhere on the board after the enemy turn.',
         ],
     })),

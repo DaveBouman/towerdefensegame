@@ -550,6 +550,17 @@ describe('AttackPipeline', () =>
         expect(bonuses).toEqual({ damage: 0, armor: 2 });
     });
 
+    it('stacks multiple field boosts multiplicatively', () =>
+    {
+        const chain = [
+            boostStep({ row: 0, col: 0 }),
+            boostStep({ row: 0, col: 1 }),
+            attackStep({ row: 0, col: 2 }, 10),
+        ];
+
+        expect(buildAttackSequence(chain).totalDamage).toBe(40);
+    });
+
     it('multiplies the next chain step after a field boost', () =>
     {
         const chain = [

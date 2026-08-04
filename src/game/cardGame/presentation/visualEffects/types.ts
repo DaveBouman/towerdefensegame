@@ -10,6 +10,6 @@ export interface CardVisualTarget {
 /** Presentation hook for card activation — register new visuals without touching combat logic. */
 export interface CardVisualEffect {
     id: string;
-    activate (scene: Phaser.Scene, target: CardVisualTarget): Phaser.Tweens.Tween | null;
+    activate (scene: Phaser.Scene, target: CardVisualTarget, ...args: unknown[]): Phaser.Tweens.Tween | null;
     deactivate (scene: Phaser.Scene, target: CardVisualTarget): void;
 }

@@ -4,6 +4,7 @@ import {
     getNextChainSlotFromStep,
     getOffChainSlots,
     getUnchainedHazardSlots,
+    getBoostMultiplierForStep,
     isBoostedChainStep,
     isEchoDefinition,
     isJokerDefinition,
@@ -35,7 +36,7 @@ export interface ChainPlaybackDeps extends CombatHitVisualDeps
     syncBattleModifierStatus: () => void;
     deactivateActiveVisual: () => void;
     deactivateBoostBuff: () => void;
-    activateStep: (step: ActivationStep, boosted?: boolean) => void;
+    activateStep: (step: ActivationStep, boostMultiplier?: number) => void;
     deactivateStep: (step: ActivationStep) => void;
 }
 
@@ -262,7 +263,7 @@ export function runChainPlayback (
         deal();
     };
 
-    const pulsePriorStep = (prevStep: ActivationStep, boosted: boolean, durationMs: number): void =>
+    const pulsePriorStep = (prevStep: ActivationStep, boostMultiplier: number, durationMs: number): void =>
     {
         const target = deps.boardView.getCardVisualTarget(prevStep.slot);
 
@@ -274,16 +275,16 @@ export function runChainPlayback (
         deps.boardView.bringCardToFront(prevStep.slot);
         getCardVisualEffectOrThrow(prevStep.visualId).activate(deps.scene, target);
 
-        if (boosted)
+        if (boostMultiplier > 1)
         {
-            boostedBuffVisual.activate(deps.scene, target);
+            boostedBuffVisual.activate(deps.scene, target, boostMultiplier);
         }
 
         deps.scene.time.delayedCall(durationMs, () =>
         {
             getCardVisualEffectOrThrow(prevStep.visualId).deactivate(deps.scene, target);
 
-            if (boosted)
+            if (boostMultiplier > 1)
             {
                 boostedBuffVisual.deactivate(deps.scene, target);
             }
@@ -328,9 +329,12 @@ export function runChainPlayback (
         const { step: prevStep, resolved: prevResolved } = replay;
         const prevIndex = chain.indexOf(prevStep);
         const prevBoosted = prevIndex >= 0 && isBoostedChainStep(resolveChainSteps(chain), prevIndex);
+        const prevMultiplier = prevIndex >= 0
+            ? getBoostMultiplierForStep(resolveChainSteps(chain), prevIndex)
+            : 1;
         const replayMs = Math.round(GAME_RULES.activationStepMs * 0.75);
 
-        pulsePriorStep(prevStep, prevBoosted, replayMs);
+        pulsePriorStep(prevStep, prevBoosted ? prevMultiplier : 1, replayMs);
 
         if (prevResolved.behaviorId === 'battle-mod')
         {
@@ -392,6 +396,7 @@ export function runChainPlayback (
         const resolvedChain = resolveChainSteps(chain);
         const resolvedStep = resolvedChain[stepIndex]!;
         const boosted = isBoostedChainStep(resolvedChain, stepIndex);
+        const boostMultiplier = getBoostMultiplierForStep(resolvedChain, stepIndex);
         const definition = getCardDefinitionOrThrow(step.definitionId);
 
         const proceedAfterStep = (): void =>
@@ -415,7 +420,7 @@ export function runChainPlayback (
             {
                 const stepActivatedAt = deps.scene.time.now;
 
-                deps.activateStep(step, boosted);
+                deps.activateStep(step, boosted ? boostMultiplier : 1);
                 replayPriorStep(replay, () =>
                 {
                     grantStepArmor(step);
@@ -427,7 +432,7 @@ export function runChainPlayback (
 
         const stepActivatedAt = deps.scene.time.now;
 
-        deps.activateStep(step, boosted);
+        deps.activateStep(step, boosted ? boostMultiplier : 1);
         grantStepArmor(step);
 
         if (resolvedStep.damage > 0)

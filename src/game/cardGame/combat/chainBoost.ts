@@ -3,7 +3,7 @@ import type { ActivationStep } from '../domain/types';
 
 const STACKABLE_BEHAVIORS = new Set([ 'attack', 'defend' ]);
 
-/** Skills that let a field boost keep propagating to the next card. */
+/** Skills that let boosts keep propagating (do not consume the pending stack). */
 const BOOST_PASS_THROUGH_BEHAVIORS = new Set([ 'joker', 'boost' ]);
 
 export const isStreakNeutralBehavior = (behaviorId: string): boolean =>
@@ -12,44 +12,61 @@ export const isStreakNeutralBehavior = (behaviorId: string): boolean =>
 export const stepConsumesBoost = (step: ActivationStep): boolean =>
     !BOOST_PASS_THROUGH_BEHAVIORS.has(step.behaviorId);
 
-/** Whether a field boost before this step still buffs it (next non-pass-through card only). */
+/**
+ * Counts boost cards still pending for this step (walking back through jokers/boosts
+ * until a consuming card). Each boost multiplies the next consumer.
+ */
+export const getBoostCountBeforeStep = (
+    chain: readonly ActivationStep[],
+    index: number,
+): number =>
+{
+    let boostCount = 0;
+
+    for (let i = index - 1; i >= 0; i--)
+    {
+        const step = chain[i]!;
+
+        if (step.behaviorId === 'boost')
+        {
+            boostCount += 1;
+            continue;
+        }
+
+        if (step.behaviorId === 'joker')
+        {
+            continue;
+        }
+
+        break;
+    }
+
+    return boostCount;
+};
+
 export const hasBoostBeforeStep = (
     chain: readonly ActivationStep[],
     index: number,
 ): boolean =>
-{
-    let boostIndex = -1;
+    getBoostCountBeforeStep(chain, index) > 0;
 
-    for (let i = index - 1; i >= 0; i--)
-    {
-        if (chain[i]!.behaviorId === 'boost')
-        {
-            boostIndex = i;
-            break;
-        }
-    }
-
-    if (boostIndex < 0)
-    {
-        return false;
-    }
-
-    for (let i = boostIndex + 1; i < index; i++)
-    {
-        if (stepConsumesBoost(chain[i]!))
-        {
-            return false;
-        }
-    }
-
-    return true;
-};
-
+/** Stacked boosts multiply: Boost→Boost→Attack with ×2 base → ×4. */
 export const getBoostMultiplierForStep = (
     chain: readonly ActivationStep[],
     index: number,
 ): number =>
-    hasBoostBeforeStep(chain, index) ? GAME_RULES.fieldBoost.nextStepMultiplier : 1;
+{
+    const boostCount = getBoostCountBeforeStep(chain, index);
+
+    if (boostCount <= 0)
+    {
+        return 1;
+    }
+
+    const base = GAME_RULES.fieldBoost.nextStepMultiplier;
+
+    return base ** boostCount;
+};
 
 export const scaleBoostedValue = (value: number, multiplier: number): number =>
     multiplier > 1 ? Math.round(value * multiplier) : value;

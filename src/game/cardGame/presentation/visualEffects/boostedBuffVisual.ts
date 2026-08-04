@@ -11,7 +11,7 @@ const OVERLAY_TWEEN_KEY = 'boostedBuffOverlayTween';
 
 export const boostedBuffVisual: import('./types').CardVisualEffect = {
     id: 'boosted-buff',
-    activate (scene, target)
+    activate (scene, target, multiplier = GAME_RULES.fieldBoost.nextStepMultiplier)
     {
         boostedBuffVisual.deactivate(scene, target);
 
@@ -32,7 +32,7 @@ export const boostedBuffVisual: import('./types').CardVisualEffect = {
         const label = scene.add.text(
             target.width / 2,
             target.height * 0.18,
-            `×${GAME_RULES.fieldBoost.nextStepMultiplier}`,
+            `×${multiplier}`,
             {
                 ...uiTextStyle(18, '#fcee0a', { bold: true, strokeColor: '#3a3000' }),
             },

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { ActivationStep } from '../domain/types';
-import { hasBoostBeforeStep, stepConsumesBoost } from './chainBoost';
+import {
+    getBoostMultiplierForStep,
+    hasBoostBeforeStep,
+    stepConsumesBoost,
+} from './chainBoost';
 
 const step = (behaviorId: string): ActivationStep =>
     ({
@@ -26,7 +30,9 @@ describe('chainBoost', () =>
         ];
 
         expect(hasBoostBeforeStep(chain, 1)).toBe(true);
+        expect(getBoostMultiplierForStep(chain, 1)).toBe(2);
         expect(hasBoostBeforeStep(chain, 2)).toBe(false);
+        expect(getBoostMultiplierForStep(chain, 2)).toBe(1);
     });
 
     it('lets jokers pass a boost through to the next attack', () =>
@@ -39,6 +45,33 @@ describe('chainBoost', () =>
 
         expect(stepConsumesBoost(step('joker'))).toBe(false);
         expect(hasBoostBeforeStep(chain, 2)).toBe(true);
+        expect(getBoostMultiplierForStep(chain, 2)).toBe(2);
+    });
+
+    it('stacks boost into boost multiplicatively', () =>
+    {
+        const chain = [
+            step('boost'),
+            step('boost'),
+            step('attack'),
+        ];
+
+        expect(getBoostMultiplierForStep(chain, 2)).toBe(4);
+        expect(hasBoostBeforeStep(chain, 1)).toBe(true);
+        expect(getBoostMultiplierForStep(chain, 1)).toBe(2);
+    });
+
+    it('stacks three boosts through a joker', () =>
+    {
+        const chain = [
+            step('boost'),
+            step('boost'),
+            step('joker'),
+            step('boost'),
+            step('attack'),
+        ];
+
+        expect(getBoostMultiplierForStep(chain, 4)).toBe(8);
     });
 
     it('does not buff cards after an attack has consumed the boost', () =>

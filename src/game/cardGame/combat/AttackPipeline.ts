@@ -20,7 +20,7 @@ import {
     scaleBoostedValue,
 } from './chainBoost';
 
-export { isStreakNeutralBehavior } from './chainBoost';
+export { getBoostMultiplierForStep, isStreakNeutralBehavior } from './chainBoost';
 
 const STACKABLE_BEHAVIORS = new Set([ 'attack', 'defend' ]);
 
@@ -445,7 +445,7 @@ const applyPoisonArmorReplacement = (chain: ActivationStep[]): ActivationStep[] 
     );
 };
 
-/** Buffs the next chain step after a field boost, propagating through jokers only. */
+/** Buffs the next chain step after field boosts (stacked boosts multiply). */
 export const applyBoostBonuses = (chain: ActivationStep[]): ActivationStep[] =>
     chain.map((step, index) =>
     {

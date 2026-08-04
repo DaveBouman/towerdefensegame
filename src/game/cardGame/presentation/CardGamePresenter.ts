@@ -66,7 +66,7 @@ export class CardGamePresenter
             syncBattleModifierStatus: () => this.syncBattleModifierStatus(),
             deactivateActiveVisual: () => this.deactivateActiveVisual(),
             deactivateBoostBuff: () => this.deactivateBoostBuff(),
-            activateStep: (step: ActivationStep, boosted?: boolean) => this.activateStep(step, boosted),
+            activateStep: (step: ActivationStep, boostMultiplier?: number) => this.activateStep(step, boostMultiplier),
             deactivateStep: (step: ActivationStep) => this.deactivateStep(step),
         };
     }
@@ -172,7 +172,7 @@ export class CardGamePresenter
         this.armorView.setArmor(armor);
     }
 
-    private activateStep (step: ActivationStep, boosted = false): void
+    private activateStep (step: ActivationStep, boostMultiplier = 1): void
     {
         const target = this.boardView.getCardVisualTarget(step.slot);
 
@@ -201,9 +201,9 @@ export class CardGamePresenter
             this.applyBattleModFromStep(step.definitionId, step.slot);
         }
 
-        if (boosted)
+        if (boostMultiplier > 1)
         {
-            boostedBuffVisual.activate(this.scene, target);
+            boostedBuffVisual.activate(this.scene, target, boostMultiplier);
             this.activeBoostBuffSlot = { ...step.slot };
         }
     }
