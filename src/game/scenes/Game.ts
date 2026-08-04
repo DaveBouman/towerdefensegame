@@ -38,7 +38,6 @@ export class Game extends Scene
     private deckView?: CardPileView;
     private graveyardView?: CardPileView;
     private rerollModeActive = false;
-    private turnResolving = false;
     private layout?: BoardLayout;
     private battleActive = false;
     private battleResolved = false;
@@ -161,7 +160,6 @@ export class Game extends Scene
         this.layout = computeBoardLayout(width, height);
         const layout = this.layout;
         this.rerollModeActive = false;
-        this.turnResolving = false;
         this.battleResolved = false;
         this.session = new CardGameSession(
             enemyIds,
@@ -228,7 +226,7 @@ export class Game extends Scene
             this.session.getCombatants(),
             (instanceId) =>
             {
-                if (!this.session || this.session.isAttackInProgress() || this.turnResolving)
+                if (!this.session || this.session.isBusy())
                 {
                     return;
                 }
@@ -448,7 +446,7 @@ export class Game extends Scene
 
     private onAttack = (): void =>
     {
-        if (!this.session || !this.presenter || this.turnResolving)
+        if (!this.session || !this.presenter || this.session.isBusy())
         {
             return;
         }
@@ -482,9 +480,15 @@ export class Game extends Scene
 
         if (!chainStart)
         {
-            EventBus.emit(GAME_EVENTS.ATTACK_REJECTED, { reason: 'no-cards-on-board' });
+            EventBus.emit(GAME_EVENTS.ATTACK_REJECTED, {
+                reason: this.session.getAttackReadiness().reason ?? 'no-cards-on-board',
+            });
+            this.emitAttackReadiness();
             return;
         }
+
+        // Disable Attack immediately — lock is held through chain + enemy response.
+        this.emitAttackReadiness();
 
         if (!this.session.isPuzzleMode())
         {
@@ -513,7 +517,7 @@ export class Game extends Scene
 
         this.session.completeAttack(sequence);
 
-        if (!this.boardView || !this.enemySquad || this.turnResolving)
+        if (!this.boardView || !this.enemySquad)
         {
             this.unlockPlayerInput();
             return;
@@ -565,20 +569,15 @@ export class Game extends Scene
             return;
         }
 
-        this.beginPostAttackPhase({ fromAttack: true });
+        this.beginPostAttackPhase();
     }
 
     /** Enemy response after each attack; board clear only when energy is depleted. */
-    private beginPostAttackPhase (options: { fromAttack?: boolean } = {}): void
+    private beginPostAttackPhase (): void
     {
-        if (!this.session || !this.boardView || this.turnResolving)
+        if (!this.session || !this.boardView)
         {
-            return;
-        }
-
-        // Attack lock is intentionally held when coming from onAttackResolved.
-        if (!options.fromAttack && this.session.isAttackInProgress())
-        {
+            this.unlockPlayerInput();
             return;
         }
 
@@ -589,6 +588,7 @@ export class Game extends Scene
 
         if (this.session.isEnemyDefeated() || this.session.isPlayerDefeated())
         {
+            this.unlockPlayerInput();
             return;
         }
 
@@ -597,13 +597,17 @@ export class Game extends Scene
             this.onRerollCancel();
         }
 
-        this.turnResolving = true;
         this.emitAttackReadiness();
         this.resolveEnemyPhase();
     }
 
     private endPlayerRound = (): void =>
     {
+        if (this.session?.isBusy())
+        {
+            return;
+        }
+
         this.beginPostAttackPhase();
     };
 
@@ -616,7 +620,6 @@ export class Game extends Scene
     private unlockPlayerInput (): void
     {
         this.session?.releaseAttackLock();
-        this.turnResolving = false;
         this.emitAttackReadiness();
     }
 
@@ -734,8 +737,7 @@ export class Game extends Scene
         this.enemySquad?.syncTargetPrompt(this.session);
         this.battleModifierView?.setModifiers(this.session.getBattleModifiers());
 
-        if (!this.turnResolving
-            && !this.session.isEnemyTurnInProgress()
+        if (!this.session.isBusy()
             && !this.session.isEnemyDefeated())
         {
             this.enemySquad?.showAllIntents(this.session);
@@ -762,7 +764,7 @@ export class Game extends Scene
 
     private onCardDropped (handIndex: number, worldX: number, worldY: number): boolean
     {
-        if (!this.session || !this.boardView || !this.session.canEditBoard() || this.turnResolving)
+        if (!this.session || !this.boardView || !this.session.canEditBoard())
         {
             this.boardView?.clearHighlight();
             return false;
@@ -790,7 +792,7 @@ export class Game extends Scene
 
     private onBoardCardDropped (fromSlot: SlotPosition, worldX: number, worldY: number): boolean
     {
-        if (!this.session || !this.boardView || !this.handView || !this.session.canEditBoard() || this.turnResolving)
+        if (!this.session || !this.boardView || !this.handView || !this.session.canEditBoard())
         {
             this.boardView?.clearHighlight();
             return false;

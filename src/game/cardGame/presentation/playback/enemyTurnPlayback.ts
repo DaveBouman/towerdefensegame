@@ -182,5 +182,10 @@ export function playEnemyTurnStep (
 
             onComplete();
         });
+
+        return;
     }
+
+    // Unknown step kinds must not stall the enemy phase (holds the attack lock).
+    onComplete();
 }

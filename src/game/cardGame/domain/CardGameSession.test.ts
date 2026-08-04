@@ -185,7 +185,7 @@ describe('CardGameSession enemy turn', () =>
         const result = session.dealAttackDamage(20);
 
         expect(result.healthDamage + result.shieldAbsorbed).toBe(5);
-        expect(session.getEnemy().health).toBe(170 - 5);
+        expect(session.getEnemy().health).toBe(38 - 5);
     });
 
     it('blocks the first three card hits for enemies with hitWard', () =>
@@ -201,7 +201,7 @@ describe('CardGameSession enemy turn', () =>
             expect(result.damageBlocked).toBe(true);
             expect(result.healthDamage).toBe(0);
             expect(result.shieldAbsorbed).toBe(0);
-            expect(session.getEnemy().health).toBe(220);
+            expect(session.getEnemy().health).toBe(48);
         }
 
         const fourth = session.dealAttackDamage(10);

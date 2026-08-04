@@ -208,6 +208,11 @@ export class EnemySquadView
 
     requestTarget (livingIds: readonly string[], onPick: (instanceId: string) => void): void
     {
+        if (livingIds.length === 0)
+        {
+            return;
+        }
+
         if (livingIds.length === 1)
         {
             onPick(livingIds[0]!);

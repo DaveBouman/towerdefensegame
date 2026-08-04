@@ -152,7 +152,7 @@ export class CardGameSession
         this.boardEdit = new BoardEditController({
             board: this.board,
             deckHand: this.deckHand,
-            isBusy: () => this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress(),
+            isBusy: () => this.isBusy(),
             isPuzzleFinished: () => this.puzzleFinished,
             isSlotBlockedForPlayer: (slot) => this.isSlotBlockedForPlayer(slot),
             onCardExhausted: (definitionId) =>
@@ -793,6 +793,12 @@ export class CardGameSession
     isAttackInProgress (): boolean
     {
         return this.combat.isAttackInProgress();
+    }
+
+    /** True while a player attack or enemy turn is resolving — single busy gate for UI. */
+    isBusy (): boolean
+    {
+        return this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress();
     }
 
     isEnemyTurnInProgress (): boolean

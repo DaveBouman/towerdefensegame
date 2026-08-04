@@ -218,10 +218,17 @@ export function runChainPlayback (
         onStepComplete: () => void,
     ): void =>
     {
-        const livingIds = deps.session.getLivingCombatants().map((combatant) => combatant.instanceId);
-
         const deal = (): void =>
         {
+            const livingIds = deps.session.getLivingCombatants().map((combatant) => combatant.instanceId);
+
+            // Last enemy already dead — finish the step; don't wait forever for a target.
+            if (livingIds.length === 0)
+            {
+                onStepComplete();
+                return;
+            }
+
             const targetId = deps.session.ensureAttackTarget();
 
             if (!targetId)
