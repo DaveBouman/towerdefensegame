@@ -27,7 +27,6 @@ const PUZZLE_POOL: readonly (readonly [string, number])[] = [
     [ 'triple-strike', 2 ],
     [ 'looping-strike', 2 ],
     [ 'fire-alternation', 2 ],
-    [ 'loop-lesson', 2 ],
     [ 'rupture-bleed', 1 ],
 ];
 
@@ -109,25 +108,6 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
         ],
         failureEffects: [
             { kind: 'damage', amount: 7 },
-        ],
-    },
-    'loop-lesson': {
-        id: 'loop-lesson',
-        title: 'Loop Reset',
-        intro: 'Loop cards rewind the chain so earlier cards fire again — once per attack.',
-        hint: 'Attack → Loop in column 1 (exit left back toward column 0). Loop needs entry right, exit left.',
-        cards: [
-            { definitionId: 'attack', arrow: 'right' },
-            { definitionId: 'loop-reset', arrow: 'right', loopArrow: 'left' },
-            { definitionId: 'attack', arrow: 'right' },
-        ],
-        damageTarget: 11,
-        successEffects: [
-            { kind: 'gold', amount: 15 },
-            { kind: 'lose-gold', amount: 15 },
-        ],
-        failureEffects: [
-            { kind: 'damage', amount: 5 },
         ],
     },
     'rupture-bleed': {

@@ -102,17 +102,6 @@ describe('runPuzzles', () =>
         expect(damage).toBeGreaterThanOrEqual(puzzle.damageTarget);
     });
 
-    it('loop-lesson is solvable at its target', () =>
-    {
-        const puzzle = getRunPuzzle('loop-lesson');
-        const damage = damageAt([
-            { row: 0, col: 0, definitionId: 'attack', arrow: 'right' },
-            { row: 0, col: 1, definitionId: 'loop-reset', arrow: 'right', loopArrow: 'left' },
-        ]);
-
-        expect(damage).toBeGreaterThanOrEqual(puzzle.damageTarget);
-    });
-
     it('rupture-bleed is solvable at its target', () =>
     {
         const puzzle = getRunPuzzle('rupture-bleed');

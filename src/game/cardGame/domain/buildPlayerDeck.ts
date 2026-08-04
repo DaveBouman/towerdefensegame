@@ -1,6 +1,6 @@
 import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import type { ArrowPool, CardDirection } from './cardDirections';
-import { buildBalancedDirectionsForPool, DIAGONAL_DIRECTIONS, ORTHOGONAL_DIRECTIONS, randomOrthogonalPair } from './cardDirections';
+import { buildBalancedDirectionsForPool, DIAGONAL_DIRECTIONS, ORTHOGONAL_DIRECTIONS } from './cardDirections';
 import { createCardInstance } from './createCardInstance';
 import type { CardInstance } from './types';
 import { shuffleInPlace } from '../../random/rng';
@@ -14,7 +14,7 @@ const DECK_COMPOSITION: readonly { definitionId: string; count: number }[] = [
     { definitionId: 'defend-leap', count: 2 },
     { definitionId: 'joker', count: 1 },
     { definitionId: 'echo', count: 1 },
-    { definitionId: 'loop-reset', count: 1 },
+    { definitionId: 'poison', count: 1 },
     { definitionId: 'fire', count: 1 },
     { definitionId: 'shiv', count: 1 },
     { definitionId: 'cinder', count: 1 },
@@ -46,9 +46,7 @@ const buildBalancedArrowQueues = (): Map<ArrowPool, CardDirection[]> =>
             continue;
         }
 
-        const arrowSlots = entry.definitionId === 'loop-reset' ? entry.count * 2 : entry.count;
-
-        counts.set(pool, (counts.get(pool) ?? 0) + arrowSlots);
+        counts.set(pool, (counts.get(pool) ?? 0) + entry.count);
     }
 
     const queues = new Map<ArrowPool, CardDirection[]>();
@@ -82,34 +80,6 @@ export const buildPlayerDeck = (size = GAME_RULES.deckSize): CardInstance[] =>
             if (definition.arrowPool === 'joker')
             {
                 deck.push(createCardInstance(entry.definitionId));
-                continue;
-            }
-
-            if (definition.behaviorId === 'loop-reset')
-            {
-                const pool = arrowQueues.get(definition.arrowPool) ?? [];
-                const arrow = takeBalancedArrow(arrowQueues, definition.arrowPool);
-                const loopArrowIndex = pool.findIndex((direction) => direction !== arrow);
-                const loopArrow = loopArrowIndex >= 0
-                    ? pool.splice(loopArrowIndex, 1)[0]
-                    : arrow
-                        ? randomOrthogonalPair(arrow).loopArrow
-                        : undefined;
-
-                if (!arrow || !loopArrow)
-                {
-                    const pair = randomOrthogonalPair(arrow);
-
-                    deck.push(createCardInstance(
-                        entry.definitionId,
-                        pair.arrow,
-                        'player',
-                        pair.loopArrow,
-                    ));
-                    continue;
-                }
-
-                deck.push(createCardInstance(entry.definitionId, arrow, 'player', loopArrow));
                 continue;
             }
 

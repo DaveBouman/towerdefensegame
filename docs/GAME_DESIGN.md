@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-07-15
+**Last updated:** 2026-08-04
 
 ---
 
@@ -13,7 +13,7 @@ branching **run map** (roguelite-style path of battles).
 
 - Player drags cards from hand onto a grid; arrows define activation order.
 - Player sets chain start (column 0) and clicks **Attack**.
-- Chain resolves step-by-step (attack, defend, fire, poison, joker, loop, hazard, boost).
+- Chain resolves step-by-step (attack, defend, fire, poison, joker, hazard, boost).
 - Enemy acts with telegraphed intent (attack/shield + hazard traps).
 - Win: all enemy HP ≤ 0. Lose: player HP ≤ 0.
 - Multi-enemy fights: click an enemy to set your attack target before attacking; pick a new target mid-chain if the current one dies.
@@ -154,7 +154,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 
 | System | Files | Player decision |
 |--------|-------|-----------------|
-| Chain routing | `AttackPipeline.ts`, `cardDirections.ts` | Arrow pools, leap (2-tile), loop-reset, corner-turn (`cornerTurn` — hooks to a forward-diagonal, `getCornerNextSlot`) |
+| Chain routing | `AttackPipeline.ts`, `cardDirections.ts` | Arrow pools, leap (2-tile), corner-turn (`cornerTurn` — hooks to a forward-diagonal, `getCornerNextSlot`). Loop-reset exists in code but is **disabled** (not in starter deck, rewards, or puzzles). |
 | Poison trail | `poisonTrailAbility.ts` | Converts subsequent defends to **poison stacks** on the enemy |
 | Poison stacks (status) | `CardGameSession.tickPoison` | Enemy takes `stacks` damage at the start of each of its turns (ignores shield), then stacks decay by 1 |
 | Fire alternation | `fireAlternationAbility.ts` | +3 damage per alternating attack/defend after fire |
@@ -178,7 +178,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | `thornward` | Thorns — reflects 4 damage on attack; **Damage Cap** trait — each card hit deals at most 5 damage |
 | `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile, **Curse Hand** (adds Burden to hand each turn) — trap pressure snowballs. On the run map, saboteur nodes always connect to an adjacent route up or down on the next column. |
 | `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps); **Hit Ward** trait — first 3 card hits deal no damage |
-| `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (punishes loop-reset), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
+| `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (dormant while loop-reset is out of content), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
 | `field-medic` | Low personal threat — **ally support** in multi-enemy fights: heals weakest ally, can shield the most shielded ally (`allyActions` in `enemies.json`) |
 
 Each enemy should force a **different deck shape and chain strategy**.
@@ -255,6 +255,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-08-04 | **Loop Reset disabled.** Removed from starter deck (replaced with Poison), reward pool, and Combo Trial pool (`loop-lesson`). Combat/UI code remains dormant for a later fix. |
 | 2026-07-15 | **Phase 2 god-object split.** Extracted `CombatResolver` (attack/damage/shield/poison) and `EnemyPhaseController` (enemy turn queue and phase lifecycle) from `CardGameSession`. Chain walk playback moved to `presentation/playback/chainPlayback.ts`. Session and presenter remain thin facades; public API unchanged. |
 | 2026-07-15 | **Phase 1 god-object split.** Extracted `DeckHand` (deck/hand/discard/rerolls) and `FieldEffects` (dampen field, silenced/bomb-disabled slots, hazard/boost placement) from `CardGameSession`. Split `CardGamePresenter` playback into `presentation/playback/` (`combatHitVisuals`, `chainEndEffects`, `enemyTurnPlayback`). Session public API unchanged. |
 | 2026-07-15 | **Chain ability visuals.** Skill abilities (fire alternation, poison trail, bleed, fortify, overload) now resolve visually in chain order at the end of an attack — each ability card re-highlights and shows its payoff before the next. Echo cards flash briefly, then replay the copied step as the main beat instead of overlapping both cards. |
@@ -316,7 +317,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 | 2026-07-15 | **Battle modifier status icons.** Active buffs/debuffs render above the player panel with tinted icons, % labels, and hover tooltips (`BattleModifierStatusView`, `battleModifierDisplay.ts`). All battle modifiers now last until energy refills (`energy-round` only). |
 | 2026-07-15 | **Enemy ally support.** Configurable `allyActions` on enemies (`enemyAllySupport.ts`): `heal-ally` / `shield-ally` with `amount`, `chance`, and `target` rules for multi-enemy fights. New **Field Medic** enemy demonstrates the system. |
 | 2026-07-14 | **Event trade-offs.** Every positive event outcome now pairs with a cost (`lose-gold` caps at current gold; HP damage or curse cards for other rewards). Healing Spring: +18 HP / −18 gold. Wheel: spin costs 5 gold; gold/heal/card/trinket segments also cost HP, gold, or Burden. Sign Matcher win costs 12 gold. Gambler coin and Cursed Idol smash cost HP. Combo Trial success pays mirror gold costs and curse tax on bonus cards. |
-| 2026-07-14 | **Combo Trial events.** New **Combo Trial** random event launches a seeded damage puzzle (`runPuzzles.ts`, `START_PUZZLE` / `PUZZLE_RESOLVED`). Player receives a fixed hand of combo cards against a **Training Dummy** (`training-dummy` enemy, no counterattack) and must deal at least the target damage in **one attack**. Six puzzles teach Boost, attack streaks, Strike loops, Fire alternation, Loop Reset, and Rupture bleed. Success grants gold/cards; failure costs a little HP. Puzzle UI: brief screen in `RunEventOverlay`, in-fight goal/hint in `PuzzleHud`, result in `PuzzleResultOverlay`. |
+| 2026-07-14 | **Combo Trial events.** New **Combo Trial** random event launches a seeded damage puzzle (`runPuzzles.ts`, `START_PUZZLE` / `PUZZLE_RESOLVED`). Player receives a fixed hand of combo cards against a **Training Dummy** (`training-dummy` enemy, no counterattack) and must deal at least the target damage in **one attack**. Puzzles teach Boost, attack streaks, Strike loops, Fire alternation, and Rupture bleed (Loop Reset trial removed while the card is disabled). Success grants gold/cards; failure costs a little HP. Puzzle UI: brief screen in `RunEventOverlay`, in-fight goal/hint in `PuzzleHud`, result in `PuzzleResultOverlay`. |
 | 2026-07-14 | **Random run events.** Map `event` nodes now open `RunEventOverlay` with seeded encounters (`runEvents.ts`, `seedScope(seed, event:<nodeId>)`). Five events: **Wheel of Fate** (spin for gold/card/curse/trinket/heal/trap), **Sign Matcher** (pick the duplicated icon — card or damage), **Healing Spring**, **Cursed Idol** (trinket + Burden or gold), **Gambler's Offer** (HP for card or gold). First map column is now **all events** for easy testing. Run resources: **gold** + **trinkets** (`trinkets.ts`, `runResources.ts`) shown on the map; trinkets pass into battles (`START_BATTLE.trinkets`) — Vitality Charm (+10 max HP), Energy Cell (+1 energy/turn), Lucky Pouch (+8 gold on victory). Shop nodes remain a placeholder (`NodeVisitOverlay` shows gold). |
 | 2026-07-14 | **Curse / bad cards.** New card flags `unplayable` and `handEndPenalty` on `CardDefinition`. **Burden** — cannot be played, deals 5 damage if still in hand when the turn ends. **Fuse** — weak attack (power 2) that must be placed before end of turn or deals 8 damage. Penalties resolve in `CardGameSession.resolveHandEndPenalties` at end of player turn (`Game.resolveEnemyPhase`). Unplayable cards blocked in `placeCardFromHand` and `CardHandView` drag. New `curse` behavior (inert on board). **Saboteur** gains `curseHand` passive — slips 1 Burden into your hand after each enemy turn (can exceed hand size). |
 | 2026-07-07 | **Escalation risk/reward: enemy damage ramps with attacks per round.** Each extra attack the player makes in a round increases the enemy's next attack damage by `gameRules.enemyDamageRampPerAttack` (default 4; first attack is baseline). Ramp derives from spent energy (`CardGameSession.getAttacksThisRound` = `maxEnergy − energy`, `getEnemyDamageRamp`), is baked into attack steps at resolve time (`beginEnemyTurn` → `rampEnemyAction`), and is telegraphed live: after each attack `Game.onAttackResolved` re-shows the scaled intent (`getScaledEnemyIntent`). Attack intent tooltip notes the ramp. |

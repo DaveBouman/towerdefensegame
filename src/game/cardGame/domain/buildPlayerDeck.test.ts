@@ -23,7 +23,7 @@ describe('buildPlayerDeck', () =>
         expect(deck.filter((card) => card.definitionId === 'defend-leap')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'joker')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'echo')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'loop-reset')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'poison')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'shiv')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'cinder')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'miasma')).toHaveLength(1);
@@ -51,13 +51,6 @@ describe('buildPlayerDeck', () =>
             }
 
             expect(isOrthogonalDirection(card.arrow)).toBe(true);
-
-            if (card.definitionId === 'loop-reset')
-            {
-                expect(card.loopArrow).toBeDefined();
-                expect(isOrthogonalDirection(card.loopArrow!)).toBe(true);
-                expect(card.loopArrow).not.toBe(card.arrow);
-            }
         }
     });
 
@@ -78,16 +71,11 @@ describe('buildPlayerDeck', () =>
 
         const countDirection = (direction: typeof ORTHOGONAL_DIRECTIONS[number]): number =>
             orthogonalCards.reduce((count, card) =>
-                count
-                + (card.arrow === direction ? 1 : 0)
-                + (card.loopArrow === direction ? 1 : 0), 0);
+                count + (card.arrow === direction ? 1 : 0), 0);
 
         for (const direction of ORTHOGONAL_DIRECTIONS)
         {
-            const count = countDirection(direction);
-
-            expect(count).toBeGreaterThanOrEqual(4);
-            expect(count).toBeLessThanOrEqual(5);
+            expect(countDirection(direction)).toBe(4);
         }
     });
 });
