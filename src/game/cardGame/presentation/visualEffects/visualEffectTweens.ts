@@ -19,26 +19,33 @@ export const resetCardGlowPulse = (
     scene?: Phaser.Scene,
 ): void =>
 {
-    // Board rebuilds destroy card wrappers; stale visual targets must no-op.
-    if (!wrapper.scene)
+    const tweenScene = scene ?? wrapper.scene;
+
+    if (!tweenScene?.tweens || !wrapper.scene)
     {
         return;
     }
 
-    const originX = wrapper.getData(PULSE_ORIGIN_X) as number | undefined;
-    const originY = wrapper.getData(PULSE_ORIGIN_Y) as number | undefined;
-    const tweenScene = scene ?? wrapper.scene;
-
-    tweenScene.tweens.killTweensOf(wrapper);
-    wrapper.setScale(1);
-
-    if (originX !== undefined && originY !== undefined)
+    try
     {
-        wrapper.setPosition(originX, originY);
-    }
+        const originX = wrapper.getData(PULSE_ORIGIN_X) as number | undefined;
+        const originY = wrapper.getData(PULSE_ORIGIN_Y) as number | undefined;
 
-    clearWrapperData(wrapper, PULSE_ORIGIN_X);
-    clearWrapperData(wrapper, PULSE_ORIGIN_Y);
+        tweenScene.tweens.killTweensOf(wrapper);
+        wrapper.setScale(1);
+
+        if (originX !== undefined && originY !== undefined)
+        {
+            wrapper.setPosition(originX, originY);
+        }
+
+        clearWrapperData(wrapper, PULSE_ORIGIN_X);
+        clearWrapperData(wrapper, PULSE_ORIGIN_Y);
+    }
+    catch
+    {
+        // Wrapper may already be destroyed mid-sync.
+    }
 };
 
 export const playCardGlowPulse = (

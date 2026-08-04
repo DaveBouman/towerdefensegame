@@ -6,7 +6,6 @@ import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
 import { playBattleModifierFloatingLabel } from './battleModifierFloatingLabel';
 import { boostedBuffVisual } from './visualEffects/boostedBuffVisual';
 import { getCardVisualEffectOrThrow } from './visualEffects/visualEffectRegistry';
-import type { CardVisualTarget } from './visualEffects/types';
 import type { ArmorView } from '../../board/ArmorView';
 import type { CardBoardView } from '../../board/CardBoardView';
 import type { CardHandView } from '../../board/CardHandView';
@@ -18,8 +17,9 @@ import type { BattleModifierStatusView } from '../../board/BattleModifierStatusV
 
 export class CardGamePresenter
 {
-    private activeVisual: { target: CardVisualTarget; visualId: string } | null = null;
-    private activeBoostBuff: CardVisualTarget | null = null;
+    /** Live board slot — never cache destroyed wrappers across board syncs. */
+    private activeVisualSlot: { slot: SlotPosition; visualId: string } | null = null;
+    private activeBoostBuffSlot: SlotPosition | null = null;
     private attackTimer?: Phaser.Time.TimerEvent;
     private displayedArmor = 0;
 
@@ -79,12 +79,17 @@ export class CardGamePresenter
     unbind (): void
     {
         CardGameEventBus.off(CARD_GAME_EVENTS.ATTACK_COMPLETED, this.onAttackCompleted, this);
-        this.attackTimer?.remove();
-        this.attackTimer = undefined;
+        this.clearAttackTimer();
         this.boardView.hideJokerDirectionPicker();
-        this.deactivateActiveVisual();
-        this.deactivateBoostBuff();
+        this.dropTransientVisualRefs();
         this.boardView.setChainStartActive(false);
+    }
+
+    /** Call before board wrappers are destroyed/rebuilt so glow cleanup never hits stale objects. */
+    dropTransientVisualRefs (): void
+    {
+        this.activeVisualSlot = null;
+        this.activeBoostBuffSlot = null;
     }
 
     playAttack (chainStart: SlotPosition, onComplete: (sequence: AttackSequence) => void): void
@@ -171,7 +176,7 @@ export class CardGamePresenter
     {
         const target = this.boardView.getCardVisualTarget(step.slot);
 
-        if (!target)
+        if (!target?.wrapper.scene)
         {
             return;
         }
@@ -189,7 +194,7 @@ export class CardGamePresenter
 
         this.boardView.bringCardToFront(step.slot);
         getCardVisualEffectOrThrow(step.visualId).activate(this.scene, target);
-        this.activeVisual = { target, visualId: step.visualId };
+        this.activeVisualSlot = { slot: { ...step.slot }, visualId: step.visualId };
 
         if (step.behaviorId === 'battle-mod')
         {
@@ -199,15 +204,22 @@ export class CardGamePresenter
         if (boosted)
         {
             boostedBuffVisual.activate(this.scene, target);
-            this.activeBoostBuff = target;
+            this.activeBoostBuffSlot = { ...step.slot };
         }
     }
 
     private deactivateBoostBuff (): void
     {
-        const target = this.activeBoostBuff;
+        const slot = this.activeBoostBuffSlot;
 
-        this.activeBoostBuff = null;
+        this.activeBoostBuffSlot = null;
+
+        if (!slot)
+        {
+            return;
+        }
+
+        const target = this.boardView.getCardVisualTarget(slot);
 
         if (!target?.wrapper.scene)
         {
@@ -232,7 +244,7 @@ export class CardGamePresenter
 
         const visualTarget = this.boardView.getCardVisualTarget(slot);
 
-        if (!visualTarget)
+        if (!visualTarget?.wrapper.scene)
         {
             return;
         }
@@ -253,17 +265,35 @@ export class CardGamePresenter
 
         if (!target?.wrapper.scene)
         {
+            if (this.activeVisualSlot
+                && this.activeVisualSlot.slot.row === step.slot.row
+                && this.activeVisualSlot.slot.col === step.slot.col)
+            {
+                this.activeVisualSlot = null;
+            }
+
+            if (this.activeBoostBuffSlot
+                && this.activeBoostBuffSlot.row === step.slot.row
+                && this.activeBoostBuffSlot.col === step.slot.col)
+            {
+                this.activeBoostBuffSlot = null;
+            }
+
             return;
         }
 
         getCardVisualEffectOrThrow(step.visualId).deactivate(this.scene, target);
 
-        if (this.activeVisual?.target === target)
+        if (this.activeVisualSlot
+            && this.activeVisualSlot.slot.row === step.slot.row
+            && this.activeVisualSlot.slot.col === step.slot.col)
         {
-            this.activeVisual = null;
+            this.activeVisualSlot = null;
         }
 
-        if (this.activeBoostBuff === target)
+        if (this.activeBoostBuffSlot
+            && this.activeBoostBuffSlot.row === step.slot.row
+            && this.activeBoostBuffSlot.col === step.slot.col)
         {
             this.deactivateBoostBuff();
         }
@@ -271,16 +301,23 @@ export class CardGamePresenter
 
     private deactivateActiveVisual (): void
     {
-        const active = this.activeVisual;
+        const active = this.activeVisualSlot;
 
-        this.activeVisual = null;
+        this.activeVisualSlot = null;
 
-        if (!active?.target.wrapper.scene)
+        if (!active)
         {
             return;
         }
 
-        getCardVisualEffectOrThrow(active.visualId).deactivate(this.scene, active.target);
+        const target = this.boardView.getCardVisualTarget(active.slot);
+
+        if (!target?.wrapper.scene)
+        {
+            return;
+        }
+
+        getCardVisualEffectOrThrow(active.visualId).deactivate(this.scene, target);
     }
 
     private onAttackCompleted (): void

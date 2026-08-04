@@ -55,6 +55,11 @@ export const boostedBuffVisual: import('./types').CardVisualEffect = {
     },
     deactivate (scene, target)
     {
+        if (!target.wrapper.scene)
+        {
+            return;
+        }
+
         const glow = target.wrapper.getData(GLOW_DATA_KEY) as Phaser.GameObjects.GameObject | undefined;
         const label = target.wrapper.getData(LABEL_DATA_KEY) as Phaser.GameObjects.GameObject | undefined;
         const tween = target.wrapper.getData(TWEEN_KEY) as Phaser.Tweens.Tween | undefined;

@@ -754,6 +754,23 @@ describe('CardGameSession enemy turn', () =>
         expect(session.rerollHandCards([ 0 ])).toBe(false);
     });
 
+    it('allows reroll again after the attack lock is released', () =>
+    {
+        const session = new CardGameSession();
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
+        expect(session.beginAttack()).toEqual({ row: 0, col: 0 });
+        expect(session.isBusy()).toBe(true);
+        expect(session.canReroll()).toBe(false);
+
+        session.releaseAttackLock();
+
+        expect(session.isBusy()).toBe(false);
+        expect(session.canReroll()).toBe(true);
+        expect(session.rerollHandCards([ 0 ])).toBe(true);
+        expect(session.getRerollsRemaining()).toBe(2);
+    });
+
     it('places enemy hazards on empty board slots', () =>
     {
         const session = new CardGameSession();

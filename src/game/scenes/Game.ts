@@ -402,6 +402,8 @@ export class Game extends Scene
             return;
         }
 
+        // Drop cached glow targets before wrappers are destroyed/rebuilt.
+        this.presenter?.dropTransientVisualRefs();
         this.boardView.syncFromBoard(this.session.board);
         this.boardView.setBlockedSlots(
             this.session.getSilencedSlots(),
@@ -497,10 +499,18 @@ export class Game extends Scene
             });
         }
 
-        this.presenter.playAttack(chainStart, (sequence) =>
+        try
         {
-            this.onAttackResolved(sequence);
-        });
+            this.presenter.playAttack(chainStart, (sequence) =>
+            {
+                this.onAttackResolved(sequence);
+            });
+        }
+        catch
+        {
+            // Visual cleanup must never leave the attack lock stuck (blocks Attack + Reroll).
+            this.unlockPlayerInput();
+        }
     };
 
     /**
@@ -581,9 +591,10 @@ export class Game extends Scene
             return;
         }
 
+        // Recover from a stuck enemy-turn flag so Attack/Reroll cannot soft-lock.
         if (this.session.isEnemyTurnInProgress())
         {
-            return;
+            this.session.cancelEnemyTurn();
         }
 
         if (this.session.isEnemyDefeated() || this.session.isPlayerDefeated())
@@ -619,6 +630,7 @@ export class Game extends Scene
     /** Releases attack lock and re-enables player input. */
     private unlockPlayerInput (): void
     {
+        this.presenter?.dropTransientVisualRefs();
         this.session?.releaseAttackLock();
         this.emitAttackReadiness();
     }
@@ -667,8 +679,20 @@ export class Game extends Scene
 
     private onRerollBegin = (): void =>
     {
-        if (!this.session?.canReroll())
+        if (!this.session)
         {
+            return;
+        }
+
+        if (!this.session.canReroll())
+        {
+            if (this.session.isBusy())
+            {
+                EventBus.emit(GAME_EVENTS.ATTACK_REJECTED, {
+                    reason: this.session.isAttackInProgress() ? 'attack-in-progress' : 'enemy-turn',
+                });
+            }
+
             return;
         }
 
@@ -745,6 +769,7 @@ export class Game extends Scene
 
         EventBus.emit(GAME_EVENTS.CARD_ATTACK_READY, this.session.getAttackReadiness());
         this.emitTurnState();
+        this.emitRerollState();
     }
 
     private emitTurnState (): void
