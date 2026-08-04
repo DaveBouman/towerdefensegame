@@ -205,13 +205,16 @@ export class CardGamePresenter
 
     private deactivateBoostBuff (): void
     {
-        if (!this.activeBoostBuff)
+        const target = this.activeBoostBuff;
+
+        this.activeBoostBuff = null;
+
+        if (!target?.wrapper.scene)
         {
             return;
         }
 
-        boostedBuffVisual.deactivate(this.scene, this.activeBoostBuff);
-        this.activeBoostBuff = null;
+        boostedBuffVisual.deactivate(this.scene, target);
     }
 
     private applyBattleModFromStep (definitionId: string, slot: SlotPosition): void
@@ -248,7 +251,7 @@ export class CardGamePresenter
     {
         const target = this.boardView.getCardVisualTarget(step.slot);
 
-        if (!target)
+        if (!target?.wrapper.scene)
         {
             return;
         }
@@ -268,16 +271,16 @@ export class CardGamePresenter
 
     private deactivateActiveVisual (): void
     {
-        if (!this.activeVisual)
+        const active = this.activeVisual;
+
+        this.activeVisual = null;
+
+        if (!active?.target.wrapper.scene)
         {
             return;
         }
 
-        getCardVisualEffectOrThrow(this.activeVisual.visualId).deactivate(
-            this.scene,
-            this.activeVisual.target,
-        );
-        this.activeVisual = null;
+        getCardVisualEffectOrThrow(active.visualId).deactivate(this.scene, active.target);
     }
 
     private onAttackCompleted (): void

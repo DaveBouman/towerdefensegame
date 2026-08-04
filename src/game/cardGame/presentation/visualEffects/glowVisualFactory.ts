@@ -70,12 +70,12 @@ export const createPulseGlowVisual = (config: PulseGlowConfig): CardVisualEffect
 
             return scaleTween;
         },
-        deactivate (_scene, target)
+        deactivate (scene, target)
         {
             destroyStoredGlow(target);
             stopStoredTween(target, keys.tween);
             stopStoredTween(target, keys.overlay);
-            resetCardGlowPulse(target.wrapper);
+            resetCardGlowPulse(target.wrapper, scene);
         },
     };
 

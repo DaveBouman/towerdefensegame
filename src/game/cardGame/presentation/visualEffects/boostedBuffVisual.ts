@@ -68,6 +68,6 @@ export const boostedBuffVisual: import('./types').CardVisualEffect = {
         clearWrapperData(target.wrapper, LABEL_DATA_KEY);
         clearWrapperData(target.wrapper, TWEEN_KEY);
         clearWrapperData(target.wrapper, OVERLAY_TWEEN_KEY);
-        resetCardGlowPulse(target.wrapper);
+        resetCardGlowPulse(target.wrapper, scene);
     },
 };

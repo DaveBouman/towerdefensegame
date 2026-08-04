@@ -14,12 +14,22 @@ const PULSE_ORIGIN_X = 'glowPulseOriginX';
 const PULSE_ORIGIN_Y = 'glowPulseOriginY';
 
 /** Restores wrapper position/scale after a centered pulse tween. */
-export const resetCardGlowPulse = (wrapper: Phaser.GameObjects.Container): void =>
+export const resetCardGlowPulse = (
+    wrapper: Phaser.GameObjects.Container,
+    scene?: Phaser.Scene,
+): void =>
 {
+    // Board rebuilds destroy card wrappers; stale visual targets must no-op.
+    if (!wrapper.scene)
+    {
+        return;
+    }
+
     const originX = wrapper.getData(PULSE_ORIGIN_X) as number | undefined;
     const originY = wrapper.getData(PULSE_ORIGIN_Y) as number | undefined;
+    const tweenScene = scene ?? wrapper.scene;
 
-    wrapper.scene.tweens.killTweensOf(wrapper);
+    tweenScene.tweens.killTweensOf(wrapper);
     wrapper.setScale(1);
 
     if (originX !== undefined && originY !== undefined)

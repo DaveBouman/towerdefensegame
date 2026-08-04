@@ -104,6 +104,19 @@ export class EnemySquadView
 
     syncTargetPrompt (session: CardGameSession): void
     {
+        // Mid-chain retarget: keep LOCK TARGET on living hosts while waiting for a pick.
+        if (this.targetPickResolver)
+        {
+            for (const entry of this.entries)
+            {
+                const alive = isCombatantAlive(entry.combatant);
+
+                entry.view.setTargetPrompt(alive);
+            }
+
+            return;
+        }
+
         const needsTarget = session.hasMultipleEnemies()
             && !session.hasValidAttackTarget()
             && !session.isEnemyDefeated()
@@ -203,6 +216,15 @@ export class EnemySquadView
                         ? () => this.onEnemyClicked(entry.combatant.instanceId)
                         : null,
             );
+
+            if (active)
+            {
+                entry.view.setTargetPrompt(clickable);
+            }
+            else if (!this.targetPickResolver)
+            {
+                entry.view.setTargetPrompt(false);
+            }
         }
     }
 
@@ -220,7 +242,9 @@ export class EnemySquadView
         }
 
         this.targetPickResolver = onPick;
+        this.setSelected(null);
         this.setTargetingMode(true, livingIds);
+        this.flashTargetPrompt();
     }
 
     cancelTargetPick (): void
