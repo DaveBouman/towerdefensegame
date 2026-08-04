@@ -28,6 +28,8 @@ export interface CardDefinition {
     tooltip?: CardTooltipOverride;
     /** When true the card cannot be dragged from hand onto the board. */
     unplayable?: boolean;
+    /** When true the card cannot be selected for a hand reroll. */
+    nonRerollable?: boolean;
     /** Damage dealt to the player for each copy still in hand when the turn ends. */
     handEndPenalty?: number;
     /** After this card is played from hand, discard up to this many cards from the left of hand. */
@@ -99,6 +101,9 @@ export const getChainStepDistance = (definition: CardDefinition): number =>
 
 export const isCardUnplayable = (definition: CardDefinition): boolean =>
     definition.unplayable === true;
+
+export const isCardNonRerollable = (definition: CardDefinition): boolean =>
+    definition.nonRerollable === true;
 
 export const getCardHandEndPenalty = (definition: CardDefinition): number =>
     Math.max(0, definition.handEndPenalty ?? 0);

@@ -1,6 +1,6 @@
 import type { CardBehavior } from './types';
 
-/** Inert on the board — curse cards are meant to clog the hand, not chain. */
+/** Inert on the board — place to clear it from hand; clogs a tile, deals no damage. */
 export const curseBehavior: CardBehavior = {
     id: 'curse',
     contributeToAttack: () => ({

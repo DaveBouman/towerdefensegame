@@ -215,9 +215,10 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
     provider('burden', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: [
-            'Cannot be played on the board.',
+            'Place it on the board to clear it from your hand — it does nothing useful in the chain but wastes a tile.',
+            'Route your attack through it to safely dump it. Leave it off-chain and it hits you for double its hand penalty when you attack.',
+            'Cannot be rerolled away.',
             `Still in hand at end of turn: you take ${ctx.definition.handEndPenalty ?? 0} damage, then it is removed.`,
-            'Reroll it away or end your turn early to discard it.',
         ],
     })),
     provider('fuse', (ctx) => ({
@@ -232,7 +233,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: [
             'When played, discards up to 2 cards from the left of your hand into the graveyard.',
-            'Includes unplayable curse cards.',
+            'Includes curse cards (Burden).',
             'If your hand has fewer than 2 cards, discards as many as remain.',
             'Single use this fight — destroyed instead of going to the graveyard.',
             'Neutral on the chain — no direct attack or defend effect.',

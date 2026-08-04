@@ -1,4 +1,4 @@
-import { GAME_RULES, getCardDefinitionOrThrow, getChainStepDistance, type CardDefinition } from '../config/cardRegistry';
+import { GAME_RULES, getCardDefinitionOrThrow, getCardHandEndPenalty, getChainStepDistance, type CardDefinition } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
 import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
 import { cornerTargetDirections, getInBoundsDirectionsAtDistance, getNextSlot, getSlotAtStepDistance, slotKey } from '../domain/cardDirections';
@@ -566,6 +566,7 @@ export const buildAttackSequence = (
     const totalDamage = steps.reduce((sum, step) => sum + step.damage, 0);
     const offChain = board ? computeOffChainBonuses(board, scaledChain) : { damage: 0, armor: 0 };
     const hazardDamage = board ? computeHazardDamage(board, scaledChain) : 0;
+    const curseDamage = board ? computeUnchainedCurseDamage(board, scaledChain) : 0;
     const disarmResults = board ? collectDisarmResults(board, scaledChain) : [];
     const abilities = board ? resolveChainAbilities(scaledChain, board) : {
         effects: [],
@@ -584,7 +585,7 @@ export const buildAttackSequence = (
         hazardDamage,
         chainAbilityEffects: abilities.effects,
         abilityEnemyDamage: abilities.enemyDamage,
-        abilityPlayerDamage: abilities.playerDamage,
+        abilityPlayerDamage: abilities.playerDamage + curseDamage,
         abilityArmorGain: abilities.armorGain,
         abilityPoisonStacks: abilities.poisonStacks,
         disarmResults,
@@ -667,6 +668,38 @@ export const computeHazardDamage = (
     return damage;
 };
 
+/**
+ * Player curse cards (Burden) left on the board but not routed into the chain
+ * deal double their hand-end penalty when the attack resolves.
+ */
+export const computeUnchainedCurseDamage = (
+    board: BoardModel,
+    chain: readonly ActivationStep[],
+): number =>
+{
+    let damage = 0;
+
+    for (const slot of getUnchainedCurseSlots(board, chain))
+    {
+        const card = board.getCardAt(slot);
+
+        if (!card)
+        {
+            continue;
+        }
+
+        const definition = getCardDefinitionOrThrow(card.definitionId);
+        const penalty = getCardHandEndPenalty(definition);
+
+        if (penalty > 0)
+        {
+            damage += penalty * 2;
+        }
+    }
+
+    return damage;
+};
+
 export const getOffChainSlots = (
     board: BoardModel,
     chain: readonly ActivationStep[],
@@ -713,6 +746,40 @@ export const getUnchainedHazardSlots = (
         const definition = getCardDefinitionOrThrow(card.definitionId);
 
         if (isHazardDefinition(definition))
+        {
+            slots.push({ ...slot });
+        }
+    }
+
+    return slots;
+};
+
+/** Player-owned curse cards on the board that were not activated in the chain. */
+export const getUnchainedCurseSlots = (
+    board: BoardModel,
+    chain: readonly ActivationStep[],
+): SlotPosition[] =>
+{
+    const activated = new Set(chain.map((step) => slotKey(step.slot)));
+    const slots: SlotPosition[] = [];
+
+    for (const slot of board.slotsInOrder())
+    {
+        if (activated.has(slotKey(slot)))
+        {
+            continue;
+        }
+
+        const card = board.getCardAt(slot);
+
+        if (!card || !isPlayerOwnedCard(card))
+        {
+            continue;
+        }
+
+        const definition = getCardDefinitionOrThrow(card.definitionId);
+
+        if (definition.behaviorId === 'curse' && getCardHandEndPenalty(definition) > 0)
         {
             slots.push({ ...slot });
         }

@@ -1,5 +1,5 @@
 import type { CardInstance } from '../cardGame/domain/types';
-import { getCardDefinitionOrThrow, isCardUnplayable } from '../cardGame/config/cardRegistry';
+import { getCardDefinitionOrThrow, isCardNonRerollable, isCardUnplayable } from '../cardGame/config/cardRegistry';
 import { buildCardGraphic } from '../cards/CardRenderer';
 import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
 import { CYBER } from '../config/cyberpunkTheme';
@@ -138,13 +138,19 @@ export class CardHandView
                 },
             );
 
-            const unplayable = isCardUnplayable(getCardDefinitionOrThrow(card.definitionId));
+            const definition = getCardDefinitionOrThrow(card.definitionId);
+            const unplayable = isCardUnplayable(definition);
+            const nonRerollable = isCardNonRerollable(definition);
 
             hitArea.on('pointerdown', (pointer: Phaser.Input.Pointer) =>
             {
                 if (this.rerollMode)
                 {
-                    this.toggleRerollSelection(index);
+                    if (!nonRerollable)
+                    {
+                        this.toggleRerollSelection(index);
+                    }
+
                     return;
                 }
 
@@ -184,7 +190,7 @@ export class CardHandView
             this.slotContainers.push(slot);
             this.hoverOutlines.push(hoverOutline);
 
-            if (unplayable)
+            if (unplayable || (this.rerollMode && nonRerollable))
             {
                 slot.setAlpha(0.78);
             }

@@ -3,6 +3,7 @@ import {
     applyJokerChosenDirection,
     getNextChainSlotFromStep,
     getOffChainSlots,
+    getUnchainedCurseSlots,
     getUnchainedHazardSlots,
     getBoostMultiplierForStep,
     isBoostedChainStep,
@@ -105,10 +106,14 @@ export function runChainPlayback (
 
         const sequence = buildCurrentSequence();
         const offChainSlots = getOffChainSlots(board, chain);
-        const hazardSlots = getUnchainedHazardSlots(board, chain);
+        const hazardSlots = [
+            ...getUnchainedHazardSlots(board, chain),
+            ...getUnchainedCurseSlots(board, chain),
+        ];
         const hasEndEffects = sequence.chainAbilityEffects.length > 0
             || offChainSlots.length > 0
             || hazardSlots.length > 0
+            || sequence.abilityPlayerDamage > 0
             || sequence.disarmResults.length > 0;
 
         const finishSequence = (): void =>

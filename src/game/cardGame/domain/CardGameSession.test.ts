@@ -976,7 +976,7 @@ describe('CardGameSession enemy turn', () =>
         expect(scaled?.steps[0]).toEqual({ kind: 'attack', amount: 10 + perAttack });
     });
 
-    it('rejects unplayable curse cards from hand placement', () =>
+    it('lets burden be placed as an inert board clog and blocks rerolling it', () =>
     {
         const session = new CardGameSession();
 
@@ -985,7 +985,11 @@ describe('CardGameSession enemy turn', () =>
         const burdenIndex = session.getHand().findIndex((card) => card.definitionId === 'burden');
 
         expect(burdenIndex).toBeGreaterThanOrEqual(0);
-        expect(session.placeCardFromHand(burdenIndex, { row: 0, col: 1 })).toBe(false);
+        expect(session.rerollHandCards([ burdenIndex ])).toBe(false);
+        expect(session.getRerollsRemaining()).toBe(3);
+        expect(session.placeCardFromHand(burdenIndex, { row: 0, col: 1 })).toBe(true);
+        expect(session.board.getCardAt({ row: 0, col: 1 })?.definitionId).toBe('burden');
+        expect(session.getHand().some((card) => card.definitionId === 'burden')).toBe(false);
     });
 
     it('allows fuse to be placed but punishes leaving it in hand at turn end', () =>
@@ -1203,7 +1207,7 @@ describe('CardGameSession courier discard', () =>
         expect(session.getHand()).toHaveLength(0);
     });
 
-    it('discards unplayable curse cards from the left of hand', () =>
+    it('discards curse cards from the left of hand', () =>
     {
         const session = puzzleSession([
             { definitionId: 'courier', arrow: 'right' },

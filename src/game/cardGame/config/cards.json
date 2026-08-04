@@ -154,7 +154,7 @@
       "behaviorId": "curse",
       "visualId": "curse",
       "arrowPool": "orthogonal",
-      "unplayable": true,
+      "nonRerollable": true,
       "handEndPenalty": 5
     },
     {

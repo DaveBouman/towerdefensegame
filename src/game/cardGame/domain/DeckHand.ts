@@ -1,4 +1,4 @@
-import { GAME_RULES } from '../config/cardRegistry';
+import { GAME_RULES, getCardDefinitionOrThrow, isCardNonRerollable } from '../config/cardRegistry';
 import { buildDeckFromDefinitionIds, buildPlayerDeck, shuffleInPlace } from './buildPlayerDeck';
 import { createCardInstance } from './createCardInstance';
 import type { CardInstance } from './types';
@@ -156,6 +156,11 @@ export class DeckHand
         }
 
         const toDiscard = uniqueIndices.map((index) => this.hand[index]!);
+
+        if (toDiscard.some((card) => isCardNonRerollable(getCardDefinitionOrThrow(card.definitionId))))
+        {
+            return false;
+        }
 
         this.discard.push(...toDiscard);
 

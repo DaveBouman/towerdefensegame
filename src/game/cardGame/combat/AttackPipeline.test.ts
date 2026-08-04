@@ -479,6 +479,31 @@ describe('AttackPipeline', () =>
         expect(planAttack(board, { row: 0, col: 0 }).hazardDamage).toBe(4);
     });
 
+    it('punishes unchained burden with double hand-end penalty', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 1, col: 0 }, createCardInstance('burden', 'right'));
+
+        const sequence = planAttack(board, { row: 0, col: 0 });
+
+        expect(sequence.abilityPlayerDamage).toBe(10);
+    });
+
+    it('does not punish burden when it is routed into the chain', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('burden', 'right'));
+
+        const sequence = planAttack(board, { row: 0, col: 0 });
+
+        expect(sequence.chain.some((step) => step.definitionId === 'burden')).toBe(true);
+        expect(sequence.abilityPlayerDamage).toBe(0);
+    });
+
     it('disarms hazards that were included in the chain', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
