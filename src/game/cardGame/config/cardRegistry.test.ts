@@ -43,7 +43,7 @@ describe('cardRegistry', () =>
         expect(GAME_RULES.maxChainSteps).toBe(24);
         expect(GAME_RULES.defaultEnemyId).toBe('basic');
         expect(GAME_RULES.player.maxHealth).toBe(80);
-        expect(getDefaultCardGameEnemy().maxHealth).toBe(190);
+        expect(getDefaultCardGameEnemy().maxHealth).toBe(40);
         expect(getDefaultCardGameEnemy().attackDamage).toBe(13);
         expect(getDefaultCardGameEnemy().shieldGain).toBe(13);
     });

@@ -255,6 +255,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-08-04 | **Enemy HP retune.** Combat enemies sit around ~40 HP (`enemies.json`: Raider 40, Thornward 38, Saboteur 36, Smokebinder 42, Field Medic 34, Warden 48). Training Dummy unchanged. |
 | 2026-08-04 | **Loop Reset disabled.** Removed from starter deck (replaced with Poison), reward pool, and Combo Trial pool (`loop-lesson`). Combat/UI code remains dormant for a later fix. |
 | 2026-07-15 | **Phase 2 god-object split.** Extracted `CombatResolver` (attack/damage/shield/poison) and `EnemyPhaseController` (enemy turn queue and phase lifecycle) from `CardGameSession`. Chain walk playback moved to `presentation/playback/chainPlayback.ts`. Session and presenter remain thin facades; public API unchanged. |
 | 2026-07-15 | **Phase 1 god-object split.** Extracted `DeckHand` (deck/hand/discard/rerolls) and `FieldEffects` (dampen field, silenced/bomb-disabled slots, hazard/boost placement) from `CardGameSession`. Split `CardGamePresenter` playback into `presentation/playback/` (`combatHitVisuals`, `chainEndEffects`, `enemyTurnPlayback`). Session public API unchanged. |

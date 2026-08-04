@@ -12,7 +12,7 @@ describe('enemyCatalog', () =>
         expect(CARD_GAME_ENEMY_DEFINITIONS.length).toBeGreaterThanOrEqual(1);
         expect(getCardGameEnemyDefinition('basic')).toMatchObject({
             label: 'Raider',
-            maxHealth: 190,
+            maxHealth: 40,
             attackDamage: 13,
             shieldGain: 13,
             hazardsPerTurn: 1,
