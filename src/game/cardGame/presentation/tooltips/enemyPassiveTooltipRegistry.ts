@@ -17,7 +17,7 @@ export const resolveEnemyPassiveTooltip = (
             return {
                 title: 'Thorns',
                 lines: [
-                    `Reflects ${passive.reflectDamage} damage to you each time you deal attack damage.`,
+                    `Whenever you hit with an Attack card, take ${passive.reflectDamage} damage (blockable).`,
                 ],
             };
         case 'enrage':

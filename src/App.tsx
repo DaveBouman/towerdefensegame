@@ -143,6 +143,13 @@ function App()
     const [ pendingPuzzleReward, setPendingPuzzleReward ] = useState<PendingPuzzleReward | null>(null);
     const tutorial = useTutorial();
 
+    useEffect(() =>
+    {
+        EventBus.emit(GAME_EVENTS.UI_OVERLAY_ACTIVE, {
+            blockPileInspection: phase === 'battle' && tutorial.showBattleCoach,
+        });
+    }, [ phase, tutorial.showBattleCoach ]);
+
     const runMaxHealth = useMemo(() => getRunMaxHealth(bodyMods), [ bodyMods ]);
 
     const selectedNodeRef = useRef<RunMapNode | null>(null);

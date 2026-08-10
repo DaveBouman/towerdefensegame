@@ -22,7 +22,7 @@ import { playFloatingText, playHitFlash as playHitFlashTween } from '../cardGame
 import {
     COMBAT_TRAIT_ICON_GAP,
     COMBAT_TRAIT_ICON_SIZE,
-    COMBAT_TRAIT_ROW_BELOW_LABEL,
+    COMBAT_TRAIT_NAME_GAP,
     CombatTraitRowView,
 } from './CombatTraitRowView';
 import type { BoardLayout } from './boardLayout';
@@ -253,7 +253,7 @@ export class EnemyTargetView
             scene,
             container,
             enemySize,
-            this.labelY + COMBAT_TRAIT_ROW_BELOW_LABEL,
+            this.getTraitRowY(),
         );
 
         this.targetPromptBadge = scene.add.text(enemySize / 2, -10, 'LOCK TARGET', {
@@ -316,14 +316,14 @@ export class EnemyTargetView
     setEnemyLabel (label: string): void
     {
         this.enemyLabel.setText(label);
-        this.updateShieldBadgePosition();
+        this.syncStatusRowLayout();
     }
 
     setCombatTraits (traits: readonly CombatTraitConfig[]): void
     {
         this.combatTraitCount = traits.length;
         this.combatTraitRowView.setTraits(traits);
-        this.updateShieldBadgePosition();
+        this.syncStatusRowLayout();
     }
 
     setEnemyPassives (allPassives: readonly EnemyPassiveConfig[]): void
@@ -336,7 +336,7 @@ export class EnemyTargetView
 
         this.passives = [ ...passives ];
         this.passiveCount = passives.length;
-        this.updateShieldBadgePosition();
+        this.syncStatusRowLayout();
         this.updateThresholdTelegraph(this.lastEnemyState);
 
         if (passives.length === 0)
@@ -710,7 +710,7 @@ export class EnemyTargetView
         this.shieldBarBg.setVisible(shield > 0);
         this.shieldBarFill.setVisible(shield > 0);
         this.shieldBarFill.setScale(Math.min(1, shield / 10), 1);
-        this.updateShieldBadgePosition();
+        this.syncStatusRowLayout();
         this.applyShieldVisuals();
     }
 
@@ -779,7 +779,7 @@ export class EnemyTargetView
 
         if (lines.length === 0 || !this.container.active)
         {
-            this.updateShieldBadgePosition();
+            this.syncStatusRowLayout();
 
             return;
         }
@@ -802,7 +802,7 @@ export class EnemyTargetView
 
         this.container.add(this.thresholdText);
         this.thresholdLineCount = lines.length;
-        this.updateShieldBadgePosition();
+        this.syncStatusRowLayout();
     }
 
     setPoison (stacks: number): void
@@ -1048,6 +1048,12 @@ export class EnemyTargetView
         this.outline.removeAllListeners('pointerdown');
     }
 
+    /** Bottom of name / traits / passives / shield badge in world coordinates. */
+    getStatusChromeBottomWorldY (): number
+    {
+        return this.container.y + this.getStatusStackBottomY();
+    }
+
     destroy (): void
     {
         this.clearIntent();
@@ -1064,37 +1070,47 @@ export class EnemyTargetView
 
     private getTraitRowY (): number
     {
-        return this.labelY + COMBAT_TRAIT_ROW_BELOW_LABEL;
+        return this.labelY
+            + this.enemyLabel.height
+            + COMBAT_TRAIT_NAME_GAP
+            + COMBAT_TRAIT_ICON_SIZE / 2;
     }
 
     private getPassiveRowY (): number
     {
         if (this.combatTraitCount === 0)
         {
-            return this.getTraitRowY();
+            return this.labelY
+                + this.enemyLabel.height
+                + COMBAT_TRAIT_NAME_GAP
+                + PASSIVE_ICON_SIZE / 2;
         }
 
-        return this.getTraitRowY() + COMBAT_TRAIT_ICON_SIZE + COMBAT_TRAIT_ICON_GAP + 4;
+        return this.getTraitRowY()
+            + COMBAT_TRAIT_ICON_SIZE / 2
+            + COMBAT_TRAIT_ICON_GAP
+            + PASSIVE_ICON_SIZE / 2;
     }
 
-    private getStatusStackBottomY (): number
+    private getContentStackBottomY (): number
     {
         let bottom = this.labelY + this.enemyLabel.height;
 
         if (this.combatTraitCount > 0)
         {
-            bottom = this.getTraitRowY() + COMBAT_TRAIT_ICON_SIZE;
+            bottom = this.getTraitRowY() + COMBAT_TRAIT_ICON_SIZE / 2;
         }
 
         if (this.passiveCount > 0)
         {
-            bottom = this.getPassiveRowY() + PASSIVE_ICON_SIZE;
+            bottom = this.getPassiveRowY() + PASSIVE_ICON_SIZE / 2;
         }
 
         if (this.thresholdLineCount > 0)
         {
             const thresholdTop = this.getPassiveRowY()
-                + (this.passiveCount > 0 ? PASSIVE_ICON_SIZE / 2 + 12 : 4);
+                + PASSIVE_ICON_SIZE / 2
+                + (this.passiveCount > 0 ? 12 : COMBAT_TRAIT_NAME_GAP);
 
             bottom = thresholdTop + this.thresholdLineCount * 14 + 8;
         }
@@ -1102,10 +1118,28 @@ export class EnemyTargetView
         return bottom;
     }
 
+    private getStatusStackBottomY (): number
+    {
+        let bottom = this.getContentStackBottomY();
+
+        if (this.displayedShield > 0)
+        {
+            bottom += SHIELD_BADGE_GAP + SHIELD_BADGE_HEIGHT;
+        }
+
+        return bottom;
+    }
+
+    private syncStatusRowLayout (): void
+    {
+        this.combatTraitRowView.setRowY(this.getTraitRowY());
+        this.updateShieldBadgePosition();
+    }
+
     private updateShieldBadgePosition (): void
     {
         this.shieldBadge.setY(
-            this.getStatusStackBottomY() + SHIELD_BADGE_GAP + SHIELD_BADGE_HEIGHT / 2,
+            this.getContentStackBottomY() + SHIELD_BADGE_GAP + SHIELD_BADGE_HEIGHT / 2,
         );
     }
 

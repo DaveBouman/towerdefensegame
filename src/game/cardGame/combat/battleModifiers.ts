@@ -153,10 +153,5 @@ export const describeBattleModifier = (
     return `${label} ${percent}`;
 };
 
-/** Preset enemy intent modifiers (±10% step). */
-export const ENEMY_BATTLE_MODIFIER_PRESETS: readonly Pick<BattleModifier, 'stat' | 'delta'>[] = [
-    { stat: 'enemy-attack', delta: BATTLE_MODIFIER_STEP },
-    { stat: 'player-damage-taken', delta: BATTLE_MODIFIER_STEP },
-    { stat: 'player-armor', delta: -BATTLE_MODIFIER_STEP },
-    { stat: 'player-damage-dealt', delta: -BATTLE_MODIFIER_STEP },
-];
+/** @deprecated Import `BATTLE_MODIFIER_PRESETS` from `battleModifierPresets.ts`. */
+export { BATTLE_MODIFIER_PRESETS as ENEMY_BATTLE_MODIFIER_PRESETS } from './battleModifierPresets';

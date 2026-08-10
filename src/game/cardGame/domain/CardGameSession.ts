@@ -1,4 +1,5 @@
 import { getBattleEnergyBonus, getRunMaxHealth } from '../../run/runResources';
+import { collectRunModifierBattleModifiers } from '../../run/runModifiers';
 import { GRID_CONFIG } from '../../config/gridConfig';
 import {
     GAME_RULES,
@@ -17,6 +18,7 @@ import {
     type BattleModifierStat,
 } from '../combat/battleModifiers';
 import { collectBattleModifierApplications } from '../combat/chainBattleModifiers';
+import { getBattleModifierAnchor } from '../combat/battleModifierDisplay';
 import {
     applyEnemyPassivesToSequence,
     type DampenField,
@@ -93,6 +95,7 @@ export class CardGameSession
         puzzleMode: PuzzleModeConfig | null = null,
         runAttackCount = 0,
         rerollsRemaining?: number,
+        runModifiers: readonly string[] = [],
     )
     {
         this.puzzleMode = puzzleMode;
@@ -174,6 +177,7 @@ export class CardGameSession
             ? 1
             : Math.max(1, Math.round(GAME_RULES.energyPerTurn) + bonusEnergy);
         this.energy = this.maxEnergy;
+        this.applyRunModifierBattleModifiers(runModifiers);
 
         if (puzzleMode)
         {
@@ -333,6 +337,20 @@ export class CardGameSession
         }
 
         this.battleModifiers.push({ stat, delta, source, duration });
+    }
+
+    private applyRunModifierBattleModifiers (runModifierIds: readonly string[]): void
+    {
+        for (const preset of collectRunModifierBattleModifiers(runModifierIds))
+        {
+            const anchor = getBattleModifierAnchor(preset.stat);
+
+            this.addBattleModifier(
+                preset.stat,
+                preset.delta,
+                anchor === 'player' ? 'player' : 'enemy',
+            );
+        }
     }
 
     addBattleModifierFromCard (definitionId: string): void
@@ -968,9 +986,15 @@ export class CardGameSession
         damage: number,
         targetInstanceId?: string,
         sourceDefinitionId?: string,
+        sourceBehaviorId?: string,
     ): DamageResult
     {
-        return this.combat.dealAttackDamage(damage, targetInstanceId, sourceDefinitionId);
+        return this.combat.dealAttackDamage(
+            damage,
+            targetInstanceId,
+            sourceDefinitionId,
+            sourceBehaviorId,
+        );
     }
 
     completeAttack (sequence: AttackSequence): void

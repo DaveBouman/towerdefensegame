@@ -15,9 +15,7 @@ import type { LoadedCardGameEnemyDefinition } from '../config/enemyCatalog';
 import { getEnemyPassive } from './defaults';
 import type { EnemyPassiveConfig } from './types';
 import { GAME_RULES } from '../config/cardRegistry';
-import {
-    ENEMY_BATTLE_MODIFIER_PRESETS,
-} from '../combat/battleModifiers';
+import { BATTLE_MODIFIER_PRESETS } from '../combat/battleModifierPresets';
 import { random, randomInt } from '../../random/rng';
 
 export interface EnemyTurnPlanningContext {
@@ -103,7 +101,7 @@ export const planEnemyTurnWithPassives = ({
 
     if (modifierChance > 0 && random() < modifierChance)
     {
-        const preset = ENEMY_BATTLE_MODIFIER_PRESETS[randomInt(ENEMY_BATTLE_MODIFIER_PRESETS.length)]!;
+        const preset = BATTLE_MODIFIER_PRESETS[randomInt(BATTLE_MODIFIER_PRESETS.length)]!;
 
         steps.push({
             kind: 'battle-mod',
@@ -252,11 +250,12 @@ export const applyEnemyPassivesToSequence = (
 export const computeThornsReflectDamage = (
     passives: readonly EnemyPassiveConfig[],
     damage: number,
+    behaviorId?: string,
 ): number =>
 {
     const thorns = getEnemyPassive(passives, 'thorns');
 
-    if (!thorns || damage <= 0)
+    if (!thorns || damage <= 0 || behaviorId !== 'attack')
     {
         return 0;
     }

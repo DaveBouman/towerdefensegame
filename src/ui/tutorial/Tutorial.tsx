@@ -58,7 +58,15 @@ export const TutorialCoachStrip = ({ onDismiss }: { onDismiss: () => void }) => 
             <li>Aim arrows so they chain; start from column 0.</li>
             <li>Click Attack — the enemy responds after each strike.</li>
         </ol>
-        <button type="button" className="tutorial-coach__dismiss" onClick={onDismiss}>
+        <button
+            type="button"
+            className="tutorial-coach__dismiss"
+            onClick={(event) =>
+            {
+                event.stopPropagation();
+                onDismiss();
+            }}
+        >
             Dismiss
         </button>
     </aside>

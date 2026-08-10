@@ -251,7 +251,12 @@ export function runChainPlayback (
                 return;
             }
 
-            const result = deps.session.dealAttackDamage(damage, targetId, sourceDefinitionId);
+            const result = deps.session.dealAttackDamage(
+                damage,
+                targetId,
+                sourceDefinitionId,
+                resolvedStep.behaviorId,
+            );
 
             applyEnemyHitResult(deps, result, {
                 visualId: resolvedStep.visualId,
@@ -360,6 +365,7 @@ export function runChainPlayback (
                 prevResolved.damage,
                 targetId,
                 prevResolved.definitionId,
+                prevResolved.behaviorId,
             );
             applyEnemyHitResult(deps, result, {
                 visualId: prevResolved.visualId,

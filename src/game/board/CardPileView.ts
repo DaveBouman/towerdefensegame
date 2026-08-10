@@ -129,10 +129,19 @@ export class CardPileView
         this.container.add(hitArea);
     }
 
-    /** Makes the pile clickable to inspect its contents. */
-    setClickHandler (handler: () => void): void
+    /** Makes the pile clickable to inspect its contents. Pass `null` to disable. */
+    setClickHandler (handler: (() => void) | null): void
     {
         this.frameHitArea.removeAllListeners();
+
+        if (!handler)
+        {
+            this.frameHitArea.disableInteractive();
+
+            return;
+        }
+
+        this.frameHitArea.setInteractive({ useHandCursor: true });
         this.frameHitArea.on('pointerover', () =>
         {
             this.scene.tweens.add({

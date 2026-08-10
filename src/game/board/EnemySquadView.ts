@@ -63,6 +63,16 @@ export class EnemySquadView
         return this.entries[0]?.view;
     }
 
+    getMaxStatusChromeBottomWorldY (): number
+    {
+        if (this.entries.length === 0)
+        {
+            return 0;
+        }
+
+        return Math.max(...this.entries.map((entry) => entry.view.getStatusChromeBottomWorldY()));
+    }
+
     forEachView (callback: (view: EnemyTargetView, instanceId: string) => void): void
     {
         for (const entry of this.entries)

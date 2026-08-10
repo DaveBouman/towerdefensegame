@@ -11,14 +11,20 @@ import {
     getGameTooltipController,
 } from '../cardGame/presentation/tooltips/GameTooltipController';
 import type { BoardLayout } from './boardLayout';
-import { COMBAT_TRAIT_ICON_SIZE, COMBAT_TRAIT_ROW_BELOW_LABEL } from './CombatTraitRowView';
 import { computeEnemySlots } from './enemySquadLayout';
 
 const ICON_SIZE = 22;
 const ICON_GAP = 6;
 const BADGE_FONT_SIZE = 11;
-/** Clears name label + trait row so chips sit under the combatant panel. */
-const BELOW_PANEL_OFFSET = 16 + COMBAT_TRAIT_ROW_BELOW_LABEL + COMBAT_TRAIT_ICON_SIZE + 10;
+const MODIFIER_ROW_GAP = 10;
+
+/** Icon center sits this far below the combatant status stack. */
+const modifierRowCenterOffset = (): number => MODIFIER_ROW_GAP + ICON_SIZE / 2;
+
+export interface BattleModifierLayoutAnchors {
+    getPlayerBottomY: () => number;
+    getEnemyBottomY: () => number;
+}
 
 export class BattleModifierStatusView
 {
@@ -27,13 +33,17 @@ export class BattleModifierStatusView
     private playerIcons?: Phaser.GameObjects.Container;
     private enemyIcons?: Phaser.GameObjects.Container;
     private enemyCount = 1;
+    private layout?: BoardLayout;
+    private anchors?: BattleModifierLayoutAnchors;
 
     constructor (
         private readonly scene: Phaser.Scene,
         layout: BoardLayout,
         enemyCount = 1,
+        anchors?: BattleModifierLayoutAnchors,
     )
     {
+        this.anchors = anchors;
         this.enemyCount = Math.max(1, enemyCount);
         this.playerContainer = scene.add.container(0, 0);
         this.enemyContainer = scene.add.container(0, 0);
@@ -42,23 +52,38 @@ export class BattleModifierStatusView
         this.reposition(layout, this.enemyCount);
     }
 
+    setAnchors (anchors: BattleModifierLayoutAnchors): void
+    {
+        this.anchors = anchors;
+
+        if (this.layout)
+        {
+            this.reposition(this.layout, this.enemyCount);
+        }
+    }
+
     reposition (layout: BoardLayout, enemyCount = this.enemyCount): void
     {
+        this.layout = layout;
         this.enemyCount = Math.max(1, enemyCount);
 
-        this.playerContainer.setPosition(
-            layout.playerX + layout.playerSize / 2,
-            layout.playerY + layout.playerSize + BELOW_PANEL_OFFSET,
-        );
-
+        const playerBottomY = this.anchors?.getPlayerBottomY()
+            ?? layout.playerY + layout.playerSize + MODIFIER_ROW_GAP;
         const slots = computeEnemySlots(layout, this.enemyCount);
         const first = slots[0]!;
         const last = slots[slots.length - 1]!;
         const centerX = (first.x + last.x + last.size) / 2;
+        const enemyBottomY = this.anchors?.getEnemyBottomY()
+            ?? first.y + first.size + MODIFIER_ROW_GAP;
+
+        this.playerContainer.setPosition(
+            layout.playerX + layout.playerSize / 2,
+            playerBottomY + modifierRowCenterOffset(),
+        );
 
         this.enemyContainer.setPosition(
             centerX,
-            first.y + first.size + BELOW_PANEL_OFFSET,
+            enemyBottomY + modifierRowCenterOffset(),
         );
     }
 
@@ -69,6 +94,11 @@ export class BattleModifierStatusView
         this.enemyIcons?.destroy();
         this.playerIcons = undefined;
         this.enemyIcons = undefined;
+
+        if (this.layout)
+        {
+            this.reposition(this.layout, this.enemyCount);
+        }
 
         const entries = summarizeBattleModifiers(modifiers);
         const playerEntries = entries.filter((entry) => entry.anchor === 'player');

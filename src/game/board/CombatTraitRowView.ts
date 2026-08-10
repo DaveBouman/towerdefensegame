@@ -7,21 +7,35 @@ import { attachCombatTraitTooltip } from '../cardGame/presentation/tooltips/Comb
 
 export const COMBAT_TRAIT_ICON_SIZE = 26;
 export const COMBAT_TRAIT_ICON_GAP = 4;
+/** @deprecated Prefer name-bottom gap via `setRowY` on each panel. */
 export const COMBAT_TRAIT_ROW_BELOW_LABEL = 18;
+export const COMBAT_TRAIT_NAME_GAP = 6;
 
 export class CombatTraitRowView
 {
     private iconsContainer?: Phaser.GameObjects.Container;
+    private traits: readonly CombatTraitConfig[] = [];
 
     constructor (
         private readonly scene: Phaser.Scene,
         private readonly parent: Phaser.GameObjects.Container,
         private readonly panelWidth: number,
-        private readonly rowY: number,
+        private rowY: number,
     ) {}
+
+    setRowY (rowY: number): void
+    {
+        this.rowY = rowY;
+
+        if (this.traits.length > 0)
+        {
+            this.setTraits(this.traits);
+        }
+    }
 
     setTraits (traits: readonly CombatTraitConfig[]): void
     {
+        this.traits = traits;
         this.iconsContainer?.destroy();
         this.iconsContainer = undefined;
 

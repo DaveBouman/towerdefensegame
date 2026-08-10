@@ -214,7 +214,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | ID | Counter-play |
 |----|--------------|
 | `basic` | Raider — baseline (HP ~40, atk 13, 65% attack), no passives |
-| `thornward` | Thorns — reflects 4 damage on attack; **Damage Cap** trait — each card hit deals at most 5 damage |
+| `thornward` | **Thorns** — take 4 damage per Attack hit (blockable, like Slay the Spire); **Damage Cap** trait — each card hit deals at most 5 damage |
 | `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile, **Curse Hand** (adds Burden to hand each turn) — trap pressure snowballs. On the run map, saboteur nodes always connect to an adjacent route up or down on the next column. |
 | `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps); **Hit Ward** trait — first 3 card hits deal no damage |
 | `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (dormant while loop-reset is out of content), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
@@ -325,6 +325,8 @@ remain as a fallback if a portrait fails to load.
 | 2026-08-04 | **Burden off-chain tax.** Placed Burdens not included in the attack chain deal double hand-end penalty (10) to the player when the attack resolves. Chaining through Burden dumps it safely. |
 | 2026-08-04 | **Burden rework.** Burden is no longer unplayable/reroll-dumpable. Place it as an inert board clog (clears it from hand, wastes a tile), or take the hand-end penalty. New `nonRerollable` card flag blocks hand reroll selection. |
 | 2026-08-04 | **Boost stacking.** Consecutive field boosts multiply on the next consuming card (Boost→Boost→Attack = ×4). Jokers still pass the stack through. Ability payoffs (fire/poison/etc.) use the same stacked multiplier. |
+| 2026-08-10 | **Player status layout.** Active battle-modifier chips anchor below the full RUNNER / body-mod trait stack (icon centers no longer overlap the name or trait row). |
+| 2026-08-10 | **Combat UI fixes + run modifiers.** Tutorial coach dismiss no longer click-throughs to the deck (`UI_OVERLAY_ACTIVE` blocks pile clicks; coach raised above canvas). Enemy trait/passive/shield rows stack below the name; active battle-modifier chips anchor to the bottom of each panel (`BattleModifierStatusView` layout anchors). Shared `BATTLE_MODIFIER_PRESETS` + `runModifiers.ts` registry for future ascension tiers. |
 | 2026-08-04 | **Mid-chain retarget prompts.** When the locked target dies and other enemies remain, the chain pauses and living hosts show **LOCK TARGET** until you click one (auto-continues if only one is left; leftover chain damage is skipped if none remain). |
 | 2026-08-04 | **Attack lock / second-attack fix.** Killing the last enemy mid-chain no longer stalls waiting for a target (held the attack lock forever). Removed duplicate `turnResolving` scene flag — session `isBusy()` / attack lock is the single gate. HUD readiness updates as soon as an attack starts. |
 | 2026-08-04 | **Enemy HP retune.** Combat enemies sit around ~40 HP (`enemies.json`: Raider 40, Thornward 38, Saboteur 36, Smokebinder 42, Field Medic 34, Warden 48). Training Dummy unchanged. |

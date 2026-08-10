@@ -5,7 +5,8 @@ import { CYBER } from '../config/cyberpunkTheme';
 import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
 import { playFloatingText, playHitFlash as playHitFlashTween } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import {
-    COMBAT_TRAIT_ROW_BELOW_LABEL,
+    COMBAT_TRAIT_ICON_SIZE,
+    COMBAT_TRAIT_NAME_GAP,
     CombatTraitRowView,
 } from './CombatTraitRowView';
 import type { BoardLayout } from './boardLayout';
@@ -20,6 +21,8 @@ export class PlayerHealthView
     private readonly healthBarHeight: number;
     private readonly glowRing: Phaser.GameObjects.Rectangle;
     private readonly combatTraitRowView: CombatTraitRowView;
+    private readonly playerLabel: Phaser.GameObjects.Text;
+    private combatTraitCount = 0;
     private readonly playerSize: number;
     private idleTween?: Phaser.Tweens.Tween;
 
@@ -95,11 +98,13 @@ export class PlayerHealthView
             ...uiDisplayTextStyle(14, '#7af0ff', { bold: true }),
         }).setOrigin(0.5, 0);
 
+        this.playerLabel = label;
+
         this.combatTraitRowView = new CombatTraitRowView(
             scene,
             container,
             playerSize,
-            playerSize + 16 + COMBAT_TRAIT_ROW_BELOW_LABEL,
+            this.getTraitRowY(),
         );
 
         container.add([
@@ -116,6 +121,7 @@ export class PlayerHealthView
         this.container = container;
         this.body = body;
         this.setHealth(player);
+        this.syncStatusRowLayout();
         this.startIdlePulse();
     }
 
@@ -169,7 +175,40 @@ export class PlayerHealthView
 
     setCombatTraits (traits: readonly CombatTraitConfig[]): void
     {
+        this.combatTraitCount = traits.length;
         this.combatTraitRowView.setTraits(traits);
+        this.syncStatusRowLayout();
+    }
+
+    getStatusChromeBottomWorldY (): number
+    {
+        return this.container.y + this.getContentStackBottomY();
+    }
+
+    private getContentStackBottomY (): number
+    {
+        let bottom = this.playerSize + 16 + this.playerLabel.height;
+
+        if (this.combatTraitCount > 0)
+        {
+            bottom = this.getTraitRowY() + COMBAT_TRAIT_ICON_SIZE / 2;
+        }
+
+        return bottom;
+    }
+
+    private syncStatusRowLayout (): void
+    {
+        this.combatTraitRowView.setRowY(this.getTraitRowY());
+    }
+
+    private getTraitRowY (): number
+    {
+        return this.playerSize
+            + 16
+            + this.playerLabel.height
+            + COMBAT_TRAIT_NAME_GAP
+            + COMBAT_TRAIT_ICON_SIZE / 2;
     }
 
     destroy (): void

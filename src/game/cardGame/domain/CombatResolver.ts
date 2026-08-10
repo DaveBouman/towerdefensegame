@@ -167,6 +167,7 @@ export class CombatResolver
         damage: number,
         targetInstanceId?: string,
         sourceDefinitionId?: string,
+        sourceBehaviorId?: string,
     ): DamageResult
     {
         if (this.ctx.getLivingCombatants().length === 0)
@@ -255,6 +256,7 @@ export class CombatResolver
         const thornsDamage = computeThornsReflectDamage(
             combatant.definition.passives,
             effectiveDamage,
+            sourceBehaviorId,
         );
 
         if (thornsDamage > 0)

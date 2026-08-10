@@ -65,6 +65,7 @@ export class Game extends Scene
     private battlefieldBackground?: BattlefieldBackgroundView;
     private unbindAudio?: () => void;
     private unbindBgm?: () => void;
+    private pileInspectionBlocked = false;
 
     constructor ()
     {
@@ -105,13 +106,49 @@ export class Game extends Scene
         EventBus.on(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
         EventBus.on(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
         EventBus.on(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
+        EventBus.on(GAME_EVENTS.UI_OVERLAY_ACTIVE, this.onUiOverlayActive, this);
         CardGameEventBus.on(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
         CardGameEventBus.on(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
         this.scale.on('resize', this.onResize, this);
     }
 
+    private onUiOverlayActive = (
+        { blockPileInspection }: { blockPileInspection?: boolean },
+    ): void =>
+    {
+        this.pileInspectionBlocked = blockPileInspection ?? false;
+        this.syncPileClickHandlers();
+    };
+
+    private syncPileClickHandlers (): void
+    {
+        if (this.pileInspectionBlocked)
+        {
+            this.deckView?.setClickHandler(null);
+            this.graveyardView?.setClickHandler(null);
+
+            return;
+        }
+
+        this.deckView?.setClickHandler(() => this.openPileView('deck'));
+        this.graveyardView?.setClickHandler(() => this.openPileView('graveyard'));
+    };
+
+    private syncBattleModifierLayout (): void
+    {
+        if (!this.battleModifierView || !this.layout || !this.playerView || !this.enemySquad)
+        {
+            return;
+        }
+
+        this.battleModifierView.setAnchors({
+            getPlayerBottomY: () => this.playerView!.getStatusChromeBottomWorldY(),
+            getEnemyBottomY: () => this.enemySquad!.getMaxStatusChromeBottomWorldY(),
+        });
+    };
+
     private onStartBattle = (
-        { enemyId, enemyIds, startHealth, deck, seed, bodyMods, runAttackCount, rerollsRemaining }:
+        { enemyId, enemyIds, startHealth, deck, seed, bodyMods, runAttackCount, rerollsRemaining, runModifiers }:
         {
             enemyId?: string;
             enemyIds?: readonly string[];
@@ -121,6 +158,7 @@ export class Game extends Scene
             bodyMods: string[];
             runAttackCount: number;
             rerollsRemaining: number;
+            runModifiers?: readonly string[];
         },
     ): void =>
     {
@@ -144,6 +182,7 @@ export class Game extends Scene
             null,
             runAttackCount,
             rerollsRemaining,
+            runModifiers ?? [],
         );
     };
 
@@ -196,6 +235,7 @@ export class Game extends Scene
         puzzleMode: PuzzleModeConfig | null = null,
         runAttackCount = 0,
         rerollsRemaining = GAME_RULES.rerollsPerFloor,
+        runModifiers: readonly string[] = [],
     ): void
     {
         resetBattleAudioState();
@@ -226,6 +266,7 @@ export class Game extends Scene
             puzzleMode,
             runAttackCount,
             puzzleMode ? 0 : rerollsRemaining,
+            runModifiers,
         );
 
         this.handView = new CardHandView(this, layout, [ ...this.session.getHand() ], {
@@ -272,12 +313,6 @@ export class Game extends Scene
 
         this.playerView = new PlayerHealthView(this, layout, this.session.getPlayer());
         this.playerView.setCombatTraits(this.session.getPlayerCombatTraits());
-        this.battleModifierView = new BattleModifierStatusView(
-            this,
-            layout,
-            this.session.getCombatants().length,
-        );
-        this.battleModifierView.setModifiers(this.session.getBattleModifiers());
         this.enemySquad = new EnemySquadView(
             this,
             layout,
@@ -293,11 +328,17 @@ export class Game extends Scene
                 this.emitAttackReadiness();
             },
         );
+        this.battleModifierView = new BattleModifierStatusView(
+            this,
+            layout,
+            this.session.getCombatants().length,
+        );
+        this.syncBattleModifierLayout();
+        this.battleModifierView.setModifiers(this.session.getBattleModifiers());
         this.armorView = new ArmorView(this, layout, 0);
         this.deckView = new CardPileView(this, layout, layout.deckX, layout.deckY, 'Deck', 'deck');
         this.graveyardView = new CardPileView(this, layout, layout.graveyardX, layout.graveyardY, 'Graveyard', 'graveyard');
-        this.deckView.setClickHandler(() => this.openPileView('deck'));
-        this.graveyardView.setClickHandler(() => this.openPileView('graveyard'));
+        this.syncPileClickHandlers();
         this.syncPileViews();
 
         if (!this.session.isPuzzleMode())
@@ -395,6 +436,7 @@ export class Game extends Scene
             graveyard: this.graveyardView.container,
         });
         this.enemySquad.applyLayout(this.layout);
+        this.syncBattleModifierLayout();
         this.battleModifierView?.reposition(this.layout, this.session?.getCombatants().length ?? 1);
     };
 
@@ -483,6 +525,7 @@ export class Game extends Scene
         EventBus.off(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
         EventBus.off(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
         EventBus.off(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
+        EventBus.off(GAME_EVENTS.UI_OVERLAY_ACTIVE, this.onUiOverlayActive, this);
         CardGameEventBus.off(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
         CardGameEventBus.off(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
         this.endBattle();
@@ -881,6 +924,7 @@ export class Game extends Scene
 
         this.enemySquad?.syncFromSession(this.session);
         this.enemySquad?.syncTargetPrompt(this.session);
+        this.syncBattleModifierLayout();
         this.battleModifierView?.setModifiers(this.session.getBattleModifiers());
 
         if (!this.session.isBusy()

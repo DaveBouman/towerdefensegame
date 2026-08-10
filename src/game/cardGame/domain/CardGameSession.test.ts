@@ -169,11 +169,23 @@ describe('CardGameSession enemy turn', () =>
 
         session.beginAttack();
         session.grantPlayerShield(5);
-        const result = session.dealAttackDamage(10);
+        const result = session.dealAttackDamage(10, undefined, undefined, 'attack');
 
         expect(result.healthDamage + result.shieldAbsorbed).toBe(5);
         expect(result.thornsDamage).toBe(4);
         expect(session.getPlayer().shield).toBe(1);
+        expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth);
+    });
+
+    it('does not reflect thorns from non-attack card damage', () =>
+    {
+        const session = new CardGameSession('thornward');
+
+        session.beginAttack();
+        const result = session.dealAttackDamage(5, undefined, undefined, 'fire');
+
+        expect(result.healthDamage + result.shieldAbsorbed).toBe(5);
+        expect(result.thornsDamage).toBeUndefined();
         expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth);
     });
 
@@ -182,7 +194,7 @@ describe('CardGameSession enemy turn', () =>
         const session = new CardGameSession('thornward');
 
         session.beginAttack();
-        const result = session.dealAttackDamage(20);
+        const result = session.dealAttackDamage(20, undefined, undefined, 'attack');
 
         expect(result.healthDamage + result.shieldAbsorbed).toBe(5);
         expect(session.getEnemy().health).toBe(38 - 5);
@@ -196,7 +208,7 @@ describe('CardGameSession enemy turn', () =>
 
         for (let hit = 0; hit < 3; hit++)
         {
-            const result = session.dealAttackDamage(10);
+            const result = session.dealAttackDamage(10, undefined, undefined, 'attack');
 
             expect(result.damageBlocked).toBe(true);
             expect(result.healthDamage).toBe(0);
@@ -204,7 +216,7 @@ describe('CardGameSession enemy turn', () =>
             expect(session.getEnemy().health).toBe(48);
         }
 
-        const fourth = session.dealAttackDamage(10);
+        const fourth = session.dealAttackDamage(10, undefined, undefined, 'attack');
 
         expect(fourth.damageBlocked).toBeUndefined();
         expect(fourth.healthDamage).toBe(10);
@@ -424,7 +436,7 @@ describe('CardGameSession enemy turn', () =>
         expect(session.isDoubleDamageThisAttack()).toBe(true);
         expect(session.getRunAttackCount()).toBe(7);
 
-        const result = session.dealAttackDamage(10);
+        const result = session.dealAttackDamage(10, undefined, undefined, 'attack');
 
         expect(result.shieldAbsorbed + result.healthDamage).toBe(20);
     });
@@ -446,7 +458,7 @@ describe('CardGameSession enemy turn', () =>
         expect(session.isDoubleDamageThisAttack()).toBe(false);
         expect(session.getRunAttackCount()).toBe(5);
 
-        const result = session.dealAttackDamage(10);
+        const result = session.dealAttackDamage(10, undefined, undefined, 'attack');
 
         expect(result.shieldAbsorbed + result.healthDamage).toBe(10);
     });
