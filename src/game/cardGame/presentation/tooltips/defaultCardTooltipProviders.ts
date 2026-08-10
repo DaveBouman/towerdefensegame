@@ -320,6 +320,15 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: battleModTooltipLines(ctx),
     })),
+    provider('switchback', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Deals ${ctx.definition.power} damage when activated in the chain.`,
+            `This card's damage is doubled (2×) after streaks and boosts.`,
+            'After it hits, your lock target jumps to the next living enemy.',
+            'No effect on target selection when only one enemy remains.',
+        ],
+    })),
     provider('default', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: [ 'Follow the arrow to continue the chain.' ],

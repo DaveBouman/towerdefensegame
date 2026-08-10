@@ -299,6 +299,18 @@ describe('CardGameSession enemy turn', () =>
         expect(session.isEnemyDefeated()).toBe(false);
     });
 
+    it('cycles attack target to the next living enemy', () =>
+    {
+        const session = new CardGameSession([ 'basic', 'basic', 'basic' ]);
+
+        session.setAttackTarget('enemy-0');
+        expect(session.cycleAttackTarget()).toBe('enemy-1');
+        expect(session.getAttackTargetId()).toBe('enemy-1');
+
+        expect(session.cycleAttackTarget()).toBe('enemy-2');
+        expect(session.cycleAttackTarget()).toBe('enemy-0');
+    });
+
     it('completes attack when the target dies during the chain', () =>
     {
         const session = new CardGameSession('basic');

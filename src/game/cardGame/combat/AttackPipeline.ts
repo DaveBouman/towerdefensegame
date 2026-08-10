@@ -530,9 +530,27 @@ export const collectDisarmResults = (
     return results;
 };
 
-/** Applies bomb conversion, streak stacking, boost bonuses, and poison armor replacement. */
+const applyStepDamageMultipliers = (chain: ActivationStep[]): ActivationStep[] =>
+    chain.map((step) =>
+    {
+        const multiplier = getCardDefinitionOrThrow(step.definitionId).stepDamageMultiplier ?? 1;
+
+        if (multiplier <= 1 || step.damage <= 0)
+        {
+            return step;
+        }
+
+        return {
+            ...step,
+            damage: scaleBoostedValue(step.damage, multiplier),
+        };
+    });
+
+/** Applies bomb conversion, streak stacking, boost bonuses, step multipliers, and poison armor replacement. */
 export const resolveChainSteps = (chain: ActivationStep[]): ActivationStep[] =>
-    applyPoisonArmorReplacement(applyBoostBonuses(applyChainStacking(applyBombConversion(chain))));
+    applyStepDamageMultipliers(
+        applyPoisonArmorReplacement(applyBoostBonuses(applyChainStacking(applyBombConversion(chain)))),
+    );
 
 export const resolveChainStep = (chain: ActivationStep[], index: number): ActivationStep =>
     resolveChainSteps(chain)[index]!;

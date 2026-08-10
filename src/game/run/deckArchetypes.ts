@@ -15,6 +15,7 @@ const CARD_ARCHETYPE_WEIGHTS: Record<string, Partial<Record<DeckArchetypeId, num
     serration: { blade: 1 },
     exsanguinate: { blade: 1 },
     execution: { blade: 0.9 },
+    switchback: { blade: 0.85 },
     salvage: { blade: 0.5 },
     poison: { toxin: 1 },
     miasma: { toxin: 1 },

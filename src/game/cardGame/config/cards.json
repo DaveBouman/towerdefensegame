@@ -454,6 +454,21 @@
       }
     },
     {
+      "id": "switchback",
+      "label": "Switchback",
+      "power": 5,
+      "behaviorId": "attack",
+      "visualId": "switchback",
+      "arrowPool": "orthogonal",
+      "stepDamageMultiplier": 2,
+      "switchTargetAfterHit": true,
+      "tier": 2,
+      "tooltipProviderId": "switchback",
+      "upgrade": {
+        "power": 7
+      }
+    },
+    {
       "id": "neurotoxin",
       "label": "Neurotoxin",
       "power": 3,

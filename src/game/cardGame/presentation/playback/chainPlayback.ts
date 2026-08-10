@@ -226,6 +226,23 @@ export function runChainPlayback (
         onStepComplete: () => void,
     ): void =>
     {
+        const maybeSwitchTargetAfterHit = (definitionId: string): void =>
+        {
+            const cardDefinition = getCardDefinitionOrThrow(definitionId);
+
+            if (!cardDefinition.switchTargetAfterHit)
+            {
+                return;
+            }
+
+            const nextId = deps.session.cycleAttackTarget();
+
+            if (nextId)
+            {
+                deps.enemySquad.setSelected(nextId);
+            }
+        };
+
         const deal = (): void =>
         {
             const livingIds = deps.session.getLivingCombatants().map((combatant) => combatant.instanceId);
@@ -262,6 +279,8 @@ export function runChainPlayback (
                 visualId: resolvedStep.visualId,
                 behaviorId: resolvedStep.behaviorId,
             });
+
+            maybeSwitchTargetAfterHit(sourceDefinitionId);
 
             attackSteps.push({
                 slot: resolvedStep.slot,
@@ -371,6 +390,16 @@ export function runChainPlayback (
                 visualId: prevResolved.visualId,
                 behaviorId: prevResolved.behaviorId,
             });
+
+            if (getCardDefinitionOrThrow(prevResolved.definitionId).switchTargetAfterHit)
+            {
+                const nextId = deps.session.cycleAttackTarget();
+
+                if (nextId)
+                {
+                    deps.enemySquad.setSelected(nextId);
+                }
+            }
 
             attackSteps.push({
                 slot: prevResolved.slot,

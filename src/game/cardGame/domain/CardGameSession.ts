@@ -657,6 +657,33 @@ export class CardGameSession
         return true;
     }
 
+    /** Cycles lock target to the next living enemy in squad order (wraps). */
+    cycleAttackTarget (): string | null
+    {
+        const living = this.getLivingCombatants();
+
+        if (living.length === 0)
+        {
+            return null;
+        }
+
+        if (living.length === 1)
+        {
+            this.attackTargetId = living[0]!.instanceId;
+
+            return this.attackTargetId;
+        }
+
+        const ids = living.map((combatant) => combatant.instanceId);
+        const current = this.getAttackTargetId();
+        const currentIndex = current ? ids.indexOf(current) : -1;
+        const nextIndex = (currentIndex + 1) % ids.length;
+
+        this.attackTargetId = ids[nextIndex]!;
+
+        return this.attackTargetId;
+    }
+
     hasValidAttackTarget (): boolean
     {
         return this.getAttackTargetId() !== null;

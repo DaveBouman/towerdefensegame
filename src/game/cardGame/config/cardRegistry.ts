@@ -46,6 +46,10 @@ export interface CardDefinition {
     exhaustOnPlay?: boolean;
     /** Heal the player by this amount when this card's damage kills an enemy. */
     healOnKill?: number;
+    /** Multiplies this card's resolved chain damage (after streaks and boosts). */
+    stepDamageMultiplier?: number;
+    /** After this card deals damage, cycle the attack target to the next living enemy. */
+    switchTargetAfterHit?: boolean;
     /** Applies a ±% battle modifier when this card activates in the chain. */
     battleModifier?: {
         stat: import('../combat/battleModifiers').BattleModifierStat;
@@ -67,6 +71,8 @@ interface CardDefinitionJson extends Omit<CardDefinition, 'tier' | 'upgradesTo' 
         | 'handEndPenalty'
         | 'discardFromHandOnPlay'
         | 'healOnKill'
+        | 'stepDamageMultiplier'
+        | 'switchTargetAfterHit'
         | 'battleModifier'
         | 'exhaustOnPlay'
         | 'cornerTurn'

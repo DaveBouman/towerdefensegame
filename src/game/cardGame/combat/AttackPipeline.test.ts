@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, getJokerDirectionChoices, getNextChainSlot, applyJokerChosenDirection, getNextChainSlotFromStep } from './AttackPipeline';
+import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, getJokerDirectionChoices, getNextChainSlot, applyJokerChosenDirection, getNextChainSlotFromStep, resolveChainSteps } from './AttackPipeline';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { createCardInstance, resetCardInstanceCounter } from '../domain/createCardInstance';
 import type { ActivationStep, SlotPosition } from '../domain/types';
@@ -391,6 +391,19 @@ describe('AttackPipeline', () =>
 
         expect(step.exitArrow).toBe('up-right');
         expect(getNextChainSlotFromStep(board, step)).toEqual({ row: 0, col: 3 });
+    });
+
+    it('doubles resolved damage for cards with stepDamageMultiplier', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('switchback', 'right'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+        const resolved = resolveChainSteps(chain);
+
+        expect(resolved).toHaveLength(1);
+        expect(resolved[0]!.damage).toBe(10);
     });
 
     it('grants off-chain bonuses for board cards outside the activation chain', () =>
