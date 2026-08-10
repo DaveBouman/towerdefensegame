@@ -18,6 +18,7 @@ import {
     type BattleModifierStat,
 } from '../combat/battleModifiers';
 import { collectBattleModifierApplications } from '../combat/chainBattleModifiers';
+import { scaleBoostedDelta } from '../combat/chainBoost';
 import { getBattleModifierAnchor } from '../combat/battleModifierDisplay';
 import {
     applyEnemyPassivesToSequence,
@@ -353,7 +354,7 @@ export class CardGameSession
         }
     }
 
-    addBattleModifierFromCard (definitionId: string): void
+    addBattleModifierFromCard (definitionId: string, boostMultiplier = 1): void
     {
         const definition = getCardDefinitionOrThrow(definitionId);
 
@@ -364,7 +365,7 @@ export class CardGameSession
 
         this.addBattleModifier(
             definition.battleModifier.stat,
-            definition.battleModifier.delta,
+            scaleBoostedDelta(definition.battleModifier.delta, boostMultiplier),
             'player',
             definition.battleModifier.duration ?? 'energy-round',
         );

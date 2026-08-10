@@ -26,6 +26,7 @@ import { playBattleModifierFloatingLabel } from '../battleModifierFloatingLabel'
 import { boostedBuffVisual } from '../visualEffects/boostedBuffVisual';
 import { playFloatingText } from '../visualEffects/visualEffectTweens';
 import { getCardVisualEffectOrThrow } from '../visualEffects/visualEffectRegistry';
+import { scaleBoostedDelta } from '../../combat/chainBoost';
 import {
     isOnStepChainAbility,
     resolveChainAbilities,
@@ -332,9 +333,13 @@ export function runChainPlayback (
         });
     };
 
-    const applyBattleModFromStep = (definitionId: string, slot: SlotPosition): void =>
+    const applyBattleModFromStep = (
+        definitionId: string,
+        slot: SlotPosition,
+        boostMultiplier = 1,
+    ): void =>
     {
-        deps.session.addBattleModifierFromCard(definitionId);
+        deps.session.addBattleModifierFromCard(definitionId, boostMultiplier);
         deps.syncBattleModifierStatus();
         deps.enemySquad.showAllIntents(deps.session);
 
@@ -358,12 +363,13 @@ export function runChainPlayback (
             visualTarget.width / 2,
             visualTarget.height * 0.22,
             definition.battleModifier.stat,
-            definition.battleModifier.delta,
+            scaleBoostedDelta(definition.battleModifier.delta, boostMultiplier),
         );
     };
 
     const replayPriorStep = (
         replay: EchoReplayTarget,
+        echoBoostMultiplier = 1,
         onStepComplete?: () => void,
     ): void =>
     {
@@ -379,7 +385,8 @@ export function runChainPlayback (
 
         if (prevResolved.behaviorId === 'battle-mod')
         {
-            applyBattleModFromStep(prevStep.definitionId, prevStep.slot);
+            // Boost on Echo scales the replayed mod (Boost → Echo → Hardwire).
+            applyBattleModFromStep(prevStep.definitionId, prevStep.slot, echoBoostMultiplier);
         }
 
         if (prevResolved.damage > 0 && deps.session.getLivingCombatants().length > 0)
@@ -487,7 +494,7 @@ export function runChainPlayback (
                 const stepActivatedAt = deps.scene.time.now;
 
                 deps.activateStep(step, boosted ? boostMultiplier : 1);
-                replayPriorStep(replay, () =>
+                replayPriorStep(replay, boosted ? boostMultiplier : 1, () =>
                 {
                     grantStepArmor(step);
                     scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs);

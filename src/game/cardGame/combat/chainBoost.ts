@@ -70,3 +70,14 @@ export const getBoostMultiplierForStep = (
 
 export const scaleBoostedValue = (value: number, multiplier: number): number =>
     multiplier > 1 ? Math.round(value * multiplier) : value;
+
+/** Scales fractional battle-mod deltas (e.g. Hardwire +10% → +20% under ×2 boost). */
+export const scaleBoostedDelta = (delta: number, multiplier: number): number =>
+{
+    if (multiplier <= 1 || delta === 0)
+    {
+        return delta;
+    }
+
+    return Math.round(delta * multiplier * 1000) / 1000;
+};

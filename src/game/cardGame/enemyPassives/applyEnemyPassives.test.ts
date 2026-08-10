@@ -19,8 +19,8 @@ describe('enemy passives', () =>
     {
         const passives = normalizeEnemyPassives([ 'thorns' ]);
 
-        expect(computeThornsReflectDamage(passives, 5, 'attack')).toBe(2);
-        expect(computeThornsReflectDamage(passives, 4, 'attack')).toBe(2);
+        expect(computeThornsReflectDamage(passives, 5, 'attack')).toBe(1);
+        expect(computeThornsReflectDamage(passives, 4, 'attack')).toBe(1);
         expect(computeThornsReflectDamage(passives, 5, 'fire')).toBe(0);
         expect(computeThornsReflectDamage(passives, 5)).toBe(0);
         expect(computeThornsReflectDamage(passives, 0, 'attack')).toBe(0);

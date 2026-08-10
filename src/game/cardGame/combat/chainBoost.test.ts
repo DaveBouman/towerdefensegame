@@ -3,6 +3,7 @@ import type { ActivationStep } from '../domain/types';
 import {
     getBoostMultiplierForStep,
     hasBoostBeforeStep,
+    scaleBoostedDelta,
     stepConsumesBoost,
 } from './chainBoost';
 
@@ -84,5 +85,16 @@ describe('chainBoost', () =>
 
         expect(hasBoostBeforeStep(chain, 1)).toBe(true);
         expect(hasBoostBeforeStep(chain, 2)).toBe(false);
+    });
+});
+
+describe('scaleBoostedDelta', () =>
+{
+    it('doubles battle-mod deltas under a ×2 boost', () =>
+    {
+        expect(scaleBoostedDelta(0.1, 2)).toBe(0.2);
+        expect(scaleBoostedDelta(-0.1, 2)).toBe(-0.2);
+        expect(scaleBoostedDelta(0.1, 1)).toBe(0.1);
+        expect(scaleBoostedDelta(0.1, 4)).toBe(0.4);
     });
 });

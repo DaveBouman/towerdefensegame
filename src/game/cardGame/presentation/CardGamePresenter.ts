@@ -7,6 +7,7 @@ import { playCardAbilitySfx } from '../../audio/bindGameAudio';
 import { playBattleModifierFloatingLabel } from './battleModifierFloatingLabel';
 import { boostedBuffVisual } from './visualEffects/boostedBuffVisual';
 import { getCardVisualEffectOrThrow } from './visualEffects/visualEffectRegistry';
+import { scaleBoostedDelta } from '../combat/chainBoost';
 import type { ArmorView } from '../../board/ArmorView';
 import type { CardBoardView } from '../../board/CardBoardView';
 import type { CardHandView } from '../../board/CardHandView';
@@ -213,7 +214,7 @@ export class CardGamePresenter
 
         if (step.behaviorId === 'battle-mod')
         {
-            this.applyBattleModFromStep(step.definitionId, step.slot);
+            this.applyBattleModFromStep(step.definitionId, step.slot, boostMultiplier);
         }
 
         if (boostMultiplier > 1)
@@ -244,9 +245,13 @@ export class CardGamePresenter
         boostedBuffVisual.deactivate(this.scene, target);
     }
 
-    private applyBattleModFromStep (definitionId: string, slot: SlotPosition): void
+    private applyBattleModFromStep (
+        definitionId: string,
+        slot: SlotPosition,
+        boostMultiplier = 1,
+    ): void
     {
-        this.session.addBattleModifierFromCard(definitionId);
+        this.session.addBattleModifierFromCard(definitionId, boostMultiplier);
         this.syncBattleModifierStatus();
         this.enemySquad.showAllIntents(this.session);
 
@@ -264,13 +269,15 @@ export class CardGamePresenter
             return;
         }
 
+        const delta = scaleBoostedDelta(definition.battleModifier.delta, boostMultiplier);
+
         playBattleModifierFloatingLabel(
             this.scene,
             visualTarget.wrapper,
             visualTarget.width / 2,
             visualTarget.height * 0.22,
             definition.battleModifier.stat,
-            definition.battleModifier.delta,
+            delta,
         );
     }
 

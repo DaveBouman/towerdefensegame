@@ -5,7 +5,7 @@ import type {
 } from './types';
 
 export const ENEMY_PASSIVE_DEFAULTS: Record<EnemyPassiveId, EnemyPassiveConfig> = {
-    thorns: { id: 'thorns', reflectDamage: 2 },
+    thorns: { id: 'thorns', reflectDamage: 1 },
     enrage: { id: 'enrage', attackBonusPerTrap: 2, extraTrapsPerTrap: 0 },
     lastStand: {
         id: 'lastStand',

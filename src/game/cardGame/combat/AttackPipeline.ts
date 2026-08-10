@@ -500,6 +500,11 @@ export const isBoostedChainStep = (
 
     const definition = step ? getCardDefinitionOrThrow(step.definitionId) : undefined;
 
+    if (definition?.behaviorId === 'battle-mod' && definition.battleModifier)
+    {
+        return true;
+    }
+
     return (definition?.chainAbilityIds?.length ?? 0) > 0;
 };
 

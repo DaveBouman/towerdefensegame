@@ -18,7 +18,7 @@
       "attackChance": 0.5,
       "hazardsPerTurn": 1,
       "passives": [
-        { "id": "thorns", "reflectDamage": 4 }
+        { "id": "thorns", "reflectDamage": 1 }
       ],
       "combatTraits": [
         { "id": "damageCap", "maxPerCard": 5 }

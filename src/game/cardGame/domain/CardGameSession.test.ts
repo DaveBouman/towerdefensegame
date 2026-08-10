@@ -172,8 +172,8 @@ describe('CardGameSession enemy turn', () =>
         const result = session.dealAttackDamage(10, undefined, undefined, 'attack');
 
         expect(result.healthDamage + result.shieldAbsorbed).toBe(5);
-        expect(result.thornsDamage).toBe(4);
-        expect(session.getPlayer().shield).toBe(1);
+        expect(result.thornsDamage).toBe(1);
+        expect(session.getPlayer().shield).toBe(4);
         expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth);
     });
 
@@ -250,6 +250,18 @@ describe('CardGameSession enemy turn', () =>
         session.grantPlayerShield(10);
 
         expect(session.getPlayer().shield).toBe(11);
+    });
+
+    it('scales Hardwire shield-gain when boosted', () =>
+    {
+        const session = new CardGameSession('basic');
+
+        session.beginAttack();
+        session.addBattleModifierFromCard('hardwire', 2);
+        session.grantPlayerShield(10);
+
+        expect(session.getPlayer().shield).toBe(12);
+        expect(session.getBattleModifiers()[0]?.delta).toBe(0.2);
     });
 
     it('stacks patch from patch then echo for 20% less incoming damage', () =>

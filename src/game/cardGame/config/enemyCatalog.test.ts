@@ -23,7 +23,7 @@ describe('enemyCatalog', () =>
     {
         expect(getCardGameEnemyDefinition('thornward')?.passives[0]).toEqual({
             id: 'thorns',
-            reflectDamage: 4,
+            reflectDamage: 1,
         });
         expect(getCardGameEnemyDefinition('smokebinder')?.passives.map((passive) => passive.id))
             .toEqual([ 'smoke', 'loopHunter', 'dampenTiles' ]);
