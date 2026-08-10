@@ -7,18 +7,8 @@ import {
     type CardTier,
 } from '../cardGame/config/cardRegistry';
 import { getDefaultDeckDefinitionIds } from '../cardGame/domain/buildPlayerDeck';
-import { REWARD_CARD_POOL } from './rewards';
 
 const STORAGE_KEY = 'signal-chain-card-collection';
-
-/** Cards excluded from the collectible index (hazards, curses, dormant systems). */
-const EXCLUDED_COLLECTION_IDS = new Set([
-    'hazard',
-    'boost',
-    'loop-reset',
-    'burden',
-    'fuse',
-]);
 
 export interface CollectionCardEntry {
     id: string;
@@ -30,23 +20,21 @@ export interface CollectionCardEntry {
     unlocked: boolean;
 }
 
-const isCollectibleBase = (definition: CardDefinition): boolean =>
+/**
+ * Base cards from `cards.json` are collectible unless `collectible: false`.
+ * Upgraded forms are never listed (catalog shows the base id only).
+ */
+export const isCollectibleBase = (definition: CardDefinition): boolean =>
 {
     if (definition.upgradeOf)
     {
         return false;
     }
 
-    if (EXCLUDED_COLLECTION_IDS.has(definition.id))
-    {
-        return false;
-    }
-
-    return REWARD_CARD_POOL.includes(definition.id)
-        || getDefaultDeckDefinitionIds().includes(definition.id);
+    return definition.collectible !== false;
 };
 
-/** Stable collectible catalog — base reward/starter cards only. */
+/** Stable catalog — every collectible base card in `cards.json` (mod-friendly). */
 export const getCollectionCatalogIds = (): readonly string[] =>
 {
     const ids = CARD_DEFINITIONS

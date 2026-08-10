@@ -96,6 +96,7 @@
       "visualId": "loop-reset",
       "arrowPool": "orthogonal",
       "tier": 1,
+      "collectible": false,
       "noUpgrade": true
     },
     {
@@ -136,6 +137,7 @@
       "visualId": "hazard",
       "arrowPool": "orthogonal",
       "tier": 1,
+      "collectible": false,
       "noUpgrade": true
     },
     {
@@ -145,6 +147,7 @@
       "behaviorId": "boost",
       "visualId": "boost",
       "arrowPool": "orthogonal",
+      "collectible": false,
       "tier": 1,
       "noUpgrade": true
     },
@@ -229,6 +232,7 @@
       "nonRerollable": true,
       "handEndPenalty": 5,
       "tier": 1,
+      "collectible": false,
       "noUpgrade": true
     },
     {
@@ -240,6 +244,7 @@
       "arrowPool": "orthogonal",
       "handEndPenalty": 8,
       "tier": 1,
+      "collectible": false,
       "upgrade": {
         "power": 4,
         "handEndPenalty": 5

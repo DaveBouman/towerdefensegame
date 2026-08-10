@@ -265,7 +265,7 @@ remain as a fallback if a portrait fails to load.
 
 #### Phase 3 — Meta (~1–2 weeks)
 
-- [x] Unlock system (cards) — `cardCollection.ts` + main-menu Card index; enemy unlocks later
+- [x] Unlock system (cards) — `cardCollection.ts` + main-menu Card index (auto from `cards.json`); enemy unlocks later
 - [x] Unlock system (enemies) — `enemyBestiary.ts` + main-menu Bestiary; unlocks on encounter
 - [x] Steam-ready main menu shell (settings / how-to-play / credits / quit + `signalChainDesktop` bridge)
 - [ ] Daily/weekly seeded challenge
@@ -337,9 +337,10 @@ remain as a fallback if a portrait fails to load.
 | 2026-08-10 | **Player status layout.** Active battle-modifier chips anchor below the full RUNNER / body-mod trait stack (icon centers no longer overlap the name or trait row). |
 | 2026-08-10 | **Steam-ready main menu.** Home / Settings / How to play / Credits / Quit. Settings holds seed, Master/Music/SFX, text size, fullscreen, and replay tutorial tips. Desktop bridge `window.signalChainDesktop` documented in `docs/electron-steam.md` for future Electron packaging. |
 | 2026-08-10 | **Split audio buses.** Main menu exposes Master / Music / SFX sliders plus mute (`audioSettings.ts`). Effective gains are `master × bus`; BGM still multiplies per-track `BGM_LEVEL`. Legacy single volume migrates into master. |
+| 2026-08-10 | **Card index from `cards.json`.** Collection catalog lists every base card automatically; set `"collectible": false` to hide system cards (traps, boosts, curses, dormant). No longer gated on reward-pool membership — friendlier for mods. |
 | 2026-08-10 | **Chain stops on clear.** When the last living enemy dies mid-chain, remaining cards do not activate (end-of-chain effects still resolve for the partial chain). |
 | 2026-08-10 | **Salvage heal-on-kill.** Salvage restores **7** HP on kill (upgraded **10**). |
-| 2026-08-10 | **Card collection index.** Main menu **Card index** shows every collectible card as unlocked or locked (`???`). Starter deck cards unlock on boot; rewards, shop buys, and event deck gains unlock permanently via `localStorage` (`cardCollection.ts`). |
+| 2026-08-10 | **Card collection index.** Main menu **Card index** shows every collectible base card from `cards.json` as unlocked or locked (`???`). Opt out with `"collectible": false`. Starter deck cards unlock on boot; rewards, shop buys, and event deck gains unlock permanently via `localStorage` (`cardCollection.ts`). |
 | 2026-08-10 | **Card index interaction fix.** Collection overlay mounts outside `.main-menu` (which uses `pointer-events: none`) so scroll, card select, and hover tooltips work; tooltips render below cards to avoid grid clipping. Menu + card index use `emitRunSfx` for open/select/filter/close and primary nav clicks. |
 | 2026-08-10 | **UI text size setting.** Settings → Display offers Small / Medium / Large; persists via `localStorage` and sets CSS `--text-scale` (`textScale.ts`). Medium matches the previous default (1.15). |
 | 2026-08-10 | **Card index tooltip readability.** Hover tooltips and the detail strip use larger scaled type, brighter body text, and a wider tooltip panel. |

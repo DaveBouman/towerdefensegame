@@ -44,6 +44,12 @@ export interface CardDefinition {
     discardFromHandOnPlay?: number;
     /** When true, the card is destroyed for this battle only (not returned to the draw pile). */
     exhaustOnPlay?: boolean;
+    /**
+     * When false, omit from the Card index / collection catalog.
+     * Defaults to true for base cards — mods only need to add an entry to `cards.json`.
+     * Upgraded forms (`upgradeOf`) are never cataloged.
+     */
+    collectible?: boolean;
     /** Heal the player by this amount when this card's damage kills an enemy. */
     healOnKill?: number;
     /** Multiplies this card's resolved chain damage (after streaks and boosts). */
@@ -77,6 +83,7 @@ interface CardDefinitionJson extends Omit<CardDefinition, 'tier' | 'upgradesTo' 
         | 'exhaustOnPlay'
         | 'cornerTurn'
         | 'chainAbilityIds'
+        | 'collectible'
     >>;
 }
 
