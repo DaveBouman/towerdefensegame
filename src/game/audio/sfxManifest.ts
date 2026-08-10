@@ -74,13 +74,13 @@ export const readSfxVolume = (): number =>
     try
     {
         const raw = localStorage.getItem(VOLUME_KEY);
-        const parsed = raw ? Number(raw) : 0.55;
+        const parsed = raw ? Number(raw) : 0.85;
 
-        return Number.isFinite(parsed) ? Math.max(0, Math.min(1, parsed)) : 0.55;
+        return Number.isFinite(parsed) ? Math.max(0, Math.min(1, parsed)) : 0.85;
     }
     catch
     {
-        return 0.55;
+        return 0.85;
     }
 };
 

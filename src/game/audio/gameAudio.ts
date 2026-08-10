@@ -127,15 +127,15 @@ export const playDamageSfx = (damage: number): void =>
 {
     if (damage >= 20)
     {
-        playSfx('hit-heavy', { volume: 0.95 });
+        playSfx('hit-heavy', { volume: 1 });
     }
     else if (damage >= 8)
     {
-        playSfx('hit-light', { volume: 0.85 });
+        playSfx('hit-light', { volume: 1 });
     }
     else if (damage > 0)
     {
-        playSfx('hit-light', { volume: 0.55, rate: 1.08 });
+        playSfx('hit-light', { volume: 0.82, rate: 1.08 });
     }
 };
 
@@ -146,5 +146,5 @@ export const playEnemyDamageSfx = (damage: number): void =>
         return;
     }
 
-    playSfx('enemy-hit', { volume: Math.min(1, 0.45 + damage / 40) });
+    playSfx('enemy-hit', { volume: Math.min(1, 0.68 + damage / 35) });
 };

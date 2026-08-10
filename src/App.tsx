@@ -244,7 +244,7 @@ function App()
     {
         if (phase === 'reward' || phase === 'puzzle-reward')
         {
-            emitRunSfx('reward', { volume: 0.8 });
+            emitRunSfx('reward', { volume: 1 });
         }
     }, [ phase ]);
 
@@ -252,7 +252,7 @@ function App()
     {
         if (floorBanner !== null)
         {
-            emitRunSfx('floor-enter', { volume: 0.72 });
+            emitRunSfx('floor-enter', { volume: 0.95 });
         }
     }, [ floorBanner ]);
 
@@ -261,7 +261,7 @@ function App()
         if (battleIntroKind)
         {
             emitRunSfx('boss-intro', {
-                volume: battleIntroKind === 'boss' ? 0.9 : 0.75,
+                volume: battleIntroKind === 'boss' ? 1 : 0.9,
             });
         }
     }, [ battleIntroKind ]);
@@ -314,7 +314,7 @@ function App()
             if (healDelta > 0)
             {
                 setRunToast(`+${healDelta} HP after victory`);
-                emitRunSfx('heal', { volume: Math.min(1, 0.55 + healDelta / 25) });
+                emitRunSfx('heal', { volume: Math.min(1, 0.75 + healDelta / 20) });
             }
 
             if (remaining > 0 && remaining <= 10)
@@ -510,7 +510,7 @@ function App()
 
     const pickNode = useCallback((node: RunMapNode): void =>
     {
-        emitRunSfx('ui-select', { volume: 0.55 });
+        emitRunSfx('ui-select', { volume: 0.78 });
         setDepartingNodeId(node.id);
         const rerollsRemaining = enterNodeFloor(node);
         let battleEnemyIds = getBattleEnemyIds(node);
@@ -585,7 +585,7 @@ function App()
 
         finishTravel(() =>
         {
-            emitRunSfx('map-travel', { volume: 0.5 });
+            emitRunSfx('map-travel', { volume: 0.82 });
 
             if (node.kind === 'semi-boss' || node.kind === 'boss')
             {
@@ -608,7 +608,7 @@ function App()
 
         setGold((prev) => prev - offer.price);
         setDeck((prev) => [ ...prev, offer.cardId! ]);
-        emitRunSfx('shop-buy', { volume: 0.75 });
+        emitRunSfx('shop-buy', { volume: 0.95 });
     }, [ gold ]);
 
     const buyShopBodyMod = useCallback((offer: ShopOffer): void =>
@@ -622,7 +622,7 @@ function App()
         setGold((prev) => prev - offer.price);
         setBodyMods((prev) => [ ...prev, offer.bodyModId! ]);
         setPlayerHealth((prev) => Math.min(getRunMaxHealth([ ...bodyMods, offer.bodyModId! ]), prev));
-        emitRunSfx('shop-buy', { volume: 0.75 });
+        emitRunSfx('shop-buy', { volume: 0.95 });
     }, [ gold, bodyMods ]);
 
     const buyShopHeal = useCallback((offer: ShopOffer): void =>
@@ -634,8 +634,8 @@ function App()
 
         setGold((prev) => prev - offer.price);
         setPlayerHealth((prev) => Math.min(runMaxHealth, prev + offer.healAmount!));
-        emitRunSfx('shop-buy', { volume: 0.75 });
-        emitRunSfx('heal', { volume: 0.65 });
+        emitRunSfx('shop-buy', { volume: 0.95 });
+        emitRunSfx('heal', { volume: 0.85 });
     }, [ gold, runMaxHealth ]);
 
     const buyShopRemove = useCallback((offer: ShopOffer, definitionId: string): void =>
@@ -665,7 +665,7 @@ function App()
 
             return next;
         });
-        emitRunSfx('shop-buy', { volume: 0.75 });
+        emitRunSfx('shop-buy', { volume: 0.95 });
     }, [ gold, deck ]);
 
     const buyShopUpgrade = useCallback((offer: ShopOffer, definitionId: string): void =>
@@ -684,13 +684,13 @@ function App()
 
         setGold((prev) => prev - offer.price);
         setDeck(nextDeck);
-        emitRunSfx('shop-buy', { volume: 0.75 });
+        emitRunSfx('shop-buy', { volume: 0.95 });
     }, [ gold, deck ]);
 
     const restHeal = useCallback((healAmount: number): void =>
     {
         setPlayerHealth((prev) => Math.min(runMaxHealth, prev + healAmount));
-        emitRunSfx('heal', { volume: Math.min(1, 0.55 + healAmount / 30) });
+        emitRunSfx('heal', { volume: Math.min(1, 0.75 + healAmount / 25) });
     }, [ runMaxHealth ]);
 
     const restUpgrade = useCallback((definitionId: string): void =>

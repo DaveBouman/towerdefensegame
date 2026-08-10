@@ -10,6 +10,8 @@ import {
     playElementHitBurst,
     shakeCamera,
 } from '../combatJuice';
+import { playCombatHitSfx, playPlayerHitSfx } from '../../../audio/bindGameAudio';
+import { playFloatingText } from '../visualEffects/visualEffectTweens';
 
 export interface CombatHitVisualDeps
 {

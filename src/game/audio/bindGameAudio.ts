@@ -18,17 +18,17 @@ export const resetBattleAudioState = (): void =>
 
 export const bindGameAudioListeners = (): (() => void) =>
 {
-    const onCardPlaced = (): void => playSfx('card-place', { volume: 0.7 });
+    const onCardPlaced = (): void => playSfx('card-place', { volume: 0.95 });
 
-    const onAttackStarted = (): void => playSfx('chain-step', { volume: 0.45, rate: 0.95 });
+    const onAttackStarted = (): void => playSfx('chain-step', { volume: 0.72, rate: 0.95 });
 
-    const onAttackStep = (): void => playSfx('chain-step', { volume: 0.55 });
+    const onAttackStep = (): void => playSfx('chain-step', { volume: 0.85 });
 
     const onPlayerHealed = ({ amount }: { amount: number }): void =>
     {
         if (amount > 0)
         {
-            playSfx('heal', { volume: Math.min(1, 0.5 + amount / 30) });
+            playSfx('heal', { volume: Math.min(1, 0.72 + amount / 25) });
         }
     };
 
@@ -36,21 +36,21 @@ export const bindGameAudioListeners = (): (() => void) =>
     {
         if (armor > lastArmor)
         {
-            playSfx('shield', { volume: 0.65 });
+            playSfx('shield', { volume: 0.92 });
         }
 
         lastArmor = armor;
     };
 
-    const onEnemyTurnStarted = (): void => playSfx('ui-select', { volume: 0.35, rate: 0.85 });
+    const onEnemyTurnStarted = (): void => playSfx('ui-select', { volume: 0.62, rate: 0.85 });
 
-    const onPlayerDefeated = (): void => playSfx('defeat', { volume: 0.85 });
+    const onPlayerDefeated = (): void => playSfx('defeat', { volume: 1 });
 
-    const onAttackRejected = (): void => playSfx('ui-click', { volume: 0.35, rate: 0.8 });
+    const onAttackRejected = (): void => playSfx('ui-click', { volume: 0.58, rate: 0.8 });
 
-    const onBattleWon = (): void => playSfx('victory', { volume: 0.75 });
+    const onBattleWon = (): void => playSfx('victory', { volume: 1 });
 
-    const onBattleLost = (): void => playSfx('defeat', { volume: 0.8 });
+    const onBattleLost = (): void => playSfx('defeat', { volume: 1 });
 
     const onRunSfx = ({ key, volume, rate }: { key: Parameters<typeof playSfx>[0]; volume?: number; rate?: number }): void =>
     {
@@ -99,7 +99,7 @@ export const playCombatHitSfx = (result: DamageResult): void =>
 
     if (result.enemyKilled)
     {
-        playSfx('kill', { volume: 0.95 });
+        playSfx('kill', { volume: 1 });
     }
 };
 
