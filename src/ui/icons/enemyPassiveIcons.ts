@@ -11,6 +11,7 @@ import jammerSvg from './000000/transparent/1x1/delapouite/radio-tower.svg?raw';
 import escalateSvg from './000000/transparent/1x1/skoll/minefield.svg?raw';
 import dampenTilesSvg from './000000/transparent/1x1/delapouite/empty-chessboard.svg?raw';
 import curseHandSvg from './000000/transparent/1x1/lorc/chained-heart.svg?raw';
+import pressureColumnSvg from './000000/transparent/1x1/delapouite/ionic-column.svg?raw';
 
 /** Icons from https://game-icons.net (see src/ui/icons/license.txt). */
 export const ENEMY_PASSIVE_TEXTURE_KEY: Record<EnemyPassiveId, string> = {
@@ -25,6 +26,7 @@ export const ENEMY_PASSIVE_TEXTURE_KEY: Record<EnemyPassiveId, string> = {
     escalate: 'passive-icon-escalate',
     dampenTiles: 'passive-icon-dampen-tiles',
     curseHand: 'passive-icon-curse-hand',
+    pressureColumn: 'passive-icon-pressure-column',
 };
 
 const ENEMY_PASSIVE_SVG_RAW: Record<EnemyPassiveId, string> = {
@@ -39,6 +41,7 @@ const ENEMY_PASSIVE_SVG_RAW: Record<EnemyPassiveId, string> = {
     escalate: toWhiteIconSvg(escalateSvg),
     dampenTiles: toWhiteIconSvg(dampenTilesSvg),
     curseHand: toWhiteIconSvg(curseHandSvg),
+    pressureColumn: toWhiteIconSvg(pressureColumnSvg),
 };
 
 export const ENEMY_PASSIVE_ICON_ENTRIES = (Object.keys(ENEMY_PASSIVE_TEXTURE_KEY) as EnemyPassiveId[]).map((id) => ({

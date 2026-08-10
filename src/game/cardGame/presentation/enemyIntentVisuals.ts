@@ -30,6 +30,10 @@ const INTENT_STYLE: Record<EnemyTurnKind, {
         upcoming: { tint: 0x9b8cff, text: '#b7a9ff' },
         executing: { tint: 0x7d6cff, text: '#a89bff' },
     },
+    'lock-column': {
+        upcoming: { tint: 0x00c8e0, text: '#7af0ff' },
+        executing: { tint: 0x00a8bf, text: '#5ad8ef' },
+    },
     'battle-mod': {
         upcoming: { tint: 0xfcee0a, text: '#fff9b0' },
         executing: { tint: 0xffd43b, text: '#ffe680' },

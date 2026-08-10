@@ -5,6 +5,7 @@ import shieldSvg from './000000/transparent/1x1/willdabeast/round-shield.svg?raw
 import trapSvg from './000000/transparent/1x1/lorc/land-mine.svg?raw';
 import dampenSvg from './000000/transparent/1x1/delapouite/empty-chessboard.svg?raw';
 import healSvg from './000000/transparent/1x1/zeromancer/heart-plus.svg?raw';
+import lockColumnSvg from './000000/transparent/1x1/delapouite/ionic-column.svg?raw';
 import { toWhiteIconSvg } from './toWhiteIconSvg';
 
 /** Icons from https://game-icons.net (see src/ui/icons/license.txt). */
@@ -13,6 +14,7 @@ export const ENEMY_INTENT_TEXTURE_KEY: Record<EnemyTurnKind, string> = {
     shield: 'intent-icon-shield',
     'place-hazard': 'intent-icon-trap',
     'dampen-field': 'intent-icon-dampen-field',
+    'lock-column': 'intent-icon-lock-column',
     'battle-mod': 'intent-icon-battle-mod',
     'heal-ally': 'intent-icon-heal-ally',
     'shield-ally': 'intent-icon-shield-ally',
@@ -23,6 +25,7 @@ const ENEMY_INTENT_SVG_RAW: Record<EnemyTurnKind, string> = {
     shield: toWhiteIconSvg(shieldSvg),
     'place-hazard': toWhiteIconSvg(trapSvg),
     'dampen-field': toWhiteIconSvg(dampenSvg),
+    'lock-column': toWhiteIconSvg(lockColumnSvg),
     'battle-mod': toWhiteIconSvg(dampenSvg),
     'heal-ally': toWhiteIconSvg(healSvg),
     'shield-ally': toWhiteIconSvg(shieldSvg),

@@ -206,14 +206,19 @@ The player turn is **escalating**: each Attack resolves the current board withou
 
 | ID | Counter-play |
 |----|--------------|
-| `basic` | Raider — baseline (HP 190, atk 13, 65% attack), no passives |
+| `basic` | Raider — baseline (HP ~40, atk 13, 65% attack), no passives |
 | `thornward` | Thorns — reflects 4 damage on attack; **Damage Cap** trait — each card hit deals at most 5 damage |
 | `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile, **Curse Hand** (adds Burden to hand each turn) — trap pressure snowballs. On the run map, saboteur nodes always connect to an adjacent route up or down on the next column. |
 | `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps); **Hit Ward** trait — first 3 card hits deal no damage |
 | `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (dormant while loop-reset is out of content), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
-| `field-medic` | Low personal threat — **ally support** in multi-enemy fights: heals weakest ally, can shield the most shielded ally (`allyActions` in `enemies.json`) |
+| `field-medic` | Low personal threat — **ally support** in multi-enemy fights: heals weakest ally, can shield the most shielded ally (`allyActions` in `enemies.json`). Can appear as a duo partner in mid-run Street Ops. |
+| `gridlock` | **Column Pressure** — after each turn, locks one board column (telegraphed); you cannot place/move onto that column. Never locks the chain-start column. |
 
 Each enemy should force a **different deck shape and chain strategy**.
+
+**In-fight identity (stand-in):** each enemy uses a unique accent tint + silhouette glyph
+(`enemyIdentity.ts` → `EnemyTargetView`). Map nodes stay generic (Street Op / Lieutenant) —
+identity is revealed only when the fight starts. Silhouettes are temporary until real character art.
 
 ---
 
@@ -241,7 +246,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 #### Phase 2 — Spatial tactics (~1 week)
 
-- [ ] **Column pressure** — enemy targets or disables specific columns
+- [x] **Column pressure** — Gridlock locks a telegraphed board column each turn (`pressureColumn` / `lock-column`)
 - [x] **Threshold telegraphs** — HUD shows Last Stand / Enrage breakpoints (`EnemyTargetView`)
 - [ ] **Perfect-fight rewards** — bonus reroll or card upgrade for clean wins
 
@@ -275,7 +280,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 | Run flow (phases, carry-over HP, deck, rewards) | `src/App.tsx` |
 | Change balance numbers | `src/game/cardGame/config/gameRules.json` |
 | Add/edit cards | `src/game/cardGame/config/cards.json`, `cardRegistry.ts` |
-| Add/edit enemies | `src/game/cardGame/config/enemies.json`, `enemyCatalog.ts`, `enemyPassives/` |
+| Add/edit enemies | `src/game/cardGame/config/enemies.json`, `enemyCatalog.ts`, `enemyPassives/`; in-fight look: `presentation/enemyIdentity.ts` |
 | Chain behavior | `src/game/cardGame/combat/AttackPipeline.ts` |
 | New card ability | `src/game/cardGame/effects/` (behaviors), `abilities/` (chain abilities: poison/fire/bleed/fortify/overload) + register in `chainAbilityRegistry.ts` |
 | Bomb / trap conversion | `AttackPipeline.applyBombConversion` (runs first in `resolveChainSteps`) |
@@ -290,6 +295,8 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-08-10 | **Gridlock + Field Medic duos.** New enemy **Gridlock** locks a telegraphed board column each turn (`pressureColumn`). Mid-run Street Ops can pair a rolled enemy with **Field Medic**. Column pressure roadmap item done. |
+| 2026-08-10 | **In-fight enemy identity stand-in.** Each enemy gets a unique accent color + silhouette (`enemyIdentity.ts`); map still hides encounter names. Ready to swap for character art later. |
 | 2026-08-10 | **Per-floor rerolls + run economy + teaching.** Map split into 3 logical floors; hand rerolls (3) shared per floor via App/`START_BATTLE`. Ripperdoc shop (card/body mod/heal/remove). Lieutenant rewards use elite card pool. First-run tutorial overlays + coach strip. Last Stand / Enrage threshold text on enemy panels. |
 | 2026-08-04 | **Burden off-chain tax.** Placed Burdens not included in the attack chain deal double hand-end penalty (10) to the player when the attack resolves. Chaining through Burden dumps it safely. |
 | 2026-08-04 | **Burden rework.** Burden is no longer unplayable/reroll-dumpable. Place it as an inert board clog (clears it from hand, wastes a tile), or take the hand-end penalty. New `nonRerollable` card flag blocks hand reroll selection. |

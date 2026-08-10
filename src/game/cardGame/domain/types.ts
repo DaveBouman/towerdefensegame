@@ -64,6 +64,7 @@ export type EnemyTurnKind =
     | 'shield'
     | 'place-hazard'
     | 'dampen-field'
+    | 'lock-column'
     | 'battle-mod'
     | 'heal-ally'
     | 'shield-ally';
@@ -75,6 +76,8 @@ export interface EnemyTurnStep {
     modifierDelta?: number;
     /** Ally support target (multi-enemy fights). */
     targetInstanceId?: string;
+    /** Board column index for `lock-column` (0-based). */
+    column?: number;
 }
 
 export interface EnemyTurnAction {

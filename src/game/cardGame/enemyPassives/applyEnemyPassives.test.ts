@@ -123,6 +123,28 @@ describe('enemy passives', () =>
         expect(castsOn(3)).toBe(false);
     });
 
+    it('telegraphs a column lock for pressureColumn enemies', () =>
+    {
+        const enemy = {
+            ...getDefaultCardGameEnemy(),
+            attackChance: 1,
+            passives: normalizeEnemyPassives([ 'pressureColumn' ]),
+        };
+
+        const action = planEnemyTurnWithPassives({
+            enemy,
+            enemyState: { health: 40, maxHealth: 40, shield: 0 },
+            enrageStacks: 0,
+            turnsTaken: 0,
+        });
+        const lock = action.steps.find((step) => step.kind === 'lock-column');
+
+        expect(lock).toBeDefined();
+        expect(lock?.column).toBeGreaterThanOrEqual(1);
+        expect(lock?.column).toBeLessThan(GRID_CONFIG.cols);
+        expect(lock?.amount).toBe((lock?.column ?? 0) + 1);
+    });
+
     it('halves damage and armor on dampened even tiles', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));

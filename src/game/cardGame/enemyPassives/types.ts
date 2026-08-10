@@ -9,7 +9,8 @@ export type EnemyPassiveId =
     | 'jammer'
     | 'escalate'
     | 'dampenTiles'
-    | 'curseHand';
+    | 'curseHand'
+    | 'pressureColumn';
 
 export interface ThornsPassiveConfig {
     id: 'thorns';
@@ -94,6 +95,15 @@ export interface CurseHandPassiveConfig {
     count: number;
 }
 
+/** Locks an entire board column so the player cannot place or move onto it. */
+export interface PressureColumnPassiveConfig {
+    id: 'pressureColumn';
+    /**
+     * When true, never locks the chain-start column (col 0) so attacks remain possible.
+     */
+    avoidStartColumn: boolean;
+}
+
 export type EnemyPassiveConfig =
     | ThornsPassiveConfig
     | EnragePassiveConfig
@@ -105,6 +115,7 @@ export type EnemyPassiveConfig =
     | JammerPassiveConfig
     | EscalatePassiveConfig
     | DampenTilesPassiveConfig
-    | CurseHandPassiveConfig;
+    | CurseHandPassiveConfig
+    | PressureColumnPassiveConfig;
 
 export type EnemyPassiveInput = EnemyPassiveId | EnemyPassiveConfig;

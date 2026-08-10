@@ -22,6 +22,7 @@ export class FieldEffects
     private dampenField: (DampenField & { turnsRemaining: number }) | null = null;
     private readonly silencedSlots = new Set<string>();
     private readonly bombDisabledSlots = new Set<string>();
+    private lockedColumn: number | null = null;
 
     constructor (private readonly board: BoardModel) {}
 
@@ -47,7 +48,43 @@ export class FieldEffects
 
     isSlotBlockedForPlayer (slot: SlotPosition): boolean
     {
-        return this.isSlotSilenced(slot) || this.isSlotBombDisabled(slot);
+        return this.isSlotSilenced(slot)
+            || this.isSlotBombDisabled(slot)
+            || (this.lockedColumn !== null && slot.col === this.lockedColumn);
+    }
+
+    getLockedColumn (): number | null
+    {
+        return this.lockedColumn;
+    }
+
+    getLockedColumnSlots (): SlotPosition[]
+    {
+        if (this.lockedColumn === null)
+        {
+            return [];
+        }
+
+        const column = this.lockedColumn;
+        const slots: SlotPosition[] = [];
+
+        for (const slot of this.board.slotsInOrder())
+        {
+            if (slot.col === column)
+            {
+                slots.push(slot);
+            }
+        }
+
+        return slots;
+    }
+
+    /** Locks a board column (replaces any previous lock). Returns the locked column. */
+    lockColumn (column: number): number
+    {
+        this.lockedColumn = column;
+
+        return column;
     }
 
     applyDampeningToSequence (sequence: AttackSequence): AttackSequence

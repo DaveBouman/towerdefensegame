@@ -94,6 +94,18 @@
       ]
     },
     {
+      "id": "gridlock",
+      "label": "Gridlock",
+      "maxHealth": 40,
+      "attackDamage": 11,
+      "shieldGain": 12,
+      "attackChance": 0.5,
+      "hazardsPerTurn": 1,
+      "passives": [
+        "pressureColumn"
+      ]
+    },
+    {
       "id": "training-dummy",
       "label": "Training Dummy",
       "maxHealth": 99999,

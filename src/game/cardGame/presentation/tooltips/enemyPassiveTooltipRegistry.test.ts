@@ -19,6 +19,7 @@ describe('enemyPassiveTooltipRegistry', () =>
             'escalate',
             'dampenTiles',
             'curseHand',
+            'pressureColumn',
         ]);
 
         for (const passive of passives)

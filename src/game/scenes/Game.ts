@@ -418,7 +418,7 @@ export class Game extends Scene
         this.presenter?.dropTransientVisualRefs();
         this.boardView.syncFromBoard(this.session.board);
         this.boardView.setBlockedSlots(
-            this.session.getSilencedSlots(),
+            this.session.getPlacementBlockedSlots(),
             this.session.getBombDisabledSlots(),
         );
         this.boardView.setDampenedSlots(this.session.getDampenedSlots());

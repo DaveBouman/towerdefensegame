@@ -1,3 +1,4 @@
+import { GRID_CONFIG } from '../../config/gridConfig';
 import { getUnchainedHazardSlots } from '../combat/AttackPipeline';
 import type { BoardModel } from '../domain/BoardModel';
 import { slotKey } from '../domain/cardDirections';
@@ -84,6 +85,7 @@ export const planEnemyTurnWithPassives = ({
     const enrage = getEnemyPassive(passives, 'enrage');
     const escalate = getEnemyPassive(passives, 'escalate');
     const dampen = getEnemyPassive(passives, 'dampenTiles');
+    const pressure = getEnemyPassive(passives, 'pressureColumn');
     const inLastStand = lastStand ? isLastStandActive(enemyState, lastStand) : false;
     const baseHazards = inLastStand ? lastStand!.hazardsPerTurn : enemy.hazardsPerTurn;
     const extraHazards = (enrage?.extraTrapsPerTrap ?? 0) * enrageStacks;
@@ -116,6 +118,22 @@ export const planEnemyTurnWithPassives = ({
     if (dampen && dampen.everyTurns > 0 && turnsTaken % dampen.everyTurns === 0)
     {
         steps.push({ kind: 'dampen-field' });
+    }
+
+    // Column pressure: lock one board column (telegraphed with the column index).
+    if (pressure)
+    {
+        const startCol = pressure.avoidStartColumn
+            ? (GAME_RULES.activationStartColumn ?? 0) + 1
+            : 0;
+        const maxCol = GRID_CONFIG.cols - 1;
+
+        if (startCol <= maxCol)
+        {
+            const column = startCol + randomInt(maxCol - startCol + 1);
+
+            steps.push({ kind: 'lock-column', column, amount: column + 1 });
+        }
     }
 
     for (let i = 0; i < hazardCount; i++)

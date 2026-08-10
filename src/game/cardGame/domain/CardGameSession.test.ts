@@ -1169,6 +1169,19 @@ describe('CardGameSession enemy turn', () =>
         expect(session.board.getCardAt(silencedSlot)?.owner).toBe('field');
     });
 
+    it('blocks player placement on a locked pressure column', () =>
+    {
+        const session = new CardGameSession();
+
+        session.lockBoardColumn(2);
+
+        expect(session.isSlotBlockedForPlayer({ row: 0, col: 2 })).toBe(true);
+        expect(session.isSlotBlockedForPlayer({ row: 0, col: 0 })).toBe(false);
+        expect(session.placeCardFromHand(0, { row: 1, col: 2 })).toBe(false);
+        expect(session.placeCardFromHand(0, { row: 1, col: 0 })).toBe(true);
+        expect(session.getLockedColumnSlots().every((slot) => slot.col === 2)).toBe(true);
+    });
+
     it('never assigns off-board arrows to field boosts on corner slots', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));

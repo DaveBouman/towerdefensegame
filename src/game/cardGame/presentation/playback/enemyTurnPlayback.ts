@@ -106,6 +106,26 @@ export function playEnemyTurnStep (
         return;
     }
 
+    if (step.kind === 'lock-column')
+    {
+        enemyView?.playEnemyAttackPulse();
+
+        scene.time.delayedCall(turnMs, () =>
+        {
+            const column = step.column ?? Math.max(0, (step.amount ?? 1) - 1);
+
+            session.lockBoardColumn(column);
+            boardView.setBlockedSlots(
+                session.getPlacementBlockedSlots(),
+                session.getBombDisabledSlots(),
+            );
+            enemyView?.showIntentLabel(`Lock col ${column + 1}`);
+            onComplete();
+        });
+
+        return;
+    }
+
     if (step.kind === 'battle-mod')
     {
         enemyView?.playEnemyAttackPulse();

@@ -28,6 +28,16 @@ export const describeEnemyStep = (
             : { title: 'Trap', color: '#ff9f43' };
     }
 
+    if (step.kind === 'lock-column')
+    {
+        const column = step.column !== undefined ? step.column + 1 : step.amount ?? '?';
+
+        return {
+            title: `Lock col ${column}`,
+            color: '#7af0ff',
+        };
+    }
+
     if (step.kind === 'heal-ally')
     {
         return {
@@ -88,6 +98,7 @@ export const describeEnemyPassives = (
         escalate: 'Escalate',
         dampenTiles: 'Dead Zone',
         curseHand: 'Curse Hand',
+        pressureColumn: 'Column Pressure',
     };
 
     return enemy.passives.map((passive) => labels[passive.id] ?? passive.id);

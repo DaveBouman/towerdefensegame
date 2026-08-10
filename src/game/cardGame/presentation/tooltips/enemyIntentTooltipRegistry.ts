@@ -61,6 +61,23 @@ export const resolveEnemyIntentTooltip = (
                     'Route your chain through the live tiles to hit full strength.',
                 ],
             };
+        case 'lock-column':
+        {
+            const columnLabel = step.column !== undefined
+                ? step.column + 1
+                : step.amount ?? '?';
+
+            return {
+                title: 'Column Lock',
+                lines: [
+                    upcoming
+                        ? `Will lock board column ${columnLabel} — you cannot place or move cards there.`
+                        : `Locks board column ${columnLabel}.`,
+                    'Cards already in that column still activate if chained.',
+                    'The previous lock is replaced each time.',
+                ],
+            };
+        }
         case 'battle-mod':
         {
             const stat = step.modifierStat ?? 'enemy-attack';

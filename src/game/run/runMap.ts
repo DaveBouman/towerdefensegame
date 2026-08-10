@@ -102,14 +102,19 @@ const ROW_ENEMY_POOLS: readonly (readonly string[])[] = [
     [ 'basic', 'thornward' ],
     [ 'basic', 'thornward' ],
     [ 'thornward', 'saboteur' ],
-    [ 'thornward', 'saboteur' ],
+    [ 'thornward', 'saboteur', 'gridlock' ],
+    [ 'saboteur', 'smokebinder', 'gridlock' ],
+    [ 'saboteur', 'smokebinder', 'gridlock' ],
     [ 'saboteur', 'smokebinder' ],
-    [ 'saboteur', 'smokebinder' ],
-    [ 'saboteur', 'smokebinder' ],
-    [ 'smokebinder' ],
+    [ 'smokebinder', 'gridlock' ],
     [ 'smokebinder' ],
     [ 'warden' ],
 ];
+
+/** Chance a mid-run fight brings a Field Medic ally alongside the rolled enemy. */
+const MEDIC_DUO_CHANCE = 0.22;
+const MEDIC_DUO_START_ROW = 4;
+const MEDIC_DUO_END_ROW = 8;
 
 /** Branching width per column (first → boss). */
 const ROW_SIZES: readonly number[] = [ 2, 3, 3, 3, 4, 4, 4, 3, 3, 2, 1 ];
@@ -211,6 +216,40 @@ const resolveNodeKind = (row: number, rows: number): RunMapNodeKind =>
     return rollNodeKind();
 };
 
+/** Resolves primary enemy + optional multi-enemy lineup for a battle node. */
+const resolveBattleEnemies = (
+    row: number,
+    kind: RunMapNodeKind,
+): { enemyId?: string; enemyIds?: string[] } =>
+{
+    if (!isBattleKind(kind))
+    {
+        return {};
+    }
+
+    if (row === 0)
+    {
+        return { enemyId: 'basic', enemyIds: [ 'basic', 'basic' ] };
+    }
+
+    const enemyId = kind === 'semi-boss'
+        ? pickRandom(SEMI_BOSS_ENEMY_POOL)
+        : pickRandom(ROW_ENEMY_POOLS[row] ?? ROW_ENEMY_POOLS[0]!);
+
+    if (
+        kind === 'enemy'
+        && row >= MEDIC_DUO_START_ROW
+        && row <= MEDIC_DUO_END_ROW
+        && enemyId !== 'field-medic'
+        && random() < MEDIC_DUO_CHANCE
+    )
+    {
+        return { enemyId, enemyIds: [ enemyId, 'field-medic' ] };
+    }
+
+    return { enemyId };
+};
+
 export const generateRunMap = (): RunMap =>
 {
     const rows = RUN_CONFIG.middleColumns + 2;
@@ -225,6 +264,7 @@ export const generateRunMap = (): RunMap =>
         {
             const kind = resolveNodeKind(row, rows);
             const battle = isBattleKind(kind);
+            const enemies = battle ? resolveBattleEnemies(row, kind) : {};
 
             return {
                 id: `n${row}-${col}`,
@@ -232,12 +272,8 @@ export const generateRunMap = (): RunMap =>
                 col,
                 colCount: size,
                 kind,
-                enemyId: battle
-                    ? kind === 'semi-boss'
-                        ? pickRandom(SEMI_BOSS_ENEMY_POOL)
-                        : pickRandom(ROW_ENEMY_POOLS[row] ?? ROW_ENEMY_POOLS[0]!)
-                    : undefined,
-                enemyIds: battle && row === 0 ? [ 'basic', 'basic' ] : undefined,
+                enemyId: enemies.enemyId,
+                enemyIds: enemies.enemyIds,
                 reward: battle ? rewardForNodeKind(kind) : undefined,
                 nextIds: [] as string[],
             } satisfies RunMapNode;

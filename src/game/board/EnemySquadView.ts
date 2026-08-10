@@ -35,7 +35,7 @@ export class EnemySquadView
                 enemyY: slot.y,
                 enemySize: slot.size,
             };
-            const view = new EnemyTargetView(this.scene, slotLayout, combatant.state);
+            const view = new EnemyTargetView(this.scene, slotLayout, combatant.state, combatant.definitionId);
 
             view.setEnemyLabel(combatant.definition.label);
             view.setCombatTraits(getEnemyCombatTraits(combatant.definition));

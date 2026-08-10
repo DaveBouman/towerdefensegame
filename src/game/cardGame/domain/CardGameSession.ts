@@ -726,6 +726,17 @@ export class CardGameSession
         return this.fieldEffects.getSilencedSlots();
     }
 
+    getLockedColumnSlots (): SlotPosition[]
+    {
+        return this.fieldEffects.getLockedColumnSlots();
+    }
+
+    /** Silenced tiles plus the locked pressure column — for board overlays. */
+    getPlacementBlockedSlots (): SlotPosition[]
+    {
+        return [ ...this.getSilencedSlots(), ...this.getLockedColumnSlots() ];
+    }
+
     getBombDisabledSlots (): SlotPosition[]
     {
         return this.fieldEffects.getBombDisabledSlots();
@@ -744,6 +755,12 @@ export class CardGameSession
     isSlotBlockedForPlayer (slot: SlotPosition): boolean
     {
         return this.fieldEffects.isSlotBlockedForPlayer(slot);
+    }
+
+    /** Locks a board column from a Gridlock `lock-column` turn step. */
+    lockBoardColumn (column: number): number
+    {
+        return this.fieldEffects.lockColumn(column);
     }
 
     buildAttackSequence (

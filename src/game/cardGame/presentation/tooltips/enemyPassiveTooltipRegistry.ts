@@ -102,5 +102,17 @@ export const resolveEnemyPassiveTooltip = (
                     'Curse cards clog your hand and may hurt you if held at end of turn.',
                 ],
             };
+        case 'pressureColumn':
+            return {
+                title: 'Column Pressure',
+                lines: [
+                    'After each of its turns, locks one board column.',
+                    'You cannot place or move cards onto the locked column.',
+                    passive.avoidStartColumn
+                        ? 'Never locks the chain-start column.'
+                        : 'Any column may be locked.',
+                    'The lock is telegraphed in the enemy intent.',
+                ],
+            };
     }
 };
