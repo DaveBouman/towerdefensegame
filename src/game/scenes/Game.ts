@@ -25,12 +25,19 @@ import {
     bindGameAudioListeners,
     resetBattleAudioState,
 } from '../audio/bindGameAudio';
+import { bindGameBgmListeners } from '../audio/bindGameBgm';
 import {
     bindGameAudioScene,
     markSfxLoaded,
     preloadSfx,
     unbindGameAudioScene,
 } from '../audio/gameAudio';
+import {
+    bindGameBgmScene,
+    markBgmLoaded,
+    preloadBgm,
+    unbindGameBgmScene,
+} from '../audio/gameBgm';
 import { BlendModes, Scene } from 'phaser';
 
 const sameSlot = (a: SlotPosition, b: SlotPosition): boolean =>
@@ -55,6 +62,7 @@ export class Game extends Scene
     private activePuzzleId: string | null = null;
     private lowHpVignette?: Phaser.GameObjects.Rectangle;
     private unbindAudio?: () => void;
+    private unbindBgm?: () => void;
 
     constructor ()
     {
@@ -64,13 +72,17 @@ export class Game extends Scene
     preload (): void
     {
         preloadSfx(this);
+        preloadBgm(this);
     }
 
     create (): void
     {
         bindGameAudioScene(this);
+        bindGameBgmScene(this);
         markSfxLoaded();
+        markBgmLoaded();
         this.unbindAudio = bindGameAudioListeners();
+        this.unbindBgm = bindGameBgmListeners();
 
         void Promise.all([
             preloadEnemyPassiveIcons(this),
@@ -448,7 +460,10 @@ export class Game extends Scene
     {
         this.unbindAudio?.();
         this.unbindAudio = undefined;
+        this.unbindBgm?.();
+        this.unbindBgm = undefined;
         unbindGameAudioScene();
+        unbindGameBgmScene();
 
         this.scale.off('resize', this.onResize, this);
         EventBus.off(GAME_EVENTS.START_BATTLE, this.onStartBattle, this);

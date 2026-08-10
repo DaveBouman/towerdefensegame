@@ -305,6 +305,7 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-10 | **Background music.** Cyberpunk dubstep loops: *Glass Streets at Midnight* (run/map layer), *Concrete Veins* (combat/puzzles/boss intro). Crossfade between tracks; mute toggle covers BGM + SFX. Files in `public/assets/music/`. |
 | 2026-08-10 | **Sound effects.** Procedural placeholder WAVs (`scripts/generate-sfx.mjs`); Phaser audio wired for combat hits, card placement, chain steps, kills, shield/heal, map travel, rewards, shop, floor/boss intros, victory/defeat. Mute toggle (top-right); preference stored in localStorage. Replace assets per `public/assets/sfx/README.md` (Kenney CC0 recommended). |
 | 2026-08-10 | **Juice & tension pass (no audio yet).** Combat: camera shake, hitstop, tiered damage numbers, element hit bursts, variable chain timing, high-threat intent pulse. Run: map travel animation, staggered card rewards, floor banner, visit entry fades, victory heal toast, boss/lieutenant intro, low-HP vignette, clutch win callout. |
 | 2026-08-10 | **Pre-boss safehouse.** The column before the Warden is always Safehouse nodes: rest (30% max HP) or free card upgrade — pick one. |

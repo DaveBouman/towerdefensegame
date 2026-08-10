@@ -34,11 +34,16 @@ export interface PuzzleResolvedPayload {
 }
 
 import type { SfxKey } from '../audio/sfxManifest';
+import type { BgmTrack } from '../audio/bgmManifest';
 
 export interface PlaySfxPayload {
     key: SfxKey;
     volume?: number;
     rate?: number;
+}
+
+export interface SetBgmPayload {
+    track: BgmTrack;
 }
 
 export interface GameEventMap {
@@ -70,4 +75,5 @@ export interface GameEventMap {
     'run-attack-count': { runAttackCount: number };
     'pile-view-open': PileViewPayload;
     'play-sfx': PlaySfxPayload;
+    'set-bgm': SetBgmPayload;
 }

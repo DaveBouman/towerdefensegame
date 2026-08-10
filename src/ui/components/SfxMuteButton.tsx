@@ -11,9 +11,9 @@ export const SfxMuteButton = () =>
         <button
             type="button"
             className="sfx-mute-btn"
-            aria-label={muted ? 'Unmute sound effects' : 'Mute sound effects'}
+            aria-label={muted ? 'Unmute audio' : 'Mute audio'}
             aria-pressed={muted}
-            title={muted ? 'Unmute SFX' : 'Mute SFX'}
+            title={muted ? 'Unmute audio' : 'Mute audio'}
             onClick={() => toggleSfxMuted()}
         >
             {muted ? '🔇' : '🔊'}

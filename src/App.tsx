@@ -22,6 +22,7 @@ import { FloorBanner } from './ui/components/FloorBanner';
 import { BattleIntroOverlay } from './ui/components/BattleIntroOverlay';
 import { SfxMuteButton } from './ui/components/SfxMuteButton';
 import { emitRunSfx } from './game/audio/emitRunSfx';
+import { emitRunBgm } from './game/audio/emitRunBgm';
 import type { RunMapNodeKind } from './game/run/nodeKinds';
 import { isBattleKind } from './game/run/nodeKinds';
 import { applyRunEventEffects } from './game/run/runEvents';
@@ -266,6 +267,17 @@ function App()
         }
     }, [ battleIntroKind ]);
 
+    useEffect(() =>
+    {
+        if (phase === 'battle' || phase === 'puzzle' || battleIntroKind)
+        {
+            emitRunBgm('concrete-veins');
+            return;
+        }
+
+        emitRunBgm('glass-streets');
+    }, [ phase, battleIntroKind ]);
+
     const currentNodeId = path.length > 0 ? path[path.length - 1]! : null;
     const availableIds = useMemo(
         () => reachableNodeIds(map, currentNodeId),
@@ -277,6 +289,7 @@ function App()
         const onSceneReady = (): void =>
         {
             sceneReadyRef.current = true;
+            emitRunBgm('glass-streets');
 
             if (pendingStartRef.current)
             {
