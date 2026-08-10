@@ -152,6 +152,3 @@ export const describeBattleModifier = (
 
     return `${label} ${percent}`;
 };
-
-/** @deprecated Import `BATTLE_MODIFIER_PRESETS` from `battleModifierPresets.ts`. */
-export { BATTLE_MODIFIER_PRESETS as ENEMY_BATTLE_MODIFIER_PRESETS } from './battleModifierPresets';

@@ -1,10 +1,12 @@
+import { GAME_RULES } from '../config/cardRegistry';
 import type { BattleModifier } from './battleModifiers';
-import { BATTLE_MODIFIER_STEP } from './battleModifiers';
+
+const STEP = GAME_RULES.battleModifier?.step ?? 0.1;
 
 /** Shared ±10% presets for enemy intents and run modifiers (ascension, etc.). */
 export const BATTLE_MODIFIER_PRESETS: readonly Pick<BattleModifier, 'stat' | 'delta'>[] = [
-    { stat: 'enemy-attack', delta: BATTLE_MODIFIER_STEP },
-    { stat: 'player-damage-taken', delta: BATTLE_MODIFIER_STEP },
-    { stat: 'player-armor', delta: -BATTLE_MODIFIER_STEP },
-    { stat: 'player-damage-dealt', delta: -BATTLE_MODIFIER_STEP },
+    { stat: 'enemy-attack', delta: STEP },
+    { stat: 'player-damage-taken', delta: STEP },
+    { stat: 'player-armor', delta: -STEP },
+    { stat: 'player-damage-dealt', delta: -STEP },
 ];
