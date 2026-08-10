@@ -6,7 +6,12 @@ import {
     type BgmTrack,
 } from './bgmManifest';
 import { getEffectiveMusicGain } from './audioSettings';
-import { getAudioSettings, subscribeSfxSettings } from './gameAudio';
+import {
+    ensureAudioUnlocked,
+    getAudioSettings,
+    onAudioUnlocked,
+    subscribeSfxSettings,
+} from './gameAudio';
 
 const CROSSFADE_MS = 1400;
 
@@ -16,6 +21,7 @@ let activeTrack: BgmTrack | null = null;
 let activeSound: Phaser.Sound.WebAudioSound | null = null;
 let pendingTrack: BgmTrack | null = null;
 let unsubscribeSettings: (() => void) | null = null;
+let unsubscribeUnlock: (() => void) | null = null;
 
 const getTargetVolume = (track: BgmTrack): number =>
     getEffectiveMusicGain(getAudioSettings()) * BGM_LEVEL[track];
@@ -54,12 +60,33 @@ export const bindGameBgmScene = (targetScene: Phaser.Scene): void =>
     {
         syncActiveVolume();
     });
+
+    unsubscribeUnlock?.();
+    unsubscribeUnlock = onAudioUnlocked(() =>
+    {
+        if (pendingTrack)
+        {
+            const track = pendingTrack;
+            pendingTrack = null;
+            crossfadeTo(track);
+            return;
+        }
+
+        if (activeTrack)
+        {
+            const track = activeTrack;
+            activeTrack = null;
+            crossfadeTo(track);
+        }
+    });
 };
 
 export const unbindGameBgmScene = (): void =>
 {
     unsubscribeSettings?.();
     unsubscribeSettings = null;
+    unsubscribeUnlock?.();
+    unsubscribeUnlock = null;
     stopBgm(true);
     scene = null;
     loaded = false;
@@ -121,6 +148,7 @@ const syncActiveVolume = (): void =>
     {
         try
         {
+            void ensureAudioUnlocked();
             startLoopPlayback(activeSound, volume);
         }
         catch
@@ -132,6 +160,8 @@ const syncActiveVolume = (): void =>
 
 export const crossfadeTo = (track: BgmTrack): void =>
 {
+    void ensureAudioUnlocked();
+
     if (!scene || !loaded)
     {
         pendingTrack = track;
@@ -142,6 +172,7 @@ export const crossfadeTo = (track: BgmTrack): void =>
 
     if (activeTrack === track && activeSound?.isPlaying && targetVolume > 0)
     {
+        activeSound.setVolume(targetVolume);
         return;
     }
 
@@ -149,6 +180,7 @@ export const crossfadeTo = (track: BgmTrack): void =>
 
     if (!nextSound)
     {
+        pendingTrack = track;
         return;
     }
 
@@ -161,10 +193,19 @@ export const crossfadeTo = (track: BgmTrack): void =>
     {
         try
         {
-            startLoopPlayback(nextSound, previous === nextSound ? targetVolume : 0);
+            const started = startLoopPlayback(
+                nextSound,
+                previous === nextSound ? targetVolume : 0,
+            );
+
+            if (!started)
+            {
+                pendingTrack = track;
+            }
         }
         catch
         {
+            pendingTrack = track;
             return;
         }
     }

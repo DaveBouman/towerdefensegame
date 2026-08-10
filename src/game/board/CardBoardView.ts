@@ -11,6 +11,7 @@ import type { BoardModel } from '../cardGame/domain/BoardModel';
 import { isEnemyOwnedCard, isFieldOwnedCard } from '../cardGame/domain/cardOwnership';
 import type { CardDirection } from '../cardGame/domain/cardDirections';
 import type { CardInstance, SlotPosition } from '../cardGame/domain/types';
+import { boardColLabel, boardRowLabel } from './boardCoordinates';
 import type { BoardLayout } from './boardLayout';
 import { JokerDirectionPicker } from './JokerDirectionPicker';
 
@@ -27,6 +28,9 @@ const SLOT_BOMB_DISABLED_BORDER = CYBER.slotBombDisabledBorder;
 const SLOT_DAMPENED = CYBER.slotDampened;
 const SLOT_DAMPENED_BORDER = CYBER.slotDampenedBorder;
 const SLOT_INSET = 4;
+const AXIS_IDLE = '#8aa0bc';
+const AXIS_START = '#7af0ff';
+const AXIS_ACTIVE = '#fcee0a';
 
 export interface BoardCardDragHandlers {
     canDrag: () => boolean;
@@ -71,6 +75,9 @@ export class CardBoardView
     };
     private readonly chainStartIndicators: ChainStartIndicator[] = [];
     private chainStartTween?: Phaser.Tweens.Tween;
+    private readonly colAxisLabels: Phaser.GameObjects.Text[] = [];
+    private readonly rowAxisLabels: Phaser.GameObjects.Text[] = [];
+    private activeCoordinate: SlotPosition | null = null;
     private readonly jokerDirectionPicker = new JokerDirectionPicker();
 
     constructor (
@@ -219,6 +226,13 @@ export class CardBoardView
         }
 
         this.updateChainStartSelection();
+    }
+
+    /** Highlights the col number + row letter for the slot currently resolving in the chain. */
+    setActiveCoordinate (slot: SlotPosition | null): void
+    {
+        this.activeCoordinate = slot ? { ...slot } : null;
+        this.refreshAxisLegendStyles();
     }
 
     getCardVisualTarget (slot: SlotPosition): import('../cardGame/presentation/visualEffects/types').CardVisualTarget | null
@@ -729,6 +743,7 @@ export class CardBoardView
 
         this.clearHighlight();
         this.setChainStartActive(false);
+        this.setActiveCoordinate(null);
         this.bringChainStartToFront();
     }
 
@@ -747,40 +762,23 @@ export class CardBoardView
         panelPad: number,
     ): void
     {
-        const startCol = GAME_RULES.activationStartColumn;
-        const axisY = -panelPad - 11;
-        const axisX = -panelPad - 12;
+        const axisY = -panelPad - 12;
+        const axisX = -panelPad - 14;
 
-        const xCaption = this.scene.add.text(
-            (cols * tileSize) / 2,
-            axisY - 11,
-            'col (x)',
-            uiTextStyle(9, '#6a7c98', { bold: true, stroke: false }),
-        );
-        xCaption.setOrigin(0.5, 1);
-        this.container.add(xCaption);
-
-        const yCaption = this.scene.add.text(
-            axisX - 2,
-            (rows * tileSize) / 2,
-            'row\n(y)',
-            uiTextStyle(9, '#6a7c98', { bold: true, stroke: false }),
-        );
-        yCaption.setOrigin(1, 0.5);
-        yCaption.setAlign('right');
-        this.container.add(yCaption);
+        this.colAxisLabels.length = 0;
+        this.rowAxisLabels.length = 0;
 
         for (let col = 0; col < cols; col++)
         {
-            const isStart = col === startCol;
             const label = this.scene.add.text(
                 col * tileSize + tileSize / 2,
                 axisY,
-                String(col),
-                uiTextStyle(10, isStart ? '#7af0ff' : '#8aa0bc', { bold: true, stroke: false }),
+                boardColLabel(col),
+                uiTextStyle(11, AXIS_IDLE, { bold: true, stroke: false }),
             );
             label.setOrigin(0.5, 1);
             this.container.add(label);
+            this.colAxisLabels[col] = label;
         }
 
         for (let row = 0; row < rows; row++)
@@ -788,11 +786,53 @@ export class CardBoardView
             const label = this.scene.add.text(
                 axisX,
                 row * tileSize + tileSize / 2,
-                String(row),
-                uiTextStyle(10, '#8aa0bc', { bold: true, stroke: false }),
+                boardRowLabel(row),
+                uiTextStyle(12, AXIS_IDLE, { bold: true, stroke: false }),
             );
-            label.setOrigin(1, 0.5);
+            label.setOrigin(0.5, 0.5);
+            label.setAngle(-90);
             this.container.add(label);
+            this.rowAxisLabels[row] = label;
+        }
+
+        this.refreshAxisLegendStyles();
+    }
+
+    private refreshAxisLegendStyles (): void
+    {
+        const startCol = GAME_RULES.activationStartColumn;
+        const activeCol = this.activeCoordinate?.col ?? null;
+        const activeRow = this.activeCoordinate?.row ?? null;
+
+        for (let col = 0; col < this.colAxisLabels.length; col++)
+        {
+            const label = this.colAxisLabels[col];
+
+            if (!label)
+            {
+                continue;
+            }
+
+            const active = activeCol === col;
+            const start = col === startCol;
+            label.setColor(active ? AXIS_ACTIVE : start ? AXIS_START : AXIS_IDLE);
+            label.setScale(active ? 1.2 : 1);
+            label.setAlpha(active || start || activeCol === null ? 1 : 0.55);
+        }
+
+        for (let row = 0; row < this.rowAxisLabels.length; row++)
+        {
+            const label = this.rowAxisLabels[row];
+
+            if (!label)
+            {
+                continue;
+            }
+
+            const active = activeRow === row;
+            label.setColor(active ? AXIS_ACTIVE : AXIS_IDLE);
+            label.setScale(active ? 1.2 : 1);
+            label.setAlpha(active || activeRow === null ? 1 : 0.55);
         }
     }
 

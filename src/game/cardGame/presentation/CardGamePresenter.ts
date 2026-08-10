@@ -94,6 +94,7 @@ export class CardGamePresenter
         this.boardView.hideJokerDirectionPicker();
         this.dropTransientVisualRefs();
         this.boardView.setChainStartActive(false);
+        this.boardView.setActiveCoordinate(null);
     }
 
     /** Call before board wrappers are destroyed/rebuilt so glow cleanup never hits stale objects. */
@@ -101,6 +102,7 @@ export class CardGamePresenter
     {
         this.activeVisualSlot = null;
         this.activeBoostBuffSlot = null;
+        this.boardView.setActiveCoordinate(null);
     }
 
     playAttack (chainStart: SlotPosition, onComplete: (sequence: AttackSequence) => void): void
@@ -204,6 +206,7 @@ export class CardGamePresenter
         }
 
         this.boardView.bringCardToFront(step.slot);
+        this.boardView.setActiveCoordinate(step.slot);
         getCardVisualEffectOrThrow(step.visualId).activate(this.scene, target);
         playCardAbilitySfx(step.visualId, step.behaviorId);
         this.activeVisualSlot = { slot: { ...step.slot }, visualId: step.visualId };
@@ -316,6 +319,7 @@ export class CardGamePresenter
         const active = this.activeVisualSlot;
 
         this.activeVisualSlot = null;
+        this.boardView.setActiveCoordinate(null);
 
         if (!active)
         {

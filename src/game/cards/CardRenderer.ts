@@ -6,9 +6,11 @@ import { CYBER } from '../config/cyberpunkTheme';
 import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
 import { getCardBehaviorTextureKey } from '../../ui/icons/cardBehaviorIcons';
 import { ARROW_GLYPH, arrowLabelPosition, cornerEntryArrowPosition } from './cardArrows';
+import { createDirectionArrowImage, createLoopBadgeImage } from './directionArrowVisual';
 import { cornerTargetDirections } from '../cardGame/domain/cardDirections';
 import { CARD_VISUALS } from './cardVisuals';
 import { formatCardPowerLabel } from './cardVisualUtils';
+import type { CardDirection } from '../cardGame/domain/cardDirections';
 
 export interface CardVisualOptions {
     width: number;
@@ -78,22 +80,62 @@ export const buildCardGraphic = (
     const arrowPos = isCornerDefense
         ? cornerEntryArrowPosition(card.arrow, width, height)
         : arrowLabelPosition(card.arrow, width, height);
-    const arrowFontSize = Math.max(12, Math.round(width * 0.32));
-    const continueArrow = scene.add.text(arrowPos.x, arrowPos.y, ARROW_GLYPH[card.arrow], {
-        ...uiTextStyle(arrowFontSize, isLoopReset ? '#fcee0a' : '#ffffff', { bold: true }),
-    }).setOrigin(0.5);
+    const arrowSize = Math.max(14, Math.round(width * 0.28));
 
-    const cardDecor: Phaser.GameObjects.GameObject[] = [ continueArrow ];
+    let primaryMark: Phaser.GameObjects.GameObject;
+
+    if (definition.unplayable)
+    {
+        primaryMark = scene.add.text(arrowPos.x, arrowPos.y, '✕', {
+            ...uiTextStyle(Math.max(12, Math.round(width * 0.32)), '#c97b7b', { bold: true }),
+        }).setOrigin(0.5);
+    }
+    else if (isJoker)
+    {
+        primaryMark = scene.add.text(arrowPos.x, arrowPos.y, '?', {
+            ...uiTextStyle(24, '#ffffff', { bold: true }),
+        }).setOrigin(0.5);
+    }
+    else
+    {
+        const arrowTint = isLoopReset ? 0xfcee0a : 0xffffff;
+        const arrow = createDirectionArrowImage(scene, card.arrow, {
+            size: arrowSize,
+            tint: arrowTint,
+        }) ?? scene.add.text(0, 0, ARROW_GLYPH[card.arrow], {
+            ...uiTextStyle(Math.max(12, Math.round(width * 0.32)), isLoopReset ? '#fcee0a' : '#ffffff', { bold: true }),
+        }).setOrigin(0.5);
+
+        arrow.setPosition(arrowPos.x, arrowPos.y);
+        primaryMark = arrow;
+    }
+
+    const cardDecor: Phaser.GameObjects.GameObject[] = [ primaryMark ];
 
     if (isLoopReset && card.loopArrow)
     {
         const loopDirection = card.loopArrow;
         const loopPos = arrowLabelPosition(loopDirection, width, height);
-        const loopArrow = scene.add.text(loopPos.x, loopPos.y, `↺${ARROW_GLYPH[loopDirection]}`, {
+        const loopArrow = createDirectionArrowImage(scene, loopDirection, {
+            size: Math.max(12, Math.round(width * 0.22)),
+            tint: 0xe8daef,
+        }) ?? scene.add.text(0, 0, ARROW_GLYPH[loopDirection], {
             ...uiTextStyle(17, '#e8daef', { bold: true }),
         }).setOrigin(0.5);
 
+        loopArrow.setPosition(loopPos.x, loopPos.y);
         cardDecor.push(loopArrow);
+
+        const loopBadge = createLoopBadgeImage(scene, {
+            size: Math.max(10, Math.round(width * 0.16)),
+            tint: 0xe8daef,
+        });
+
+        if (loopBadge)
+        {
+            loopBadge.setPosition(width * 0.5, height * 0.72);
+            cardDecor.push(loopBadge);
+        }
     }
 
     if (definition.cornerTurn && !isCornerDefense)
@@ -101,10 +143,14 @@ export const buildCardGraphic = (
         for (const target of cornerTargetDirections(card.arrow))
         {
             const hookPos = arrowLabelPosition(target, width, height);
-            const hookArrow = scene.add.text(hookPos.x, hookPos.y, ARROW_GLYPH[target], {
+            const hookArrow = createDirectionArrowImage(scene, target, {
+                size: Math.max(11, Math.round(width * 0.2)),
+                tint: 0xffd98a,
+            }) ?? scene.add.text(0, 0, ARROW_GLYPH[target], {
                 ...uiTextStyle(15, '#ffd98a', { bold: true }),
             }).setOrigin(0.5);
 
+            hookArrow.setPosition(hookPos.x, hookPos.y);
             cardDecor.push(hookArrow);
         }
     }
@@ -141,14 +187,38 @@ export const buildCardGraphic = (
 
     if (definition.unplayable)
     {
-        continueArrow.setText('✕');
-        continueArrow.setColor('#c97b7b');
+        continueArrow.destroy();
+        const blocked = scene.add.text(arrowPos.x, arrowPos.y, '✕', {
+            ...uiTextStyle(Math.max(12, Math.round(width * 0.32)), '#c97b7b', { bold: true }),
+        }).setOrigin(0.5);
+        const arrowIndex = cardDecor.indexOf(continueArrow);
+
+        if (arrowIndex >= 0)
+        {
+            cardDecor[arrowIndex] = blocked;
+        }
+        else
+        {
+            cardDecor.unshift(blocked);
+        }
     }
 
     if (isJoker)
     {
-        continueArrow.setText('?');
-        continueArrow.setFontSize(24);
+        continueArrow.destroy();
+        const jokerMark = scene.add.text(arrowPos.x, arrowPos.y, '?', {
+            ...uiTextStyle(24, '#ffffff', { bold: true }),
+        }).setOrigin(0.5);
+        const arrowIndex = cardDecor.indexOf(continueArrow);
+
+        if (arrowIndex >= 0)
+        {
+            cardDecor[arrowIndex] = jokerMark;
+        }
+        else
+        {
+            cardDecor.unshift(jokerMark);
+        }
     }
 
     container.add([ glow, body, inner, accent, brackets, ...cardDecor, power ]);

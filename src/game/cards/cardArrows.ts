@@ -1,5 +1,7 @@
 import type { CardDirection } from '../cardGame/domain/cardDirections';
+import { DIRECTION_ARROW_ROTATION_DEG } from '../../ui/icons/directionIcons';
 
+/** @deprecated Prefer direction icon textures; kept for tooltip text fallbacks. */
 export const ARROW_GLYPH: Record<CardDirection, string> = {
     up: '↑',
     down: '↓',
@@ -10,6 +12,9 @@ export const ARROW_GLYPH: Record<CardDirection, string> = {
     'down-left': '↙',
     'down-right': '↘',
 };
+
+export const arrowRotationDeg = (direction: CardDirection): number =>
+    DIRECTION_ARROW_ROTATION_DEG[direction];
 
 export const arrowLabelPosition = (
     direction: CardDirection,

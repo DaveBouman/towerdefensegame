@@ -2,6 +2,7 @@ import { COMBAT_TRAIT_ICON_ENTRIES } from '../../../../ui/icons/combatTraitIcons
 import { ENEMY_INTENT_ICON_ENTRIES } from '../../../../ui/icons/enemyIntentIcons';
 import { ENEMY_PASSIVE_ICON_ENTRIES } from '../../../../ui/icons/enemyPassiveIcons';
 import { CARD_BEHAVIOR_ICON_ENTRIES } from '../../../../ui/icons/cardBehaviorIcons';
+import { DIRECTION_ICON_ENTRIES } from '../../../../ui/icons/directionIcons';
 
 const loadImageTexture = (
     scene: Phaser.Scene,
@@ -37,6 +38,7 @@ const GAME_ICON_ENTRIES = [
     ...ENEMY_PASSIVE_ICON_ENTRIES,
     ...ENEMY_INTENT_ICON_ENTRIES,
     ...CARD_BEHAVIOR_ICON_ENTRIES,
+    ...DIRECTION_ICON_ENTRIES,
 ];
 
 /** Registers Craftpix UI icon textures for combat panels and cards. */

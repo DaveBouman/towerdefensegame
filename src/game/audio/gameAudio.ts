@@ -1,6 +1,5 @@
 import type Phaser from 'phaser';
 import {
-    getEffectiveMusicGain,
     getEffectiveSfxGain,
     readAudioSettings,
     writeAudioMuted,

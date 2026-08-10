@@ -26,6 +26,7 @@ import {
 } from '../../game/ui/textScale';
 import { CardCollectionOverlay } from './CardCollectionOverlay';
 import { CyberPanelChrome } from './CyberPanel';
+import { BOARD_COL_LABELS, BOARD_ROW_LABELS } from '../../game/board/boardCoordinates';
 
 type MenuMode = 'boot' | 'pause';
 type MenuScreen = 'home' | 'settings' | 'how-to-play' | 'credits' | 'confirm-new-run';
@@ -519,29 +520,32 @@ export const MainMenuOverlay = ({
                             <div className="main-menu__grid-legend" aria-hidden="true">
                                 <div className="main-menu__grid-legend-frame">
                                     <span className="main-menu__grid-legend-corner" />
-                                    {[ 0, 1, 2, 3, 4 ].map((col) => (
+                                    {BOARD_COL_LABELS.map((col, colIndex) => (
                                         <span
                                             key={`col-${col}`}
-                                            className={`main-menu__grid-legend-axis${col === 0 ? ' main-menu__grid-legend-axis--start' : ''}`}
+                                            className={`main-menu__grid-legend-axis main-menu__grid-legend-axis--col${colIndex === 0 ? ' main-menu__grid-legend-axis--start' : ''}`}
                                         >
                                             {col}
                                         </span>
                                     ))}
-                                    {[ 0, 1, 2, 3, 4 ].map((row) => (
-                                        <div key={`row-${row}`} className="main-menu__grid-legend-row">
-                                            <span className="main-menu__grid-legend-axis">{row}</span>
-                                            {[ 0, 1, 2, 3, 4 ].map((col) => (
+                                    {BOARD_ROW_LABELS.map((rowLabel, row) => (
+                                        <div key={`row-${rowLabel}`} className="main-menu__grid-legend-row">
+                                            <span className="main-menu__grid-legend-axis main-menu__grid-legend-axis--row">
+                                                {rowLabel}
+                                            </span>
+                                            {BOARD_COL_LABELS.map((col, colIndex) => (
                                                 <span
-                                                    key={`${row}-${col}`}
-                                                    className={`main-menu__grid-legend-cell${col === 0 ? ' main-menu__grid-legend-cell--start' : ''}`}
+                                                    key={`${rowLabel}-${col}`}
+                                                    className={`main-menu__grid-legend-cell${colIndex === 0 ? ' main-menu__grid-legend-cell--start' : ''}`}
                                                 />
                                             ))}
                                         </div>
                                     ))}
                                 </div>
                                 <p className="main-menu__grid-legend-caption">
-                                    5×5 board — columns <strong>x</strong> across, rows <strong>y</strong> down.
-                                    Chain start locks to column <strong>0</strong>.
+                                    Columns <strong>0–4</strong> across, rows <strong>A–E</strong> down
+                                    (letters stand vertical). Chain start locks to column <strong>0</strong>.
+                                    During an attack the live cell’s letter and number light up.
                                 </p>
                             </div>
                             <ol className="main-menu__manual">
