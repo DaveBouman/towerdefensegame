@@ -1,0 +1,8 @@
+basic.png          <- 108089/1.png  (cigar raider)
+thornward.png      <- 969033/7.png  (teal armored)
+saboteur.png       <- 969033/14.png (pink jacket)
+smokebinder.png    <- 969033/1.png  (magenta hair)
+warden.png         <- 969033/10.png (stern armored)
+field-medic.png    <- 108089/14.png (blue hair + vials)
+gridlock.png       <- 108089/7.png  (orange tech)
+training-dummy.png <- 108089/12.png (somber)

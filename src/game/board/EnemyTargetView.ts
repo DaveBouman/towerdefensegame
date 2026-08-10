@@ -6,7 +6,7 @@ import type { CombatTraitConfig } from '../cardGame/combat/combatTraits/types';
 import type { EnemyState, EnemyTurnAction } from '../cardGame/domain/types';
 import { getEnemyPassive } from '../cardGame/enemyPassives/defaults';
 import type { EnemyPassiveConfig } from '../cardGame/enemyPassives/types';
-import { getEnemyIdentity } from '../cardGame/presentation/enemyIdentity';
+import { getEnemyIdentity, getEnemyPortraitTextureKey } from '../cardGame/presentation/enemyIdentity';
 import {
     getEnemyIntentStepVisuals,
     type EnemyIntentStepVisual,
@@ -59,8 +59,11 @@ export class EnemyTargetView
     private readonly healthBarFill: Phaser.GameObjects.Rectangle;
     private readonly shieldBarFill: Phaser.GameObjects.Rectangle;
     private readonly shieldBarBg: Phaser.GameObjects.Rectangle;
+    private readonly flashOverlay: Phaser.GameObjects.Rectangle;
     private readonly healthBarWidth: number;
     private readonly healthBarHeight: number;
+    /** Y of the name label (below portrait + status chrome). */
+    private readonly labelY: number;
     private readonly shieldBadge: Phaser.GameObjects.Container;
     private readonly shieldValueText: Phaser.GameObjects.Text;
     private readonly poisonBadge: Phaser.GameObjects.Text;
@@ -125,40 +128,66 @@ export class EnemyTargetView
         this.outline = scene.add.rectangle(0, 0, enemySize, enemySize);
 
         this.outline.setOrigin(0, 0);
-        this.outline.setStrokeStyle(2, this.accentColor, 0.9);
-        this.outline.setFillStyle(this.accentColor, 0.1);
+        this.outline.setStrokeStyle(2, this.accentColor, 0.95);
+        this.outline.setFillStyle(0x000000, 0);
 
-        this.body = scene.add.rectangle(0, 0, enemySize, enemySize, this.accentColor, 0.22);
+        // Solid dark plate behind the portrait — accent stays on the frame only.
+        this.body = scene.add.rectangle(0, 0, enemySize, enemySize, 0x070b12, 1);
 
         this.body.setOrigin(0, 0);
 
         const frame = scene.add.graphics();
 
         drawCornerBrackets(frame, 2, 2, enemySize - 4, enemySize - 4, this.accentColor, {
-            arm: Math.round(enemySize * 0.16),
-            alpha: 0.95,
+            arm: Math.round(enemySize * 0.14),
+            alpha: 0.9,
         });
 
-        const avatar = scene.add.graphics();
+        const portraitKey = getEnemyPortraitTextureKey(definitionId);
+        const portraitInset = 3;
+        const portraitSize = enemySize - portraitInset * 2;
+        let avatar: Phaser.GameObjects.GameObject;
 
-        drawEnemySilhouette(
-            avatar,
-            identity.silhouette,
-            enemySize / 2,
-            enemySize / 2 - 2,
-            enemySize * 0.4,
-            this.accentColor,
-        );
+        if (scene.textures.exists(portraitKey))
+        {
+            const portrait = scene.add.image(
+                enemySize / 2,
+                enemySize / 2,
+                portraitKey,
+            );
 
-        const barInset = 10;
-        this.healthBarHeight = 12;
+            portrait.setDisplaySize(portraitSize, portraitSize);
+            avatar = portrait;
+        }
+        else
+        {
+            const glyph = scene.add.graphics();
+
+            drawEnemySilhouette(
+                glyph,
+                identity.silhouette,
+                enemySize / 2,
+                enemySize / 2,
+                enemySize * 0.38,
+                this.accentColor,
+            );
+            avatar = glyph;
+        }
+
+        this.flashOverlay = scene.add.rectangle(0, 0, enemySize, enemySize, 0xffffff, 0)
+            .setOrigin(0, 0);
+
+        // Status chrome sits under the art so HP text never covers the face.
+        const barInset = 4;
+        const chromeGap = 8;
+        this.healthBarHeight = 11;
         this.healthBarWidth = enemySize - barInset * 2;
-        const barY = enemySize - barInset - this.healthBarHeight;
-        const shieldBarY = barY - this.healthBarHeight - 4;
+        const healthBarY = enemySize + chromeGap;
+        this.labelY = healthBarY + this.healthBarHeight + 10;
 
         const healthBarBg = scene.add.rectangle(
             barInset,
-            barY,
+            healthBarY,
             this.healthBarWidth,
             this.healthBarHeight,
             ENEMY_BAR_BG,
@@ -167,18 +196,21 @@ export class EnemyTargetView
 
         this.healthBarFill = scene.add.rectangle(
             barInset,
-            barY,
+            healthBarY,
             this.healthBarWidth,
             this.healthBarHeight,
             ENEMY_BAR_FILL,
             1,
         ).setOrigin(0, 0);
 
+        // Thin shield strip in the gap above HP — never over the portrait.
+        const shieldBarY = enemySize + 2;
+
         const shieldBarBg = scene.add.rectangle(
             barInset,
             shieldBarY,
             this.healthBarWidth,
-            this.healthBarHeight,
+            3,
             0x152535,
             1,
         ).setOrigin(0, 0);
@@ -189,19 +221,24 @@ export class EnemyTargetView
             barInset,
             shieldBarY,
             this.healthBarWidth,
-            this.healthBarHeight,
+            3,
             ENEMY_SHIELD_FILL,
             1,
         ).setOrigin(0, 0);
         this.shieldBarFill.setVisible(false);
         this.shieldBarBg.setVisible(false);
 
-        this.healthText = scene.add.text(enemySize / 2, enemySize / 2 - 2, '', {
-            ...uiDisplayTextStyle(20, '#ffffff', { bold: true }),
-        }).setOrigin(0.5);
+        this.healthText = scene.add.text(
+            enemySize / 2,
+            healthBarY + this.healthBarHeight / 2,
+            '',
+            {
+                ...uiDisplayTextStyle(12, '#ffffff', { bold: true }),
+            },
+        ).setOrigin(0.5);
 
-        const label = scene.add.text(enemySize / 2, enemySize + 16, 'TARGET', {
-            ...uiDisplayTextStyle(14, identity.labelColor, { bold: true }),
+        const label = scene.add.text(enemySize / 2, this.labelY, 'TARGET', {
+            ...uiDisplayTextStyle(13, identity.labelColor, { bold: true }),
         }).setOrigin(0.5, 0);
 
         this.enemyLabel = label;
@@ -210,7 +247,7 @@ export class EnemyTargetView
             scene,
             container,
             enemySize,
-            enemySize + 16 + COMBAT_TRAIT_ROW_BELOW_LABEL,
+            this.labelY + COMBAT_TRAIT_ROW_BELOW_LABEL,
         );
 
         this.targetPromptBadge = scene.add.text(enemySize / 2, -10, 'LOCK TARGET', {
@@ -250,8 +287,9 @@ export class EnemyTargetView
             this.shieldRing,
             this.outline,
             this.body,
-            frame,
             avatar,
+            this.flashOverlay,
+            frame,
             this.shieldBarBg,
             this.shieldBarFill,
             healthBarBg,
@@ -743,14 +781,9 @@ export class EnemyTargetView
 
     playHitFlash (): void
     {
-        playHitFlashTween(this.scene, this.container, this.body, this.accentColor, {
-            restoreAlpha: this.displayedShield > 0 ? 0.28 : 1,
+        playHitFlashTween(this.scene, this.container, this.flashOverlay, 0xffffff, {
+            restoreAlpha: 0,
         });
-
-        if (this.displayedShield > 0)
-        {
-            this.scene.time.delayedCall(180, () => this.applyShieldVisuals());
-        }
     }
 
     showDamageNumber (damage: number): void
@@ -767,8 +800,8 @@ export class EnemyTargetView
     {
         this.showFloatingNumber(`+${heal} HP`, '#7af0c8');
 
-        this.scene.tweens.killTweensOf(this.body);
-        this.body.setFillStyle(0x2a6b58, 0.55);
+        this.scene.tweens.killTweensOf(this.flashOverlay);
+        this.flashOverlay.setFillStyle(0x2a6b58, 0.45);
 
         this.scene.tweens.add({
             targets: this.container,
@@ -779,7 +812,7 @@ export class EnemyTargetView
             yoyo: true,
             onComplete: () =>
             {
-                this.body.setFillStyle(this.accentColor, 0.22);
+                this.flashOverlay.setFillStyle(0xffffff, 0);
             },
         });
     }
@@ -788,8 +821,8 @@ export class EnemyTargetView
     {
         this.showFloatingNumber(`+${shield} shield`, '#aed6f1');
 
-        this.scene.tweens.killTweensOf(this.body);
-        this.body.setFillStyle(ENEMY_SHIELD_COLOR, 0.55);
+        this.scene.tweens.killTweensOf(this.flashOverlay);
+        this.flashOverlay.setFillStyle(ENEMY_SHIELD_COLOR, 0.4);
 
         this.scene.tweens.add({
             targets: this.container,
@@ -800,6 +833,7 @@ export class EnemyTargetView
             yoyo: true,
             onComplete: () =>
             {
+                this.flashOverlay.setFillStyle(0xffffff, 0);
                 this.applyShieldVisuals();
             },
         });
@@ -823,7 +857,7 @@ export class EnemyTargetView
     playEnemyAttackPulse (): void
     {
         this.scene.tweens.killTweensOf(this.container);
-        this.body.setFillStyle(0xff9f43, 1);
+        this.flashOverlay.setFillStyle(0xff9f43, 0.35);
 
         this.scene.tweens.add({
             targets: this.container,
@@ -835,6 +869,7 @@ export class EnemyTargetView
             repeat: 1,
             onComplete: () =>
             {
+                this.flashOverlay.setFillStyle(0xffffff, 0);
                 this.applyShieldVisuals();
             },
         });
@@ -962,7 +997,7 @@ export class EnemyTargetView
 
     private getTraitRowY (): number
     {
-        return this.enemySize + 16 + COMBAT_TRAIT_ROW_BELOW_LABEL;
+        return this.labelY + COMBAT_TRAIT_ROW_BELOW_LABEL;
     }
 
     private getPassiveRowY (): number
@@ -1002,15 +1037,13 @@ export class EnemyTargetView
         if (hasShield)
         {
             this.outline.setStrokeStyle(3, ENEMY_SHIELD_COLOR, 1);
-            this.body.setFillStyle(ENEMY_SHIELD_COLOR, 0.28);
             this.startShieldPulse();
             return;
         }
 
         this.shieldTween?.stop();
         this.shieldTween = undefined;
-        this.outline.setStrokeStyle(2, this.accentColor, 0.9);
-        this.body.setFillStyle(this.accentColor, 0.22);
+        this.outline.setStrokeStyle(2, this.accentColor, 0.95);
     }
 
     private applyThreatRingStyle (): void

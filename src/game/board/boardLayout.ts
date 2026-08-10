@@ -71,7 +71,7 @@ export const computeBoardLayout = (
 {
     const { tileSize, cols, rows } = GRID_CONFIG;
     const { width: gridWidth, height: gridHeight } = getGridPixelSize();
-    const enemySize = Math.round(tileSize * 1.5);
+    const enemySize = Math.round(tileSize * 1.85);
     const playerSize = Math.round(tileSize * 1.38);
     const enemyGap = Math.round(tileSize * 0.55);
     const enemyColumnWidth = computeEnemyColumnWidth(enemySize, tileSize);

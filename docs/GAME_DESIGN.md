@@ -216,9 +216,10 @@ The player turn is **escalating**: each Attack resolves the current board withou
 
 Each enemy should force a **different deck shape and chain strategy**.
 
-**In-fight identity (stand-in):** each enemy uses a unique accent tint + silhouette glyph
-(`enemyIdentity.ts` → `EnemyTargetView`). Map nodes stay generic (Street Op / Lieutenant) —
-identity is revealed only when the fight starts. Silhouettes are temporary until real character art.
+**In-fight identity:** each enemy uses a unique accent frame + Craftpix portrait
+(`public/assets/enemies/`, `enemyIdentity.ts` → `EnemyTargetView`). Map nodes stay generic
+(Street Op / Lieutenant) — identity is revealed only when the fight starts. Silhouette glyphs
+remain as a fallback if a portrait fails to load.
 
 ---
 
@@ -280,7 +281,7 @@ identity is revealed only when the fight starts. Silhouettes are temporary until
 | Run flow (phases, carry-over HP, deck, rewards) | `src/App.tsx` |
 | Change balance numbers | `src/game/cardGame/config/gameRules.json` |
 | Add/edit cards | `src/game/cardGame/config/cards.json`, `cardRegistry.ts` |
-| Add/edit enemies | `src/game/cardGame/config/enemies.json`, `enemyCatalog.ts`, `enemyPassives/`; in-fight look: `presentation/enemyIdentity.ts` |
+| Add/edit enemies | `src/game/cardGame/config/enemies.json`, `enemyCatalog.ts`, `enemyPassives/`; in-fight look: `presentation/enemyIdentity.ts` + `public/assets/enemies/` |
 | Chain behavior | `src/game/cardGame/combat/AttackPipeline.ts` |
 | New card ability | `src/game/cardGame/effects/` (behaviors), `abilities/` (chain abilities: poison/fire/bleed/fortify/overload) + register in `chainAbilityRegistry.ts` |
 | Bomb / trap conversion | `AttackPipeline.applyBombConversion` (runs first in `resolveChainSteps`) |
@@ -295,6 +296,8 @@ identity is revealed only when the fight starts. Silhouettes are temporary until
 
 | Date | Change |
 |------|--------|
+| 2026-08-10 | **Enemy portrait presentation.** Portraits fill the target frame; HP/shield chrome sits under the art (no text over the face). Larger panel; accent on frame only. |
+| 2026-08-10 | **Enemy portraits.** Craftpix cyberpunk avatars renamed under `public/assets/enemies/` and shown in-fight (`preloadEnemyPortraits` → `EnemyTargetView`). Accent frames kept; silhouettes remain as fallback. Map still hides encounter names. |
 | 2026-08-10 | **Gridlock + Field Medic duos.** New enemy **Gridlock** locks a telegraphed board column each turn (`pressureColumn`). Mid-run Street Ops can pair a rolled enemy with **Field Medic**. Column pressure roadmap item done. |
 | 2026-08-10 | **In-fight enemy identity stand-in.** Each enemy gets a unique accent color + silhouette (`enemyIdentity.ts`); map still hides encounter names. Ready to swap for character art later. |
 | 2026-08-10 | **Per-floor rerolls + run economy + teaching.** Map split into 3 logical floors; hand rerolls (3) shared per floor via App/`START_BATTLE`. Ripperdoc shop (card/body mod/heal/remove). Lieutenant rewards use elite card pool. First-run tutorial overlays + coach strip. Last Stand / Enrage threshold text on enemy panels. |

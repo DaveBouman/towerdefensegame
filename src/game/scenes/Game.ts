@@ -11,6 +11,7 @@ import { GAME_RULES, getCardDefinitionOrThrow } from '../cardGame/config/cardReg
 import type { SlotPosition } from '../cardGame/domain/types';
 import { destroyGameTooltipController } from '../cardGame/presentation/tooltips/GameTooltipController';
 import { preloadEnemyPassiveIcons } from '../cardGame/presentation/icons/preloadEnemyPassiveIcons';
+import { preloadEnemyPortraits } from '../cardGame/presentation/icons/preloadEnemyPortraits';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { resolveEnemyPhasePlayback } from '../cardGame/presentation/playback/enemyPhasePlayback';
 import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
@@ -50,7 +51,10 @@ export class Game extends Scene
 
     create (): void
     {
-        void preloadEnemyPassiveIcons(this).then(() =>
+        void Promise.all([
+            preloadEnemyPassiveIcons(this),
+            preloadEnemyPortraits(this),
+        ]).then(() =>
         {
             this.registerListeners();
             EventBus.emit(GAME_EVENTS.SCENE_READY, this);
