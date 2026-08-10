@@ -706,12 +706,30 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getHand().some((card) => card.instanceId === placed?.instanceId)).toBe(true);
     });
 
-    it('starts each fight with three rerolls', () =>
+    it('starts each fight with three rerolls by default', () =>
     {
         const session = new CardGameSession();
 
         expect(session.getRerollsRemaining()).toBe(3);
         expect(session.canReroll()).toBe(true);
+    });
+
+    it('starts with an injected remaining floor reroll count', () =>
+    {
+        const session = new CardGameSession(
+            GAME_RULES.defaultEnemyId,
+            undefined,
+            undefined,
+            [],
+            null,
+            0,
+            1,
+        );
+
+        expect(session.getRerollsRemaining()).toBe(1);
+        expect(session.rerollHandCards([ 0 ])).toBe(true);
+        expect(session.getRerollsRemaining()).toBe(0);
+        expect(session.rerollHandCards([ 0 ])).toBe(false);
     });
 
     it('rerolls selected hand cards and decrements remaining rerolls', () =>

@@ -92,6 +92,7 @@ export class CardGameSession
         bodyMods: readonly string[] = [],
         puzzleMode: PuzzleModeConfig | null = null,
         runAttackCount = 0,
+        rerollsRemaining?: number,
     )
     {
         this.puzzleMode = puzzleMode;
@@ -115,7 +116,7 @@ export class CardGameSession
         this.fieldEffects = new FieldEffects(this.board);
         this.deckHand = new DeckHand(
             deckDefinitionIds,
-            puzzleMode ? 0 : GAME_RULES.fightRerollsPerFight,
+            puzzleMode ? 0 : (rerollsRemaining ?? GAME_RULES.rerollsPerFloor),
         );
         this.combat = new CombatResolver({
             board: this.board,
@@ -508,7 +509,7 @@ export class CardGameSession
         return this.canEditBoard() && this.deckHand.getRerollsRemaining() > 0;
     }
 
-    /** Discards selected hand cards and draws replacements. Uses one fight reroll. */
+    /** Discards selected hand cards and draws replacements. Uses one floor reroll. */
     rerollHandCards (handIndices: number[]): boolean
     {
         if (!this.canReroll())

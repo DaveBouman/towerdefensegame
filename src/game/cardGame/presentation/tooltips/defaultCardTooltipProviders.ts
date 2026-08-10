@@ -206,21 +206,27 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
     provider('boost', () => ({
         title: 'Boost',
         lines: [
-            `Multiplies the next card's effect by ×${GAME_RULES.fieldBoost.nextStepMultiplier} — attack, defend, fire, poison, and other specials.`,
-            'Boosts stack: Boost → Boost → Attack is ×4 (each boost multiplies).',
+            `Multiplies the next card's effect by ×${GAME_RULES.fieldBoost.nextStepMultiplier} (attack, defend, fire, poison, skills).`,
+            'Boosts stack multiplicatively: Boost → Boost → Attack = ×4.',
             'Jokers pass the boost stack through to the following card.',
-            'Field card — spawns on a random empty tile anywhere on the board after the enemy turn.',
+            'Field card — spawns on a random empty tile after the enemy turn.',
         ],
     })),
-    provider('burden', (ctx) => ({
-        title: titleFromDefinition(ctx),
-        lines: [
-            'Place it on the board to clear it from your hand — it does nothing useful in the chain but wastes a tile.',
-            'Route your attack through it to safely dump it. Leave it off-chain and it hits you for double its hand penalty when you attack.',
-            'Cannot be rerolled away.',
-            `Still in hand at end of turn: you take ${ctx.definition.handEndPenalty ?? 0} damage, then it is removed.`,
-        ],
-    })),
+    provider('burden', (ctx) =>
+    {
+        const handPenalty = ctx.definition.handEndPenalty ?? 0;
+        const offChainTax = handPenalty * 2;
+
+        return {
+            title: titleFromDefinition(ctx),
+            lines: [
+                'Curse clog: place it to clear your hand — inert on the chain, wastes a tile.',
+                `Route through it to dump safely. Leave it off-chain when you Attack: take ${offChainTax} damage (2× hand penalty).`,
+                'Cannot be selected for a hand reroll.',
+                `Still in hand when an attack ends: take ${handPenalty} damage, then it is removed.`,
+            ],
+        };
+    }),
     provider('fuse', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: [

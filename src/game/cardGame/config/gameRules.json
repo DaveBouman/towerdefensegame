@@ -5,7 +5,7 @@
   "handSize": 8,
   "energyPerTurn": 3,
   "enemyDamageRampPerAttack": 4,
-  "fightRerollsPerFight": 3,
+  "rerollsPerFloor": 3,
   "player": {
     "maxHealth": 80
   },

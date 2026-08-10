@@ -1,9 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import { seedScope } from '../random/rng';
-import { generateRunMap, getNode, projectIndex, RUN_CONFIG } from './runMap';
+import {
+    FLOOR_COLUMN_RANGES,
+    generateRunMap,
+    getFloorColumnRange,
+    getFloorForColumn,
+    getNode,
+    projectIndex,
+    RUN_CONFIG,
+} from './runMap';
 
 describe('runMap', () =>
 {
+    it('maps columns onto three logical floors', () =>
+    {
+        expect(FLOOR_COLUMN_RANGES).toHaveLength(RUN_CONFIG.floorCount);
+        expect(getFloorForColumn(0)).toBe(1);
+        expect(getFloorForColumn(3)).toBe(1);
+        expect(getFloorForColumn(4)).toBe(2);
+        expect(getFloorForColumn(7)).toBe(2);
+        expect(getFloorForColumn(8)).toBe(3);
+        expect(getFloorForColumn(10)).toBe(3);
+        expect(getFloorColumnRange(1)).toEqual({ startCol: 0, endCol: 3 });
+        expect(getFloorColumnRange(3)).toEqual({ startCol: 8, endCol: 10 });
+    });
+
     it('gives saboteur nodes adjacent routes on the next column', () =>
     {
         let checkedSaboteur = false;
@@ -71,6 +92,16 @@ describe('runMap', () =>
         expect(rowZero.every((node) => node.enemyId !== undefined)).toBe(true);
         expect(rowZero.every((node) => node.enemyIds?.length === 2)).toBe(true);
         expect(rowZero.every((node) => node.enemyIds?.every((id) => id === 'basic'))).toBe(true);
+        expect(rowZero.every((node) => node.reward?.kind === 'card' && node.reward.pool === 'standard')).toBe(true);
+    });
+
+    it('gives lieutenants elite card rewards', () =>
+    {
+        seedScope('map-semi-boss-reward', 'map');
+        const map = generateRunMap();
+        const semiBossRow = map.nodes.filter((node) => node.kind === 'semi-boss');
+
+        expect(semiBossRow.every((node) => node.reward?.kind === 'card' && node.reward.pool === 'elite')).toBe(true);
     });
 
     it('assigns distinct events within the same column when possible', () =>

@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-08-04
+**Last updated:** 2026-08-10
 
 ---
 
@@ -25,6 +25,27 @@ The game is a **run**: a left-to-right map of nodes connected by lines
 in difficulty toward a boss (`warden`) in the final column. Each run has **9 columns**
 between the opening fight and the boss (`RUN_CONFIG.middleColumns`).
 
+### Logical floors (scaffolding)
+
+The current single map is split into **3 logical floors** (no separate maps yet):
+
+| Floor | Columns | Notes |
+|-------|---------|--------|
+| 1 | `0–3` | Opens → semi-boss lieutenant |
+| 2 | `4–7` | Mid run |
+| 3 | `8–10` | Late → Warden |
+
+Helpers: `getFloorForColumn`, `getFloorColumnRange`, `RUN_CONFIG.floorCount` in `runMap.ts`. The map UI shows the current floor.
+
+### Hand rerolls (per floor)
+
+- **`GAME_RULES.rerollsPerFloor` (3)** — shared across all fights on the current floor.
+- Owned by run state in `App` (`floorRerollsRemaining`); passed into each battle via `START_BATTLE.rerollsRemaining`.
+- Sessions/`DeckHand` do **not** reset to 3 each fight; spending syncs back through `REROLL_STATE`.
+- Entering the first node of a higher floor refills to max.
+
+### Node kinds & economy
+
 - **Node kinds** (`src/game/run/nodeKinds.ts`, `RunMapNode.kind`): `enemy` and `boss`
   are battles; `shop` and `event` are non-battle stops. Each kind has an icon
   (`NodeKindIcon`, from game-icons.net) and a hover tooltip on the map. Map labels use
@@ -33,15 +54,21 @@ between the opening fight and the boss (`RUN_CONFIG.middleColumns`).
   is always `enemy`; column 4 (row index 3) is always a **semi-boss** lieutenant fight
   (`smokebinder` / `saboteur`); last column is the `boss`; other middle columns are weighted-random
   (`rollNodeKind`: 70% enemy, 20% event, 10% shop). **Event nodes** open `RunEventOverlay` (`runEvents.ts`) — wheel,
-  icon matcher (4×4 memory grid, 4 attempts), **combo trials** (damage puzzles), stasis patches, gambles, body mods. Shop is still a placeholder (`NodeVisitOverlay`).
+  icon matcher (4×4 memory grid, 4 attempts), **combo trials** (damage puzzles), stasis patches, gambles, body mods.
+- **Ripperdoc shop** (`ShopOverlay`, `shop.ts`): seeded offers (`seedScope(seed, shop:<nodeId>)`) — buy a card, body mod, Integrity heal, or remove a card from the run deck. Spend creds; leave without buying is always available.
 - **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
 - **Deck persists and grows**: the run owns the deck as a list of card definition ids (`getDefaultDeckDefinitionIds`). Each battle builds instances from those ids (`buildDeckFromDefinitionIds`).
-- **Victory rewards**: defeating a (non-boss) enemy grants that node's reward. Today every node grants a **card reward** (`CardRewardOverlay` → pick from choices → card ids appended to the run deck).
+- **Victory rewards**: street ops grant a standard 3-pick-1 card reward; lieutenants/semi-bosses draw from the **elite** card pool (`SEMI_BOSS_CARD_REWARD` / `ELITE_REWARD_CARD_POOL`). Boss wins end the run (no card pick).
 - Losing any battle, or clearing the boss, ends the run (`RunEndOverlay` → new run).
 - The map regenerates each run.
 
+### First-run teaching
+
+- `localStorage` flag via `src/ui/tutorial/Tutorial.tsx`.
+- Intro overlay before the first map pick; coach strip on the first battle; reward/shop tip after the first win. Dismissible; skipped once seen.
+
 Flow: `map (pick node)` → `battle` → `win → reward → map` / `lose → defeat` / `boss win → victory`.
-Non-battle nodes: `map (pick shop)` → `visit` → `map`; `map (pick event)` → `visit (RunEventOverlay)` → `map`.
+Non-battle nodes: `map (pick shop)` → `visit (ShopOverlay)` → `map`; `map (pick event)` → `visit (RunEventOverlay)` → `map`.
 
 ### Seeds & determinism
 
@@ -56,6 +83,7 @@ and the same seed + same in-battle actions produces the same battle.
   `deriveSeed(seed, scope)`:
   - `map` — map generation (`App.buildMapForSeed`)
   - `reward:<nodeId>:<rerollIndex>` — a node's card reward (`App.rollRewardForNode`)
+  - `shop:<nodeId>` — Ripperdoc stock
   - `battle:<nodeId>` — a battle's stream, reseeded in `Game.startBattle` (passed via
     the `START_BATTLE` payload `seed`)
 - Because each boundary reseeds, map/reward results are **idempotent and order-independent**
@@ -69,15 +97,17 @@ Rewards are data on each map node (`RunMapNode.reward`), modeled as a discrimina
 union in `src/game/run/rewards.ts`:
 
 ```
-RunReward = CardReward { kind: 'card'; choiceCount; pickCount; rerollable }
+RunReward =
+  | CardReward { kind: 'card'; choiceCount; pickCount; rerollable; pool?: 'standard' | 'elite' }
+  | BodyModRunReward { kind: 'body-mod' }
 ```
 
-- **Variable per node** — different enemies can grant different rewards; today all use `DEFAULT_CARD_REWARD`.
+- **Variable per node** — `rewardForNodeKind`: normal enemies use `DEFAULT_CARD_REWARD` (standard pool); semi-boss uses `SEMI_BOSS_CARD_REWARD` (elite pool).
 - **Body-mod-ready** — the numeric knobs are the intended extension seam:
   - `pickCount > 1` → "pick two cards"
   - `rerollable: true` → reroll the offered choices (`CardRewardOverlay` already renders the button + `App` handles reroll)
-  - add new `RunReward` kinds (e.g. body-mod/creds) without touching existing handling.
-- Card choices come from `REWARD_CARD_POOL` via `rollCardReward(choiceCount)`.
+  - add new `RunReward` kinds without touching existing handling.
+- Card choices come from `REWARD_CARD_POOL` / `ELITE_REWARD_CARD_POOL` via `rollCardReward(choiceCount, pool)`.
 
 When adding body mods: give body mods a modifier step that adjusts the `RunReward`
 before `rollCardReward`/display, or add a new `RunReward` kind + a case in `App`'s
@@ -91,13 +121,15 @@ before `rollCardReward`/display, or add a new `RunReward` kind + a case in `App`
 index.html → src/main.tsx → App.tsx (run controller)
   ├── PhaserGame.tsx → src/game/main.ts → scenes/Game.ts
   ├── GameHud.tsx           (battle phase)
-  ├── RunMapOverlay.tsx     (map phase; node icons + tooltips)
+  ├── Tutorial.tsx          (first-run intro / coach / tip)
+  ├── RunMapOverlay.tsx     (map phase; node icons + tooltips + floor/rerolls)
   ├── CardRewardOverlay.tsx (reward phase)
-  ├── NodeVisitOverlay.tsx  (visit phase; shop/event placeholder)
+  ├── ShopOverlay.tsx       (Ripperdoc visit)
+  ├── NodeVisitOverlay.tsx  (generic non-shop visit fallback)
   └── RunEndOverlay.tsx     (victory / defeat)
 ```
 
-`App.tsx` owns run state (map, path, carry-over HP, phase). The Phaser `Game`
+`App.tsx` owns run state (map, path, carry-over HP, floor rerolls, phase). The Phaser `Game`
 scene does **not** auto-start a fight; it waits for `START_BATTLE`, builds a
 battle, and emits `BATTLE_WON` / `BATTLE_LOST` back to React.
 
@@ -140,7 +172,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | Deck / hand | 20 / 8 | `gameRules.json` |
 | Energy (attacks) per turn | 3 | `gameRules.json` (`energyPerTurn`) |
 | Enemy damage ramp per extra attack | +4 | `gameRules.json` (`enemyDamageRampPerAttack`) |
-| Rerolls per fight | 3 | `gameRules.json` |
+| Rerolls per floor | 3 | `gameRules.json` (`rerollsPerFloor`) |
 | Chain start column | 0 | `gameRules.json` |
 | Max chain steps | 24 | `gameRules.json` |
 | Off-chain bonus | +2 damage (attack) / +2 armor (defend) on board but not in chain | `gameRules.json` |
@@ -201,15 +233,16 @@ Each enemy should force a **different deck shape and chain strategy**.
 - [x] **Gauntlet / run map** — branching path of escalating enemies from `enemies.json` (`runMap.ts`, `RunMapOverlay`)
 - [x] **Carry-over HP** — HP carries between fights with a small heal on victory (`RUN_CONFIG.healOnVictory`)
 - [x] **Pre-fight enemy preview** — map nodes show the enemy label before you commit
-- [x] **Node kinds** — enemy/boss/shop/event nodes with icons + hover tooltips (`nodeKinds.ts`, `NodeKindIcon`); shop/event are placeholders (`NodeVisitOverlay`)
-- [ ] **Shop node** — spend creds on cards/body mods (replace `NodeVisitOverlay` placeholder)
-- [ ] **Random event node** — branching choice encounters (replace `NodeVisitOverlay` placeholder)
-- [ ] **Run-wide rerolls** — e.g. 5 per run instead of 3 per fight
+- [x] **Node kinds** — enemy/boss/shop/event nodes with icons + hover tooltips (`nodeKinds.ts`, `NodeKindIcon`); events via `RunEventOverlay`; shop via `ShopOverlay`
+- [x] **Shop node** — Ripperdoc spends creds on cards/body mods/heal/remove (`shop.ts`, `ShopOverlay`)
+- [x] **Random event node** — branching choice encounters (`RunEventOverlay`, `runEvents.ts`)
+- [x] **Per-floor rerolls** — 3 hand rerolls shared across fights on each logical floor (`rerollsPerFloor`, App-owned)
+- [x] **3-floor scaffolding** — logical floors on the current 11-column map (`getFloorForColumn`); separate floor maps later
 
 #### Phase 2 — Spatial tactics (~1 week)
 
 - [ ] **Column pressure** — enemy targets or disables specific columns
-- [ ] **Threshold telegraphs** — HUD shows Last Stand / Enrage breakpoints
+- [x] **Threshold telegraphs** — HUD shows Last Stand / Enrage breakpoints (`EnemyTargetView`)
 - [ ] **Perfect-fight rewards** — bonus reroll or card upgrade for clean wins
 
 #### Phase 3 — Meta (~1–2 weeks)
@@ -233,10 +266,12 @@ Each enemy should force a **different deck shape and chain strategy**.
 | Seeded RNG / determinism | `src/game/random/rng.ts` (use `random`/`randomInt`/`pickRandom`/`shuffleInPlace`, never `Math.random`) |
 | Map layout / difficulty ramp | `src/game/run/runMap.ts` (`ROW_SIZES`, `ROW_ENEMY_POOLS`, `RUN_CONFIG`) |
 | Map node kinds / icons / tooltips | `src/game/run/nodeKinds.ts` (kinds, weights, tooltip copy), `src/ui/components/NodeKindIcon.tsx` |
-| Shop / event node behavior | `src/ui/components/NodeVisitOverlay.tsx` (placeholder), `RunEventOverlay.tsx`, `runEvents.ts`, `runPuzzles.ts`, `PuzzleHud.tsx`, `PuzzleResultOverlay.tsx`; `App.tsx` `visit`/`puzzle` phases |
-| Rewards / reward pool / body-mod hooks | `src/game/run/rewards.ts` |
+| Shop / event node behavior | `ShopOverlay.tsx`, `shop.ts`, `RunEventOverlay.tsx`, `runEvents.ts`, `runPuzzles.ts`, `PuzzleHud.tsx`, `PuzzleResultOverlay.tsx`; `App.tsx` `visit`/`puzzle` phases |
+| Rewards / reward pool / body-mod hooks | `src/game/run/rewards.ts` (`rewardForNodeKind`, elite pool) |
 | Persistent run deck | `getDefaultDeckDefinitionIds` / `buildDeckFromDefinitionIds` in `buildPlayerDeck.ts` |
-| Map / run visuals | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`; `.run-map*` / `.run-end*` / `.card-reward*` in `public/style.css` |
+| Map / run visuals | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`, `ShopOverlay.tsx`; `.run-map*` / `.run-end*` / `.card-reward*` / `.shop-overlay*` in `public/style.css` |
+| First-run teaching | `src/ui/tutorial/Tutorial.tsx` |
+| Floor helpers / per-floor rerolls | `runMap.ts` floors; `App.tsx` `floorRerollsRemaining`; `START_BATTLE.rerollsRemaining` |
 | Run flow (phases, carry-over HP, deck, rewards) | `src/App.tsx` |
 | Change balance numbers | `src/game/cardGame/config/gameRules.json` |
 | Add/edit cards | `src/game/cardGame/config/cards.json`, `cardRegistry.ts` |
@@ -255,6 +290,7 @@ Each enemy should force a **different deck shape and chain strategy**.
 
 | Date | Change |
 |------|--------|
+| 2026-08-10 | **Per-floor rerolls + run economy + teaching.** Map split into 3 logical floors; hand rerolls (3) shared per floor via App/`START_BATTLE`. Ripperdoc shop (card/body mod/heal/remove). Lieutenant rewards use elite card pool. First-run tutorial overlays + coach strip. Last Stand / Enrage threshold text on enemy panels. |
 | 2026-08-04 | **Burden off-chain tax.** Placed Burdens not included in the attack chain deal double hand-end penalty (10) to the player when the attack resolves. Chaining through Burden dumps it safely. |
 | 2026-08-04 | **Burden rework.** Burden is no longer unplayable/reroll-dumpable. Place it as an inert board clog (clears it from hand, wastes a tile), or take the hand-end penalty. New `nonRerollable` card flag blocks hand reroll selection. |
 | 2026-08-04 | **Boost stacking.** Consecutive field boosts multiply on the next consuming card (Boost→Boost→Attack = ×4). Jokers still pass the stack through. Ability payoffs (fire/poison/etc.) use the same stacked multiplier. |

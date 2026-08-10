@@ -53,7 +53,8 @@ export interface GameRules {
     handSize: number;
     energyPerTurn: number;
     enemyDamageRampPerAttack: number;
-    fightRerollsPerFight: number;
+    /** Hand rerolls shared across all fights on the current floor. */
+    rerollsPerFloor: number;
     player: { maxHealth: number };
     defaultEnemyId: string;
     offChainBonus: { attackDamage: number; defendArmor: number };

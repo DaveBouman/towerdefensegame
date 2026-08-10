@@ -52,6 +52,7 @@ export interface GameEventMap {
         seed: number;
         bodyMods: string[];
         runAttackCount: number;
+        rerollsRemaining: number;
     };
     'start-puzzle': { puzzleId: string; startHealth: number; seed: number; bodyMods: string[]; runAttackCount: number };
     'puzzle-state': PuzzleState;

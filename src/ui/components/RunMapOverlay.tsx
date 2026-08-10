@@ -29,6 +29,10 @@ interface RunMapOverlayProps {
     playerHealth: number;
     maxHealth: number;
     gold: number;
+    currentFloor: number;
+    floorCount: number;
+    floorRerollsRemaining: number;
+    floorRerollsMax: number;
     seed: string;
     /** Whether the seed can still be changed (only before the first battle). */
     seedEditable: boolean;
@@ -44,6 +48,10 @@ export const RunMapOverlay = ({
     playerHealth,
     maxHealth,
     gold,
+    currentFloor,
+    floorCount,
+    floorRerollsRemaining,
+    floorRerollsMax,
     seed,
     seedEditable,
     onSeedChange,
@@ -137,6 +145,14 @@ export const RunMapOverlay = ({
                     <div className="run-map__gold" role="status">
                         <span className="run-map__gold-label">Creds</span>
                         <span className="run-map__gold-value">{gold}</span>
+                    </div>
+                    <div className="run-map__floor" role="status">
+                        <span className="run-map__floor-label">Floor</span>
+                        <span className="run-map__floor-value">{currentFloor}/{floorCount}</span>
+                    </div>
+                    <div className="run-map__rerolls" role="status">
+                        <span className="run-map__rerolls-label">Rerolls</span>
+                        <span className="run-map__rerolls-value">{floorRerollsRemaining}/{floorRerollsMax}</span>
                     </div>
                 </div>
             </div>

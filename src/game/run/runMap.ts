@@ -3,7 +3,7 @@
  * through, picking one node per column (Slay-the-Spire-style branching path).
  */
 
-import { DEFAULT_CARD_REWARD, type RunReward } from './rewards';
+import { rewardForNodeKind, type RunReward } from './rewards';
 import { isBattleKind, rollNodeKind, type RunMapNodeKind } from './nodeKinds';
 import { rollRunEventIdExcluding } from './runEvents';
 import { pickRandom, random } from '../random/rng';
@@ -52,6 +52,45 @@ export const RUN_CONFIG = {
     middleColumns: 9,
     /** Zero-based column index that always rolls a semi-boss fight (4th column). */
     semiBossRow: 3,
+    /** Logical floors spanning the current single map (scaffolding for future multi-map floors). */
+    floorCount: 3,
+};
+
+/**
+ * Column ranges for each logical floor (inclusive).
+ * Floor 1: open → semi-boss; Floor 2: mid; Floor 3: late → Warden.
+ */
+export const FLOOR_COLUMN_RANGES: readonly { floor: number; startCol: number; endCol: number }[] = [
+    { floor: 1, startCol: 0, endCol: 3 },
+    { floor: 2, startCol: 4, endCol: 7 },
+    { floor: 3, startCol: 8, endCol: 10 },
+];
+
+/** 1-based floor index for a map column. */
+export const getFloorForColumn = (column: number): number =>
+{
+    for (const range of FLOOR_COLUMN_RANGES)
+    {
+        if (column >= range.startCol && column <= range.endCol)
+        {
+            return range.floor;
+        }
+    }
+
+    return RUN_CONFIG.floorCount;
+};
+
+/** Inclusive column range for a 1-based floor. */
+export const getFloorColumnRange = (floor: number): { startCol: number; endCol: number } =>
+{
+    const range = FLOOR_COLUMN_RANGES.find((entry) => entry.floor === floor);
+
+    if (!range)
+    {
+        throw new Error(`Unknown floor: ${floor}`);
+    }
+
+    return { startCol: range.startCol, endCol: range.endCol };
 };
 
 /** Elite enemies used for the fixed semi-boss column. */
@@ -199,7 +238,7 @@ export const generateRunMap = (): RunMap =>
                         : pickRandom(ROW_ENEMY_POOLS[row] ?? ROW_ENEMY_POOLS[0]!)
                     : undefined,
                 enemyIds: battle && row === 0 ? [ 'basic', 'basic' ] : undefined,
-                reward: battle ? { ...DEFAULT_CARD_REWARD } : undefined,
+                reward: battle ? rewardForNodeKind(kind) : undefined,
                 nextIds: [] as string[],
             } satisfies RunMapNode;
         }),

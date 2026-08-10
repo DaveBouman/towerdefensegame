@@ -72,7 +72,7 @@ export class Game extends Scene
     }
 
     private onStartBattle = (
-        { enemyId, enemyIds, startHealth, deck, seed, bodyMods, runAttackCount }:
+        { enemyId, enemyIds, startHealth, deck, seed, bodyMods, runAttackCount, rerollsRemaining }:
         {
             enemyId?: string;
             enemyIds?: readonly string[];
@@ -81,6 +81,7 @@ export class Game extends Scene
             seed: number;
             bodyMods: string[];
             runAttackCount: number;
+            rerollsRemaining: number;
         },
     ): void =>
     {
@@ -95,7 +96,16 @@ export class Game extends Scene
                 ? [ enemyId ]
                 : [ GAME_RULES.defaultEnemyId ];
 
-        this.startBattle(battleEnemyIds, startHealth, deck, seed, bodyMods, null, runAttackCount);
+        this.startBattle(
+            battleEnemyIds,
+            startHealth,
+            deck,
+            seed,
+            bodyMods,
+            null,
+            runAttackCount,
+            rerollsRemaining,
+        );
     };
 
     private onStartPuzzle = (
@@ -126,7 +136,7 @@ export class Game extends Scene
         };
 
         this.activePuzzleId = puzzleId;
-        this.startBattle('training-dummy', startHealth, [], seed, bodyMods, puzzleMode, runAttackCount);
+        this.startBattle('training-dummy', startHealth, [], seed, bodyMods, puzzleMode, runAttackCount, 0);
 
         EventBus.emit(GAME_EVENTS.PUZZLE_STATE, {
             puzzleId,
@@ -146,6 +156,7 @@ export class Game extends Scene
         bodyMods: string[],
         puzzleMode: PuzzleModeConfig | null = null,
         runAttackCount = 0,
+        rerollsRemaining = GAME_RULES.rerollsPerFloor,
     ): void
     {
         // Install this battle's deterministic RNG stream before any card is dealt.
@@ -168,6 +179,7 @@ export class Game extends Scene
             bodyMods,
             puzzleMode,
             runAttackCount,
+            puzzleMode ? 0 : rerollsRemaining,
         );
 
         this.handView = new CardHandView(this, layout, [ ...this.session.getHand() ], {
@@ -743,7 +755,7 @@ export class Game extends Scene
 
         EventBus.emit(GAME_EVENTS.REROLL_STATE, {
             rerollsRemaining: this.session.getRerollsRemaining(),
-            maxRerollsPerFight: GAME_RULES.fightRerollsPerFight,
+            maxRerollsPerFloor: GAME_RULES.rerollsPerFloor,
             canReroll: this.session.canReroll(),
             rerollModeActive: this.rerollModeActive,
             selectedCount: selectedCount ?? this.handView?.getRerollSelectionCount() ?? 0,

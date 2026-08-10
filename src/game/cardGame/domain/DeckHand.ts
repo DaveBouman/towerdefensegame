@@ -11,11 +11,11 @@ export class DeckHand
     private readonly deck: CardInstance[] = [];
     private readonly discard: CardInstance[] = [];
     private rerollsRemaining: number;
-    private readonly maxRerollsPerFight: number;
+    private readonly maxRerollsPerFloor: number;
 
     constructor (
         deckDefinitionIds?: readonly string[],
-        rerollsRemaining = GAME_RULES.fightRerollsPerFight,
+        rerollsRemaining = GAME_RULES.rerollsPerFloor,
     )
     {
         this.deck.push(
@@ -24,7 +24,7 @@ export class DeckHand
                 : buildPlayerDeck()),
         );
         this.rerollsRemaining = rerollsRemaining;
-        this.maxRerollsPerFight = rerollsRemaining;
+        this.maxRerollsPerFloor = GAME_RULES.rerollsPerFloor;
     }
 
     getHand (): readonly CardInstance[]
@@ -137,7 +137,7 @@ export class DeckHand
         return true;
     }
 
-    /** Discards selected hand cards and draws replacements. Uses one fight reroll. */
+    /** Discards selected hand cards and draws replacements. Uses one floor reroll. */
     rerollHandCards (handIndices: number[]): boolean
     {
         if (this.rerollsRemaining <= 0 || handIndices.length === 0)
@@ -292,7 +292,7 @@ export class DeckHand
     {
         CardGameEventBus.emit(CARD_GAME_EVENTS.REROLLS_CHANGED, {
             rerollsRemaining: this.rerollsRemaining,
-            maxRerollsPerFight: this.maxRerollsPerFight,
+            maxRerollsPerFloor: this.maxRerollsPerFloor,
         });
     }
 

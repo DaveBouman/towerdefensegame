@@ -9,7 +9,8 @@ interface NodeVisitOverlayProps {
 }
 
 /**
- * Placeholder screen for shop nodes. Random events use `RunEventOverlay`.
+ * Fallback visit screen for non-shop, non-event nodes.
+ * Ripperdoc shops use `ShopOverlay`; events use `RunEventOverlay`.
  */
 export const NodeVisitOverlay = ({ node, gold, onContinue }: NodeVisitOverlayProps) =>
 {

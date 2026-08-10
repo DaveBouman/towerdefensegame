@@ -159,7 +159,7 @@ export interface HandPenaltyResult {
 
 export interface RerollState {
     rerollsRemaining: number;
-    maxRerollsPerFight: number;
+    maxRerollsPerFloor: number;
     canReroll: boolean;
     rerollModeActive: boolean;
     selectedCount: number;

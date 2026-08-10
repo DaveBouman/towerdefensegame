@@ -40,6 +40,7 @@ export class EnemySquadView
             view.setEnemyLabel(combatant.definition.label);
             view.setCombatTraits(getEnemyCombatTraits(combatant.definition));
             view.setEnemyPassives(combatant.definition.passives);
+            view.setEnrageStacks(combatant.enrageStacks);
             view.reposition(slot.x, slot.y);
             view.setTargetClickHandler(() => this.onEnemyClicked(combatant.instanceId));
 
@@ -95,6 +96,7 @@ export class EnemySquadView
 
             entry.combatant = combatant;
             entry.view.setHealth(combatant.state);
+            entry.view.setEnrageStacks(combatant.enrageStacks);
             entry.view.setDefeated(!isCombatantAlive(combatant));
         }
 
@@ -162,6 +164,7 @@ export class EnemySquadView
         }
 
         view.setHealth(combatant.state);
+        view.setEnrageStacks(combatant.enrageStacks);
         view.setDefeated(!isCombatantAlive(combatant));
     }
 

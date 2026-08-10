@@ -4,6 +4,7 @@ import { CYBER } from '../config/cyberpunkTheme';
 import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
 import type { CombatTraitConfig } from '../cardGame/combat/combatTraits/types';
 import type { EnemyState, EnemyTurnAction } from '../cardGame/domain/types';
+import { getEnemyPassive } from '../cardGame/enemyPassives/defaults';
 import type { EnemyPassiveConfig } from '../cardGame/enemyPassives/types';
 import {
     getEnemyIntentStepVisuals,
@@ -66,6 +67,11 @@ export class EnemyTargetView
     private readonly combatTraitRowView: CombatTraitRowView;
     private combatTraitCount = 0;
     private passiveCount = 0;
+    private passives: EnemyPassiveConfig[] = [];
+    private lastEnemyState: EnemyState;
+    private enrageStacks = 0;
+    private thresholdText?: Phaser.GameObjects.Text;
+    private thresholdLineCount = 0;
     private passiveIconsContainer?: Phaser.GameObjects.Container;
     private intentContainer?: Phaser.GameObjects.Container;
     private intentTween?: Phaser.Tweens.Tween;
@@ -245,6 +251,7 @@ export class EnemyTargetView
             this.poisonBadge,
         ]);
         this.container = container;
+        this.lastEnemyState = enemy;
         this.setHealth(enemy);
         this.startIdlePulse();
     }
@@ -269,8 +276,10 @@ export class EnemyTargetView
         // Event-style abilities are surfaced via the turn intent, not the passive row.
         const passives = allPassives.filter((passive) => passive.id !== 'dampenTiles');
 
+        this.passives = [ ...passives ];
         this.passiveCount = passives.length;
         this.updateShieldBadgePosition();
+        this.updateThresholdTelegraph(this.lastEnemyState);
 
         if (passives.length === 0)
         {
@@ -612,8 +621,81 @@ export class EnemyTargetView
         this.healthText.setText(`${enemy.health}/${enemy.maxHealth}`);
         this.healthBarFill.setScale(fraction, 1);
         this.healthBarFill.setVisible(enemy.health > 0);
+        this.lastEnemyState = enemy;
         this.setShield(enemy.shield);
         this.setPoison(enemy.poison ?? 0);
+        this.updateThresholdTelegraph(enemy);
+    }
+
+    setEnrageStacks (stacks: number): void
+    {
+        this.enrageStacks = Math.max(0, stacks);
+        this.updateThresholdTelegraph(this.lastEnemyState);
+    }
+
+    /** Live Last Stand / Enrage breakpoints under the passive row. */
+    private updateThresholdTelegraph (enemy: EnemyState): void
+    {
+        this.thresholdText?.destroy();
+        this.thresholdText = undefined;
+        this.thresholdLineCount = 0;
+
+        const lines: string[] = [];
+        const lastStand = getEnemyPassive(this.passives, 'lastStand');
+
+        if (lastStand)
+        {
+            const breakpoint = Math.max(1, Math.ceil(enemy.maxHealth * lastStand.healthRatio));
+            const active = enemy.maxHealth > 0
+                && enemy.health / enemy.maxHealth <= lastStand.healthRatio;
+
+            lines.push(active
+                ? `Last Stand ACTIVE (≤${breakpoint})`
+                : `Last Stand below ${breakpoint} HP`);
+        }
+
+        const enrage = getEnemyPassive(this.passives, 'enrage');
+
+        if (enrage)
+        {
+            if (this.enrageStacks > 0)
+            {
+                const bonus = this.enrageStacks * enrage.attackBonusPerTrap;
+
+                lines.push(`Enrage ${this.enrageStacks} (+${bonus} atk)`);
+            }
+            else
+            {
+                lines.push(`Enrage +${enrage.attackBonusPerTrap} per trap`);
+            }
+        }
+
+        if (lines.length === 0 || !this.container.active)
+        {
+            this.updateShieldBadgePosition();
+
+            return;
+        }
+
+        const baseY = this.getPassiveRowY()
+            + (this.passiveCount > 0 ? PASSIVE_ICON_SIZE / 2 + 12 : 4);
+
+        this.thresholdText = this.scene.add.text(
+            this.enemySize / 2,
+            baseY,
+            lines.join('\n'),
+            {
+                ...uiTextStyle(11, '#e0c8ff', {
+                    bold: true,
+                    backgroundColor: '#1a1028cc',
+                    padding: { x: 5, y: 3 },
+                }),
+            },
+        ).setOrigin(0.5, 0).setAlign('center');
+
+        this.container.add(this.thresholdText);
+        this.thresholdLineCount = lines.length;
+        this.updateShieldBadgePosition();
     }
 
     setPoison (stacks: number): void
@@ -858,6 +940,8 @@ export class EnemyTargetView
         this.combatTraitRowView.destroy();
         this.passiveIconsContainer?.destroy();
         this.passiveIconsContainer = undefined;
+        this.thresholdText?.destroy();
+        this.thresholdText = undefined;
         this.shieldTween?.stop();
         this.idleTween?.stop();
         this.targetPromptTween?.stop();
@@ -887,8 +971,11 @@ export class EnemyTargetView
         const belowPassives = this.passiveCount > 0
             ? PASSIVE_ICON_SIZE + 8
             : 0;
+        const belowThreshold = this.thresholdLineCount > 0
+            ? 12 + this.thresholdLineCount * 14
+            : 0;
 
-        this.shieldBadge.setY(this.getTraitRowY() + belowTraits + belowPassives + 10);
+        this.shieldBadge.setY(this.getTraitRowY() + belowTraits + belowPassives + belowThreshold + 10);
     }
 
     private applyShieldVisuals (): void

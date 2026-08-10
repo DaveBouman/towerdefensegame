@@ -1,5 +1,6 @@
 import { getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
 import { shuffleInPlace } from '../random/rng';
+import type { RunMapNodeKind } from './nodeKinds';
 
 /**
  * Rewards granted for defeating an enemy. Kept as a discriminated union so new
@@ -7,6 +8,8 @@ import { shuffleInPlace } from '../random/rng';
  * handling. Body mods modify the numeric knobs below (e.g. raise
  * `pickCount` to "pick two", or flag a reward as rerollable).
  */
+export type RewardPoolId = 'standard' | 'elite';
+
 export interface CardReward {
     kind: 'card';
     /** How many card choices to present. */
@@ -15,15 +18,52 @@ export interface CardReward {
     pickCount: number;
     /** Whether the player may reroll the offered choices (body-mod-driven). */
     rerollable: boolean;
+    /** Which card pool to draw offers from. */
+    pool?: RewardPoolId;
 }
 
-export type RunReward = CardReward;
+export interface BodyModRunReward {
+    kind: 'body-mod';
+}
+
+export type RunReward = CardReward | BodyModRunReward;
 
 export const DEFAULT_CARD_REWARD: CardReward = {
     kind: 'card',
     choiceCount: 3,
     pickCount: 1,
     rerollable: false,
+    pool: 'standard',
+};
+
+/** Lieutenant / semi-boss: elite card pool, same 3-pick-1 flow. */
+export const SEMI_BOSS_CARD_REWARD: CardReward = {
+    kind: 'card',
+    choiceCount: 3,
+    pickCount: 1,
+    rerollable: false,
+    pool: 'elite',
+};
+
+/** Resolves the battle reward template for a map node kind. */
+export const rewardForNodeKind = (kind: RunMapNodeKind): RunReward | undefined =>
+{
+    if (kind === 'boss')
+    {
+        return undefined;
+    }
+
+    if (kind === 'semi-boss')
+    {
+        return { ...SEMI_BOSS_CARD_REWARD };
+    }
+
+    if (kind === 'enemy')
+    {
+        return { ...DEFAULT_CARD_REWARD };
+    }
+
+    return undefined;
 };
 
 /** Shown on battle victory card rewards. */
@@ -73,10 +113,45 @@ export const REWARD_CARD_POOL: readonly string[] = [
     'courier',
 ];
 
-/** Picks `choiceCount` distinct card definition ids at random from the reward pool. */
-export const rollCardReward = (choiceCount: number): string[] =>
+/** Higher-tier pool for lieutenants — skips basic attack/defend fillers. */
+export const ELITE_REWARD_CARD_POOL: readonly string[] = [
+    'attack-special',
+    'attack-leap',
+    'defend-special',
+    'defend-leap',
+    'joker',
+    'poison',
+    'fire',
+    'rupture',
+    'bulwark',
+    'surge',
+    'corner-strike',
+    'corner-defense',
+    'shiv',
+    'miasma',
+    'cinder',
+    'lacerate',
+    'scorch',
+    'bramble',
+    'glitch',
+    'hardwire',
+    'patch',
+    'overclock',
+    'echo',
+    'salvage',
+    'courier',
+];
+
+const poolForId = (poolId: RewardPoolId = 'standard'): readonly string[] =>
+    poolId === 'elite' ? ELITE_REWARD_CARD_POOL : REWARD_CARD_POOL;
+
+/** Picks `choiceCount` distinct card definition ids at random from the given pool. */
+export const rollCardReward = (
+    choiceCount: number,
+    poolId: RewardPoolId = 'standard',
+): string[] =>
 {
-    const pool = shuffleInPlace([ ...REWARD_CARD_POOL ]);
+    const pool = shuffleInPlace([ ...poolForId(poolId) ]);
 
     return pool.slice(0, Math.max(0, Math.min(choiceCount, pool.length)));
 };

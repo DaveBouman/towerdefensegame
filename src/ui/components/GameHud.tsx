@@ -15,7 +15,7 @@ const REJECT_MESSAGES: Record<NonNullable<AttackReadiness['reason']>, string> = 
 
 const DEFAULT_REROLL_STATE: RerollState = {
     rerollsRemaining: 0,
-    maxRerollsPerFight: 3,
+    maxRerollsPerFloor: 3,
     canReroll: false,
     rerollModeActive: false,
     selectedCount: 0,
@@ -94,7 +94,10 @@ export const GameHud = () =>
 
     return (
         <aside className="game-hud">
-            <div className="game-hud__energy" title="Attacks left this turn">
+            <div
+                className="game-hud__energy"
+                title="Energy: each Attack spends 1. When empty, the board clears and energy refills for the next round."
+            >
                 <span className="game-hud__energy-label">Energy</span>
                 <span className="game-hud__energy-pips">
                     {Array.from({ length: turnState.maxEnergy }, (_, i) => (
@@ -151,7 +154,7 @@ export const GameHud = () =>
                     disabled={!rerollState.canReroll}
                     onClick={() => EventBus.emit(GAME_EVENTS.REROLL_BEGIN)}
                 >
-                    Reroll ({rerollState.rerollsRemaining} left)
+                    Floor reroll ({rerollState.rerollsRemaining}/{rerollState.maxRerollsPerFloor})
                 </button>
             )}
             <button

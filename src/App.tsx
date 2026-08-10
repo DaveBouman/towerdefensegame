@@ -7,13 +7,22 @@ import { RunMapOverlay } from './ui/components/RunMapOverlay';
 import { RunEndOverlay } from './ui/components/RunEndOverlay';
 import { CardRewardOverlay } from './ui/components/CardRewardOverlay';
 import { NodeVisitOverlay } from './ui/components/NodeVisitOverlay';
+import { ShopOverlay } from './ui/components/ShopOverlay';
 import { RunEventOverlay } from './ui/components/RunEventOverlay';
 import { PileViewOverlay } from './ui/components/PileViewOverlay';
+import {
+    TutorialIntroOverlay,
+    TutorialCoachStrip,
+    TutorialRewardTipOverlay,
+    useTutorial,
+} from './ui/tutorial/Tutorial';
 import { isBattleKind } from './game/run/nodeKinds';
 import { rollRunEventId, applyRunEventEffects } from './game/run/runEvents';
 import type { AppliedEventResult, AppliedEventMessage } from './game/run/runEvents';
 import { getRunPuzzle, rollPuzzleCardReward } from './game/run/runPuzzles';
 import { getRunMaxHealth, getVictoryGoldBonus } from './game/run/runResources';
+import { rollShopOffers, type ShopOffer } from './game/run/shop';
+import { getBodyModDefinitionOrThrow } from './game/run/bodyMods';
 import { EventBus } from './game/EventBus';
 import { GAME_EVENTS } from './game/events/gameEvents';
 import { GAME_RULES } from './game/cardGame/config/cardRegistry';
@@ -22,11 +31,13 @@ import {
     generateRunMap,
     reachableNodeIds,
     getBattleEnemyIds,
+    getFloorForColumn,
     RUN_CONFIG,
     type RunMap,
     type RunMapNode,
 } from './game/run/runMap';
 import { rollCardReward, BATTLE_REWARD_RULES, PUZZLE_TRIAL_RULES, type CardReward } from './game/run/rewards';
+import type { RerollState } from './game/cardGame/domain/types';
 import { BodyModsPanel } from './ui/components/BodyModsPanel';
 import {
     createRandomSeed,
@@ -49,6 +60,7 @@ const MAX_HEALTH = GAME_RULES.player.maxHealth;
 interface VisitState {
     node: RunMapNode;
     eventId: string | null;
+    shopOffers?: ShopOffer[];
 }
 
 interface PuzzleResultState {
@@ -86,7 +98,7 @@ const rollRewardForNode = (
 {
     seedScope(seed, `reward:${nodeId}:${rerollIndex}`);
 
-    return rollCardReward(reward.choiceCount);
+    return rollCardReward(reward.choiceCount, reward.pool ?? 'standard');
 };
 
 function App()
@@ -99,11 +111,14 @@ function App()
     const [ gold, setGold ] = useState(0);
     const [ bodyMods, setBodyMods ] = useState<string[]>([]);
     const [ runAttackCount, setRunAttackCount ] = useState(0);
+    const [ currentFloor, setCurrentFloor ] = useState(1);
+    const [ floorRerollsRemaining, setFloorRerollsRemaining ] = useState(GAME_RULES.rerollsPerFloor);
     const [ phase, setPhase ] = useState<RunPhase>('map');
     const [ pendingReward, setPendingReward ] = useState<PendingReward | null>(null);
     const [ visit, setVisit ] = useState<VisitState | null>(null);
     const [ puzzleResult, setPuzzleResult ] = useState<PuzzleResultState | null>(null);
     const [ pendingPuzzleReward, setPendingPuzzleReward ] = useState<PendingPuzzleReward | null>(null);
+    const tutorial = useTutorial();
 
     const runMaxHealth = useMemo(() => getRunMaxHealth(bodyMods), [ bodyMods ]);
 
@@ -115,6 +130,10 @@ function App()
     const playerHealthRef = useRef(playerHealth);
     const goldRef = useRef(gold);
     const deckRef = useRef(deck);
+    const phaseRef = useRef(phase);
+    const currentFloorRef = useRef(currentFloor);
+    const floorRerollsRef = useRef(floorRerollsRemaining);
+    const tutorialRef = useRef(tutorial);
     const pendingStartRef = useRef<
         {
             enemyId?: string;
@@ -124,6 +143,7 @@ function App()
             seed: number;
             bodyMods: string[];
             runAttackCount: number;
+            rerollsRemaining: number;
         } | null
     >(null);
     const pendingPuzzleRef = useRef<
@@ -154,6 +174,42 @@ function App()
     {
         deckRef.current = deck;
     }, [ deck ]);
+
+    useEffect(() =>
+    {
+        phaseRef.current = phase;
+    }, [ phase ]);
+
+    useEffect(() =>
+    {
+        currentFloorRef.current = currentFloor;
+    }, [ currentFloor ]);
+
+    useEffect(() =>
+    {
+        floorRerollsRef.current = floorRerollsRemaining;
+    }, [ floorRerollsRemaining ]);
+
+    useEffect(() =>
+    {
+        tutorialRef.current = tutorial;
+    }, [ tutorial ]);
+
+    /** Refills floor hand-rerolls when the player first enters a higher floor. */
+    const enterNodeFloor = useCallback((node: RunMapNode): number =>
+    {
+        const nodeFloor = getFloorForColumn(node.row);
+
+        if (nodeFloor > currentFloorRef.current)
+        {
+            currentFloorRef.current = nodeFloor;
+            setCurrentFloor(nodeFloor);
+            floorRerollsRef.current = GAME_RULES.rerollsPerFloor;
+            setFloorRerollsRemaining(GAME_RULES.rerollsPerFloor);
+        }
+
+        return floorRerollsRef.current;
+    }, []);
 
     const currentNodeId = path.length > 0 ? path[path.length - 1]! : null;
     const availableIds = useMemo(
@@ -197,6 +253,7 @@ function App()
 
             setPlayerHealth(healed);
             setGold((prev) => prev + getVictoryGoldBonus(bodyModsRef.current));
+            tutorialRef.current.onFirstBattleWon();
 
             if (node)
             {
@@ -241,6 +298,17 @@ function App()
         }): void =>
         {
             setRunAttackCount(nextRunAttackCount);
+        };
+
+        const onRerollState = ({ rerollsRemaining }: RerollState): void =>
+        {
+            if (phaseRef.current !== 'battle')
+            {
+                return;
+            }
+
+            floorRerollsRef.current = rerollsRemaining;
+            setFloorRerollsRemaining(rerollsRemaining);
         };
 
         const onPuzzleResolved = ({
@@ -308,6 +376,7 @@ function App()
         EventBus.on(GAME_EVENTS.BATTLE_WON, onBattleWon);
         EventBus.on(GAME_EVENTS.BATTLE_LOST, onBattleLost);
         EventBus.on(GAME_EVENTS.RUN_ATTACK_COUNT, onRunAttackCount);
+        EventBus.on(GAME_EVENTS.REROLL_STATE, onRerollState);
         EventBus.on(GAME_EVENTS.PUZZLE_RESOLVED, onPuzzleResolved);
 
         return () =>
@@ -316,12 +385,14 @@ function App()
             EventBus.off(GAME_EVENTS.BATTLE_WON, onBattleWon);
             EventBus.off(GAME_EVENTS.BATTLE_LOST, onBattleLost);
             EventBus.off(GAME_EVENTS.RUN_ATTACK_COUNT, onRunAttackCount);
+            EventBus.off(GAME_EVENTS.REROLL_STATE, onRerollState);
             EventBus.off(GAME_EVENTS.PUZZLE_RESOLVED, onPuzzleResolved);
         };
     }, []);
 
     const pickNode = useCallback((node: RunMapNode): void =>
     {
+        const rerollsRemaining = enterNodeFloor(node);
         const battleEnemyIds = getBattleEnemyIds(node);
 
         if (!isBattleKind(node.kind) || battleEnemyIds.length === 0)
@@ -338,7 +409,12 @@ function App()
             }
             else
             {
-                setVisit({ node, eventId: null });
+                seedScope(seed, `shop:${node.id}`);
+                setVisit({
+                    node,
+                    eventId: null,
+                    shopOffers: rollShopOffers(bodyMods),
+                });
             }
 
             setPhase('visit');
@@ -346,6 +422,7 @@ function App()
         }
 
         selectedNodeRef.current = node;
+        tutorial.onFirstBattleStart();
         const payload = {
             enemyId: battleEnemyIds[0],
             enemyIds: battleEnemyIds.length > 1 ? battleEnemyIds : undefined,
@@ -354,6 +431,7 @@ function App()
             seed: deriveSeed(seed, `battle:${node.id}`),
             bodyMods: [ ...bodyMods ],
             runAttackCount,
+            rerollsRemaining,
         };
         setPhase('battle');
 
@@ -365,7 +443,71 @@ function App()
         {
             pendingStartRef.current = payload;
         }
-    }, [ playerHealth, deck, seed, bodyMods, runAttackCount, visit ]);
+    }, [ playerHealth, deck, seed, bodyMods, runAttackCount, enterNodeFloor, tutorial ]);
+
+    const buyShopCard = useCallback((offer: ShopOffer): void =>
+    {
+        if (!offer.cardId || gold < offer.price)
+        {
+            return;
+        }
+
+        setGold((prev) => prev - offer.price);
+        setDeck((prev) => [ ...prev, offer.cardId! ]);
+    }, [ gold ]);
+
+    const buyShopBodyMod = useCallback((offer: ShopOffer): void =>
+    {
+        if (!offer.bodyModId || gold < offer.price || bodyMods.includes(offer.bodyModId))
+        {
+            return;
+        }
+
+        getBodyModDefinitionOrThrow(offer.bodyModId);
+        setGold((prev) => prev - offer.price);
+        setBodyMods((prev) => [ ...prev, offer.bodyModId! ]);
+        setPlayerHealth((prev) => Math.min(getRunMaxHealth([ ...bodyMods, offer.bodyModId! ]), prev));
+    }, [ gold, bodyMods ]);
+
+    const buyShopHeal = useCallback((offer: ShopOffer): void =>
+    {
+        if (gold < offer.price || !offer.healAmount)
+        {
+            return;
+        }
+
+        setGold((prev) => prev - offer.price);
+        setPlayerHealth((prev) => Math.min(runMaxHealth, prev + offer.healAmount!));
+    }, [ gold, runMaxHealth ]);
+
+    const buyShopRemove = useCallback((offer: ShopOffer, definitionId: string): void =>
+    {
+        if (gold < offer.price)
+        {
+            return;
+        }
+
+        const index = deck.indexOf(definitionId);
+
+        if (index < 0)
+        {
+            return;
+        }
+
+        setGold((prev) => prev - offer.price);
+        setDeck((prev) =>
+        {
+            const next = [ ...prev ];
+            const removeAt = next.indexOf(definitionId);
+
+            if (removeAt >= 0)
+            {
+                next.splice(removeAt, 1);
+            }
+
+            return next;
+        });
+    }, [ gold, deck ]);
 
     const startPuzzleFromEvent = useCallback((puzzleId: string): void =>
     {
@@ -495,6 +637,10 @@ function App()
         setGold(0);
         setBodyMods([]);
         setRunAttackCount(0);
+        setCurrentFloor(1);
+        setFloorRerollsRemaining(GAME_RULES.rerollsPerFloor);
+        currentFloorRef.current = 1;
+        floorRerollsRef.current = GAME_RULES.rerollsPerFloor;
         setPendingReward(null);
         setVisit(null);
         setPuzzleResult(null);
@@ -528,7 +674,14 @@ function App()
                     className="body-mods-panel--persistent"
                 />
             )}
-            {phase === 'battle' && <GameHud />}
+            {phase === 'battle' && (
+                <>
+                    <GameHud />
+                    {tutorial.showBattleCoach && (
+                        <TutorialCoachStrip onDismiss={tutorial.dismissBattleCoach} />
+                    )}
+                </>
+            )}
             {(phase === 'puzzle') && (
                 <>
                     <GameHud />
@@ -536,7 +689,13 @@ function App()
                 </>
             )}
             <PileViewOverlay />
-            {phase === 'map' && (
+            {phase === 'map' && tutorial.showIntro && (
+                <TutorialIntroOverlay onDismiss={tutorial.dismissIntro} />
+            )}
+            {tutorial.showRewardTip && (
+                <TutorialRewardTipOverlay onDismiss={tutorial.dismissRewardTip} />
+            )}
+            {phase === 'map' && !tutorial.showIntro && (
                 <RunMapOverlay
                     map={map}
                     path={path}
@@ -544,6 +703,10 @@ function App()
                     playerHealth={playerHealth}
                     maxHealth={runMaxHealth}
                     gold={gold}
+                    currentFloor={currentFloor}
+                    floorCount={RUN_CONFIG.floorCount}
+                    floorRerollsRemaining={floorRerollsRemaining}
+                    floorRerollsMax={GAME_RULES.rerollsPerFloor}
                     seed={seed}
                     seedEditable={path.length === 0}
                     onSeedChange={applySeed}
@@ -588,6 +751,23 @@ function App()
                     onStartPuzzle={startPuzzleFromEvent}
                 />
             )}
+            {phase === 'visit' && visit && !visit.eventId && visit.node.kind === 'shop' && visit.shopOffers && (
+                <ShopOverlay
+                    offers={visit.shopOffers}
+                    gold={gold}
+                    deck={deck}
+                    playerHealth={playerHealth}
+                    maxHealth={runMaxHealth}
+                    onBuyCard={buyShopCard}
+                    onBuyBodyMod={buyShopBodyMod}
+                    onBuyHeal={buyShopHeal}
+                    onBuyRemove={buyShopRemove}
+                    onContinue={finishVisit}
+                />
+            )}
+            {phase === 'visit' && visit && !visit.eventId && visit.node.kind !== 'shop' && (
+                <NodeVisitOverlay node={visit.node} gold={gold} onContinue={finishVisit} />
+            )}
             {phase === 'puzzle-result' && puzzleResult && (
                 <PuzzleResultOverlay
                     puzzleId={puzzleResult.puzzleId}
@@ -597,9 +777,6 @@ function App()
                     messages={puzzleResult.messages}
                     onContinue={finishPuzzleResult}
                 />
-            )}
-            {phase === 'visit' && visit && !visit.eventId && (
-                <NodeVisitOverlay node={visit.node} gold={gold} onContinue={finishVisit} />
             )}
             {phase === 'victory' && <RunEndOverlay variant="victory" onRestart={startNewRun} />}
             {phase === 'defeat' && <RunEndOverlay variant="defeat" onRestart={startNewRun} />}
