@@ -670,6 +670,10 @@ body {
 .main-menu__secondary,
 .main-menu__collection { font-size: calc(13px * var(--text-scale)); }
 .card-collection__title { font-size: calc(24px * var(--text-scale)); }
+.card-collection__tooltip-title { font-size: calc(15px * var(--text-scale)); }
+.card-collection__tooltip-line { font-size: calc(14px * var(--text-scale)); }
+.card-collection__detail { font-size: calc(15px * var(--text-scale)); }
+.card-collection__detail strong { font-size: calc(16px * var(--text-scale)); }
 
 .run-end__button { font-size: calc(15px * var(--text-scale)); }
 

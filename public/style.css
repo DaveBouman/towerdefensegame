@@ -2282,12 +2282,12 @@ html, body, #root {
 }
 
 .card-collection__name {
-    font-size: 11px;
+    font-size: calc(13px * var(--text-scale));
     font-weight: 700;
     letter-spacing: 0.03em;
     text-align: center;
-    color: #d8e4ff;
-    line-height: 1.2;
+    color: #e8f0ff;
+    line-height: 1.25;
 }
 
 .card-collection__item--locked .card-collection__name {
@@ -2295,10 +2295,10 @@ html, body, #root {
 }
 
 .card-collection__tier {
-    font-size: 10px;
+    font-size: calc(11px * var(--text-scale));
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #7f8cc0;
+    color: #9aaccc;
 }
 
 .card-collection__tooltip {
@@ -2307,15 +2307,15 @@ html, body, #root {
     top: calc(100% + 8px);
     bottom: auto;
     transform: translate(-50%, -4px);
-    width: min(220px, 70vw);
+    width: min(280px, 78vw);
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 10px 12px;
+    gap: 6px;
+    padding: 12px 14px;
     border-radius: 8px;
-    border: 1px solid rgba(0, 232, 255, 0.35);
-    background: rgba(8, 14, 24, 0.98);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(0, 232, 255, 0.45);
+    background: rgba(6, 12, 22, 0.98);
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.65);
     text-align: left;
     opacity: 0;
     visibility: hidden;
@@ -2332,36 +2332,39 @@ html, body, #root {
 }
 
 .card-collection__tooltip-title {
-    font-size: 12px;
+    font-size: calc(15px * var(--text-scale));
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #7af0ff;
+    color: #9af6ff;
+    line-height: 1.25;
 }
 
 .card-collection__tooltip-line {
-    font-size: 11px;
-    line-height: 1.35;
-    color: #b8c8e0;
+    font-size: calc(14px * var(--text-scale));
+    line-height: 1.45;
+    color: #e6eefc;
 }
 
 .card-collection__detail {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    min-height: 48px;
+    gap: 6px;
+    min-height: 64px;
     margin: 4px 0 12px;
-    padding: 10px 12px;
+    padding: 12px 14px;
     border-radius: 8px;
-    border: 1px solid rgba(0, 232, 255, 0.15);
-    background: rgba(4, 10, 18, 0.7);
-    font-size: 13px;
-    color: #a8b8d8;
+    border: 1px solid rgba(0, 232, 255, 0.22);
+    background: rgba(4, 10, 18, 0.85);
+    font-size: calc(15px * var(--text-scale));
+    line-height: 1.45;
+    color: #e2ecfa;
 }
 
 .card-collection__detail strong {
-    color: #e8fbff;
-    font-size: 14px;
+    color: #f2fbff;
+    font-size: calc(16px * var(--text-scale));
+    letter-spacing: 0.03em;
 }
 
 .card-collection__close {
