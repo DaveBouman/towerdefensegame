@@ -185,42 +185,6 @@ export const buildCardGraphic = (
         },
     ).setOrigin(0.5);
 
-    if (definition.unplayable)
-    {
-        continueArrow.destroy();
-        const blocked = scene.add.text(arrowPos.x, arrowPos.y, '✕', {
-            ...uiTextStyle(Math.max(12, Math.round(width * 0.32)), '#c97b7b', { bold: true }),
-        }).setOrigin(0.5);
-        const arrowIndex = cardDecor.indexOf(continueArrow);
-
-        if (arrowIndex >= 0)
-        {
-            cardDecor[arrowIndex] = blocked;
-        }
-        else
-        {
-            cardDecor.unshift(blocked);
-        }
-    }
-
-    if (isJoker)
-    {
-        continueArrow.destroy();
-        const jokerMark = scene.add.text(arrowPos.x, arrowPos.y, '?', {
-            ...uiTextStyle(24, '#ffffff', { bold: true }),
-        }).setOrigin(0.5);
-        const arrowIndex = cardDecor.indexOf(continueArrow);
-
-        if (arrowIndex >= 0)
-        {
-            cardDecor[arrowIndex] = jokerMark;
-        }
-        else
-        {
-            cardDecor.unshift(jokerMark);
-        }
-    }
-
     container.add([ glow, body, inner, accent, brackets, ...cardDecor, power ]);
 
     if (leapDistance > 1)
