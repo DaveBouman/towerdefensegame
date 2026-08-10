@@ -186,10 +186,10 @@ const cardSnap = (volume) =>
 const SOUNDS = {
     'ui-click': () => digitalTick(1040, 0.028, v(0.26)),
     'ui-select': () => mix(digitalTick(780, 0.032, v(0.24)), digitalTick(1170, 0.02, v(0.14))),
-    'card-place': () => cardSnap(v(0.3)),
+    'card-place': () => cardSnap(v(0.4)),
     'chain-step': () => mix(
-        sweep(480, 980, 0.042, v(0.18)),
-        digitalTick(720, 0.028, v(0.16)),
+        sweep(480, 980, 0.042, v(0.24)),
+        digitalTick(720, 0.028, v(0.22)),
     ),
     'hit-light': () => noiseHit(0.09, v(0.42), 75),
     'hit-heavy': () => noiseHit(0.14, v(0.55), 48),
@@ -204,9 +204,9 @@ const SOUNDS = {
         sine(130, 0.09, v(0.14), 3),
     ), 7),
     'ability-cast': () => mix(
-        sweep(320, 920, 0.075, v(0.2)),
-        fm(640, 320, 1.8, 0.055, v(0.18), 16),
-        digitalTick(990, 0.024, v(0.14)),
+        sweep(320, 920, 0.075, v(0.26)),
+        fm(640, 320, 1.8, 0.055, v(0.24), 16),
+        digitalTick(990, 0.024, v(0.2)),
     ),
     'heal': () => concat(subThump(95, 0.06, v(0.22)), subThump(130, 0.08, v(0.24))),
     'enemy-hit': () => noiseHit(0.11, v(0.48), 52),

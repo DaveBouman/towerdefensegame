@@ -18,11 +18,11 @@ export const resetBattleAudioState = (): void =>
 
 export const bindGameAudioListeners = (): (() => void) =>
 {
-    const onCardPlaced = (): void => playSfx('card-place', { volume: 0.95 });
+    const onCardPlaced = (): void => playSfx('card-place', { volume: 1 });
 
-    const onAttackStarted = (): void => playSfx('chain-step', { volume: 0.72, rate: 0.95 });
+    const onAttackStarted = (): void => playSfx('chain-step', { volume: 0.85, rate: 0.95 });
 
-    const onAttackStep = (): void => playSfx('chain-step', { volume: 0.85 });
+    const onAttackStep = (): void => playSfx('chain-step', { volume: 0.95 });
 
     const onPlayerHealed = ({ amount }: { amount: number }): void =>
     {
@@ -146,7 +146,7 @@ export const playCardAbilitySfx = (visualId: string, behaviorId?: string): void 
         rate = 0.88;
     }
 
-    playSfx('ability-cast', { volume: 0.88, rate });
+    playSfx('ability-cast', { volume: 0.98, rate });
 };
 
 /** End-of-chain ability proc (fire, poison, etc.). */
@@ -169,7 +169,7 @@ export const playAbilityProcSfx = (visualId: string, abilityId?: string): void =
         rate = 1.08;
     }
 
-    playSfx('ability-cast', { volume: 0.92, rate });
+    playSfx('ability-cast', { volume: 1, rate });
 };
 
 export const playShieldAbsorbSfx = (): void =>
