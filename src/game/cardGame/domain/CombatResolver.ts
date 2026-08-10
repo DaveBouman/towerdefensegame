@@ -169,6 +169,15 @@ export class CombatResolver
         sourceDefinitionId?: string,
     ): DamageResult
     {
+        if (this.ctx.getLivingCombatants().length === 0)
+        {
+            return {
+                enemy: { health: 0, maxHealth: 0, shield: 0 },
+                shieldAbsorbed: 0,
+                healthDamage: 0,
+            };
+        }
+
         const targetId = this.ctx.resolveAttackTargetId(targetInstanceId);
         const combatant = this.ctx.getCombatantOrThrow(targetId);
         const scaledDamage = this.scalePlayerDamageDealt(damage);
@@ -279,7 +288,7 @@ export class CombatResolver
     {
         const remainingDamage = sequence.totalDamage - this.damageDealtThisAttack;
 
-        if (remainingDamage > 0)
+        if (remainingDamage > 0 && this.ctx.getLivingCombatants().length > 0)
         {
             this.dealAttackDamage(remainingDamage);
         }

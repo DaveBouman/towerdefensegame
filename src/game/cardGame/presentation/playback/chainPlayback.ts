@@ -346,11 +346,14 @@ export function runChainPlayback (
             applyBattleModFromStep(prevStep.definitionId, prevStep.slot);
         }
 
-        if (prevResolved.damage > 0)
+        if (prevResolved.damage > 0 && deps.session.getLivingCombatants().length > 0)
         {
+            const livingIds = deps.session.getLivingCombatants().map((combatant) => combatant.instanceId);
+            const targetId = deps.session.ensureAttackTarget() ?? livingIds[0]!;
+
             const result = deps.session.dealAttackDamage(
                 prevResolved.damage,
-                undefined,
+                targetId,
                 prevResolved.definitionId,
             );
             applyEnemyHitResult(deps, result);

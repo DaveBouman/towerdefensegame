@@ -695,17 +695,31 @@ export class CardGameSession
     {
         if (explicit)
         {
-            return explicit;
+            const combatant = this.getCombatant(explicit);
+
+            if (combatant && isCombatantAlive(combatant))
+            {
+                return explicit;
+            }
         }
 
         const targetId = this.ensureAttackTarget();
 
-        if (!targetId)
+        if (targetId)
         {
-            throw new Error('Attack target required');
+            return targetId;
         }
 
-        return targetId;
+        const living = this.getLivingCombatants();
+
+        if (living.length > 0)
+        {
+            this.attackTargetId = living[0]!.instanceId;
+
+            return this.attackTargetId;
+        }
+
+        throw new Error('Attack target required');
     }
 
     getEnemy (instanceId?: string): EnemyState

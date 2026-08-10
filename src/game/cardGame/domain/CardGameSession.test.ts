@@ -287,6 +287,41 @@ describe('CardGameSession enemy turn', () =>
         expect(session.isEnemyDefeated()).toBe(false);
     });
 
+    it('completes attack when the target dies during the chain', () =>
+    {
+        const session = new CardGameSession('basic');
+
+        session.setAttackTarget('enemy-0');
+        session.beginAttack();
+        session.dealAttackDamage(999, 'enemy-0');
+
+        expect(session.isEnemyDefeated()).toBe(true);
+
+        expect(() => session.completeAttack({
+            ...emptySequence(),
+            totalDamage: 12,
+        })).not.toThrow();
+    });
+
+    it('applies spillover damage to a remaining enemy after the target dies', () =>
+    {
+        const session = new CardGameSession([ 'basic', 'basic' ]);
+
+        session.setAttackTarget('enemy-0');
+        session.beginAttack();
+        session.dealAttackDamage(999, 'enemy-0');
+
+        expect(session.getEnemy('enemy-0').health).toBe(0);
+        const before = session.getEnemy('enemy-1').health;
+
+        session.completeAttack({
+            ...emptySequence(),
+            totalDamage: 1005,
+        });
+
+        expect(session.getEnemy('enemy-1').health).toBeLessThan(before);
+    });
+
     it('runs each living enemy once per prepared phase', () =>
     {
         const session = new CardGameSession([ 'basic', 'basic', 'basic' ]);
