@@ -310,8 +310,13 @@ function App()
 
     useEffect(() =>
     {
-        emitRunBgm(resolveRunBgmTrack({ phase, battleIntroKind, activeBattleKind }));
-    }, [ phase, battleIntroKind, activeBattleKind ]);
+        emitRunBgm(resolveRunBgmTrack({
+            phase,
+            battleIntroKind,
+            activeBattleKind,
+            battleMusicIndex: path.length,
+        }));
+    }, [ phase, battleIntroKind, activeBattleKind, path.length ]);
 
     const currentNodeId = path.length > 0 ? path[path.length - 1]! : null;
     const availableIds = useMemo(

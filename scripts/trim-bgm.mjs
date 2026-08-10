@@ -19,6 +19,7 @@ const TAIL_TRIM_SEC = 5;
 const FILES = [
     'glass-streets-at-midnight.mp3',
     'concrete-veins.mp3',
+    'iron-gait.mp3',
     'last-gatekeeper.mp3',
 ];
 

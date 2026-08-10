@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_BGM_TRACKS, BGM_FILES, resolveRunBgmTrack } from './bgmManifest';
+import {
+    ALL_BGM_TRACKS,
+    BATTLE_BGM_TRACKS,
+    BGM_FILES,
+    resolveRunBgmTrack,
+} from './bgmManifest';
 
 describe('bgmManifest', () =>
 {
@@ -29,13 +34,23 @@ describe('bgmManifest', () =>
         })).toBe('glass-streets');
     });
 
-    it('uses concrete veins for standard combat', () =>
+    it('alternates concrete veins and iron gait for standard combat', () =>
     {
         expect(resolveRunBgmTrack({
             phase: 'battle',
             battleIntroKind: null,
             activeBattleKind: 'enemy',
+            battleMusicIndex: 0,
         })).toBe('concrete-veins');
+
+        expect(resolveRunBgmTrack({
+            phase: 'battle',
+            battleIntroKind: null,
+            activeBattleKind: 'enemy',
+            battleMusicIndex: 1,
+        })).toBe('iron-gait');
+
+        expect(BATTLE_BGM_TRACKS).toEqual([ 'concrete-veins', 'iron-gait' ]);
     });
 
     it('uses last gatekeeper for the warden fight', () =>
