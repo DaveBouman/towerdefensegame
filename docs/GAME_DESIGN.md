@@ -296,6 +296,7 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-10 | **Craftpix UI icons.** Replaced game-icons.net SVGs with Craftpix cyberpunk PNGs (`public/assets/ui-icons/`) for card behaviors, passives, intents, traits, map nodes, and events. Avatar packs remain for enemy portraits. |
 | 2026-08-10 | **Enemy portrait presentation.** Portraits fill the target frame; HP/shield chrome sits under the art (no text over the face). Larger panel; accent on frame only. |
 | 2026-08-10 | **Enemy portraits.** Craftpix cyberpunk avatars renamed under `public/assets/enemies/` and shown in-fight (`preloadEnemyPortraits` → `EnemyTargetView`). Accent frames kept; silhouettes remain as fallback. Map still hides encounter names. |
 | 2026-08-10 | **Gridlock + Field Medic duos.** New enemy **Gridlock** locks a telegraphed board column each turn (`pressureColumn`). Mid-run Street Ops can pair a rolled enemy with **Field Medic**. Column pressure roadmap item done. |

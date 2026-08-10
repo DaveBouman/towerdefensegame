@@ -1,14 +1,7 @@
 import type { EnemyTurnKind } from '../../game/cardGame/domain/types';
+import { craftpixIconUrl } from './craftpixIconUrl';
 
-import attackSvg from './000000/transparent/1x1/lorc/crossed-swords.svg?raw';
-import shieldSvg from './000000/transparent/1x1/willdabeast/round-shield.svg?raw';
-import trapSvg from './000000/transparent/1x1/lorc/land-mine.svg?raw';
-import dampenSvg from './000000/transparent/1x1/delapouite/empty-chessboard.svg?raw';
-import healSvg from './000000/transparent/1x1/zeromancer/heart-plus.svg?raw';
-import lockColumnSvg from './000000/transparent/1x1/delapouite/ionic-column.svg?raw';
-import { toWhiteIconSvg } from './toWhiteIconSvg';
-
-/** Icons from https://game-icons.net (see src/ui/icons/license.txt). */
+/** Phaser texture keys for enemy intent icons. */
 export const ENEMY_INTENT_TEXTURE_KEY: Record<EnemyTurnKind, string> = {
     attack: 'intent-icon-attack',
     shield: 'intent-icon-shield',
@@ -20,19 +13,19 @@ export const ENEMY_INTENT_TEXTURE_KEY: Record<EnemyTurnKind, string> = {
     'shield-ally': 'intent-icon-shield-ally',
 };
 
-const ENEMY_INTENT_SVG_RAW: Record<EnemyTurnKind, string> = {
-    attack: toWhiteIconSvg(attackSvg),
-    shield: toWhiteIconSvg(shieldSvg),
-    'place-hazard': toWhiteIconSvg(trapSvg),
-    'dampen-field': toWhiteIconSvg(dampenSvg),
-    'lock-column': toWhiteIconSvg(lockColumnSvg),
-    'battle-mod': toWhiteIconSvg(dampenSvg),
-    'heal-ally': toWhiteIconSvg(healSvg),
-    'shield-ally': toWhiteIconSvg(shieldSvg),
+const ENEMY_INTENT_ICON_FILE: Record<EnemyTurnKind, string> = {
+    attack: 'intent-attack.png',
+    shield: 'intent-shield.png',
+    'place-hazard': 'intent-trap.png',
+    'dampen-field': 'intent-dampen.png',
+    'lock-column': 'intent-lock-column.png',
+    'battle-mod': 'intent-battle-mod.png',
+    'heal-ally': 'intent-heal.png',
+    'shield-ally': 'intent-shield-ally.png',
 };
 
 export const ENEMY_INTENT_ICON_ENTRIES = (Object.keys(ENEMY_INTENT_TEXTURE_KEY) as EnemyTurnKind[]).map((id) => ({
     id,
     textureKey: ENEMY_INTENT_TEXTURE_KEY[id],
-    svg: ENEMY_INTENT_SVG_RAW[id],
+    url: craftpixIconUrl(ENEMY_INTENT_ICON_FILE[id]),
 }));

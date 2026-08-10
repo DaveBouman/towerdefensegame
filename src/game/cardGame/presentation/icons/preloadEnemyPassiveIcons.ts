@@ -3,13 +3,10 @@ import { ENEMY_INTENT_ICON_ENTRIES } from '../../../../ui/icons/enemyIntentIcons
 import { ENEMY_PASSIVE_ICON_ENTRIES } from '../../../../ui/icons/enemyPassiveIcons';
 import { CARD_BEHAVIOR_ICON_ENTRIES } from '../../../../ui/icons/cardBehaviorIcons';
 
-const ICON_RASTER_SIZE = 48;
-
-const rasterizeSvgToTexture = (
+const loadImageTexture = (
     scene: Phaser.Scene,
     key: string,
-    svgText: string,
-    size: number,
+    url: string,
 ): Promise<void> =>
     new Promise((resolve, reject) =>
     {
@@ -19,29 +16,17 @@ const rasterizeSvgToTexture = (
             return;
         }
 
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(svgText, 'image/svg+xml');
-        const svg = doc.documentElement;
-
-        svg.setAttribute('width', `${size}px`);
-        svg.setAttribute('height', `${size}px`);
-
-        const serialized = new XMLSerializer().serializeToString(svg);
-        const blob = new Blob([ serialized ], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
         const image = new Image();
 
         image.onload = () =>
         {
             scene.textures.addImage(key, image);
-            URL.revokeObjectURL(url);
             resolve();
         };
 
         image.onerror = () =>
         {
-            URL.revokeObjectURL(url);
-            reject(new Error(`Failed to rasterize icon texture: ${key}`));
+            reject(new Error(`Failed to load game icon: ${key} (${url})`));
         };
 
         image.src = url;
@@ -54,16 +39,14 @@ const GAME_ICON_ENTRIES = [
     ...CARD_BEHAVIOR_ICON_ENTRIES,
 ];
 
-/** Registers UI icon textures without Phaser's XHR loader (data URIs break XHRLoader). */
+/** Registers Craftpix UI icon textures for combat panels and cards. */
 export const preloadGameIcons = async (scene: Phaser.Scene): Promise<void> =>
 {
     await Promise.all(GAME_ICON_ENTRIES.map((entry) =>
-        rasterizeSvgToTexture(
-            scene,
-            entry.textureKey,
-            entry.svg,
-            ICON_RASTER_SIZE,
-        ),
+        loadImageTexture(scene, entry.textureKey, entry.url).catch((error) =>
+        {
+            console.warn(error);
+        }),
     ));
 };
 

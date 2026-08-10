@@ -1,0 +1,29 @@
+# Card behaviors (172155 unless noted)
+attack.png            <- 172155/12
+defend.png            <- 172155/33
+joker.png             <- 172155/35
+hazard.png            <- 172155/7
+boost.png             <- 172155/2
+loop.png              <- 172155/22
+poison.png            <- 172155/3
+fire.png              <- 172155/31
+curse.png             <- 172155/44
+fuse.png              <- 172155/4
+echo.png              <- 172155/38
+courier.png           <- 507528/46
+
+# Passives
+thorns.png            <- 172155/11
+enrage.png            <- 172155/5
+last-stand.png        <- 172155/44
+smoke.png             <- 172155/38
+wet-blanket.png       <- 507528/35
+silence.png           <- 172155/26
+loop-hunter.png       <- 172155/22
+jammer.png            <- 172155/23
+escalate.png          <- 172155/7
+dampen.png            <- 172155/16
+curse-hand.png        <- 172155/34
+pressure-column.png   <- 172155/29
+
+# Intents / traits / nodes / events — see filenames; packs noted above

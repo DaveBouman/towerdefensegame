@@ -1,16 +1,4 @@
-import attackSvg from './000000/transparent/1x1/lorc/crossed-swords.svg?raw';
-import defendSvg from './000000/transparent/1x1/willdabeast/round-shield.svg?raw';
-import jokerSvg from './000000/transparent/1x1/sbed/clover.svg?raw';
-import hazardSvg from './000000/transparent/1x1/lorc/land-mine.svg?raw';
-import boostSvg from './000000/transparent/1x1/sbed/doubled.svg?raw';
-import loopSvg from './000000/transparent/1x1/lorc/cycle.svg?raw';
-import poisonSvg from './000000/transparent/1x1/lorc/poison-bottle.svg?raw';
-import fireSvg from './000000/transparent/1x1/sbed/fire.svg?raw';
-import curseSvg from './000000/transparent/1x1/sbed/death-skull.svg?raw';
-import fuseSvg from './000000/transparent/1x1/lorc/time-bomb.svg?raw';
-import echoSvg from './000000/transparent/1x1/lorc/echo-ripples.svg?raw';
-import courierSvg from './000000/transparent/1x1/quoting/card-play.svg?raw';
-import { toWhiteIconSvg } from './toWhiteIconSvg';
+import { craftpixIconUrl } from './craftpixIconUrl';
 
 /** Card behavior ids from cards.json / CARD_VISUALS. */
 export type CardBehaviorIconId =
@@ -27,7 +15,7 @@ export type CardBehaviorIconId =
     | 'echo'
     | 'courier';
 
-/** Icons from https://game-icons.net (see src/ui/icons/license.txt). */
+/** Phaser texture keys for card behavior icons. */
 export const CARD_BEHAVIOR_TEXTURE_KEY: Record<CardBehaviorIconId, string> = {
     attack: 'card-icon-attack',
     defend: 'card-icon-defend',
@@ -43,25 +31,25 @@ export const CARD_BEHAVIOR_TEXTURE_KEY: Record<CardBehaviorIconId, string> = {
     courier: 'card-icon-courier',
 };
 
-const CARD_BEHAVIOR_SVG_RAW: Record<CardBehaviorIconId, string> = {
-    attack: toWhiteIconSvg(attackSvg),
-    defend: toWhiteIconSvg(defendSvg),
-    joker: toWhiteIconSvg(jokerSvg),
-    hazard: toWhiteIconSvg(hazardSvg),
-    boost: toWhiteIconSvg(boostSvg),
-    'loop-reset': toWhiteIconSvg(loopSvg),
-    poison: toWhiteIconSvg(poisonSvg),
-    fire: toWhiteIconSvg(fireSvg),
-    curse: toWhiteIconSvg(curseSvg),
-    fuse: toWhiteIconSvg(fuseSvg),
-    echo: toWhiteIconSvg(echoSvg),
-    courier: toWhiteIconSvg(courierSvg),
+const CARD_BEHAVIOR_ICON_FILE: Record<CardBehaviorIconId, string> = {
+    attack: 'attack.png',
+    defend: 'defend.png',
+    joker: 'joker.png',
+    hazard: 'hazard.png',
+    boost: 'boost.png',
+    'loop-reset': 'loop.png',
+    poison: 'poison.png',
+    fire: 'fire.png',
+    curse: 'curse.png',
+    fuse: 'fuse.png',
+    echo: 'echo.png',
+    courier: 'courier.png',
 };
 
 export const CARD_BEHAVIOR_ICON_ENTRIES = (Object.keys(CARD_BEHAVIOR_TEXTURE_KEY) as CardBehaviorIconId[]).map((id) => ({
     id,
     textureKey: CARD_BEHAVIOR_TEXTURE_KEY[id],
-    svg: CARD_BEHAVIOR_SVG_RAW[id],
+    url: craftpixIconUrl(CARD_BEHAVIOR_ICON_FILE[id]),
 }));
 
 export const getCardBehaviorTextureKey = (behaviorId: string): string | null =>
@@ -69,7 +57,7 @@ export const getCardBehaviorTextureKey = (behaviorId: string): string | null =>
         ? CARD_BEHAVIOR_TEXTURE_KEY[behaviorId as CardBehaviorIconId]
         : null;
 
-export const getCardBehaviorIconSvg = (behaviorId: string): string | null =>
-    behaviorId in CARD_BEHAVIOR_SVG_RAW
-        ? CARD_BEHAVIOR_SVG_RAW[behaviorId as CardBehaviorIconId]
+export const getCardBehaviorIconUrl = (behaviorId: string): string | null =>
+    behaviorId in CARD_BEHAVIOR_ICON_FILE
+        ? craftpixIconUrl(CARD_BEHAVIOR_ICON_FILE[behaviorId as CardBehaviorIconId])
         : null;

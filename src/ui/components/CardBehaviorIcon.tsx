@@ -1,4 +1,5 @@
-import { getCardBehaviorIconSvg } from '../icons/cardBehaviorIcons';
+import { getCardBehaviorIconUrl } from '../icons/cardBehaviorIcons';
+import { CraftpixIcon } from './CraftpixIcon';
 
 interface CardBehaviorIconProps {
     behaviorId: string;
@@ -7,18 +8,12 @@ interface CardBehaviorIconProps {
 
 export const CardBehaviorIcon = ({ behaviorId, className }: CardBehaviorIconProps) =>
 {
-    const svg = getCardBehaviorIconSvg(behaviorId);
+    const src = getCardBehaviorIconUrl(behaviorId);
 
-    if (!svg)
+    if (!src)
     {
         return null;
     }
 
-    return (
-        <span
-            className={className}
-            aria-hidden="true"
-            dangerouslySetInnerHTML={{ __html: svg }}
-        />
-    );
+    return <CraftpixIcon src={src} className={className} />;
 };

@@ -1,19 +1,7 @@
 import type { EnemyPassiveId } from '../../game/cardGame/enemyPassives/types';
-import { toWhiteIconSvg } from './toWhiteIconSvg';
-import thornsSvg from './000000/transparent/1x1/lorc/thorned-arrow.svg?raw';
-import enrageSvg from './000000/transparent/1x1/delapouite/enrage.svg?raw';
-import lastStandSvg from './000000/transparent/1x1/sbed/death-skull.svg?raw';
-import smokeSvg from './000000/transparent/1x1/darkzaitzev/smoke-bomb.svg?raw';
-import wetBlanketSvg from './000000/transparent/1x1/sbed/water-drop.svg?raw';
-import silenceTileSvg from './000000/transparent/1x1/lorc/silence.svg?raw';
-import loopHunterSvg from './000000/transparent/1x1/lorc/cycle.svg?raw';
-import jammerSvg from './000000/transparent/1x1/delapouite/radio-tower.svg?raw';
-import escalateSvg from './000000/transparent/1x1/skoll/minefield.svg?raw';
-import dampenTilesSvg from './000000/transparent/1x1/delapouite/empty-chessboard.svg?raw';
-import curseHandSvg from './000000/transparent/1x1/lorc/chained-heart.svg?raw';
-import pressureColumnSvg from './000000/transparent/1x1/delapouite/ionic-column.svg?raw';
+import { craftpixIconUrl } from './craftpixIconUrl';
 
-/** Icons from https://game-icons.net (see src/ui/icons/license.txt). */
+/** Phaser texture keys for enemy passive icons. */
 export const ENEMY_PASSIVE_TEXTURE_KEY: Record<EnemyPassiveId, string> = {
     thorns: 'passive-icon-thorns',
     enrage: 'passive-icon-enrage',
@@ -29,23 +17,23 @@ export const ENEMY_PASSIVE_TEXTURE_KEY: Record<EnemyPassiveId, string> = {
     pressureColumn: 'passive-icon-pressure-column',
 };
 
-const ENEMY_PASSIVE_SVG_RAW: Record<EnemyPassiveId, string> = {
-    thorns: toWhiteIconSvg(thornsSvg),
-    enrage: toWhiteIconSvg(enrageSvg),
-    lastStand: toWhiteIconSvg(lastStandSvg),
-    smoke: toWhiteIconSvg(smokeSvg),
-    wetBlanket: toWhiteIconSvg(wetBlanketSvg),
-    silenceTile: toWhiteIconSvg(silenceTileSvg),
-    loopHunter: toWhiteIconSvg(loopHunterSvg),
-    jammer: toWhiteIconSvg(jammerSvg),
-    escalate: toWhiteIconSvg(escalateSvg),
-    dampenTiles: toWhiteIconSvg(dampenTilesSvg),
-    curseHand: toWhiteIconSvg(curseHandSvg),
-    pressureColumn: toWhiteIconSvg(pressureColumnSvg),
+const ENEMY_PASSIVE_ICON_FILE: Record<EnemyPassiveId, string> = {
+    thorns: 'thorns.png',
+    enrage: 'enrage.png',
+    lastStand: 'last-stand.png',
+    smoke: 'smoke.png',
+    wetBlanket: 'wet-blanket.png',
+    silenceTile: 'silence.png',
+    loopHunter: 'loop-hunter.png',
+    jammer: 'jammer.png',
+    escalate: 'escalate.png',
+    dampenTiles: 'dampen.png',
+    curseHand: 'curse-hand.png',
+    pressureColumn: 'pressure-column.png',
 };
 
 export const ENEMY_PASSIVE_ICON_ENTRIES = (Object.keys(ENEMY_PASSIVE_TEXTURE_KEY) as EnemyPassiveId[]).map((id) => ({
     id,
     textureKey: ENEMY_PASSIVE_TEXTURE_KEY[id],
-    svg: ENEMY_PASSIVE_SVG_RAW[id],
+    url: craftpixIconUrl(ENEMY_PASSIVE_ICON_FILE[id]),
 }));

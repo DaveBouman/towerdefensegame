@@ -1,0 +1,8 @@
+UI icons from Craftpix free cyberpunk icon packs:
+- craftpix-net-172155-free-cyberpunk-game-icons-for-ui
+- craftpix-net-507528-free-cyberpunk-simple-game-icons-for-ui
+License: https://craftpix.net/file-licenses/
+
+Avatar packs used for enemy portraits (see ../enemies/):
+- craftpix-net-108089-free-cyberpunk-character-avatars-and-emotes
+- craftpix-net-969033-free-cyberpunk-avatar-emotes-512x512-icons

@@ -631,6 +631,20 @@ html, body, #root {
     fill: currentColor;
 }
 
+.craftpix-icon {
+    display: block;
+}
+
+.run-event__icon .craftpix-icon,
+.node-visit__icon .craftpix-icon,
+.shop-overlay__icon .craftpix-icon,
+.puzzle-hud__icon .craftpix-icon,
+.run-event__choice-icon .craftpix-icon,
+.run-event__wheel-segment-icon .craftpix-icon {
+    width: 100%;
+    height: 100%;
+}
+
 .run-event__title {
     margin: 0 0 10px;
     font-size: 26px;
