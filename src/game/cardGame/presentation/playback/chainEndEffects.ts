@@ -102,7 +102,9 @@ function playAbilityEffectVisual (
 
         if (effect.enemyDamage > 0)
         {
-            applyEnemyHitResult(deps, session.dealAttackDamage(effect.enemyDamage));
+            const damage = session.scaleAbilityEnemyDamage(effect.abilityId, effect.enemyDamage);
+
+            applyEnemyHitResult(deps, session.dealAttackDamage(damage));
         }
 
         if (effect.poisonStacks > 0)
@@ -110,8 +112,9 @@ function playAbilityEffectVisual (
             const targetId = session.getAttackTargetId()
                 ?? session.getLivingCombatants()[0]?.instanceId;
             const enemyView = targetId ? deps.enemySquad.getView(targetId) : deps.enemySquad.firstView;
+            const stacks = session.scalePoisonStacks(effect.poisonStacks);
 
-            enemyView?.showPoisonApplied(effect.poisonStacks);
+            enemyView?.showPoisonApplied(stacks);
         }
 
         if (effect.playerDamage > 0)
@@ -223,7 +226,7 @@ function formatAbilityEffectLabel (
 {
     if (effect.enemyDamage > 0)
     {
-        return `+${effect.enemyDamage}`;
+        return `+${session.scaleAbilityEnemyDamage(effect.abilityId, effect.enemyDamage)}`;
     }
 
     if (effect.armorGain > 0)
@@ -233,7 +236,7 @@ function formatAbilityEffectLabel (
 
     if (effect.poisonStacks > 0)
     {
-        return `+${effect.poisonStacks} poison`;
+        return `+${session.scalePoisonStacks(effect.poisonStacks)} poison`;
     }
 
     if (effect.playerDamage > 0)

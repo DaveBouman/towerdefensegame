@@ -11,25 +11,24 @@ describe('buildPlayerDeck', () =>
         resetCardInstanceCounter();
     });
 
-    it('builds a deck with attack, defend, leap, and joker cards', () =>
+    it('builds a neutral core deck without specialty starters', () =>
     {
         const deck = buildPlayerDeck(GAME_RULES.deckSize);
 
         expect(deck).toHaveLength(20);
-        expect(deck.filter((card) => card.definitionId === 'attack')).toHaveLength(3);
-        expect(deck.filter((card) => card.definitionId === 'defend')).toHaveLength(3);
-        expect(deck.filter((card) => card.definitionId === 'fire')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'attack')).toHaveLength(5);
+        expect(deck.filter((card) => card.definitionId === 'defend')).toHaveLength(5);
         expect(deck.filter((card) => card.definitionId === 'attack-leap')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'defend-leap')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'joker')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'echo')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'poison')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'shiv')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'cinder')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'miasma')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'lacerate')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'patch')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'glitch')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'patch')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'hardwire')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'overclock')).toHaveLength(1);
+        expect(deck.some((card) => card.definitionId === 'poison')).toBe(false);
+        expect(deck.some((card) => card.definitionId === 'fire')).toBe(false);
+        expect(deck.some((card) => card.definitionId === 'shiv')).toBe(false);
     });
 
     it('uses orthogonal arrows for standard deck cards', () =>
@@ -67,15 +66,15 @@ describe('buildPlayerDeck', () =>
             return getCardDefinitionOrThrow(card.definitionId).arrowPool !== 'diagonal';
         });
 
-        expect(orthogonalCards).toHaveLength(16);
+        expect(orthogonalCards).toHaveLength(19);
 
         const countDirection = (direction: typeof ORTHOGONAL_DIRECTIONS[number]): number =>
             orthogonalCards.reduce((count, card) =>
                 count + (card.arrow === direction ? 1 : 0), 0);
 
-        for (const direction of ORTHOGONAL_DIRECTIONS)
-        {
-            expect(countDirection(direction)).toBe(4);
-        }
+        const counts = ORTHOGONAL_DIRECTIONS.map(countDirection);
+
+        expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
+        expect(counts.reduce((sum, count) => sum + count, 0)).toBe(19);
     });
 });

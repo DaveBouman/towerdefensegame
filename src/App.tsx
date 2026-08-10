@@ -94,11 +94,12 @@ const rollRewardForNode = (
     nodeId: string,
     reward: CardReward,
     rerollIndex: number,
+    deckDefinitionIds: readonly string[],
 ): string[] =>
 {
     seedScope(seed, `reward:${nodeId}:${rerollIndex}`);
 
-    return rollCardReward(reward.choiceCount, reward.pool ?? 'standard');
+    return rollCardReward(reward.choiceCount, reward.pool ?? 'standard', deckDefinitionIds);
 };
 
 function App()
@@ -271,7 +272,7 @@ function App()
                 setPendingReward({
                     nodeId: node.id,
                     reward: node.reward,
-                    options: rollRewardForNode(seedRef.current, node.id, node.reward, 0),
+                    options: rollRewardForNode(seedRef.current, node.id, node.reward, 0, deckRef.current),
                     rerollIndex: 0,
                 });
                 setPhase('reward');
@@ -353,7 +354,7 @@ function App()
                 setPendingPuzzleReward({
                     puzzleId,
                     nodeId: node.id,
-                    options: rollPuzzleCardReward(),
+                    options: rollPuzzleCardReward(deckRef.current),
                     damageDealt,
                     damageTarget,
                     messages: applied.messages,
@@ -413,7 +414,7 @@ function App()
                 setVisit({
                     node,
                     eventId: null,
-                    shopOffers: rollShopOffers(bodyMods),
+                    shopOffers: rollShopOffers(bodyMods, deck),
                 });
             }
 
@@ -621,7 +622,7 @@ function App()
             return {
                 ...prev,
                 rerollIndex,
-                options: rollRewardForNode(seedRef.current, prev.nodeId, prev.reward, rerollIndex),
+                options: rollRewardForNode(seedRef.current, prev.nodeId, prev.reward, rerollIndex, deckRef.current),
             };
         });
     }, []);

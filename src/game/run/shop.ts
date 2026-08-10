@@ -31,9 +31,12 @@ export const SHOP_HEAL_AMOUNT = 22;
  * Seeded Ripperdoc stock for a shop node. Call after
  * `seedScope(seed, \`shop:${nodeId}\`)`.
  */
-export const rollShopOffers = (ownedBodyMods: readonly string[]): ShopOffer[] =>
+export const rollShopOffers = (
+    ownedBodyMods: readonly string[],
+    deckDefinitionIds: readonly string[] = [],
+): ShopOffer[] =>
 {
-    const cardId = rollCardReward(1)[0]!;
+    const cardId = rollCardReward(1, 'standard', deckDefinitionIds)[0]!;
     const card = describeCardReward(cardId);
     const offers: ShopOffer[] = [
         {
@@ -79,7 +82,7 @@ export const rollShopOffers = (ownedBodyMods: readonly string[]): ShopOffer[] =>
     else
     {
         // Already fully chrome'd — offer a second random card instead.
-        const extras = rollCardReward(4).filter((id) => id !== cardId);
+        const extras = rollCardReward(4, 'standard', deckDefinitionIds).filter((id) => id !== cardId);
 
         if (extras.length > 0)
         {

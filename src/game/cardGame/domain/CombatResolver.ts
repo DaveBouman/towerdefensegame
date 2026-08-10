@@ -314,7 +314,8 @@ export class CombatResolver
 
         if (sequence.abilityPoisonStacks > 0)
         {
-            target.state.poison = (target.state.poison ?? 0) + sequence.abilityPoisonStacks;
+            target.state.poison = (target.state.poison ?? 0)
+                + this.scalePoisonStacks(sequence.abilityPoisonStacks);
         }
 
         this.damageDealtThisAttack = 0;
@@ -506,12 +507,65 @@ export class CombatResolver
             scaled *= 2;
         }
 
+        if (this.ctx.bodyMods.includes(BODY_MOD_IDS.razorFeed))
+        {
+            scaled += 2;
+        }
+
         return scaled;
     }
 
     private scalePlayerArmorGain (armor: number): number
     {
-        return applyPlayerBuffModifier(armor, this.getModifierTotals().playerArmor);
+        let scaled = applyPlayerBuffModifier(armor, this.getModifierTotals().playerArmor);
+
+        if (this.ctx.bodyMods.includes(BODY_MOD_IDS.carapaceWeave) && scaled > 0)
+        {
+            scaled = Math.ceil(scaled * 1.5);
+        }
+
+        return scaled;
+    }
+
+    /** Poison stacks after Venom Latch (and any future toxin chrome). */
+    scalePoisonStacks (stacks: number): number
+    {
+        if (stacks <= 0)
+        {
+            return 0;
+        }
+
+        if (this.ctx.bodyMods.includes(BODY_MOD_IDS.venomLatch))
+        {
+            return stacks * 2;
+        }
+
+        return stacks;
+    }
+
+    /** Ability payload damage after playstyle chrome (fire / bleed). */
+    scaleAbilityEnemyDamage (abilityId: string, damage: number): number
+    {
+        if (damage <= 0)
+        {
+            return 0;
+        }
+
+        let scaled = damage;
+
+        if (abilityId === 'fire-alternation'
+            && this.ctx.bodyMods.includes(BODY_MOD_IDS.pyreLink))
+        {
+            scaled = Math.ceil(scaled * 1.5);
+        }
+
+        if (abilityId === 'bleed'
+            && this.ctx.bodyMods.includes(BODY_MOD_IDS.hemorrhageCoil))
+        {
+            scaled = Math.ceil(scaled * 1.5);
+        }
+
+        return scaled;
     }
 
     private scaleEnemyAttackDamage (damage: number): number

@@ -18,6 +18,11 @@ export const BODY_MOD_IDS = {
     credSiphon: 'cred-siphon',
     markSeven: 'mark-seven',
     reactivePlating: 'reactive-plating',
+    venomLatch: 'venom-latch',
+    razorFeed: 'razor-feed',
+    carapaceWeave: 'carapace-weave',
+    pyreLink: 'pyre-link',
+    hemorrhageCoil: 'hemorrhage-coil',
 } as const;
 
 /** Attacks that trigger Mark VII's double-damage proc (7th, 14th, …). */
@@ -77,6 +82,36 @@ export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
         blurb: 'Subdermal impact mesh hardens on first contact, then vents.',
         effect: 'First 2 card hits each fight deal no damage to you.',
         combatTraits: [ { id: 'hitWard', hitsBlocked: 2 } ],
+    },
+    {
+        id: BODY_MOD_IDS.venomLatch,
+        label: 'Venom Latch',
+        blurb: 'Toxin reservoirs clamp onto every poison payload before release.',
+        effect: 'Poison stacks you apply are doubled.',
+    },
+    {
+        id: BODY_MOD_IDS.razorFeed,
+        label: 'Razor Feed',
+        blurb: 'Mono-edge injectors push every cut harder through chrome and meat.',
+        effect: 'Your damage dealt +2.',
+    },
+    {
+        id: BODY_MOD_IDS.carapaceWeave,
+        label: 'Carapace Weave',
+        blurb: 'Layered plating multiplies every shield projection.',
+        effect: 'Armor you gain is 50% stronger.',
+    },
+    {
+        id: BODY_MOD_IDS.pyreLink,
+        label: 'Pyre Link',
+        blurb: 'Ignition bus amplifies fire-alternation detonations.',
+        effect: 'Fire alternation damage ×1.5.',
+    },
+    {
+        id: BODY_MOD_IDS.hemorrhageCoil,
+        label: 'Hemorrhage Coil',
+        blurb: 'Bleed firmware overclocks rupture payloads mid-chain.',
+        effect: 'Bleed ability damage ×1.5.',
     },
 ];
 

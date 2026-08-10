@@ -291,8 +291,8 @@ export const buildIconMatchGrid = (): IconMatchGrid =>
     };
 };
 
-const resolveRandomCard = (): string =>
-    rollCardReward(1)[0] ?? 'attack';
+const resolveRandomCard = (deckDefinitionIds: readonly string[]): string =>
+    rollCardReward(1, 'standard', deckDefinitionIds)[0] ?? 'attack';
 
 const resolveRandomBodyMod = (ownedBodyMods: readonly string[]): string | null =>
     rollBodyModReward(ownedBodyMods);
@@ -300,11 +300,12 @@ const resolveRandomBodyMod = (ownedBodyMods: readonly string[]): string | null =
 const expandEffect = (
     effect: RunEventEffect,
     ownedBodyMods: readonly string[],
+    deckDefinitionIds: readonly string[],
 ): RunEventEffect[] =>
 {
     if (effect.kind === 'add-card' && effect.cardId === '__random__')
     {
-        return [ { kind: 'add-card', cardId: resolveRandomCard() } ];
+        return [ { kind: 'add-card', cardId: resolveRandomCard(deckDefinitionIds) } ];
     }
 
     if (effect.kind === 'body-mod' && effect.bodyModId === '__random__')
@@ -377,7 +378,7 @@ export const applyRunEventEffects = (
 
     for (const rawEffect of effects)
     {
-        for (const effect of expandEffect(rawEffect, nextBodyMods))
+        for (const effect of expandEffect(rawEffect, nextBodyMods, nextDeck))
         {
             switch (effect.kind)
             {

@@ -175,5 +175,5 @@ export const computePuzzleDamageDealt = (sequence: {
 export const PUZZLE_CARD_REWARD_COUNT = 3;
 
 /** Rolls card choices for a passed combo trial (caller must seed first). */
-export const rollPuzzleCardReward = (): string[] =>
-    rollCardReward(PUZZLE_CARD_REWARD_COUNT);
+export const rollPuzzleCardReward = (deckDefinitionIds: readonly string[] = []): string[] =>
+    rollCardReward(PUZZLE_CARD_REWARD_COUNT, 'standard', deckDefinitionIds);

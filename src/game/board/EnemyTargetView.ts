@@ -396,7 +396,7 @@ export class EnemyTargetView
         }
 
         const metrics = this.getIntentMetrics();
-        const { rows, rowWidths, rowHeights } = this.layoutIntentStepRows(steps, metrics);
+        const { rows, rowWidths, rowHeights, stepWidths } = this.layoutIntentStepRows(steps, metrics);
         const rowGap = metrics.rowGap;
         const totalHeight = rowHeights.reduce((sum, height) => sum + height, 0)
             + Math.max(0, rows.length - 1) * rowGap;
@@ -405,6 +405,7 @@ export class EnemyTargetView
         const parts: Phaser.GameObjects.GameObject[] = [];
 
         let rowTop = -totalHeight / 2;
+        let stepIndex = 0;
 
         rows.forEach((row, rowIndex) =>
         {
@@ -414,8 +415,19 @@ export class EnemyTargetView
 
             row.forEach((visual) =>
             {
-                parts.push(...this.buildIntentStep(visual, x, rowTop, rowHeight, phase, metrics));
-                x += metrics.columnWidth + metrics.stepGap;
+                const stepWidth = stepWidths[stepIndex]!;
+
+                parts.push(...this.buildIntentStep(
+                    visual,
+                    x,
+                    rowTop,
+                    rowHeight,
+                    stepWidth,
+                    phase,
+                    metrics,
+                ));
+                x += stepWidth + metrics.stepGap;
+                stepIndex += 1;
             });
 
             rowTop += rowHeight + rowGap;
@@ -443,9 +455,9 @@ export class EnemyTargetView
         iconSize: number;
         stepGap: number;
         rowGap: number;
-        columnWidth: number;
         amountFontSize: number;
         stackGap: number;
+        labelPad: number;
         stepHeightStacked: number;
         stepHeightIconOnly: number;
     }
@@ -454,20 +466,52 @@ export class EnemyTargetView
         const iconSize = Math.max(22, Math.round(INTENT_ICON_SIZE * scale));
         const amountFontSize = Math.max(14, Math.round(INTENT_AMOUNT_FONT_SIZE * scale));
         const stackGap = Math.max(2, Math.round(INTENT_STACK_GAP * scale));
-        // Fixed column width so icon-only and labelled steps share one grid.
-        const columnWidth = Math.max(iconSize, Math.round(34 * scale));
 
         return {
             scale,
             iconSize,
-            stepGap: Math.max(8, Math.round(8 * scale)),
+            stepGap: Math.max(10, Math.round(10 * scale)),
             rowGap: Math.max(6, Math.round(6 * scale)),
-            columnWidth,
             amountFontSize,
             stackGap,
+            labelPad: 6,
             stepHeightStacked: iconSize + stackGap + amountFontSize,
             stepHeightIconOnly: iconSize,
         };
+    }
+
+    /** Temporary Phaser text probe so Orbitron + stroke widths are accurate. */
+    private measureIntentLabelWidth (label: string, fontSize: number): number
+    {
+        const probe = this.scene.add.text(0, 0, label, {
+            ...uiDisplayTextStyle(fontSize, '#ffffff', {
+                bold: true,
+                strokeColor: '#0a0a14',
+            }),
+        });
+
+        probe.setVisible(false);
+        const width = Math.ceil(probe.width);
+
+        probe.destroy();
+
+        return width;
+    }
+
+    private measureIntentStepWidth (
+        visual: EnemyIntentStepVisual,
+        metrics: ReturnType<EnemyTargetView['getIntentMetrics']>,
+    ): number
+    {
+        if (!visual.amountLabel)
+        {
+            return metrics.iconSize;
+        }
+
+        return Math.max(
+            metrics.iconSize,
+            this.measureIntentLabelWidth(visual.amountLabel, metrics.amountFontSize) + metrics.labelPad,
+        );
     }
 
     private getIntentFitScale (rowWidth: number): number
@@ -478,9 +522,9 @@ export class EnemyTargetView
         }
 
         // Allow a little overhang past the portrait so 3 intents stay on one row.
-        const maxWidth = this.enemySize * 1.35;
+        const maxWidth = this.enemySize * 1.45;
 
-        return Math.max(0.82, Math.min(1, maxWidth / rowWidth));
+        return Math.max(0.78, Math.min(1, maxWidth / rowWidth));
     }
 
     private getIntentRowHeight (
@@ -504,14 +548,17 @@ export class EnemyTargetView
         rows: EnemyIntentStepVisual[][];
         rowWidths: number[];
         rowHeights: number[];
+        stepWidths: number[];
     }
     {
-        const maxRowWidth = this.enemySize * 1.35;
+        const maxRowWidth = this.enemySize * 1.45;
+        const stepWidths = steps.map((step) => this.measureIntentStepWidth(step, metrics));
         const rows: EnemyIntentStepVisual[][] = [];
         const rowWidths: number[] = [];
         const rowHeights: number[] = [];
         let currentRow: EnemyIntentStepVisual[] = [];
         let currentWidth = 0;
+        let stepIndex = 0;
 
         const pushRow = (): void =>
         {
@@ -529,7 +576,7 @@ export class EnemyTargetView
 
         for (const visual of steps)
         {
-            const stepWidth = metrics.columnWidth;
+            const stepWidth = stepWidths[stepIndex]!;
             const gap = currentRow.length > 0 ? metrics.stepGap : 0;
             const nextWidth = currentWidth + gap + stepWidth;
 
@@ -545,11 +592,12 @@ export class EnemyTargetView
 
             currentRow.push(visual);
             currentWidth += stepWidth;
+            stepIndex += 1;
         }
 
         pushRow();
 
-        return { rows, rowWidths, rowHeights };
+        return { rows, rowWidths, rowHeights, stepWidths };
     }
 
     private syncIntentWorldPosition (): void
@@ -570,16 +618,17 @@ export class EnemyTargetView
         x: number,
         rowTop: number,
         rowHeight: number,
+        stepWidth: number,
         phase: 'upcoming' | 'executing',
         metrics: ReturnType<EnemyTargetView['getIntentMetrics']>,
     ): Phaser.GameObjects.GameObject[]
     {
-        const centerX = x + metrics.columnWidth / 2;
+        const centerX = x + stepWidth / 2;
         const iconCenterY = rowTop + metrics.iconSize / 2;
         const hitArea = this.scene.add.rectangle(
             centerX,
             rowTop + rowHeight / 2,
-            metrics.columnWidth,
+            stepWidth,
             rowHeight,
             0x000000,
             0,

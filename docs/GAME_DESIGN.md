@@ -107,7 +107,9 @@ RunReward =
   - `pickCount > 1` → "pick two cards"
   - `rerollable: true` → reroll the offered choices (`CardRewardOverlay` already renders the button + `App` handles reroll)
   - add new `RunReward` kinds without touching existing handling.
-- Card choices come from `REWARD_CARD_POOL` / `ELITE_REWARD_CARD_POOL` via `rollCardReward(choiceCount, pool)`.
+- Card choices come from `REWARD_CARD_POOL` / `ELITE_REWARD_CARD_POOL` via `rollCardReward(choiceCount, pool, deck)`.
+  Offers are **weighted by deck archetypes** (`deckArchetypes.ts`) so the run weaves you into blade / toxin / heat / bulwark based on what you already picked — no explicit class select.
+- Starter deck is a **neutral core** (attacks/defends/leaps + joker/echo/battle-mods). Specialty cards arrive through rewards/shop/events.
 
 When adding body mods: give body mods a modifier step that adjusts the `RunReward`
 before `rollCardReward`/display, or add a new `RunReward` kind + a case in `App`'s
@@ -273,8 +275,9 @@ remain as a fallback if a portrait fails to load.
 | Map layout / difficulty ramp | `src/game/run/runMap.ts` (`ROW_SIZES`, `ROW_ENEMY_POOLS`, `RUN_CONFIG`) |
 | Map node kinds / icons / tooltips | `src/game/run/nodeKinds.ts` (kinds, weights, tooltip copy), `src/ui/components/NodeKindIcon.tsx` |
 | Shop / event node behavior | `ShopOverlay.tsx`, `shop.ts`, `RunEventOverlay.tsx`, `runEvents.ts`, `runPuzzles.ts`, `PuzzleHud.tsx`, `PuzzleResultOverlay.tsx`; `App.tsx` `visit`/`puzzle` phases |
-| Rewards / reward pool / body-mod hooks | `src/game/run/rewards.ts` (`rewardForNodeKind`, elite pool) |
-| Persistent run deck | `getDefaultDeckDefinitionIds` / `buildDeckFromDefinitionIds` in `buildPlayerDeck.ts` |
+| Rewards / reward pool / body-mod hooks | `src/game/run/rewards.ts` (`rewardForNodeKind`, elite pool, deck-weighted `rollCardReward`), `deckArchetypes.ts` |
+| Body mods (stats + playstyle) | `src/game/run/bodyMods.ts` — Venom Latch / Razor Feed / Carapace Weave / Pyre Link / Hemorrhage Coil change combat; chrome-heart etc. are economy/stats |
+| Persistent run deck | `getDefaultDeckDefinitionIds` / `buildDeckFromDefinitionIds` in `buildPlayerDeck.ts` (neutral starter; specialties from rewards) |
 | Map / run visuals | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`, `ShopOverlay.tsx`; `.run-map*` / `.run-end*` / `.card-reward*` / `.shop-overlay*` in `public/style.css` |
 | First-run teaching | `src/ui/tutorial/Tutorial.tsx` |
 | Floor helpers / per-floor rerolls | `runMap.ts` floors; `App.tsx` `floorRerollsRemaining`; `START_BATTLE.rerollsRemaining` |
@@ -296,6 +299,7 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-10 | **Build weave + playstyle chrome.** Starter deck is a neutral core. Card rewards/shop/events weight toward the deck’s emerging lane (`deckArchetypes` → blade/toxin/heat/bulwark). New body mods: Venom Latch (×2 poison), Razor Feed (+2 damage), Carapace Weave (+50% armor), Pyre Link (fire ×1.5), Hemorrhage Coil (bleed ×1.5). |
 | 2026-08-10 | **Craftpix UI icons.** Replaced game-icons.net SVGs with Craftpix cyberpunk PNGs (`public/assets/ui-icons/`) for card behaviors, passives, intents, traits, map nodes, and events. Avatar packs remain for enemy portraits. |
 | 2026-08-10 | **Enemy portrait presentation.** Portraits fill the target frame; HP/shield chrome sits under the art (no text over the face). Larger panel; accent on frame only. |
 | 2026-08-10 | **Enemy portraits.** Craftpix cyberpunk avatars renamed under `public/assets/enemies/` and shown in-fight (`preloadEnemyPortraits` → `EnemyTargetView`). Accent frames kept; silhouettes remain as fallback. Map still hides encounter names. |

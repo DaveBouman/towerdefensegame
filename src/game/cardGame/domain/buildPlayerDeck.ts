@@ -8,20 +8,17 @@ import { shuffleInPlace } from '../../random/rng';
 export { shuffleInPlace };
 
 const DECK_COMPOSITION: readonly { definitionId: string; count: number }[] = [
-    { definitionId: 'attack', count: 3 },
-    { definitionId: 'defend', count: 3 },
+    // Neutral core — specialty cards come from rewards so the run can weave a lane.
+    { definitionId: 'attack', count: 5 },
+    { definitionId: 'defend', count: 5 },
     { definitionId: 'attack-leap', count: 2 },
     { definitionId: 'defend-leap', count: 2 },
     { definitionId: 'joker', count: 1 },
     { definitionId: 'echo', count: 1 },
-    { definitionId: 'poison', count: 1 },
-    { definitionId: 'fire', count: 1 },
-    { definitionId: 'shiv', count: 1 },
-    { definitionId: 'cinder', count: 1 },
-    { definitionId: 'miasma', count: 1 },
-    { definitionId: 'lacerate', count: 1 },
-    { definitionId: 'patch', count: 1 },
     { definitionId: 'glitch', count: 1 },
+    { definitionId: 'patch', count: 1 },
+    { definitionId: 'hardwire', count: 1 },
+    { definitionId: 'overclock', count: 1 },
 ];
 
 /** The card definition ids that make up a fresh starting deck. */

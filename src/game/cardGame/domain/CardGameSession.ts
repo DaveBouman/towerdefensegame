@@ -411,6 +411,16 @@ export class CardGameSession
         return this.combat.getScaledArmorGain(armor);
     }
 
+    scalePoisonStacks (stacks: number): number
+    {
+        return this.combat.scalePoisonStacks(stacks);
+    }
+
+    scaleAbilityEnemyDamage (abilityId: string, damage: number): number
+    {
+        return this.combat.scaleAbilityEnemyDamage(abilityId, damage);
+    }
+
     /** Spends one energy for an attack. Returns false when none remains. */
     spendEnergy (): boolean
     {

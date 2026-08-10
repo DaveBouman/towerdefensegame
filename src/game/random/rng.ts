@@ -89,6 +89,40 @@ export const randomInt = (maxExclusive: number): number =>
 export const pickRandom = <T>(items: readonly T[]): T =>
     items[randomInt(items.length)]!;
 
+/** Picks one item using relative weights (uses the seeded RNG). */
+export const pickWeighted = <T>(
+    items: readonly T[],
+    weightOf: (item: T) => number,
+): T =>
+{
+    if (items.length === 0)
+    {
+        throw new Error('pickWeighted requires at least one item');
+    }
+
+    const weights = items.map((item) => Math.max(0, weightOf(item)));
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+
+    if (total <= 0)
+    {
+        return pickRandom(items);
+    }
+
+    let ticket = random() * total;
+
+    for (let index = 0; index < items.length; index++)
+    {
+        ticket -= weights[index]!;
+
+        if (ticket <= 0)
+        {
+            return items[index]!;
+        }
+    }
+
+    return items[items.length - 1]!;
+};
+
 export const shuffleInPlace = <T>(items: T[]): T[] =>
 {
     for (let i = items.length - 1; i > 0; i--)

@@ -1,5 +1,6 @@
+import { pickWeighted } from '../random/rng';
 import { getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
-import { shuffleInPlace } from '../random/rng';
+import { getCardRewardWeight, scoreDeckArchetypes } from './deckArchetypes';
 import type { RunMapNodeKind } from './nodeKinds';
 
 /**
@@ -68,7 +69,7 @@ export const rewardForNodeKind = (kind: RunMapNodeKind): RunReward | undefined =
 
 /** Shown on battle victory card rewards. */
 export const BATTLE_REWARD_RULES: readonly string[] = [
-    'Three random cards are offered from the reward pool.',
+    'Three cards are offered — biased toward the specialty your deck is already leaning into.',
     'Select one card to add to your deck, or continue without taking a card.',
     'Your choice is permanent for the rest of the run.',
 ];
@@ -145,15 +146,39 @@ export const ELITE_REWARD_CARD_POOL: readonly string[] = [
 const poolForId = (poolId: RewardPoolId = 'standard'): readonly string[] =>
     poolId === 'elite' ? ELITE_REWARD_CARD_POOL : REWARD_CARD_POOL;
 
-/** Picks `choiceCount` distinct card definition ids at random from the given pool. */
+/**
+ * Picks `choiceCount` distinct card definition ids from the pool.
+ * When `deckDefinitionIds` is provided, offers weave toward the deck's emerging specialty.
+ */
 export const rollCardReward = (
     choiceCount: number,
     poolId: RewardPoolId = 'standard',
+    deckDefinitionIds: readonly string[] = [],
 ): string[] =>
 {
-    const pool = shuffleInPlace([ ...poolForId(poolId) ]);
+    const pool = [ ...poolForId(poolId) ];
+    const scores = scoreDeckArchetypes(deckDefinitionIds);
+    const picks: string[] = [];
+    const count = Math.max(0, Math.min(choiceCount, pool.length));
 
-    return pool.slice(0, Math.max(0, Math.min(choiceCount, pool.length)));
+    for (let index = 0; index < count; index++)
+    {
+        const remaining = pool.filter((id) => !picks.includes(id));
+
+        if (remaining.length === 0)
+        {
+            break;
+        }
+
+        const pick = pickWeighted(
+            remaining,
+            (id) => getCardRewardWeight(id, scores),
+        );
+
+        picks.push(pick);
+    }
+
+    return picks;
 };
 
 const CARD_BLURBS: Record<string, string> = {
@@ -198,8 +223,6 @@ export const describeCardReward = (definitionId: string): CardRewardDisplay =>
         definitionId,
         label: definition.label,
         power: definition.power,
-        blurb: CARD_BLURBS[definition.id]
-            ?? CARD_BLURBS[definition.behaviorId]
-            ?? 'A new card for your deck.',
+        blurb: CARD_BLURBS[definitionId] ?? definition.label,
     };
 };
