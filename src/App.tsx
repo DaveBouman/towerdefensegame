@@ -150,6 +150,16 @@ function App()
         });
     }, [ phase, tutorial.showBattleCoach ]);
 
+    useEffect(() =>
+    {
+        if (!sceneReadyRef.current)
+        {
+            return;
+        }
+
+        EventBus.emit(GAME_EVENTS.RUN_PHASE, { phase });
+    }, [ phase ]);
+
     const runMaxHealth = useMemo(() => getRunMaxHealth(bodyMods), [ bodyMods ]);
 
     const selectedNodeRef = useRef<RunMapNode | null>(null);
@@ -293,6 +303,7 @@ function App()
         {
             sceneReadyRef.current = true;
             emitRunBgm('glass-streets');
+            EventBus.emit(GAME_EVENTS.RUN_PHASE, { phase: phaseRef.current });
 
             if (pendingStartRef.current)
             {

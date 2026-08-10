@@ -18,6 +18,7 @@ export const GAME_EVENTS = {
     RUN_ATTACK_COUNT: 'run-attack-count',
     PILE_VIEW_OPEN: 'pile-view-open',
     UI_OVERLAY_ACTIVE: 'ui-overlay-active',
+    RUN_PHASE: 'run-phase',
     PLAY_SFX: 'play-sfx',
     SET_BGM: 'set-bgm',
 } as const;

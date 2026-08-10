@@ -1,5 +1,6 @@
 import { applyBoardLayout, computeBoardLayout, type BoardLayout } from '../board/boardLayout';
 import { BattlefieldBackgroundView } from '../board/BattlefieldBackgroundView';
+import { MapBackgroundView } from '../board/MapBackgroundView';
 import { ArmorView } from '../board/ArmorView';
 import { CardBoardView } from '../board/CardBoardView';
 import { CardHandView } from '../board/CardHandView';
@@ -63,6 +64,8 @@ export class Game extends Scene
     private activePuzzleId: string | null = null;
     private lowHpVignette?: Phaser.GameObjects.Rectangle;
     private battlefieldBackground?: BattlefieldBackgroundView;
+    private mapBackground?: MapBackgroundView;
+    private runPhase = 'map';
     private unbindAudio?: () => void;
     private unbindBgm?: () => void;
     private pileInspectionBlocked = false;
@@ -107,10 +110,40 @@ export class Game extends Scene
         EventBus.on(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
         EventBus.on(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
         EventBus.on(GAME_EVENTS.UI_OVERLAY_ACTIVE, this.onUiOverlayActive, this);
+        EventBus.on(GAME_EVENTS.RUN_PHASE, this.onRunPhase, this);
         CardGameEventBus.on(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
         CardGameEventBus.on(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
         this.scale.on('resize', this.onResize, this);
     }
+
+    private onRunPhase = ({ phase }: { phase: string }): void =>
+    {
+        this.runPhase = phase;
+        this.syncRunBackdrop();
+    };
+
+    private syncRunBackdrop (): void
+    {
+        if (this.runPhase === 'map')
+        {
+            this.battlefieldBackground?.destroy();
+            this.battlefieldBackground = undefined;
+
+            if (!this.mapBackground)
+            {
+                this.mapBackground = new MapBackgroundView(this);
+            }
+
+            const { width, height } = this.scale;
+
+            this.mapBackground.resize(width, height);
+            this.mapBackground.container.setVisible(true);
+
+            return;
+        }
+
+        this.mapBackground?.container.setVisible(false);
+    };
 
     private onUiOverlayActive = (
         { blockPileInspection }: { blockPileInspection?: boolean },
@@ -438,6 +471,7 @@ export class Game extends Scene
         this.enemySquad.applyLayout(this.layout);
         this.syncBattleModifierLayout();
         this.battleModifierView?.reposition(this.layout, this.session?.getCombatants().length ?? 1);
+        this.mapBackground?.resize(gameSize.width, gameSize.height);
     };
 
     private endBattle (): void
@@ -526,8 +560,11 @@ export class Game extends Scene
         EventBus.off(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
         EventBus.off(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
         EventBus.off(GAME_EVENTS.UI_OVERLAY_ACTIVE, this.onUiOverlayActive, this);
+        EventBus.off(GAME_EVENTS.RUN_PHASE, this.onRunPhase, this);
         CardGameEventBus.off(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
         CardGameEventBus.off(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
+        this.mapBackground?.destroy();
+        this.mapBackground = undefined;
         this.endBattle();
     }
 
