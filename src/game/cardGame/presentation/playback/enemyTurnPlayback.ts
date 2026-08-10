@@ -8,7 +8,7 @@ import type { ArmorView } from '../../../board/ArmorView';
 import type { BattleModifierStatusView } from '../../../board/BattleModifierStatusView';
 import { describeBattleModifier } from '../../combat/battleModifiers';
 import { getDamageTierStyle, shakeCamera } from '../combatJuice';
-import { playPlayerHitSfx } from '../../../audio/bindGameAudio';
+import { playPlayerHitSfx, playShieldAbsorbSfx } from '../../../audio/bindGameAudio';
 import { playSfx } from '../../../audio/gameAudio';
 
 export interface EnemyTurnPlaybackDeps
@@ -57,7 +57,7 @@ export function playEnemyTurnStep (
             if (result.shieldAbsorbed > 0)
             {
                 armorView.showShieldAbsorb(result.shieldAbsorbed);
-                playSfx('shield', { volume: 0.7 });
+                playShieldAbsorbSfx();
             }
 
             if (result.healthDamage > 0)

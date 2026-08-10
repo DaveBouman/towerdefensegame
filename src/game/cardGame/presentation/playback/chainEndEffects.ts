@@ -8,6 +8,7 @@ import type { EnemySquadView } from '../../../board/EnemySquadView';
 import type { ArmorView } from '../../../board/ArmorView';
 import { playFloatingText } from '../visualEffects/visualEffectTweens';
 import { getCardVisualEffectOrThrow } from '../visualEffects/visualEffectRegistry';
+import { playAbilityProcSfx } from '../../../audio/bindGameAudio';
 import {
     applyEnemyHitResult,
     applyPlayerDamage,
@@ -88,6 +89,7 @@ function playAbilityEffectVisual (
 
     if (chainStep)
     {
+        playAbilityProcSfx(effect.visualId, effect.abilityId);
         pulseAbilityCard(deps, effect.slot, effect.visualId, GAME_RULES.activationStepMs);
     }
 

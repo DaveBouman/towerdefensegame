@@ -36,7 +36,7 @@ export const bindGameAudioListeners = (): (() => void) =>
     {
         if (armor > lastArmor)
         {
-            playSfx('shield', { volume: 0.92 });
+            playDefendProcSfx();
         }
 
         lastArmor = armor;
@@ -106,4 +106,78 @@ export const playCombatHitSfx = (result: DamageResult): void =>
 export const playPlayerHitSfx = (healthDamage: number): void =>
 {
     playEnemyDamageSfx(healthDamage);
+};
+
+/** Behaviors whose payoff resolves after the chain (sound plays at proc time). */
+const END_RESOLVED_BEHAVIORS = new Set([ 'fire', 'poison' ]);
+
+/** Card ability / special behavior activation during a chain. */
+export const playCardAbilitySfx = (visualId: string, behaviorId?: string): void =>
+{
+    const behavior = behaviorId?.toLowerCase() ?? '';
+    const visual = visualId.toLowerCase();
+
+    if (behavior === 'attack' || behavior === 'defend')
+    {
+        return;
+    }
+
+    if (END_RESOLVED_BEHAVIORS.has(behavior))
+    {
+        return;
+    }
+
+    let rate = 1;
+
+    if (behavior === 'boost' || visual === 'boost' || visual === 'patch')
+    {
+        rate = 1.06;
+    }
+    else if (behavior === 'echo' || visual === 'echo')
+    {
+        rate = 0.94;
+    }
+    else if (behavior === 'joker' || visual === 'joker' || visual === 'glitch')
+    {
+        rate = 1.12;
+    }
+    else if (behavior === 'hazard' || behavior === 'curse')
+    {
+        rate = 0.88;
+    }
+
+    playSfx('ability-cast', { volume: 0.88, rate });
+};
+
+/** End-of-chain ability proc (fire, poison, etc.). */
+export const playAbilityProcSfx = (visualId: string, abilityId?: string): void =>
+{
+    const visual = visualId.toLowerCase();
+    const ability = abilityId?.toLowerCase() ?? '';
+    let rate = 1;
+
+    if (ability.includes('fire') || visual.includes('fire') || visual === 'cinder' || visual === 'scorch')
+    {
+        rate = 1.04;
+    }
+    else if (ability.includes('poison') || visual.includes('poison') || visual === 'miasma')
+    {
+        rate = 0.9;
+    }
+    else if (ability.includes('boost') || visual.includes('boost'))
+    {
+        rate = 1.08;
+    }
+
+    playSfx('ability-cast', { volume: 0.92, rate });
+};
+
+export const playShieldAbsorbSfx = (): void =>
+{
+    playSfx('shield', { volume: 0.82, rate: 0.95 });
+};
+
+export const playDefendProcSfx = (): void =>
+{
+    playSfx('defend-proc', { volume: 0.9 });
 };

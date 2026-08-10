@@ -10,7 +10,7 @@ import {
     playElementHitBurst,
     shakeCamera,
 } from '../combatJuice';
-import { playCombatHitSfx, playPlayerHitSfx } from '../../../audio/bindGameAudio';
+import { playCombatHitSfx, playPlayerHitSfx, playShieldAbsorbSfx } from '../../../audio/bindGameAudio';
 import { playFloatingText } from '../visualEffects/visualEffectTweens';
 
 export interface CombatHitVisualDeps
@@ -52,6 +52,7 @@ export function applyEnemyHitResult (
     if (result.shieldAbsorbed > 0)
     {
         enemyView?.showShieldAbsorb(result.shieldAbsorbed);
+        playShieldAbsorbSfx();
     }
 
     if (result.healthDamage > 0)
@@ -110,6 +111,7 @@ export function applyEnemyHitResult (
         if ((result.thornsShieldAbsorbed ?? 0) > 0)
         {
             armorView.showShieldAbsorb(result.thornsShieldAbsorbed!);
+            playShieldAbsorbSfx();
         }
 
         if ((result.thornsHealthDamage ?? 0) > 0)
@@ -133,6 +135,7 @@ export function applyPlayerDamage (deps: CombatHitVisualDeps, damage: number): v
     if (result.shieldAbsorbed > 0)
     {
         armorView.showShieldAbsorb(result.shieldAbsorbed);
+        playShieldAbsorbSfx();
     }
 
     if (result.healthDamage > 0)

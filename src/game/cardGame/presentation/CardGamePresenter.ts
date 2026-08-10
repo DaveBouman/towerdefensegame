@@ -3,6 +3,7 @@ import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import type { ActivationStep, AttackSequence, EnemyTurnAction, SlotPosition } from '../domain/types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
+import { playCardAbilitySfx } from '../../audio/bindGameAudio';
 import { playBattleModifierFloatingLabel } from './battleModifierFloatingLabel';
 import { boostedBuffVisual } from './visualEffects/boostedBuffVisual';
 import { getCardVisualEffectOrThrow } from './visualEffects/visualEffectRegistry';
@@ -204,6 +205,7 @@ export class CardGamePresenter
 
         this.boardView.bringCardToFront(step.slot);
         getCardVisualEffectOrThrow(step.visualId).activate(this.scene, target);
+        playCardAbilitySfx(step.visualId, step.behaviorId);
         this.activeVisualSlot = { slot: { ...step.slot }, visualId: step.visualId };
 
         if (step.behaviorId === 'battle-mod')

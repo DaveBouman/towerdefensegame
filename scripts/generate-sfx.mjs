@@ -171,7 +171,21 @@ const SOUNDS = {
         subThump(62, 0.09, v(0.42)),
         crush(mix(noise(0.1, v(0.35), 11), fm(140, 70, 2.5, 0.08, v(0.2), 9)), 4),
     ),
-    'shield': () => crush(mix(fm(280, 560, 2, 0.11, v(0.26), 9), subThump(110, 0.06, v(0.15))), 5),
+    'shield': () => crush(mix(
+        noise(0.11, v(0.42), 10),
+        subThump(85, 0.09, v(0.38)),
+        fm(120, 60, 3, 0.07, v(0.22), 14),
+    ), 3),
+    'defend-proc': () => crush(mix(
+        noise(0.13, v(0.48), 8),
+        subThump(70, 0.11, v(0.45)),
+        fm(95, 47, 2.5, 0.09, v(0.28), 11),
+    ), 3),
+    'ability-cast': () => mix(
+        crush(mix(noise(0.09, v(0.38), 16), sweep(140, 520, 0.1, v(0.24)), fm(200, 100, 2, 0.08, v(0.2), 13)), 4),
+        subThump(110, 0.07, v(0.3)),
+        glitchBurst(0.04, v(0.22)),
+    ),
     'heal': () => concat(subThump(95, 0.06, v(0.22)), subThump(130, 0.08, v(0.24))),
     'enemy-hit': () => noiseHit(0.11, v(0.48), 52),
     'enemy-move': () => mix(

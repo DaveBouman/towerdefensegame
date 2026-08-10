@@ -8,6 +8,8 @@ export type SfxKey =
     | 'hit-heavy'
     | 'kill'
     | 'shield'
+    | 'defend-proc'
+    | 'ability-cast'
     | 'heal'
     | 'enemy-hit'
     | 'enemy-move'
@@ -28,6 +30,8 @@ export const ALL_SFX_KEYS: readonly SfxKey[] = [
     'hit-heavy',
     'kill',
     'shield',
+    'defend-proc',
+    'ability-cast',
     'heal',
     'enemy-hit',
     'enemy-move',
