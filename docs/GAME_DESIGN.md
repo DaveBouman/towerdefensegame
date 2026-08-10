@@ -342,6 +342,7 @@ remain as a fallback if a portrait fails to load.
 | 2026-08-10 | **Card index tooltip readability.** Hover tooltips and the detail strip use larger scaled type, brighter body text, and a wider tooltip panel. |
 | 2026-08-10 | **In-run pause menu.** Top-right control is **MENU** (was AUDIO). Opens pause overlay with Resume, Settings, Card index, and **New run** (confirmation required). Escape / CLOSE resumes. Audio lives under Settings. |
 | 2026-08-10 | **Seed on New run only.** Map / run HUD seed is display-only. Seed input + randomize live on Start run / New run confirm; confirming still calls `resetRun(normalizeSeed(...))` as before. |
+| 2026-08-10 | **Board grid legend.** How to play shows a mini 5×5 x/y legend (column 0 highlighted). Combat board draws col/row index labels around the grid. |
 | 2026-08-10 | **Main menu.** Boot opens on `menu` (`MainMenuOverlay`): set seed, mute/volume, then Start run. Digital map backdrop plays behind the menu. Victory/defeat offer Main menu or New run / Try again. |
 | 2026-08-10 | **Switchback card.** New attack card deals 2× resolved damage (`stepDamageMultiplier`) but cycles lock target to the next living enemy after it hits (`switchTargetAfterHit`). In reward/elite pools. |
 | 2026-08-10 | **First-round off-chain tip.** After dismissing the combat coach on the first battle, a popup explains that loose attack/defense cards on the board still grant off-chain bonuses (+2 damage / +2 armor from `gameRules.json`). |

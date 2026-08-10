@@ -115,6 +115,8 @@ export class CardBoardView
         );
         this.container.add(slotBrackets);
 
+        this.drawAxisLegend(cols, rows, tileSize, panelPad);
+
         for (let row = 0; row < rows; row++)
         {
             this.slotBodies[row] = [];
@@ -736,6 +738,62 @@ export class CardBoardView
         this.hideJokerDirectionPicker();
         this.chainStartTween?.stop();
         this.container.destroy();
+    }
+
+    private drawAxisLegend (
+        cols: number,
+        rows: number,
+        tileSize: number,
+        panelPad: number,
+    ): void
+    {
+        const startCol = GAME_RULES.activationStartColumn;
+        const axisY = -panelPad - 11;
+        const axisX = -panelPad - 12;
+
+        const xCaption = this.scene.add.text(
+            (cols * tileSize) / 2,
+            axisY - 11,
+            'col (x)',
+            uiTextStyle(9, '#6a7c98', { bold: true, stroke: false }),
+        );
+        xCaption.setOrigin(0.5, 1);
+        this.container.add(xCaption);
+
+        const yCaption = this.scene.add.text(
+            axisX - 2,
+            (rows * tileSize) / 2,
+            'row\n(y)',
+            uiTextStyle(9, '#6a7c98', { bold: true, stroke: false }),
+        );
+        yCaption.setOrigin(1, 0.5);
+        yCaption.setAlign('right');
+        this.container.add(yCaption);
+
+        for (let col = 0; col < cols; col++)
+        {
+            const isStart = col === startCol;
+            const label = this.scene.add.text(
+                col * tileSize + tileSize / 2,
+                axisY,
+                String(col),
+                uiTextStyle(10, isStart ? '#7af0ff' : '#8aa0bc', { bold: true, stroke: false }),
+            );
+            label.setOrigin(0.5, 1);
+            this.container.add(label);
+        }
+
+        for (let row = 0; row < rows; row++)
+        {
+            const label = this.scene.add.text(
+                axisX,
+                row * tileSize + tileSize / 2,
+                String(row),
+                uiTextStyle(10, '#8aa0bc', { bold: true, stroke: false }),
+            );
+            label.setOrigin(1, 0.5);
+            this.container.add(label);
+        }
     }
 
     private drawChainStartIndicators (): void

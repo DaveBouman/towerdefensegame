@@ -21,11 +21,16 @@ export interface PlaySfxOptions {
 }
 
 export type AudioSettingsListener = (settings: AudioSettings) => void;
+type AudioUnlockListener = () => void;
 
 let scene: Phaser.Scene | null = null;
 let loaded = false;
 let settings: AudioSettings = readAudioSettings();
 const listeners = new Set<AudioSettingsListener>();
+const unlockListeners = new Set<AudioUnlockListener>();
+let unlockHooked = false;
+let unlockInFlight: Promise<void> | null = null;
+const pendingSfx: Array<{ key: SfxKey; options: PlaySfxOptions }> = [];
 
 export const preloadSfx = (targetScene: Phaser.Scene): void =>
 {
@@ -45,14 +50,122 @@ export const markSfxLoaded = (): void =>
     loaded = true;
 };
 
+const getAudioContext = (): AudioContext | null =>
+{
+    if (!scene?.sound)
+    {
+        return null;
+    }
+
+    const manager = scene.sound as Phaser.Sound.WebAudioSoundManager;
+
+    return manager.context ?? null;
+};
+
+const flushPendingSfx = (): void =>
+{
+    if (pendingSfx.length === 0)
+    {
+        return;
+    }
+
+    const queued = pendingSfx.splice(0, pendingSfx.length);
+
+    for (const entry of queued)
+    {
+        playSfxNow(entry.key, entry.options);
+    }
+};
+
+const notifyUnlocked = (): void =>
+{
+    for (const listener of [ ...unlockListeners ])
+    {
+        listener();
+    }
+
+    flushPendingSfx();
+};
+
+const hookUnlockEvents = (): void =>
+{
+    if (!scene?.sound || unlockHooked)
+    {
+        return;
+    }
+
+    unlockHooked = true;
+    scene.sound.on('unlocked', () =>
+    {
+        notifyUnlocked();
+    });
+};
+
+/**
+ * Resumes the Web Audio context after a user gesture.
+ * React overlays sit above the Phaser canvas, so Phaser's default unlock
+ * alone often never hears the first click — call this from UI actions.
+ */
+export const ensureAudioUnlocked = (): Promise<void> =>
+{
+    if (!scene?.sound)
+    {
+        return Promise.resolve();
+    }
+
+    hookUnlockEvents();
+
+    const manager = scene.sound as Phaser.Sound.WebAudioSoundManager;
+
+    if (typeof manager.unlock === 'function' && manager.locked)
+    {
+        manager.unlock();
+    }
+
+    const context = getAudioContext();
+
+    if (!context || (context.state !== 'suspended' && context.state !== 'interrupted'))
+    {
+        return Promise.resolve();
+    }
+
+    if (!unlockInFlight)
+    {
+        unlockInFlight = context.resume()
+            .then(() =>
+            {
+                unlockInFlight = null;
+                notifyUnlocked();
+            })
+            .catch(() =>
+            {
+                unlockInFlight = null;
+            });
+    }
+
+    return unlockInFlight;
+};
+
+export const onAudioUnlocked = (listener: AudioUnlockListener): (() => void) =>
+{
+    unlockListeners.add(listener);
+
+    return () => unlockListeners.delete(listener);
+};
+
 export const bindGameAudioScene = (targetScene: Phaser.Scene): void =>
 {
     scene = targetScene;
+    unlockHooked = false;
+    hookUnlockEvents();
 };
 
 export const unbindGameAudioScene = (): void =>
 {
     scene = null;
+    unlockHooked = false;
+    unlockInFlight = null;
+    pendingSfx.length = 0;
 };
 
 export const getAudioSettings = (): AudioSettings => ({ ...settings });
@@ -72,6 +185,7 @@ export const setSfxMuted = (nextMuted: boolean): void =>
 {
     settings = { ...settings, muted: nextMuted };
     writeAudioMuted(nextMuted);
+    void ensureAudioUnlocked();
     notifyListeners();
 };
 
@@ -82,6 +196,7 @@ export const setMasterVolume = (nextVolume: number): void =>
         masterVolume: Math.max(0, Math.min(1, nextVolume)),
     };
     writeMasterVolume(settings.masterVolume);
+    void ensureAudioUnlocked();
     notifyListeners();
 };
 
@@ -92,6 +207,7 @@ export const setSfxVolume = (nextVolume: number): void =>
         sfxVolume: Math.max(0, Math.min(1, nextVolume)),
     };
     writeSfxVolume(settings.sfxVolume);
+    void ensureAudioUnlocked();
     notifyListeners();
 };
 
@@ -102,6 +218,7 @@ export const setMusicVolume = (nextVolume: number): void =>
         musicVolume: Math.max(0, Math.min(1, nextVolume)),
     };
     writeMusicVolume(settings.musicVolume);
+    void ensureAudioUnlocked();
     notifyListeners();
 };
 
@@ -133,7 +250,7 @@ const notifyListeners = (): void =>
     }
 };
 
-export const playSfx = (key: SfxKey, options: PlaySfxOptions = {}): void =>
+const playSfxNow = (key: SfxKey, options: PlaySfxOptions = {}): void =>
 {
     if (!scene || !loaded || !scene.sound)
     {
@@ -163,6 +280,41 @@ export const playSfx = (key: SfxKey, options: PlaySfxOptions = {}): void =>
     {
         /* scene tearing down */
     }
+};
+
+export const playSfx = (key: SfxKey, options: PlaySfxOptions = {}): void =>
+{
+    if (!scene || !loaded || !scene.sound)
+    {
+        return;
+    }
+
+    if (!scene.cache.audio.exists(key))
+    {
+        return;
+    }
+
+    const volume = (options.volume ?? 1) * getEffectiveSfxGain(settings);
+
+    if (volume <= 0)
+    {
+        return;
+    }
+
+    const context = getAudioContext();
+    const needsUnlock = Boolean(
+        context && (context.state === 'suspended' || context.state === 'interrupted'),
+    );
+
+    if (needsUnlock)
+    {
+        pendingSfx.push({ key, options });
+        void ensureAudioUnlocked();
+        return;
+    }
+
+    void ensureAudioUnlocked();
+    playSfxNow(key, options);
 };
 
 export const playDamageSfx = (damage: number): void =>

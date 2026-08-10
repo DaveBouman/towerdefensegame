@@ -516,6 +516,34 @@ export const MainMenuOverlay = ({
                             <BackButton onClick={openHome} />
                             <p className="main-menu__eyebrow">Field manual</p>
                             <h2 className="main-menu__screen-title">How to play</h2>
+                            <div className="main-menu__grid-legend" aria-hidden="true">
+                                <div className="main-menu__grid-legend-frame">
+                                    <span className="main-menu__grid-legend-corner" />
+                                    {[ 0, 1, 2, 3, 4 ].map((col) => (
+                                        <span
+                                            key={`col-${col}`}
+                                            className={`main-menu__grid-legend-axis${col === 0 ? ' main-menu__grid-legend-axis--start' : ''}`}
+                                        >
+                                            {col}
+                                        </span>
+                                    ))}
+                                    {[ 0, 1, 2, 3, 4 ].map((row) => (
+                                        <div key={`row-${row}`} className="main-menu__grid-legend-row">
+                                            <span className="main-menu__grid-legend-axis">{row}</span>
+                                            {[ 0, 1, 2, 3, 4 ].map((col) => (
+                                                <span
+                                                    key={`${row}-${col}`}
+                                                    className={`main-menu__grid-legend-cell${col === 0 ? ' main-menu__grid-legend-cell--start' : ''}`}
+                                                />
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="main-menu__grid-legend-caption">
+                                    5×5 board — columns <strong>x</strong> across, rows <strong>y</strong> down.
+                                    Chain start locks to column <strong>0</strong>.
+                                </p>
+                            </div>
                             <ol className="main-menu__manual">
                                 <li>Place cards on the 5×5 grid so their arrows form a chain.</li>
                                 <li>Set chain start in column 0, then press Attack.</li>
