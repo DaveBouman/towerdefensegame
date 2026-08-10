@@ -17,6 +17,12 @@ import {
 } from '../../game/desktop/desktopBridge';
 import { GAME_TAGLINE, GAME_TITLE, GAME_VERSION } from '../../game/meta/gameMeta';
 import { getCollectionProgress } from '../../game/run/cardCollection';
+import {
+    TEXT_SCALE_SIZES,
+    type TextScaleSize,
+    readTextScale,
+    setTextScale,
+} from '../../game/ui/textScale';
 import { CardCollectionOverlay } from './CardCollectionOverlay';
 import { CyberPanelChrome } from './CyberPanel';
 
@@ -89,6 +95,7 @@ export const MainMenuOverlay = ({
     const [ showCollection, setShowCollection ] = useState(false);
     const [ progress, setProgress ] = useState(getCollectionProgress);
     const [ fullscreen, setFullscreen ] = useState(isDocumentFullscreen);
+    const [ textScale, setTextScaleState ] = useState<TextScaleSize>(readTextScale);
     const [ tutorialArmed, setTutorialArmed ] = useState(false);
     const desktop = isDesktopShell();
 
@@ -128,6 +135,18 @@ export const MainMenuOverlay = ({
     const openCollection = (): void =>
     {
         setShowCollection(true);
+    };
+
+    const chooseTextScale = (size: TextScaleSize): void =>
+    {
+        if (size === textScale)
+        {
+            return;
+        }
+
+        emitRunSfx('ui-click', { volume: 0.64, rate: 1.06 });
+        setTextScale(size);
+        setTextScaleState(size);
     };
 
     return (
@@ -264,21 +283,42 @@ export const MainMenuOverlay = ({
 
                             <div className="main-menu__field">
                                 <span className="main-menu__field-label">Display</span>
-                                <button
-                                    type="button"
-                                    className={`main-menu__toggle${fullscreen ? ' main-menu__toggle--on' : ''}`}
-                                    aria-pressed={fullscreen}
-                                    onClick={() =>
-                                    {
-                                        emitRunSfx('ui-click', { volume: 0.68 });
-                                        void setGameFullscreen(!fullscreen).then(() =>
+                                <div className="main-menu__display-panel">
+                                    <span className="main-menu__sublabel">Text size</span>
+                                    <div
+                                        className="main-menu__size-row"
+                                        role="radiogroup"
+                                        aria-label="Text size"
+                                    >
+                                        {TEXT_SCALE_SIZES.map((size) => (
+                                            <button
+                                                key={size}
+                                                type="button"
+                                                role="radio"
+                                                aria-checked={textScale === size}
+                                                className={`main-menu__size-option${textScale === size ? ' main-menu__size-option--active' : ''}`}
+                                                onClick={() => chooseTextScale(size)}
+                                            >
+                                                {size === 'small' ? 'Small' : size === 'medium' ? 'Medium' : 'Large'}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className={`main-menu__toggle${fullscreen ? ' main-menu__toggle--on' : ''}`}
+                                        aria-pressed={fullscreen}
+                                        onClick={() =>
                                         {
-                                            setFullscreen(isDocumentFullscreen());
-                                        });
-                                    }}
-                                >
-                                    {fullscreen ? 'Fullscreen on' : 'Fullscreen off'}
-                                </button>
+                                            emitRunSfx('ui-click', { volume: 0.68 });
+                                            void setGameFullscreen(!fullscreen).then(() =>
+                                            {
+                                                setFullscreen(isDocumentFullscreen());
+                                            });
+                                        }}
+                                    >
+                                        {fullscreen ? 'Fullscreen on' : 'Fullscreen off'}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="main-menu__field">
