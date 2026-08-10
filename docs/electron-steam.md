@@ -18,7 +18,9 @@ The React main menu is Steam/desktop-ready:
 |--------|----------|
 | **Start run** | Begins a seeded run |
 | **Card index** | Collection unlock archive |
-| **Settings** | Seed, Master/Music/SFX, text size (S/M/L), fullscreen, replay tutorial tips |
+| **Settings** | Master/Music/SFX, text size (S/M/L), fullscreen, replay tutorial tips |
+| **Start / New run** | Seed input + randomize, then begin (`resetRun` with that seed) |
+| **In-run MENU** | Pause overlay (Resume / New run with confirm + seed / Settings / Card index). |
 | **How to play** | Short rules |
 | **Credits** | Attribution |
 | **Quit** | Calls `window.signalChainDesktop.quit()` when present; otherwise `window.close()` |

@@ -34,10 +34,6 @@ interface RunMapOverlayProps {
     floorRerollsRemaining: number;
     floorRerollsMax: number;
     seed: string;
-    /** Whether the seed can still be changed (only before the first battle). */
-    seedEditable: boolean;
-    onSeedChange: (seed: string) => void;
-    onRandomizeSeed: () => void;
     onPick: (node: RunMapNode) => void;
 }
 
@@ -54,9 +50,6 @@ export const RunMapOverlay = ({
     floorRerollsRemaining,
     floorRerollsMax,
     seed,
-    seedEditable,
-    onSeedChange,
-    onRandomizeSeed,
     onPick,
 }: RunMapOverlayProps) =>
 {
@@ -113,28 +106,7 @@ export const RunMapOverlay = ({
                     <h1 className="run-map__title">Pick Your Route</h1>
                     <div className="run-map__seed">
                         <span className="run-map__seed-label">Seed</span>
-                        {seedEditable ? (
-                            <>
-                                <input
-                                    className="run-map__seed-input"
-                                    value={seed}
-                                    maxLength={12}
-                                    spellCheck={false}
-                                    aria-label="Run seed"
-                                    onChange={(event) => onSeedChange(event.target.value)}
-                                />
-                                <button
-                                    type="button"
-                                    className="run-map__seed-random"
-                                    title="Random seed"
-                                    onClick={onRandomizeSeed}
-                                >
-                                    &#x21bb;
-                                </button>
-                            </>
-                        ) : (
-                            <code className="run-map__seed-value">{seed}</code>
-                        )}
+                        <code className="run-map__seed-value">{seed}</code>
                     </div>
                 </div>
                 <div className="run-map__resources">

@@ -34,11 +34,14 @@ html, body, #root {
     background: radial-gradient(circle at top, #111122 0%, #050510 45%, #000000 100%);
 }
 
-.sfx-mute-btn {
+.game-menu-btn {
     position: fixed;
     top: 12px;
     right: 12px;
     z-index: 1200;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     width: 40px;
     height: 40px;
     padding: 0;
@@ -46,19 +49,23 @@ html, body, #root {
     border-radius: 8px;
     background: rgba(8, 14, 24, 0.82);
     color: rgba(255, 255, 255, 0.9);
-    font-size: 1.1rem;
-    line-height: 1;
+    line-height: 0;
     cursor: pointer;
     backdrop-filter: blur(6px);
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.sfx-mute-btn:hover {
+.game-menu-btn__icon {
+    display: block;
+}
+
+.game-menu-btn:hover,
+.game-menu-btn--open {
     background: rgba(16, 26, 42, 0.92);
     border-color: rgba(255, 255, 255, 0.32);
 }
 
-.sfx-mute-btn:focus-visible {
+.game-menu-btn:focus-visible {
     outline: 2px solid rgba(120, 180, 255, 0.85);
     outline-offset: 2px;
 }
@@ -1745,6 +1752,16 @@ html, body, #root {
     pointer-events: none;
 }
 
+.main-menu--pause {
+    z-index: 1100;
+    pointer-events: auto;
+    background: rgba(2, 4, 8, 0.55);
+}
+
+.main-menu--pause .main-menu__panel {
+    pointer-events: auto;
+}
+
 .main-menu__glow {
     position: absolute;
     inset: 0;
@@ -1783,6 +1800,10 @@ html, body, #root {
     text-shadow: 0 0 28px rgba(0, 232, 255, 0.45);
 }
 
+.main-menu__brand--pause {
+    font-size: clamp(22px, 4vw, 32px);
+}
+
 .main-menu__tagline {
     margin: 0 0 28px;
     font-size: 15px;
@@ -1802,6 +1823,11 @@ html, body, #root {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.main-menu__field--seed {
+    margin: 0 0 18px;
+    text-align: left;
 }
 
 .main-menu__field-label {
@@ -1945,6 +1971,39 @@ html, body, #root {
     transform: translateY(-1px);
     border-color: rgba(120, 245, 255, 0.95);
     box-shadow: 0 0 32px rgba(0, 232, 255, 0.4);
+}
+
+.main-menu__start--danger {
+    border-color: rgba(255, 90, 140, 0.55);
+    background: linear-gradient(180deg, rgba(72, 18, 36, 0.92) 0%, rgba(40, 10, 22, 0.96) 100%);
+    color: #ffd0e0;
+    box-shadow: 0 0 22px rgba(255, 45, 149, 0.22);
+}
+
+.main-menu__start--danger:hover {
+    border-color: rgba(255, 120, 170, 0.85);
+    box-shadow: 0 0 28px rgba(255, 45, 149, 0.35);
+}
+
+.main-menu__confirm-copy {
+    margin: 0 0 18px;
+    font-size: calc(15px * var(--text-scale));
+    line-height: 1.45;
+    color: #b8c8e0;
+    text-align: left;
+}
+
+.main-menu__seed-readonly {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 232, 255, 0.2);
+    background: rgba(8, 14, 24, 0.85);
+    font-family: 'Share Tech Mono', ui-monospace, monospace;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    color: #7af0ff;
+    text-align: left;
 }
 
 .main-menu__actions {

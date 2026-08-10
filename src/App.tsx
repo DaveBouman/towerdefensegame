@@ -21,7 +21,7 @@ import {
 import { RunToast } from './ui/components/RunToast';
 import { FloorBanner } from './ui/components/FloorBanner';
 import { BattleIntroOverlay } from './ui/components/BattleIntroOverlay';
-import { SfxMuteButton } from './ui/components/SfxMuteButton';
+import { GameMenuButton } from './ui/components/GameMenuButton';
 import { MainMenuOverlay } from './ui/components/MainMenuOverlay';
 import { emitRunSfx } from './game/audio/emitRunSfx';
 import { emitRunBgm } from './game/audio/emitRunBgm';
@@ -147,6 +147,7 @@ function App()
     const [ visit, setVisit ] = useState<VisitState | null>(null);
     const [ puzzleResult, setPuzzleResult ] = useState<PuzzleResultState | null>(null);
     const [ pendingPuzzleReward, setPendingPuzzleReward ] = useState<PendingPuzzleReward | null>(null);
+    const [ pauseMenuOpen, setPauseMenuOpen ] = useState(false);
     const tutorial = useTutorial();
 
     useEffect(() =>
@@ -156,11 +157,20 @@ function App()
 
     useEffect(() =>
     {
+        if (phase === 'menu' || phase === 'victory' || phase === 'defeat')
+        {
+            setPauseMenuOpen(false);
+        }
+    }, [ phase ]);
+
+    useEffect(() =>
+    {
         EventBus.emit(GAME_EVENTS.UI_OVERLAY_ACTIVE, {
-            blockPileInspection: phase === 'battle'
-                && (tutorial.showBattleCoach || tutorial.showOffChainTip),
+            blockPileInspection: pauseMenuOpen
+                || (phase === 'battle'
+                    && (tutorial.showBattleCoach || tutorial.showOffChainTip)),
         });
-    }, [ phase, tutorial.showBattleCoach, tutorial.showOffChainTip ]);
+    }, [ phase, pauseMenuOpen, tutorial.showBattleCoach, tutorial.showOffChainTip ]);
 
     useEffect(() =>
     {
@@ -905,47 +915,31 @@ function App()
         setPhase(nextPhase);
     }, []);
 
-    const startNewRun = useCallback((): void =>
+    const startNewRun = useCallback((nextSeed?: string): void =>
     {
-        resetRun(createRandomSeed(), 'map');
+        setPauseMenuOpen(false);
+        resetRun(normalizeSeed(nextSeed ?? createRandomSeed()), 'map');
     }, [ resetRun ]);
 
     const returnToMenu = useCallback((): void =>
     {
+        setPauseMenuOpen(false);
         resetRun(createRandomSeed(), 'menu');
     }, [ resetRun ]);
 
-    const applySeed = useCallback((input: string): void =>
+    const closePauseMenu = useCallback((): void =>
     {
-        const nextSeed = normalizeSeed(input);
+        setPauseMenuOpen(false);
+    }, []);
 
-        if (phaseRef.current === 'menu')
-        {
-            setSeed(nextSeed);
-            setMap(buildMapForSeed(nextSeed));
-            return;
-        }
-
-        resetRun(nextSeed, 'map');
-    }, [ resetRun ]);
-
-    const randomizeSeed = useCallback((): void =>
+    const togglePauseMenu = useCallback((): void =>
     {
-        const nextSeed = createRandomSeed();
+        setPauseMenuOpen((open) => !open);
+    }, []);
 
-        if (phaseRef.current === 'menu')
-        {
-            setSeed(nextSeed);
-            setMap(buildMapForSeed(nextSeed));
-            return;
-        }
-
-        resetRun(nextSeed, 'map');
-    }, [ resetRun ]);
-
-    const startRunFromMenu = useCallback((): void =>
+    const startRunFromMenu = useCallback((nextSeed: string): void =>
     {
-        resetRun(normalizeSeed(seedRef.current), 'map');
+        resetRun(normalizeSeed(nextSeed), 'map');
     }, [ resetRun ]);
 
     const lowHealth = runMaxHealth > 0 && playerHealth / runMaxHealth <= 0.25;
@@ -960,7 +954,9 @@ function App()
             ].filter(Boolean).join(' ') || undefined}
         >
             <PhaserGame />
-            {phase !== 'victory' && phase !== 'defeat' && phase !== 'menu' && <SfxMuteButton />}
+            {phase !== 'victory' && phase !== 'defeat' && phase !== 'menu' && (
+                <GameMenuButton open={pauseMenuOpen} onClick={togglePauseMenu} />
+            )}
             {bodyMods.length > 0 && phase !== 'victory' && phase !== 'defeat' && phase !== 'menu' && (
                 <BodyModsPanel
                     bodyMods={bodyMods}
@@ -970,10 +966,19 @@ function App()
             )}
             {phase === 'menu' && (
                 <MainMenuOverlay
+                    mode="boot"
                     seed={seed}
-                    onSeedChange={applySeed}
-                    onRandomizeSeed={randomizeSeed}
                     onStart={startRunFromMenu}
+                    onReplayTutorial={tutorial.replayTutorial}
+                />
+            )}
+            {pauseMenuOpen && phase !== 'menu' && phase !== 'victory' && phase !== 'defeat' && (
+                <MainMenuOverlay
+                    mode="pause"
+                    seed={seed}
+                    onStart={closePauseMenu}
+                    onResume={closePauseMenu}
+                    onNewRun={startNewRun}
                     onReplayTutorial={tutorial.replayTutorial}
                 />
             )}
@@ -1024,9 +1029,6 @@ function App()
                     floorRerollsRemaining={floorRerollsRemaining}
                     floorRerollsMax={GAME_RULES.rerollsPerFloor}
                     seed={seed}
-                    seedEditable={path.length === 0}
-                    onSeedChange={applySeed}
-                    onRandomizeSeed={randomizeSeed}
                     onPick={pickNode}
                 />
             )}
