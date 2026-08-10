@@ -9,7 +9,7 @@ import type {
 } from '../domain/types';
 
 export interface CardGameEventMap {
-    'card-game-card-placed': { slot: SlotPosition; card: CardInstance };
+    'card-game-card-placed': { slot: SlotPosition; card: CardInstance; replaced: boolean };
     'card-game-armor-changed': { armor: number };
     'card-game-hand-changed': { hand: CardInstance[] };
     'card-game-piles-changed': { deckSize: number; discardSize: number };

@@ -18,7 +18,15 @@ export const resetBattleAudioState = (): void =>
 
 export const bindGameAudioListeners = (): (() => void) =>
 {
-    const onCardPlaced = (): void => playSfx('card-place', { volume: 1 });
+    const onCardPlaced = ({ replaced }: { replaced: boolean }): void =>
+    {
+        if (replaced)
+        {
+            return;
+        }
+
+        playSfx('card-place', { volume: 1 });
+    };
 
     const onAttackStarted = (): void => playSfx('chain-step', { volume: 0.85, rate: 0.95 });
 

@@ -79,7 +79,7 @@ export class BoardEditController
 
             this.host.deckHand.removeHandCardAt(handIndex);
             this.markExhaustedIfNeeded(card, definition);
-            CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card });
+            CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card, replaced: false });
             this.host.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
 
             return true;
@@ -89,7 +89,7 @@ export class BoardEditController
         this.host.board.placeCard(slot, card);
         this.host.deckHand.setHandCardAt(handIndex, existing);
         this.markExhaustedIfNeeded(card, definition);
-        CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card });
+        CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card, replaced: true });
         this.host.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
 
         return true;
