@@ -114,7 +114,7 @@ RunReward =
   - add new `RunReward` kinds without touching existing handling.
 - Card choices come from `REWARD_CARD_POOL` / `ELITE_REWARD_CARD_POOL` via `rollCardReward(choiceCount, pool, { deck, floor })`.
   Offers are **weighted by deck archetypes** (`deckArchetypes.ts`) and **card tier vs floor** (later floors favor uncommon/rare).
-  Starter deck is a **neutral core**. Specialty cards arrive through rewards/shop/events.
+  Starter deck is a **synergy-seeded Runner kit** (routing core + one seed each of fire/poison/bleed/fortify/overload). Deeper specialty cards still arrive through rewards/shop/events. Character-specific starters are planned later.
 - Cards have **tiers** (1 common → 3 rare) and **upgrades** (`attack` → `attack-plus`). Ripperdoc **Chrome Grind** upgrades one deck card.
 
 When adding body mods: give body mods a modifier step that adjusts the `RunReward`
@@ -352,6 +352,7 @@ remain as a fallback if a portrait fails to load.
 | 2026-08-10 | **Iron Gait battle BGM.** Added `iron-gait.mp3` as a second standard combat loop; non-boss fights alternate with *Concrete Veins* by path length so map↔battle crossfades feel less jarring. |
 | 2026-08-10 | **Chain-start arrow scale fix.** `setChainStartActive` no longer calls `setScale(1)` on SVG arrow images (that reset `setDisplaySize` back to the ~512px texture). |
 | 2026-08-10 | **Enemy bestiary.** Main menu / pause **Bestiary** logs hostiles on encounter (`enemyBestiary.ts`, localStorage). Locked entries show `???`; unlocked show portrait, role, stats, and passive/trait dossier. Training Dummy excluded. |
+| 2026-08-10 | **Synergy-seeded starter.** Default Runner deck keeps routing core but seeds Fire, Poison, Rupture, Bulwark, and Surge (plus Echo/Joker/Overclock/Hardwire/Glitch) so early fights preview combo play. Character kits later. |
 | 2026-08-10 | **Main menu.** Boot opens on `menu` (`MainMenuOverlay`): set seed, mute/volume, then Start run. Digital map backdrop plays behind the menu. Victory/defeat offer Main menu or New run / Try again. |
 | 2026-08-10 | **Switchback card.** New attack card deals 2× resolved damage (`stepDamageMultiplier`) but cycles lock target to the next living enemy after it hits (`switchTargetAfterHit`). In reward/elite pools. |
 | 2026-08-10 | **First-round off-chain tip.** After dismissing the combat coach on the first battle, a popup explains that loose attack/defense cards on the board still grant off-chain bonuses (+2 damage / +2 armor from `gameRules.json`). |

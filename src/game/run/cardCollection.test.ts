@@ -61,11 +61,11 @@ describe('cardCollection', () =>
     it('unlocks newly acquired cards once', () =>
     {
         ensureStarterCollectionUnlocks();
-        expect(unlockCards([ 'rupture', 'rupture', 'attack' ])).toBe(1);
-        expect(unlockCards([ 'rupture' ])).toBe(0);
+        expect(unlockCards([ 'execution', 'execution', 'attack' ])).toBe(1);
+        expect(unlockCards([ 'execution' ])).toBe(0);
 
         const entries = getCollectionEntries();
-        expect(entries.find((entry) => entry.id === 'rupture')?.unlocked).toBe(true);
-        expect(entries.find((entry) => entry.id === 'execution')?.unlocked).toBe(false);
+        expect(entries.find((entry) => entry.id === 'execution')?.unlocked).toBe(true);
+        expect(entries.find((entry) => entry.id === 'white-hot')?.unlocked).toBe(false);
     });
 });

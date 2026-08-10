@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import { ORTHOGONAL_DIRECTIONS } from './cardDirections';
-import { buildPlayerDeck, isOrthogonalDirection } from './buildPlayerDeck';
+import { buildPlayerDeck, getDefaultDeckDefinitionIds, isOrthogonalDirection } from './buildPlayerDeck';
 import { resetCardInstanceCounter } from './createCardInstance';
 
 describe('buildPlayerDeck', () =>
@@ -11,24 +11,28 @@ describe('buildPlayerDeck', () =>
         resetCardInstanceCounter();
     });
 
-    it('builds a neutral core deck without specialty starters', () =>
+    it('builds a synergy-seeded Runner starter kit', () =>
     {
         const deck = buildPlayerDeck(GAME_RULES.deckSize);
+        const ids = getDefaultDeckDefinitionIds();
 
         expect(deck).toHaveLength(20);
-        expect(deck.filter((card) => card.definitionId === 'attack')).toHaveLength(5);
-        expect(deck.filter((card) => card.definitionId === 'defend')).toHaveLength(5);
+        expect(ids).toHaveLength(20);
+        expect(deck.filter((card) => card.definitionId === 'attack')).toHaveLength(3);
+        expect(deck.filter((card) => card.definitionId === 'defend')).toHaveLength(3);
         expect(deck.filter((card) => card.definitionId === 'attack-leap')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'defend-leap')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'joker')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'echo')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'glitch')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'patch')).toHaveLength(1);
-        expect(deck.filter((card) => card.definitionId === 'hardwire')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'fire')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'poison')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'rupture')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'bulwark')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'surge')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'overclock')).toHaveLength(1);
-        expect(deck.some((card) => card.definitionId === 'poison')).toBe(false);
-        expect(deck.some((card) => card.definitionId === 'fire')).toBe(false);
-        expect(deck.some((card) => card.definitionId === 'shiv')).toBe(false);
+        expect(deck.filter((card) => card.definitionId === 'hardwire')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'glitch')).toHaveLength(1);
+        expect(deck.some((card) => card.definitionId === 'patch')).toBe(false);
     });
 
     it('uses orthogonal arrows for standard deck cards', () =>
@@ -66,7 +70,7 @@ describe('buildPlayerDeck', () =>
             return getCardDefinitionOrThrow(card.definitionId).arrowPool !== 'diagonal';
         });
 
-        expect(orthogonalCards).toHaveLength(19);
+        expect(orthogonalCards).toHaveLength(18);
 
         const countDirection = (direction: typeof ORTHOGONAL_DIRECTIONS[number]): number =>
             orthogonalCards.reduce((count, card) =>
@@ -75,6 +79,6 @@ describe('buildPlayerDeck', () =>
         const counts = ORTHOGONAL_DIRECTIONS.map(countDirection);
 
         expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
-        expect(counts.reduce((sum, count) => sum + count, 0)).toBe(19);
+        expect(counts.reduce((sum, count) => sum + count, 0)).toBe(18);
     });
 });
