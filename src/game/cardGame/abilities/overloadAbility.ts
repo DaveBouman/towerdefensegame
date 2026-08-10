@@ -20,7 +20,7 @@ const hasAbility = (step: ActivationStep, abilityId: string): boolean =>
 
 /**
  * Payoff for combo chains: when Surge (or Amp Core) activates, deals damage for
- * every other skill card already in the chain, doubled if a Joker has activated.
+ * every other skill card already in the chain, doubled if a Reroute has activated.
  * Resolves on the skill's own step (readable beat) — put Surge after your setup.
  * Only the first overload card in the chain contributes.
  */

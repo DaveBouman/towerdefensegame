@@ -2288,6 +2288,16 @@ html, body, #root {
     color: #7af0ff;
 }
 
+.main-menu__credits a {
+    color: #7af0ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.main-menu__credits a:hover {
+    color: #e8fbff;
+}
+
 .main-menu__hint {
     margin: 8px 0 0;
     font-size: 12px;

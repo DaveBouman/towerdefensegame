@@ -77,7 +77,7 @@
     },
     {
       "id": "joker",
-      "label": "Joker",
+      "label": "Reroute",
       "power": 0,
       "behaviorId": "joker",
       "visualId": "joker",

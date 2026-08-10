@@ -179,7 +179,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: [
             `Deals ${ctx.definition.power} damage when activated in the chain.`,
-            `Overload: when this activates, +${GAME_RULES.chainAbilities.overload.damagePerAbilityCard} damage per other skill card already in the chain (doubled if a Joker already activated).`,
+            `Overload: when this activates, +${GAME_RULES.chainAbilities.overload.damagePerAbilityCard} damage per other skill card already in the chain (doubled if a Reroute already activated).`,
             'Uses diagonal arrows. Place it after your setup skills so the payoff is clear.',
         ],
     })),
@@ -208,7 +208,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         lines: [
             `Multiplies the next card's effect by ×${GAME_RULES.fieldBoost.nextStepMultiplier} (attack, defend, fire, poison, skills).`,
             'Boosts stack multiplicatively: Boost → Boost → Attack = ×4.',
-            'Jokers pass the boost stack through to the following card.',
+            'Reroutes pass the boost stack through to the following card.',
             'Field card — spawns on a random empty tile after the enemy turn.',
         ],
     })),

@@ -597,7 +597,7 @@ export const MainMenuOverlay = ({
                                 <li>Place cards on the 5×5 grid so their arrows form a chain.</li>
                                 <li>Click a column-0 tile to set chain start, then press Attack.</li>
                                 <li>Starter seeds teach combos: Fire alternation, Poison→Defends, Rupture bleed, Bulwark fortify, Surge overload.</li>
-                                <li>Echo repeats the previous card; Joker steers mid-chain.</li>
+                                <li>Echo repeats the previous card; Reroute steers mid-chain.</li>
                                 <li>Attack and defense cards off the chain still grant small bonuses.</li>
                                 <li>Each Attack spends energy; when empty, the board clears for a new round.</li>
                                 <li>Pick map nodes to fight, shop, rest, or jack into signals — HP carries over.</li>
@@ -613,17 +613,18 @@ export const MainMenuOverlay = ({
                             <h2 className="main-menu__screen-title">Credits</h2>
                             <div className="main-menu__credits">
                                 <p>
-                                    <strong>{GAME_TITLE}</strong> — card-chain combat run.
+                                    Temporary art (to be replaced):
                                 </p>
-                                <p>Engine: Phaser + React. Audio buses and map UI built for desktop packaging.</p>
                                 <p>
-                                    Music loops: <em>Glass Streets at Midnight</em>, <em>Concrete Veins</em>,{' '}
-                                    <em>Last Gatekeeper</em>.
+                                    UI icons — Craftpix free cyberpunk icon packs
+                                    (craftpix-net-172155, craftpix-net-507528).
                                 </p>
-                                <p>UI icons: Craftpix cyberpunk pack. Enemy portraits: Craftpix avatars.</p>
+                                <p>
+                                    Enemy portraits — Craftpix free cyberpunk avatar packs
+                                    (craftpix-net-108089, craftpix-net-969033).
+                                </p>
                                 <p className="main-menu__hint">
-                                    Desktop / Steam shell: inject <code>window.signalChainDesktop</code> (see{' '}
-                                    <code>docs/electron-steam.md</code>).
+                                    License: <a href="https://craftpix.net/file-licenses/" target="_blank" rel="noreferrer">craftpix.net/file-licenses</a>
                                 </p>
                             </div>
                         </>
