@@ -20,6 +20,15 @@ describe('bgmManifest', () =>
         })).toBe('glass-streets');
     });
 
+    it('uses glass streets on the main menu', () =>
+    {
+        expect(resolveRunBgmTrack({
+            phase: 'menu',
+            battleIntroKind: null,
+            activeBattleKind: null,
+        })).toBe('glass-streets');
+    });
+
     it('uses concrete veins for standard combat', () =>
     {
         expect(resolveRunBgmTrack({

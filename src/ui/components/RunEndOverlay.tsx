@@ -4,6 +4,7 @@ interface RunEndOverlayProps {
     variant: 'victory' | 'defeat';
     clutch?: boolean;
     onRestart: () => void;
+    onMainMenu: () => void;
 }
 
 const COPY = {
@@ -21,7 +22,12 @@ const COPY = {
     },
 } as const;
 
-export const RunEndOverlay = ({ variant, clutch = false, onRestart }: RunEndOverlayProps) =>
+export const RunEndOverlay = ({
+    variant,
+    clutch = false,
+    onRestart,
+    onMainMenu,
+}: RunEndOverlayProps) =>
 {
     const copy = COPY[variant];
     const panelVariant = variant === 'victory' ? 'green' : 'magenta';
@@ -37,9 +43,14 @@ export const RunEndOverlay = ({ variant, clutch = false, onRestart }: RunEndOver
                 <p className="run-end__eyebrow">{copy.eyebrow}</p>
                 <h1 className="run-end__title">{copy.title}</h1>
                 <p className="run-end__summary">{copy.summary}</p>
-                <button type="button" className="run-end__button" onClick={onRestart}>
-                    {copy.button}
-                </button>
+                <div className="run-end__actions">
+                    <button type="button" className="run-end__button" onClick={onRestart}>
+                        {copy.button}
+                    </button>
+                    <button type="button" className="run-end__button run-end__button--ghost" onClick={onMainMenu}>
+                        Main menu
+                    </button>
+                </div>
             </div>
         </div>
     );

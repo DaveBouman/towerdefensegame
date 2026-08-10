@@ -5,7 +5,8 @@ import {
     BGM_LEVEL,
     type BgmTrack,
 } from './bgmManifest';
-import { getSfxVolume, isSfxMuted, subscribeSfxSettings } from './gameAudio';
+import { getEffectiveMusicGain } from './audioSettings';
+import { getAudioSettings, subscribeSfxSettings } from './gameAudio';
 
 const CROSSFADE_MS = 1400;
 
@@ -17,14 +18,7 @@ let pendingTrack: BgmTrack | null = null;
 let unsubscribeSettings: (() => void) | null = null;
 
 const getTargetVolume = (track: BgmTrack): number =>
-{
-    if (isSfxMuted())
-    {
-        return 0;
-    }
-
-    return getSfxVolume() * BGM_LEVEL[track];
-};
+    getEffectiveMusicGain(getAudioSettings()) * BGM_LEVEL[track];
 
 export const preloadBgm = (targetScene: Phaser.Scene): void =>
 {

@@ -29,6 +29,18 @@ export const markTutorialSeen = (): void =>
     }
 };
 
+export const clearTutorialSeen = (): void =>
+{
+    try
+    {
+        localStorage.removeItem(TUTORIAL_STORAGE_KEY);
+    }
+    catch
+    {
+        // Ignore private-mode / blocked storage.
+    }
+};
+
 /** First-run map intro: chain combat + energy in a short overlay. */
 export const TutorialIntroOverlay = ({ onDismiss }: { onDismiss: () => void }) => (
     <div className="tutorial-overlay">
@@ -138,6 +150,7 @@ export const useTutorial = (): {
     dismissRewardTip: () => void;
     onFirstBattleStart: () => void;
     onFirstBattleWon: () => void;
+    replayTutorial: () => void;
 } =>
 {
     const [ step, setStep ] = useState<TutorialStep>(() =>
@@ -217,6 +230,16 @@ export const useTutorial = (): {
         markTutorialSeen();
     }, []);
 
+    const replayTutorial = useCallback((): void =>
+    {
+        clearTutorialSeen();
+        setBattleCoachVisible(false);
+        setOffChainTipVisible(false);
+        setOffChainTipEligible(false);
+        setRewardTipVisible(false);
+        setStep('intro');
+    }, []);
+
     return {
         step,
         showIntro: step === 'intro',
@@ -229,5 +252,6 @@ export const useTutorial = (): {
         dismissRewardTip,
         onFirstBattleStart,
         onFirstBattleWon,
+        replayTutorial,
     };
 };

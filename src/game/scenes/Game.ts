@@ -124,7 +124,7 @@ export class Game extends Scene
 
     private syncRunBackdrop (): void
     {
-        if (this.runPhase === 'map')
+        if (this.runPhase === 'map' || this.runPhase === 'menu')
         {
             this.battlefieldBackground?.destroy();
             this.battlefieldBackground = undefined;

@@ -22,6 +22,7 @@ import { RunToast } from './ui/components/RunToast';
 import { FloorBanner } from './ui/components/FloorBanner';
 import { BattleIntroOverlay } from './ui/components/BattleIntroOverlay';
 import { SfxMuteButton } from './ui/components/SfxMuteButton';
+import { MainMenuOverlay } from './ui/components/MainMenuOverlay';
 import { emitRunSfx } from './game/audio/emitRunSfx';
 import { emitRunBgm } from './game/audio/emitRunBgm';
 import { resolveRunBgmTrack } from './game/audio/bgmManifest';
@@ -33,6 +34,10 @@ import type { AppliedEventResult, AppliedEventMessage } from './game/run/runEven
 import { getRunPuzzle, rollPuzzleCardReward } from './game/run/runPuzzles';
 import { getRunMaxHealth, getVictoryGoldBonus } from './game/run/runResources';
 import { rollShopOffers, type ShopOffer } from './game/run/shop';
+import {
+    ensureStarterCollectionUnlocks,
+    unlockCards,
+} from './game/run/cardCollection';
 import { getBodyModDefinitionOrThrow } from './game/run/bodyMods';
 import { upgradeFirstCardInDeck } from './game/run/cardUpgrades';
 import { EventBus } from './game/EventBus';
@@ -58,7 +63,7 @@ import {
     seedScope,
 } from './game/random/rng';
 
-type RunPhase = 'map' | 'battle' | 'reward' | 'visit' | 'puzzle' | 'puzzle-result' | 'puzzle-reward' | 'victory' | 'defeat';
+type RunPhase = 'menu' | 'map' | 'battle' | 'reward' | 'visit' | 'puzzle' | 'puzzle-result' | 'puzzle-reward' | 'victory' | 'defeat';
 
 interface PendingReward {
     nodeId: string;
@@ -131,7 +136,7 @@ function App()
     const [ signalsVisited, setSignalsVisited ] = useState(0);
     const [ currentFloor, setCurrentFloor ] = useState(1);
     const [ floorRerollsRemaining, setFloorRerollsRemaining ] = useState(GAME_RULES.rerollsPerFloor);
-    const [ phase, setPhase ] = useState<RunPhase>('map');
+    const [ phase, setPhase ] = useState<RunPhase>('menu');
     const [ departingNodeId, setDepartingNodeId ] = useState<string | null>(null);
     const [ floorBanner, setFloorBanner ] = useState<number | null>(null);
     const [ runToast, setRunToast ] = useState<string | null>(null);
@@ -143,6 +148,11 @@ function App()
     const [ puzzleResult, setPuzzleResult ] = useState<PuzzleResultState | null>(null);
     const [ pendingPuzzleReward, setPendingPuzzleReward ] = useState<PendingPuzzleReward | null>(null);
     const tutorial = useTutorial();
+
+    useEffect(() =>
+    {
+        ensureStarterCollectionUnlocks();
+    }, []);
 
     useEffect(() =>
     {
@@ -442,6 +452,7 @@ function App()
             setPlayerHealth(applied.playerHealth);
             setGold(applied.gold);
             setDeck(applied.deck);
+            unlockCards(applied.deck);
             setBodyMods(applied.bodyMods);
 
             if (success)
@@ -640,6 +651,7 @@ function App()
 
         setGold((prev) => prev - offer.price);
         setDeck((prev) => [ ...prev, offer.cardId! ]);
+        unlockCards([ offer.cardId! ]);
         emitRunSfx('shop-buy', { volume: 0.95 });
     }, [ gold ]);
 
@@ -799,6 +811,7 @@ function App()
         setPlayerHealth(result.playerHealth);
         setGold(result.gold);
         setDeck(result.deck);
+        unlockCards(result.deck);
         setBodyMods(result.bodyMods);
         finishVisit();
     }, [ finishVisit ]);
@@ -808,6 +821,7 @@ function App()
         if (chosen.length > 0)
         {
             setDeck((prev) => [ ...prev, ...chosen ]);
+            unlockCards(chosen);
         }
 
         const node = eventVisitRef.current?.node;
@@ -827,6 +841,7 @@ function App()
         if (chosen.length > 0)
         {
             setDeck((prev) => [ ...prev, ...chosen ]);
+            unlockCards(chosen);
         }
 
         setPendingReward(null);
@@ -859,7 +874,7 @@ function App()
         });
     }, []);
 
-    const resetRun = useCallback((nextSeed: string): void =>
+    const resetRun = useCallback((nextSeed: string, nextPhase: RunPhase = 'map'): void =>
     {
         selectedNodeRef.current = null;
         setSeed(nextSeed);
@@ -887,22 +902,50 @@ function App()
         setActiveBattleKind(null);
         setClutchVictory(false);
         pendingBattleRef.current = null;
-        setPhase('map');
+        setPhase(nextPhase);
     }, []);
 
     const startNewRun = useCallback((): void =>
     {
-        resetRun(createRandomSeed());
+        resetRun(createRandomSeed(), 'map');
+    }, [ resetRun ]);
+
+    const returnToMenu = useCallback((): void =>
+    {
+        resetRun(createRandomSeed(), 'menu');
     }, [ resetRun ]);
 
     const applySeed = useCallback((input: string): void =>
     {
-        resetRun(normalizeSeed(input));
+        const nextSeed = normalizeSeed(input);
+
+        if (phaseRef.current === 'menu')
+        {
+            setSeed(nextSeed);
+            setMap(buildMapForSeed(nextSeed));
+            return;
+        }
+
+        resetRun(nextSeed, 'map');
     }, [ resetRun ]);
 
     const randomizeSeed = useCallback((): void =>
     {
-        resetRun(createRandomSeed());
+        const nextSeed = createRandomSeed();
+
+        if (phaseRef.current === 'menu')
+        {
+            setSeed(nextSeed);
+            setMap(buildMapForSeed(nextSeed));
+            return;
+        }
+
+        resetRun(nextSeed, 'map');
+    }, [ resetRun ]);
+
+    const startRunFromMenu = useCallback((): void =>
+    {
+        resetRun(normalizeSeed(seedRef.current), 'map');
     }, [ resetRun ]);
 
     const lowHealth = runMaxHealth > 0 && playerHealth / runMaxHealth <= 0.25;
@@ -917,12 +960,21 @@ function App()
             ].filter(Boolean).join(' ') || undefined}
         >
             <PhaserGame />
-            {phase !== 'victory' && phase !== 'defeat' && <SfxMuteButton />}
-            {bodyMods.length > 0 && phase !== 'victory' && phase !== 'defeat' && (
+            {phase !== 'victory' && phase !== 'defeat' && phase !== 'menu' && <SfxMuteButton />}
+            {bodyMods.length > 0 && phase !== 'victory' && phase !== 'defeat' && phase !== 'menu' && (
                 <BodyModsPanel
                     bodyMods={bodyMods}
                     runAttackCount={runAttackCount}
                     className="body-mods-panel--persistent"
+                />
+            )}
+            {phase === 'menu' && (
+                <MainMenuOverlay
+                    seed={seed}
+                    onSeedChange={applySeed}
+                    onRandomizeSeed={randomizeSeed}
+                    onStart={startRunFromMenu}
+                    onReplayTutorial={tutorial.replayTutorial}
                 />
             )}
             {phase === 'battle' && (
@@ -1054,9 +1106,16 @@ function App()
                 />
             )}
             {phase === 'victory' && (
-                <RunEndOverlay variant="victory" clutch={clutchVictory} onRestart={startNewRun} />
+                <RunEndOverlay
+                    variant="victory"
+                    clutch={clutchVictory}
+                    onRestart={startNewRun}
+                    onMainMenu={returnToMenu}
+                />
             )}
-            {phase === 'defeat' && <RunEndOverlay variant="defeat" onRestart={startNewRun} />}
+            {phase === 'defeat' && (
+                <RunEndOverlay variant="defeat" onRestart={startNewRun} onMainMenu={returnToMenu} />
+            )}
         </div>
     );
 }

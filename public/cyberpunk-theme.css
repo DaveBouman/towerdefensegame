@@ -266,6 +266,21 @@ body {
     z-index: 0;
 }
 
+#app.app--phase-menu {
+    background: transparent;
+}
+
+#app.app--phase-menu::before,
+#app.app--phase-menu::after {
+    opacity: 0;
+}
+
+#app.app--phase-menu .game-canvas-host {
+    opacity: 1;
+    filter: none;
+    z-index: 0;
+}
+
 .run-map__title {
     font-family: var(--font-display);
     font-size: calc(24px * var(--text-scale));
@@ -628,6 +643,34 @@ body {
 .node-visit__title { font-size: calc(22px * var(--text-scale)); }
 .node-visit__gold,
 .node-visit__button { font-size: calc(14px * var(--text-scale)); }
+.main-menu__brand {
+    font-family: var(--font-display);
+    color: var(--cp-cyan);
+}
+
+.main-menu__screen-title {
+    font-family: var(--font-display);
+    color: var(--cp-cyan);
+}
+
+.main-menu__eyebrow,
+.main-menu__field-label {
+    font-family: var(--font-display);
+}
+
+.main-menu__start,
+.main-menu__secondary,
+.main-menu__quit {
+    font-family: var(--font-display);
+}
+
+.main-menu__brand { font-size: calc(36px * var(--text-scale)); }
+.main-menu__tagline { font-size: calc(15px * var(--text-scale)); }
+.main-menu__start { font-size: calc(15px * var(--text-scale)); }
+.main-menu__secondary,
+.main-menu__collection { font-size: calc(13px * var(--text-scale)); }
+.card-collection__title { font-size: calc(24px * var(--text-scale)); }
+
 .run-end__button { font-size: calc(15px * var(--text-scale)); }
 
 /* ---------------------------------------------------------------------------
@@ -737,6 +780,11 @@ body {
 }
 
 #app.app--phase-map .game-canvas-host {
+    opacity: 1;
+    filter: none;
+}
+
+#app.app--phase-menu .game-canvas-host {
     opacity: 1;
     filter: none;
 }

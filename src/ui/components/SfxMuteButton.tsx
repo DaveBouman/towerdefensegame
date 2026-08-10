@@ -5,7 +5,7 @@ export const SfxMuteButton = () =>
 {
     const [ muted, setMuted ] = useState(false);
 
-    useEffect(() => subscribeSfxSettings((nextMuted) => setMuted(nextMuted)), []);
+    useEffect(() => subscribeSfxSettings((settings) => setMuted(settings.muted)), []);
 
     return (
         <button

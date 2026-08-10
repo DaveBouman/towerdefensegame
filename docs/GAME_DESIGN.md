@@ -71,8 +71,9 @@ Helpers: `getFloorForColumn`, `getFloorColumnRange`, `RUN_CONFIG.floorCount` in 
 - `localStorage` flag via `src/ui/tutorial/Tutorial.tsx`.
 - Intro overlay before the first map pick; coach strip on the first battle; off-chain tip after dismissing the coach (round 1); reward/shop tip after the first win. Dismissible; skipped once seen.
 
-Flow: `map (pick node)` → `battle` → `win → reward → map` / `lose → defeat` / `boss win → victory`.
+Flow: `menu (settings)` → `map (pick node)` → `battle` → `win → reward → map` / `lose → defeat` / `boss win → victory`.
 Non-battle nodes: `map (pick shop)` → `visit (ShopOverlay)` → `map`; `map (pick event)` → `visit (RunEventOverlay)` → `map`.
+Victory/defeat can return to the main menu or start a fresh run immediately.
 
 ### Seeds & determinism
 
@@ -93,7 +94,7 @@ and the same seed + same in-battle actions produces the same battle.
 - Because each boundary reseeds, map/reward results are **idempotent and order-independent**
   (robust to React StrictMode double-invocation); battles are reproducible given the same
   player actions (actions consume the battle stream in order).
-- The player can view/enter the seed on the map before the first battle (`RunMapOverlay`).
+- The player can set the seed on the **main menu** before starting, and still view/edit it on the map before the first battle (`RunMapOverlay`).
 
 ### Rewards (variable, extensible)
 
@@ -127,18 +128,21 @@ before `rollCardReward`/display, or add a new `RunReward` kind + a case in `App`
 ```
 index.html → src/main.tsx → App.tsx (run controller)
   ├── PhaserGame.tsx → src/game/main.ts → scenes/Game.ts
+  ├── MainMenuOverlay.tsx   (home / settings / how-to-play / credits / quit + card index)
+  ├── CardCollectionOverlay.tsx (unlocked / locked card archive)
+  ├── desktopBridge.ts      (`window.signalChainDesktop` quit/fullscreen hooks for Electron)
   ├── GameHud.tsx           (battle phase)
   ├── Tutorial.tsx          (first-run intro / coach / tip)
   ├── RunMapOverlay.tsx     (map phase; node icons + tooltips + floor/rerolls)
   ├── CardRewardOverlay.tsx (reward phase)
   ├── ShopOverlay.tsx       (Ripperdoc visit)
   ├── NodeVisitOverlay.tsx  (generic non-shop visit fallback)
-  └── RunEndOverlay.tsx     (victory / defeat)
+  └── RunEndOverlay.tsx     (victory / defeat → new run or main menu)
 ```
 
-`App.tsx` owns run state (map, path, carry-over HP, floor rerolls, phase). The Phaser `Game`
-scene does **not** auto-start a fight; it waits for `START_BATTLE`, builds a
-battle, and emits `BATTLE_WON` / `BATTLE_LOST` back to React.
+`App.tsx` owns run state (map, path, carry-over HP, floor rerolls, phase). Boot starts on
+`menu`; Start begins a run on `map`. The Phaser `Game` scene does **not** auto-start a fight;
+it waits for `START_BATTLE`, builds a battle, and emits `BATTLE_WON` / `BATTLE_LOST` back to React.
 
 | Layer | Path | Role |
 |-------|------|------|
@@ -260,9 +264,12 @@ remain as a fallback if a portrait fails to load.
 
 #### Phase 3 — Meta (~1–2 weeks)
 
-- [ ] Unlock system (cards, enemies)
+- [x] Unlock system (cards) — `cardCollection.ts` + main-menu Card index; enemy unlocks later
+- [ ] Unlock system (enemies)
+- [x] Steam-ready main menu shell (settings / how-to-play / credits / quit + `signalChainDesktop` bridge)
 - [ ] Daily/weekly seeded challenge
 - [ ] Ascension modifiers (+enemy HP, −rerolls, faster enemy turns)
+- [ ] Electron packaging + Steamworks (see `docs/electron-steam.md`)
 
 ### Anti-patterns (do not reintroduce)
 
@@ -284,7 +291,7 @@ remain as a fallback if a portrait fails to load.
 | Card tiers / upgrades | `cards.json` (`tier`, `upgrade`); materialize `*-plus` in `cardRegistry.ts`; shop via `cardUpgrades.ts` |
 | Body mods (stats + playstyle) | `src/game/run/bodyMods.ts` — Venom Latch / Razor Feed / Carapace Weave / Pyre Link / Hemorrhage Coil change combat; chrome-heart etc. are economy/stats |
 | Persistent run deck | `getDefaultDeckDefinitionIds` / `buildDeckFromDefinitionIds` in `buildPlayerDeck.ts` (neutral starter; specialties from rewards) |
-| Map / run visuals | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`, `ShopOverlay.tsx`; `.run-map*` / `.run-end*` / `.card-reward*` / `.shop-overlay*` in `public/style.css` |
+| Map / run visuals | `src/ui/components/MainMenuOverlay.tsx`, `RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`, `ShopOverlay.tsx`; `.main-menu*` / `.run-map*` / `.run-end*` / `.card-reward*` / `.shop-overlay*` in `public/style.css` |
 | First-run teaching | `src/ui/tutorial/Tutorial.tsx` |
 | Floor helpers / per-floor rerolls | `runMap.ts` floors; `App.tsx` `floorRerollsRemaining`; `START_BATTLE.rerollsRemaining` |
 | Run flow (phases, carry-over HP, deck, rewards) | `src/App.tsx` |
@@ -327,6 +334,11 @@ remain as a fallback if a portrait fails to load.
 | 2026-08-04 | **Boost stacking.** Consecutive field boosts multiply on the next consuming card (Boost→Boost→Attack = ×4). Jokers still pass the stack through. Ability payoffs (fire/poison/etc.) use the same stacked multiplier. |
 | 2026-08-10 | **Map digital-nav backdrop.** Run map uses `MapBackgroundView` with a dot-matrix grid, static POI blips, HUD corner brackets, and a slow vertical scan — no horizontal lane lines that clash with route edges. Map field has a glass viewport panel; route edges use cyan/green neon styling. Distinct from the combat arena grid. |
 | 2026-08-10 | **Player status layout.** Active battle-modifier chips anchor below the full RUNNER / body-mod trait stack (icon centers no longer overlap the name or trait row). |
+| 2026-08-10 | **Steam-ready main menu.** Home / Settings / How to play / Credits / Quit. Settings holds seed, Master/Music/SFX, fullscreen, and replay tutorial tips. Desktop bridge `window.signalChainDesktop` documented in `docs/electron-steam.md` for future Electron packaging. |
+| 2026-08-10 | **Split audio buses.** Main menu exposes Master / Music / SFX sliders plus mute (`audioSettings.ts`). Effective gains are `master × bus`; BGM still multiplies per-track `BGM_LEVEL`. Legacy single volume migrates into master. |
+| 2026-08-10 | **Card collection index.** Main menu **Card index** shows every collectible card as unlocked or locked (`???`). Starter deck cards unlock on boot; rewards, shop buys, and event deck gains unlock permanently via `localStorage` (`cardCollection.ts`). |
+| 2026-08-10 | **Card index interaction fix.** Collection overlay mounts outside `.main-menu` (which uses `pointer-events: none`) so scroll, card select, and hover tooltips work; tooltips render below cards to avoid grid clipping. Menu + card index use `emitRunSfx` for open/select/filter/close and primary nav clicks. |
+| 2026-08-10 | **Main menu.** Boot opens on `menu` (`MainMenuOverlay`): set seed, mute/volume, then Start run. Digital map backdrop plays behind the menu. Victory/defeat offer Main menu or New run / Try again. |
 | 2026-08-10 | **Switchback card.** New attack card deals 2× resolved damage (`stepDamageMultiplier`) but cycles lock target to the next living enemy after it hits (`switchTargetAfterHit`). In reward/elite pools. |
 | 2026-08-10 | **First-round off-chain tip.** After dismissing the combat coach on the first battle, a popup explains that loose attack/defense cards on the board still grant off-chain bonuses (+2 damage / +2 armor from `gameRules.json`). |
 | 2026-08-10 | **Combat UI fixes + run modifiers.** Tutorial coach dismiss no longer click-throughs to the deck (`UI_OVERLAY_ACTIVE` blocks pile clicks; coach raised above canvas). Enemy trait/passive/shield rows stack below the name; active battle-modifier chips anchor to the bottom of each panel (`BattleModifierStatusView` layout anchors). Shared `BATTLE_MODIFIER_PRESETS` + `runModifiers.ts` registry for future ascension tiers. |

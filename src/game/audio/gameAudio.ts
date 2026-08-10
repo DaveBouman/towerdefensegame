@@ -1,12 +1,18 @@
 import type Phaser from 'phaser';
 import {
+    getEffectiveMusicGain,
+    getEffectiveSfxGain,
+    readAudioSettings,
+    writeAudioMuted,
+    writeMasterVolume,
+    writeMusicVolume,
+    writeSfxVolume,
+    type AudioSettings,
+} from './audioSettings';
+import {
     ALL_SFX_KEYS,
-    readSfxMuted,
-    readSfxVolume,
     SFX_FILES,
     type SfxKey,
-    writeSfxMuted,
-    writeSfxVolume,
 } from './sfxManifest';
 
 export interface PlaySfxOptions {
@@ -14,13 +20,12 @@ export interface PlaySfxOptions {
     rate?: number;
 }
 
-type SfxListener = (muted: boolean, volume: number) => void;
+export type AudioSettingsListener = (settings: AudioSettings) => void;
 
 let scene: Phaser.Scene | null = null;
 let loaded = false;
-let muted = readSfxMuted();
-let masterVolume = readSfxVolume();
-const listeners = new Set<SfxListener>();
+let settings: AudioSettings = readAudioSettings();
+const listeners = new Set<AudioSettingsListener>();
 
 export const preloadSfx = (targetScene: Phaser.Scene): void =>
 {
@@ -50,50 +55,87 @@ export const unbindGameAudioScene = (): void =>
     scene = null;
 };
 
-export const isSfxMuted = (): boolean => muted;
+export const getAudioSettings = (): AudioSettings => ({ ...settings });
 
-export const getSfxVolume = (): number => masterVolume;
+/** Global mute — silences SFX and music. */
+export const isSfxMuted = (): boolean => settings.muted;
+
+export const getMasterVolume = (): number => settings.masterVolume;
+
+/** SFX bus volume (0–1), before master. */
+export const getSfxVolume = (): number => settings.sfxVolume;
+
+/** Music bus volume (0–1), before master. */
+export const getMusicVolume = (): number => settings.musicVolume;
 
 export const setSfxMuted = (nextMuted: boolean): void =>
 {
-    muted = nextMuted;
-    writeSfxMuted(nextMuted);
+    settings = { ...settings, muted: nextMuted };
+    writeAudioMuted(nextMuted);
+    notifyListeners();
+};
+
+export const setMasterVolume = (nextVolume: number): void =>
+{
+    settings = {
+        ...settings,
+        masterVolume: Math.max(0, Math.min(1, nextVolume)),
+    };
+    writeMasterVolume(settings.masterVolume);
     notifyListeners();
 };
 
 export const setSfxVolume = (nextVolume: number): void =>
 {
-    masterVolume = Math.max(0, Math.min(1, nextVolume));
-    writeSfxVolume(masterVolume);
+    settings = {
+        ...settings,
+        sfxVolume: Math.max(0, Math.min(1, nextVolume)),
+    };
+    writeSfxVolume(settings.sfxVolume);
+    notifyListeners();
+};
+
+export const setMusicVolume = (nextVolume: number): void =>
+{
+    settings = {
+        ...settings,
+        musicVolume: Math.max(0, Math.min(1, nextVolume)),
+    };
+    writeMusicVolume(settings.musicVolume);
     notifyListeners();
 };
 
 export const toggleSfxMuted = (): boolean =>
 {
-    setSfxMuted(!muted);
+    setSfxMuted(!settings.muted);
 
-    return muted;
+    return settings.muted;
 };
 
-export const subscribeSfxSettings = (listener: SfxListener): (() => void) =>
+export const subscribeSfxSettings = (listener: AudioSettingsListener): (() => void) =>
 {
     listeners.add(listener);
-    listener(muted, masterVolume);
+    listener(getAudioSettings());
 
     return () => listeners.delete(listener);
 };
 
+/** @deprecated Prefer subscribeSfxSettings — kept as alias for clarity. */
+export const subscribeAudioSettings = subscribeSfxSettings;
+
 const notifyListeners = (): void =>
 {
+    const snapshot = getAudioSettings();
+
     for (const listener of listeners)
     {
-        listener(muted, masterVolume);
+        listener(snapshot);
     }
 };
 
 export const playSfx = (key: SfxKey, options: PlaySfxOptions = {}): void =>
 {
-    if (muted || !scene || !loaded || !scene.sound)
+    if (!scene || !loaded || !scene.sound)
     {
         return;
     }
@@ -103,7 +145,7 @@ export const playSfx = (key: SfxKey, options: PlaySfxOptions = {}): void =>
         return;
     }
 
-    const volume = (options.volume ?? 1) * masterVolume;
+    const volume = (options.volume ?? 1) * getEffectiveSfxGain(settings);
 
     if (volume <= 0)
     {
