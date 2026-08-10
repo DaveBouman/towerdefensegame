@@ -14,6 +14,7 @@ import { PileViewOverlay } from './ui/components/PileViewOverlay';
 import {
     TutorialIntroOverlay,
     TutorialCoachStrip,
+    TutorialOffChainTipOverlay,
     TutorialRewardTipOverlay,
     useTutorial,
 } from './ui/tutorial/Tutorial';
@@ -146,9 +147,10 @@ function App()
     useEffect(() =>
     {
         EventBus.emit(GAME_EVENTS.UI_OVERLAY_ACTIVE, {
-            blockPileInspection: phase === 'battle' && tutorial.showBattleCoach,
+            blockPileInspection: phase === 'battle'
+                && (tutorial.showBattleCoach || tutorial.showOffChainTip),
         });
-    }, [ phase, tutorial.showBattleCoach ]);
+    }, [ phase, tutorial.showBattleCoach, tutorial.showOffChainTip ]);
 
     useEffect(() =>
     {
@@ -928,6 +930,9 @@ function App()
                     <GameHud />
                     {tutorial.showBattleCoach && (
                         <TutorialCoachStrip onDismiss={tutorial.dismissBattleCoach} />
+                    )}
+                    {tutorial.showOffChainTip && (
+                        <TutorialOffChainTipOverlay onDismiss={tutorial.dismissOffChainTip} />
                     )}
                 </>
             )}

@@ -2573,6 +2573,12 @@ html, body, #root {
     padding: 24px;
 }
 
+.tutorial-overlay--battle {
+    z-index: 310;
+    background: rgba(4, 8, 16, 0.55);
+    pointer-events: auto;
+}
+
 .tutorial-overlay__panel {
     width: min(480px, 100%);
     padding: 28px;

@@ -69,7 +69,7 @@ Helpers: `getFloorForColumn`, `getFloorColumnRange`, `RUN_CONFIG.floorCount` in 
 ### First-run teaching
 
 - `localStorage` flag via `src/ui/tutorial/Tutorial.tsx`.
-- Intro overlay before the first map pick; coach strip on the first battle; reward/shop tip after the first win. Dismissible; skipped once seen.
+- Intro overlay before the first map pick; coach strip on the first battle; off-chain tip after dismissing the coach (round 1); reward/shop tip after the first win. Dismissible; skipped once seen.
 
 Flow: `map (pick node)` → `battle` → `win → reward → map` / `lose → defeat` / `boss win → victory`.
 Non-battle nodes: `map (pick shop)` → `visit (ShopOverlay)` → `map`; `map (pick event)` → `visit (RunEventOverlay)` → `map`.
@@ -327,6 +327,7 @@ remain as a fallback if a portrait fails to load.
 | 2026-08-04 | **Boost stacking.** Consecutive field boosts multiply on the next consuming card (Boost→Boost→Attack = ×4). Jokers still pass the stack through. Ability payoffs (fire/poison/etc.) use the same stacked multiplier. |
 | 2026-08-10 | **Map digital-nav backdrop.** Run map uses `MapBackgroundView` with a dot-matrix grid, static POI blips, HUD corner brackets, and a slow vertical scan — no horizontal lane lines that clash with route edges. Map field has a glass viewport panel; route edges use cyan/green neon styling. Distinct from the combat arena grid. |
 | 2026-08-10 | **Player status layout.** Active battle-modifier chips anchor below the full RUNNER / body-mod trait stack (icon centers no longer overlap the name or trait row). |
+| 2026-08-10 | **First-round off-chain tip.** After dismissing the combat coach on the first battle, a popup explains that loose attack/defense cards on the board still grant off-chain bonuses (+2 damage / +2 armor from `gameRules.json`). |
 | 2026-08-10 | **Combat UI fixes + run modifiers.** Tutorial coach dismiss no longer click-throughs to the deck (`UI_OVERLAY_ACTIVE` blocks pile clicks; coach raised above canvas). Enemy trait/passive/shield rows stack below the name; active battle-modifier chips anchor to the bottom of each panel (`BattleModifierStatusView` layout anchors). Shared `BATTLE_MODIFIER_PRESETS` + `runModifiers.ts` registry for future ascension tiers. |
 | 2026-08-04 | **Mid-chain retarget prompts.** When the locked target dies and other enemies remain, the chain pauses and living hosts show **LOCK TARGET** until you click one (auto-continues if only one is left; leftover chain damage is skipped if none remain). |
 | 2026-08-04 | **Attack lock / second-attack fix.** Killing the last enemy mid-chain no longer stalls waiting for a target (held the attack lock forever). Removed duplicate `turnResolving` scene flag — session `isBusy()` / attack lock is the single gate. HUD readiness updates as soon as an attack starts. |

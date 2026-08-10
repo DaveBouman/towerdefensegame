@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { GAME_RULES } from '../../game/cardGame/config/cardRegistry';
 
 const TUTORIAL_STORAGE_KEY = 'card-chain-has-seen-tutorial';
 
@@ -72,6 +73,41 @@ export const TutorialCoachStrip = ({ onDismiss }: { onDismiss: () => void }) => 
     </aside>
 );
 
+/** First-round tip: off-chain attack/defense cards still contribute. */
+export const TutorialOffChainTipOverlay = ({ onDismiss }: { onDismiss: () => void }) =>
+{
+    const { attackDamage, defendArmor } = GAME_RULES.offChainBonus;
+
+    return (
+        <div className="tutorial-overlay tutorial-overlay--battle">
+            <div className="tutorial-overlay__panel">
+                <p className="tutorial-overlay__eyebrow">Round 1 tip</p>
+                <h1 className="tutorial-overlay__title">Loose board cards</h1>
+                <p className="tutorial-overlay__body">
+                    Cards you place on the battlefield still help when you Attack — even if they
+                    are not linked into your chain. Only <strong>attack</strong> and{' '}
+                    <strong>defense</strong> cards count this way.
+                </p>
+                <p className="tutorial-overlay__body">
+                    Each loose attack adds +{attackDamage} damage. Each loose defense adds +{defendArmor}{' '}
+                    armor. Other card types must be in the chain to take effect.
+                </p>
+                <button
+                    type="button"
+                    className="tutorial-overlay__button"
+                    onClick={(event) =>
+                    {
+                        event.stopPropagation();
+                        onDismiss();
+                    }}
+                >
+                    Got it
+                </button>
+            </div>
+        </div>
+    );
+};
+
 /** One tip after the first victory about rewards and shops. */
 export const TutorialRewardTipOverlay = ({ onDismiss }: { onDismiss: () => void }) => (
     <div className="tutorial-overlay">
@@ -94,9 +130,11 @@ export const useTutorial = (): {
     step: TutorialStep;
     showIntro: boolean;
     showBattleCoach: boolean;
+    showOffChainTip: boolean;
     showRewardTip: boolean;
     dismissIntro: () => void;
     dismissBattleCoach: () => void;
+    dismissOffChainTip: () => void;
     dismissRewardTip: () => void;
     onFirstBattleStart: () => void;
     onFirstBattleWon: () => void;
@@ -105,6 +143,8 @@ export const useTutorial = (): {
     const [ step, setStep ] = useState<TutorialStep>(() =>
         (hasSeenTutorial() ? 'done' : 'intro'));
     const [ battleCoachVisible, setBattleCoachVisible ] = useState(false);
+    const [ offChainTipVisible, setOffChainTipVisible ] = useState(false);
+    const [ offChainTipEligible, setOffChainTipEligible ] = useState(false);
     const [ rewardTipVisible, setRewardTipVisible ] = useState(false);
 
     useEffect(() =>
@@ -127,6 +167,7 @@ export const useTutorial = (): {
             if (prev === 'battle-coach' || prev === 'intro')
             {
                 setBattleCoachVisible(true);
+                setOffChainTipEligible(true);
 
                 return 'battle-coach';
             }
@@ -138,6 +179,17 @@ export const useTutorial = (): {
     const dismissBattleCoach = useCallback((): void =>
     {
         setBattleCoachVisible(false);
+
+        if (offChainTipEligible)
+        {
+            setOffChainTipVisible(true);
+        }
+    }, [ offChainTipEligible ]);
+
+    const dismissOffChainTip = useCallback((): void =>
+    {
+        setOffChainTipVisible(false);
+        setOffChainTipEligible(false);
     }, []);
 
     const onFirstBattleWon = useCallback((): void =>
@@ -147,6 +199,8 @@ export const useTutorial = (): {
             if (prev === 'battle-coach' || prev === 'reward-tip')
             {
                 setBattleCoachVisible(false);
+                setOffChainTipVisible(false);
+                setOffChainTipEligible(false);
                 setRewardTipVisible(true);
 
                 return 'reward-tip';
@@ -167,9 +221,11 @@ export const useTutorial = (): {
         step,
         showIntro: step === 'intro',
         showBattleCoach: battleCoachVisible,
+        showOffChainTip: offChainTipVisible,
         showRewardTip: rewardTipVisible,
         dismissIntro,
         dismissBattleCoach,
+        dismissOffChainTip,
         dismissRewardTip,
         onFirstBattleStart,
         onFirstBattleWon,
