@@ -4,6 +4,8 @@ import gameRulesData from './gameRules.json';
 import type { ArrowPool } from '../domain/cardDirections';
 import type { CardTooltipOverride } from '../presentation/tooltips/types';
 
+export type CardTier = 1 | 2 | 3;
+
 export interface CardDefinition {
     id: string;
     label: string;
@@ -11,6 +13,12 @@ export interface CardDefinition {
     behaviorId: string;
     visualId: string;
     arrowPool: ArrowPool;
+    /** Reward / offer rarity. 1 common → 3 rare. */
+    tier: CardTier;
+    /** Id of the upgraded form (`attack-plus`), if this card can be upgraded. */
+    upgradesTo?: string;
+    /** Base card id when this definition is an upgraded form. */
+    upgradeOf?: string;
     /** How many times this card can activate when the chain revisits its slot. */
     maxChainActivations?: number;
     /** How many grid steps the chain advances along this card's arrow. */
@@ -46,6 +54,26 @@ export interface CardDefinition {
     };
 }
 
+interface CardDefinitionJson extends Omit<CardDefinition, 'tier' | 'upgradesTo' | 'upgradeOf'> {
+    tier?: CardTier;
+    noUpgrade?: boolean;
+    /** Field overrides applied when materializing the upgraded form. */
+    upgrade?: Partial<Pick<
+        CardDefinition,
+        | 'power'
+        | 'label'
+        | 'maxChainActivations'
+        | 'chainStepDistance'
+        | 'handEndPenalty'
+        | 'discardFromHandOnPlay'
+        | 'healOnKill'
+        | 'battleModifier'
+        | 'exhaustOnPlay'
+        | 'cornerTurn'
+        | 'chainAbilityIds'
+    >>;
+}
+
 export interface GameRules {
     activationStepMs: number;
     enemyTurnMs: number;
@@ -74,8 +102,50 @@ export interface GameRules {
     };
 }
 
+/** Canonical upgraded definition id for a base card. */
+export const upgradedCardId = (baseId: string): string => `${baseId}-plus`;
+
+const materializeDefinitions = (rawCards: readonly CardDefinitionJson[]): CardDefinition[] =>
+{
+    const definitions: CardDefinition[] = [];
+
+    for (const raw of rawCards)
+    {
+        const { noUpgrade, upgrade, tier = 1, ...rest } = raw;
+        const base: CardDefinition = {
+            ...rest,
+            tier,
+        };
+
+        if (!noUpgrade)
+        {
+            const plusId = upgradedCardId(base.id);
+            base.upgradesTo = plusId;
+
+            const plus: CardDefinition = {
+                ...base,
+                ...upgrade,
+                id: plusId,
+                label: upgrade?.label ?? `${base.label}+`,
+                tier: base.tier,
+                upgradeOf: base.id,
+                upgradesTo: undefined,
+            };
+
+            definitions.push(base);
+            definitions.push(plus);
+            continue;
+        }
+
+        definitions.push(base);
+    }
+
+    return definitions;
+};
+
+const definitionsList = materializeDefinitions(cardsData.cards as CardDefinitionJson[]);
 const definitions = new Map<string, CardDefinition>(
-    cardsData.cards.map((card) => [ card.id, card ]),
+    definitionsList.map((card) => [ card.id, card ]),
 );
 
 export const GAME_RULES: GameRules = gameRulesData;
@@ -95,7 +165,7 @@ export const getCardDefinitionOrThrow = (id: string): CardDefinition =>
     return definition;
 };
 
-export const CARD_DEFINITIONS: readonly CardDefinition[] = cardsData.cards;
+export const CARD_DEFINITIONS: readonly CardDefinition[] = definitionsList;
 
 export const getChainStepDistance = (definition: CardDefinition): number =>
     Math.max(1, definition.chainStepDistance ?? 1);
@@ -117,3 +187,13 @@ export const isCardExhaustOnPlay = (definition: CardDefinition): boolean =>
 
 export const getCardHealOnKill = (definition: CardDefinition): number =>
     Math.max(0, definition.healOnKill ?? 0);
+
+export const isUpgradedCard = (definitionId: string): boolean =>
+    Boolean(getCardDefinition(definitionId)?.upgradeOf);
+
+export const canUpgradeCard = (definitionId: string): boolean =>
+    Boolean(getCardDefinition(definitionId)?.upgradesTo);
+
+/** Base id used for archetype tagging (upgraded forms map to their base). */
+export const getCardArchetypeBaseId = (definitionId: string): string =>
+    getCardDefinition(definitionId)?.upgradeOf ?? definitionId;

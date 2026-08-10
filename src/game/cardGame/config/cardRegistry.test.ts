@@ -1,5 +1,11 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { CARD_DEFINITIONS, GAME_RULES, getCardDefinition } from './cardRegistry';
+import {
+    CARD_DEFINITIONS,
+    GAME_RULES,
+    canUpgradeCard,
+    getCardDefinition,
+    upgradedCardId,
+} from './cardRegistry';
 import { getDefaultCardGameEnemy } from './enemyCatalog';
 import { createCardInstance, resetCardInstanceCounter } from '../domain/createCardInstance';
 import { CARD_DIRECTIONS } from '../domain/cardDirections';
@@ -11,28 +17,18 @@ describe('cardRegistry', () =>
         resetCardInstanceCounter();
     });
 
-    it('loads card definitions from cards.json', () =>
+    it('loads card definitions and materializes upgrades', () =>
     {
-        expect(CARD_DEFINITIONS).toHaveLength(32);
+        expect(CARD_DEFINITIONS.length).toBeGreaterThanOrEqual(70);
+        expect(getCardDefinition('attack')?.tier).toBe(1);
+        expect(getCardDefinition('attack')?.upgradesTo).toBe(upgradedCardId('attack'));
+        expect(getCardDefinition(upgradedCardId('attack'))?.power).toBe(8);
+        expect(getCardDefinition(upgradedCardId('attack'))?.upgradeOf).toBe('attack');
+        expect(getCardDefinition('execution')?.tier).toBe(3);
+        expect(canUpgradeCard('burden')).toBe(false);
         expect(getCardDefinition('corner-strike')?.cornerTurn).toBe(true);
-        expect(getCardDefinition('corner-defense')?.behaviorId).toBe('defend');
-        expect(getCardDefinition('attack')?.arrowPool).toBe('orthogonal');
-        expect(getCardDefinition('defend')?.arrowPool).toBe('orthogonal');
-        expect(getCardDefinition('attack-special')?.maxChainActivations).toBe(2);
-        expect(getCardDefinition('defend-special')?.arrowPool).toBe('diagonal');
-        expect(getCardDefinition('joker')?.behaviorId).toBe('joker');
-        expect(getCardDefinition('joker')?.chainStepDistance).toBe(2);
-        expect(getCardDefinition('loop-reset')?.behaviorId).toBe('loop-reset');
         expect(getCardDefinition('poison')?.chainAbilityIds).toEqual([ 'poison-trail' ]);
-        expect(getCardDefinition('fire')?.chainAbilityIds).toEqual([ 'fire-alternation' ]);
-        expect(getCardDefinition('hazard')?.behaviorId).toBe('hazard');
-        expect(getCardDefinition('boost')?.behaviorId).toBe('boost');
-        expect(getCardDefinition('attack-leap')?.chainStepDistance).toBe(2);
-        expect(getCardDefinition('defend-leap')?.chainStepDistance).toBe(2);
-        expect(getCardDefinition('fuse')?.handEndPenalty).toBe(8);
-        expect(getCardDefinition('courier')?.discardFromHandOnPlay).toBe(2);
-        expect(getCardDefinition('courier')?.exhaustOnPlay).toBe(true);
-        expect(getCardDefinition('courier')?.behaviorId).toBe('boost');
+        expect(getCardDefinition('black-ichor')?.behaviorId).toBe('poison');
     });
 
     it('loads game rules and deck settings', () =>

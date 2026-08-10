@@ -8,4 +8,5 @@ export const NODE_KIND_ICON_URL: Record<RunMapNodeKind, string> = {
     boss: craftpixIconUrl('node-boss.png'),
     shop: craftpixIconUrl('node-shop.png'),
     event: craftpixIconUrl('node-event.png'),
+    rest: craftpixIconUrl('event-heal.png'),
 };

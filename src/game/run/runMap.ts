@@ -5,7 +5,6 @@
 
 import { rewardForNodeKind, type RunReward } from './rewards';
 import { isBattleKind, rollNodeKind, type RunMapNodeKind } from './nodeKinds';
-import { rollRunEventIdExcluding } from './runEvents';
 import { pickRandom, random } from '../random/rng';
 
 export interface RunMapNode {
@@ -165,37 +164,6 @@ const connectSaboteurBranches = (
     }
 };
 
-/** Assigns a distinct event id to each event node. */
-export const assignEventIdsToNodes = (nodes: RunMapNode[]): void =>
-{
-    const byRow = new Map<number, RunMapNode[]>();
-
-    for (const node of nodes)
-    {
-        if (node.kind !== 'event')
-        {
-            continue;
-        }
-
-        const rowNodes = byRow.get(node.row) ?? [];
-
-        rowNodes.push(node);
-        byRow.set(node.row, rowNodes);
-    }
-
-    for (const rowNodes of byRow.values())
-    {
-        rowNodes.sort((a, b) => a.col - b.col);
-        const used = new Set<string>();
-
-        for (const node of rowNodes)
-        {
-            node.eventId = rollRunEventIdExcluding(used);
-            used.add(node.eventId);
-        }
-    }
-};
-
 const resolveNodeKind = (row: number, rows: number): RunMapNodeKind =>
 {
     if (row === rows - 1)
@@ -211,6 +179,11 @@ const resolveNodeKind = (row: number, rows: number): RunMapNodeKind =>
     if (row === RUN_CONFIG.semiBossRow)
     {
         return 'semi-boss';
+    }
+
+    if (row === rows - 2)
+    {
+        return 'rest';
     }
 
     return rollNodeKind();
@@ -331,11 +304,7 @@ export const generateRunMap = (): RunMap =>
         });
     }
 
-    const nodes = grid.flat();
-
-    assignEventIdsToNodes(nodes);
-
-    return { rows, nodes };
+    return { rows, nodes: grid.flat() };
 };
 
 /** Returns the ids of nodes reachable given the last completed node (null = start). */

@@ -21,6 +21,7 @@ describe('mapNodeDisplay', () =>
         expect(getMapNodeDisplay(node({ kind: 'semi-boss', enemyId: 'smokebinder' })).label).toBe('Lieutenant');
         expect(getMapNodeDisplay(node({ kind: 'semi-boss', enemyId: 'saboteur' })).label).toBe('Lieutenant');
         expect(getMapNodeDisplay(node({ kind: 'shop' })).label).toBe('Ripperdoc');
+        expect(getMapNodeDisplay(node({ kind: 'rest' })).label).toBe('Safehouse');
         expect(getMapNodeDisplay(node({ kind: 'event', eventId: 'sign-matcher' })).label).toBe('Signal');
     });
 

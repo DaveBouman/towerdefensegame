@@ -9,6 +9,7 @@ import { CardRewardOverlay } from './ui/components/CardRewardOverlay';
 import { NodeVisitOverlay } from './ui/components/NodeVisitOverlay';
 import { ShopOverlay } from './ui/components/ShopOverlay';
 import { RunEventOverlay } from './ui/components/RunEventOverlay';
+import { RestOverlay } from './ui/components/RestOverlay';
 import { PileViewOverlay } from './ui/components/PileViewOverlay';
 import {
     TutorialIntroOverlay,
@@ -17,12 +18,14 @@ import {
     useTutorial,
 } from './ui/tutorial/Tutorial';
 import { isBattleKind } from './game/run/nodeKinds';
-import { rollRunEventId, applyRunEventEffects } from './game/run/runEvents';
+import { applyRunEventEffects } from './game/run/runEvents';
+import { resolveSignalVisit } from './game/run/signalEncounter';
 import type { AppliedEventResult, AppliedEventMessage } from './game/run/runEvents';
 import { getRunPuzzle, rollPuzzleCardReward } from './game/run/runPuzzles';
 import { getRunMaxHealth, getVictoryGoldBonus } from './game/run/runResources';
 import { rollShopOffers, type ShopOffer } from './game/run/shop';
 import { getBodyModDefinitionOrThrow } from './game/run/bodyMods';
+import { upgradeFirstCardInDeck } from './game/run/cardUpgrades';
 import { EventBus } from './game/EventBus';
 import { GAME_EVENTS } from './game/events/gameEvents';
 import { GAME_RULES } from './game/cardGame/config/cardRegistry';
@@ -95,11 +98,15 @@ const rollRewardForNode = (
     reward: CardReward,
     rerollIndex: number,
     deckDefinitionIds: readonly string[],
+    floor: number,
 ): string[] =>
 {
     seedScope(seed, `reward:${nodeId}:${rerollIndex}`);
 
-    return rollCardReward(reward.choiceCount, reward.pool ?? 'standard', deckDefinitionIds);
+    return rollCardReward(reward.choiceCount, reward.pool ?? 'standard', {
+        deckDefinitionIds,
+        floor,
+    });
 };
 
 function App()
@@ -112,6 +119,7 @@ function App()
     const [ gold, setGold ] = useState(0);
     const [ bodyMods, setBodyMods ] = useState<string[]>([]);
     const [ runAttackCount, setRunAttackCount ] = useState(0);
+    const [ signalsVisited, setSignalsVisited ] = useState(0);
     const [ currentFloor, setCurrentFloor ] = useState(1);
     const [ floorRerollsRemaining, setFloorRerollsRemaining ] = useState(GAME_RULES.rerollsPerFloor);
     const [ phase, setPhase ] = useState<RunPhase>('map');
@@ -272,7 +280,14 @@ function App()
                 setPendingReward({
                     nodeId: node.id,
                     reward: node.reward,
-                    options: rollRewardForNode(seedRef.current, node.id, node.reward, 0, deckRef.current),
+                    options: rollRewardForNode(
+                        seedRef.current,
+                        node.id,
+                        node.reward,
+                        0,
+                        deckRef.current,
+                        currentFloorRef.current,
+                    ),
                     rerollIndex: 0,
                 });
                 setPhase('reward');
@@ -354,7 +369,7 @@ function App()
                 setPendingPuzzleReward({
                     puzzleId,
                     nodeId: node.id,
-                    options: rollPuzzleCardReward(deckRef.current),
+                    options: rollPuzzleCardReward(deckRef.current, currentFloorRef.current),
                     damageDealt,
                     damageTarget,
                     messages: applied.messages,
@@ -394,31 +409,54 @@ function App()
     const pickNode = useCallback((node: RunMapNode): void =>
     {
         const rerollsRemaining = enterNodeFloor(node);
-        const battleEnemyIds = getBattleEnemyIds(node);
+        let battleEnemyIds = getBattleEnemyIds(node);
 
-        if (!isBattleKind(node.kind) || battleEnemyIds.length === 0)
+        if (node.kind === 'event')
         {
-            if (node.kind === 'event')
-            {
-                if (!node.eventId)
-                {
-                    seedScope(seed, `event:${node.id}`);
-                    node.eventId = rollRunEventId();
-                }
+            seedScope(seed, `signal:${node.id}`);
+            const outcome = resolveSignalVisit(signalsVisited, node.row);
+            setSignalsVisited((prev) => prev + 1);
 
-                setVisit({ node, eventId: node.eventId });
+            if (outcome.kind === 'ambush')
+            {
+                node.enemyId = outcome.enemyId;
+                node.enemyIds = outcome.enemyIds;
+                node.reward = outcome.reward;
+                battleEnemyIds = getBattleEnemyIds(node);
             }
             else
+            {
+                node.eventId = outcome.eventId;
+                setVisit({ node, eventId: outcome.eventId });
+                setPhase('visit');
+                return;
+            }
+        }
+
+        const isSignalAmbush = node.kind === 'event' && battleEnemyIds.length > 0;
+
+        if (!isBattleKind(node.kind) && !isSignalAmbush)
+        {
+            if (node.kind === 'shop')
             {
                 seedScope(seed, `shop:${node.id}`);
                 setVisit({
                     node,
                     eventId: null,
-                    shopOffers: rollShopOffers(bodyMods, deck),
+                    shopOffers: rollShopOffers(bodyMods, deck, currentFloor),
                 });
+            }
+            else if (node.kind === 'rest')
+            {
+                setVisit({ node, eventId: null });
             }
 
             setPhase('visit');
+            return;
+        }
+
+        if (battleEnemyIds.length === 0)
+        {
             return;
         }
 
@@ -444,7 +482,7 @@ function App()
         {
             pendingStartRef.current = payload;
         }
-    }, [ playerHealth, deck, seed, bodyMods, runAttackCount, enterNodeFloor, tutorial ]);
+    }, [ playerHealth, deck, seed, bodyMods, runAttackCount, signalsVisited, enterNodeFloor, tutorial, currentFloor ]);
 
     const buyShopCard = useCallback((offer: ShopOffer): void =>
     {
@@ -509,6 +547,39 @@ function App()
             return next;
         });
     }, [ gold, deck ]);
+
+    const buyShopUpgrade = useCallback((offer: ShopOffer, definitionId: string): void =>
+    {
+        if (gold < offer.price)
+        {
+            return;
+        }
+
+        const nextDeck = upgradeFirstCardInDeck(deck, definitionId);
+
+        if (!nextDeck)
+        {
+            return;
+        }
+
+        setGold((prev) => prev - offer.price);
+        setDeck(nextDeck);
+    }, [ gold, deck ]);
+
+    const restHeal = useCallback((healAmount: number): void =>
+    {
+        setPlayerHealth((prev) => Math.min(runMaxHealth, prev + healAmount));
+    }, [ runMaxHealth ]);
+
+    const restUpgrade = useCallback((definitionId: string): void =>
+    {
+        const nextDeck = upgradeFirstCardInDeck(deck, definitionId);
+
+        if (nextDeck)
+        {
+            setDeck(nextDeck);
+        }
+    }, [ deck ]);
 
     const startPuzzleFromEvent = useCallback((puzzleId: string): void =>
     {
@@ -622,7 +693,14 @@ function App()
             return {
                 ...prev,
                 rerollIndex,
-                options: rollRewardForNode(seedRef.current, prev.nodeId, prev.reward, rerollIndex, deckRef.current),
+                options: rollRewardForNode(
+                    seedRef.current,
+                    prev.nodeId,
+                    prev.reward,
+                    rerollIndex,
+                    deckRef.current,
+                    currentFloorRef.current,
+                ),
             };
         });
     }, []);
@@ -638,6 +716,7 @@ function App()
         setGold(0);
         setBodyMods([]);
         setRunAttackCount(0);
+        setSignalsVisited(0);
         setCurrentFloor(1);
         setFloorRerollsRemaining(GAME_RULES.rerollsPerFloor);
         currentFloorRef.current = 1;
@@ -752,6 +831,16 @@ function App()
                     onStartPuzzle={startPuzzleFromEvent}
                 />
             )}
+            {phase === 'visit' && visit && !visit.eventId && visit.node.kind === 'rest' && (
+                <RestOverlay
+                    deck={deck}
+                    playerHealth={playerHealth}
+                    maxHealth={runMaxHealth}
+                    onRest={restHeal}
+                    onUpgrade={restUpgrade}
+                    onContinue={finishVisit}
+                />
+            )}
             {phase === 'visit' && visit && !visit.eventId && visit.node.kind === 'shop' && visit.shopOffers && (
                 <ShopOverlay
                     offers={visit.shopOffers}
@@ -763,10 +852,11 @@ function App()
                     onBuyBodyMod={buyShopBodyMod}
                     onBuyHeal={buyShopHeal}
                     onBuyRemove={buyShopRemove}
+                    onBuyUpgrade={buyShopUpgrade}
                     onContinue={finishVisit}
                 />
             )}
-            {phase === 'visit' && visit && !visit.eventId && visit.node.kind !== 'shop' && (
+            {phase === 'visit' && visit && !visit.eventId && visit.node.kind !== 'shop' && visit.node.kind !== 'rest' && (
                 <NodeVisitOverlay node={visit.node} gold={gold} onContinue={finishVisit} />
             )}
             {phase === 'puzzle-result' && puzzleResult && (

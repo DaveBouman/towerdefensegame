@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistry';
+import { listUpgradableCardsInDeck } from '../../game/run/cardUpgrades';
 import type { ShopOffer } from '../../game/run/shop';
 import { NodeKindIcon } from './NodeKindIcon';
 
@@ -13,6 +14,7 @@ interface ShopOverlayProps {
     onBuyBodyMod: (offer: ShopOffer) => void;
     onBuyHeal: (offer: ShopOffer) => void;
     onBuyRemove: (offer: ShopOffer, definitionId: string) => void;
+    onBuyUpgrade: (offer: ShopOffer, definitionId: string) => void;
     onContinue: () => void;
 }
 
@@ -22,12 +24,18 @@ interface DeckEntry {
     count: number;
 }
 
-const buildDeckEntries = (deck: readonly string[]): DeckEntry[] =>
+const buildDeckEntries = (deck: readonly string[], ids: readonly string[]): DeckEntry[] =>
 {
+    const allowed = new Set(ids);
     const counts = new Map<string, number>();
 
     for (const id of deck)
     {
+        if (!allowed.has(id))
+        {
+            continue;
+        }
+
         counts.set(id, (counts.get(id) ?? 0) + 1);
     }
 
@@ -41,7 +49,7 @@ const buildDeckEntries = (deck: readonly string[]): DeckEntry[] =>
 };
 
 /**
- * Ripperdoc shop — buy a card, body mod, heal, or remove a deck card.
+ * Ripperdoc shop — buy a card, body mod, heal, upgrade, or remove a deck card.
  */
 export const ShopOverlay = ({
     offers,
@@ -53,13 +61,21 @@ export const ShopOverlay = ({
     onBuyBodyMod,
     onBuyHeal,
     onBuyRemove,
+    onBuyUpgrade,
     onContinue,
 }: ShopOverlayProps) =>
 {
-    const [ removing, setRemoving ] = useState(false);
-    const [ removeOffer, setRemoveOffer ] = useState<ShopOffer | null>(null);
+    const [ picking, setPicking ] = useState<'remove' | 'upgrade' | null>(null);
+    const [ activeOffer, setActiveOffer ] = useState<ShopOffer | null>(null);
     const [ purchasedIds, setPurchasedIds ] = useState<string[]>([]);
-    const deckEntries = useMemo(() => buildDeckEntries(deck), [ deck ]);
+    const removeEntries = useMemo(
+        () => buildDeckEntries(deck, [ ...new Set(deck) ]),
+        [ deck ],
+    );
+    const upgradeEntries = useMemo(
+        () => buildDeckEntries(deck, listUpgradableCardsInDeck(deck)),
+        [ deck ],
+    );
 
     const markPurchased = (offerId: string): void =>
     {
@@ -75,8 +91,15 @@ export const ShopOverlay = ({
 
         if (offer.kind === 'remove-card')
         {
-            setRemoveOffer(offer);
-            setRemoving(true);
+            setActiveOffer(offer);
+            setPicking('remove');
+            return;
+        }
+
+        if (offer.kind === 'upgrade-card')
+        {
+            setActiveOffer(offer);
+            setPicking('upgrade');
             return;
         }
 
@@ -96,36 +119,48 @@ export const ShopOverlay = ({
         markPurchased(offer.id);
     };
 
-    const confirmRemove = (definitionId: string): void =>
+    const confirmPick = (definitionId: string): void =>
     {
-        if (!removeOffer)
+        if (!activeOffer || !picking)
         {
             return;
         }
 
-        onBuyRemove(removeOffer, definitionId);
-        markPurchased(removeOffer.id);
-        setRemoving(false);
-        setRemoveOffer(null);
+        if (picking === 'remove')
+        {
+            onBuyRemove(activeOffer, definitionId);
+        }
+        else
+        {
+            onBuyUpgrade(activeOffer, definitionId);
+        }
+
+        markPurchased(activeOffer.id);
+        setPicking(null);
+        setActiveOffer(null);
     };
 
-    if (removing && removeOffer)
+    if (picking && activeOffer)
     {
+        const entries = picking === 'remove' ? removeEntries : upgradeEntries;
+
         return (
             <div className="shop-overlay">
                 <div className="shop-overlay__panel">
                     <p className="shop-overlay__eyebrow">Ripperdoc</p>
-                    <h1 className="shop-overlay__title">Choose a card to remove</h1>
+                    <h1 className="shop-overlay__title">
+                        {picking === 'remove' ? 'Choose a card to remove' : 'Choose a card to upgrade'}
+                    </h1>
                     <p className="shop-overlay__subtitle">
-                        Costs {removeOffer.price} creds. This cannot be undone.
+                        Costs {activeOffer.price} creds. This cannot be undone.
                     </p>
                     <ul className="shop-overlay__deck-list">
-                        {deckEntries.map((entry) => (
+                        {entries.map((entry) => (
                             <li key={entry.definitionId}>
                                 <button
                                     type="button"
                                     className="shop-overlay__deck-card"
-                                    onClick={() => confirmRemove(entry.definitionId)}
+                                    onClick={() => confirmPick(entry.definitionId)}
                                 >
                                     <span>{entry.label}</span>
                                     <span className="shop-overlay__deck-count">×{entry.count}</span>
@@ -138,8 +173,8 @@ export const ShopOverlay = ({
                         className="shop-overlay__continue"
                         onClick={() =>
                         {
-                            setRemoving(false);
-                            setRemoveOffer(null);
+                            setPicking(null);
+                            setActiveOffer(null);
                         }}
                     >
                         Cancel
@@ -172,7 +207,9 @@ export const ShopOverlay = ({
                         const unaffordable = gold < offer.price;
                         const healFull = offer.kind === 'heal' && playerHealth >= maxHealth;
                         const emptyDeck = offer.kind === 'remove-card' && deck.length === 0;
-                        const disabled = bought || unaffordable || healFull || emptyDeck;
+                        const noUpgrade = offer.kind === 'upgrade-card'
+                            && listUpgradableCardsInDeck(deck).length === 0;
+                        const disabled = bought || unaffordable || healFull || emptyDeck || noUpgrade;
 
                         return (
                             <li key={offer.id}>

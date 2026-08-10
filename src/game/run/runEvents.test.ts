@@ -20,7 +20,8 @@ describe('runEvents', () =>
         expect(getRunEvent('sign-matcher').title).toBe('Glyph Matcher');
         expect(getRunEvent('healing-spring').title).toBe('Stasis Patch');
         expect(getRunEvent('sign-matcher').choices).toHaveLength(1);
-        expect(getRunEvent('healing-spring').choices).toHaveLength(2);
+        expect(getRunEvent('wire-rats').choices).toHaveLength(3);
+        expect(getRunEvent('dead-drop').title).toBe('Dead Drop');
     });
 
     it('rolls events deterministically per node seed', () =>

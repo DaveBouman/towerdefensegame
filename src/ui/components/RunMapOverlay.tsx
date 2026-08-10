@@ -1,8 +1,6 @@
 import { useMemo } from 'react';
 import type { RunMap, RunMapNode } from '../../game/run/runMap';
 import { getMapNodeDisplay } from '../../game/run/mapNodeDisplay';
-import { getRunEvent } from '../../game/run/runEvents';
-import { EventIcon } from './EventIcon';
 import { NodeKindIcon } from './NodeKindIcon';
 
 const PAD_X = 0.09;
@@ -209,7 +207,6 @@ export const RunMapOverlay = ({
                     const isCompleted = completed.has(node.id);
                     const isAvailable = available.has(node.id);
                     const isCurrent = node.id === currentNodeId;
-                    const event = node.eventId ? getRunEvent(node.eventId) : undefined;
                     const { label, tooltipTitle, tooltipBody } = getMapNodeDisplay(node);
                     const classes = [ 'run-map__node', `run-map__node--${node.kind}` ];
 
@@ -234,9 +231,7 @@ export const RunMapOverlay = ({
                             }}
                         >
                             <span className="run-map__node-dot">
-                                {event
-                                    ? <EventIcon icon={event.icon} className="run-map__node-icon" />
-                                    : <NodeKindIcon kind={node.kind} className="run-map__node-icon" />}
+                                <NodeKindIcon kind={node.kind} className="run-map__node-icon" />
                             </span>
                             <span className="run-map__node-label">{label}</span>
                             <span className="run-map__tooltip" role="tooltip">

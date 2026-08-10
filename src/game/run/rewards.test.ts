@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { seedScope } from '../random/rng';
+import { getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
 import {
     getCardRewardWeight,
     scoreDeckArchetypes,
@@ -7,10 +8,12 @@ import {
 import {
     ELITE_REWARD_CARD_POOL,
     REWARD_CARD_POOL,
+    getCardTierOfferWeight,
     rewardForNodeKind,
     rollCardReward,
 } from './rewards';
 import { BODY_MOD_DEFINITIONS } from './bodyMods';
+import { upgradeFirstCardInDeck } from './cardUpgrades';
 import { rollShopOffers, SHOP_HEAL_AMOUNT, SHOP_PRICES } from './shop';
 
 describe('rewards', () =>
@@ -58,19 +61,37 @@ describe('rewards', () =>
         expect(getCardRewardWeight('poison', scores))
             .toBeGreaterThan(getCardRewardWeight('cinder', scores));
     });
+
+    it('favors higher tiers on later floors', () =>
+    {
+        expect(getCardTierOfferWeight(3, 3)).toBeGreaterThan(getCardTierOfferWeight(3, 1));
+        expect(getCardTierOfferWeight(1, 1)).toBeGreaterThan(getCardTierOfferWeight(1, 3));
+    });
+});
+
+describe('card upgrades', () =>
+{
+    it('upgrades the first matching deck copy', () =>
+    {
+        const next = upgradeFirstCardInDeck([ 'attack', 'defend', 'attack' ], 'attack');
+
+        expect(next).toEqual([ 'attack-plus', 'defend', 'attack' ]);
+        expect(getCardDefinitionOrThrow('attack-plus').label).toBe('Attack+');
+    });
 });
 
 describe('shop', () =>
 {
-    it('rolls seeded ripperdoc offers including heal and remove', () =>
+    it('rolls seeded ripperdoc offers including heal, remove, and upgrade', () =>
     {
         seedScope('shop-test', 'shop:n1-0');
-        const offers = rollShopOffers([]);
+        const offers = rollShopOffers([], [ 'attack', 'defend' ], 1);
 
         expect(offers.some((offer) => offer.kind === 'card')).toBe(true);
         expect(offers.some((offer) => offer.kind === 'body-mod')).toBe(true);
         expect(offers.some((offer) => offer.kind === 'heal' && offer.healAmount === SHOP_HEAL_AMOUNT)).toBe(true);
         expect(offers.some((offer) => offer.kind === 'remove-card' && offer.price === SHOP_PRICES.removeCard)).toBe(true);
+        expect(offers.some((offer) => offer.kind === 'upgrade-card' && offer.price === SHOP_PRICES.upgradeCard)).toBe(true);
     });
 
     it('replaces body-mod with an extra card when all mods are owned', () =>

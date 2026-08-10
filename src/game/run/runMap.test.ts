@@ -104,43 +104,25 @@ describe('runMap', () =>
         expect(semiBossRow.every((node) => node.reward?.kind === 'card' && node.reward.pool === 'elite')).toBe(true);
     });
 
-    it('assigns distinct events within the same column when possible', () =>
+    it('always places safehouses in the column before the warden', () =>
     {
-        seedScope('map-distinct', 'map');
+        seedScope('map-rest', 'map');
+        const map = generateRunMap();
+        const preBossRow = map.nodes.filter((node) => node.row === map.rows - 2);
+
+        expect(preBossRow.length).toBeGreaterThan(0);
+        expect(preBossRow.every((node) => node.kind === 'rest')).toBe(true);
+        expect(preBossRow.every((node) => node.enemyId === undefined)).toBe(true);
+    });
+
+    it('leaves signal nodes unresolved until the player visits', () =>
+    {
+        seedScope('map-signals', 'map');
         const map = generateRunMap();
         const eventNodes = map.nodes.filter((node) => node.kind === 'event');
 
-        if (eventNodes.length < 2)
-        {
-            return;
-        }
-
-        const byRow = new Map<number, string[]>();
-
-        for (const node of eventNodes)
-        {
-            const ids = byRow.get(node.row) ?? [];
-            ids.push(node.eventId!);
-            byRow.set(node.row, ids);
-        }
-
-        for (const ids of byRow.values())
-        {
-            if (ids.length > 1)
-            {
-                expect(new Set(ids).size).toBe(ids.length);
-            }
-        }
-    });
-
-    it('keeps event assignment deterministic per map seed', () =>
-    {
-        seedScope('stable-map', 'map');
-        const first = generateRunMap().nodes.filter((node) => node.kind === 'event').map((node) => node.eventId);
-
-        seedScope('stable-map', 'map');
-        const second = generateRunMap().nodes.filter((node) => node.kind === 'event').map((node) => node.eventId);
-
-        expect(second).toEqual(first);
+        expect(eventNodes.length).toBeGreaterThan(0);
+        expect(eventNodes.every((node) => node.eventId === undefined)).toBe(true);
+        expect(eventNodes.every((node) => node.enemyId === undefined)).toBe(true);
     });
 });

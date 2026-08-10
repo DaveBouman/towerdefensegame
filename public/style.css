@@ -1357,6 +1357,29 @@ html, body, #root {
     color: #ffb870;
 }
 
+.run-map__node--rest .run-map__node-dot {
+    background: radial-gradient(circle at 35% 30%, #1a3a2a 0%, #0d1f18 70%);
+    border-color: rgba(120, 220, 160, 0.55);
+    box-shadow: 0 0 12px rgba(80, 200, 130, 0.25);
+}
+
+.run-map__node--rest .run-map__node-icon {
+    filter: drop-shadow(0 0 4px rgba(120, 220, 160, 0.4));
+}
+
+.run-map__node--rest.run-map__node--available .run-map__node-dot {
+    border-color: rgba(140, 240, 180, 0.85);
+    box-shadow: 0 0 16px rgba(100, 230, 160, 0.45);
+}
+
+.run-map__node--rest .run-map__node-label {
+    color: #8ee8b0;
+}
+
+.rest-overlay .shop-overlay__panel {
+    border-color: rgba(120, 220, 160, 0.35);
+}
+
 @keyframes run-map-pulse {
     0%, 100% { box-shadow: 0 0 14px rgba(150, 120, 255, 0.5); }
     50% { box-shadow: 0 0 26px rgba(170, 150, 255, 0.9); }
@@ -1707,6 +1730,23 @@ html, body, #root {
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     color: #d8ccff;
+}
+
+.card-reward__card-tier {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #8aa0c8;
+}
+
+.card-reward__card-tier--2 {
+    color: #7ad4ff;
+}
+
+.card-reward__card-tier--3 {
+    color: #f0a030;
 }
 
 .card-reward__card-name {

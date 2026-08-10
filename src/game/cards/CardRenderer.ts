@@ -74,7 +74,7 @@ export const buildCardGraphic = (
         container.add(ownershipTint);
     }
 
-    const isCornerDefense = definition.id === 'corner-defense';
+    const isCornerDefense = definition.behaviorId === 'defend' && definition.cornerTurn === true;
     const arrowPos = isCornerDefense
         ? cornerEntryArrowPosition(card.arrow, width, height)
         : arrowLabelPosition(card.arrow, width, height);

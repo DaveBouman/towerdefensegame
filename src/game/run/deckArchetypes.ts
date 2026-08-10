@@ -1,4 +1,4 @@
-import { getCardDefinition } from '../cardGame/config/cardRegistry';
+import { getCardArchetypeBaseId, getCardDefinition } from '../cardGame/config/cardRegistry';
 
 /** Soft specializations the run can weave toward via rewards. */
 export type DeckArchetypeId = 'blade' | 'toxin' | 'heat' | 'bulwark';
@@ -12,19 +12,28 @@ const CARD_ARCHETYPE_WEIGHTS: Record<string, Partial<Record<DeckArchetypeId, num
     rupture: { blade: 1 },
     shiv: { blade: 1 },
     lacerate: { blade: 1 },
+    serration: { blade: 1 },
+    exsanguinate: { blade: 1 },
+    execution: { blade: 0.9 },
     salvage: { blade: 0.5 },
     poison: { toxin: 1 },
     miasma: { toxin: 1 },
+    neurotoxin: { toxin: 1 },
+    'black-ichor': { toxin: 1 },
     fire: { heat: 1 },
     cinder: { heat: 1 },
     scorch: { heat: 1 },
+    kindling: { heat: 1 },
+    'white-hot': { heat: 1 },
     defend: { bulwark: 0.35 },
     'defend-special': { bulwark: 0.7 },
     'defend-leap': { bulwark: 0.55 },
     'corner-defense': { bulwark: 0.6 },
     bulwark: { bulwark: 1 },
     bramble: { bulwark: 1 },
+    citadel: { bulwark: 1 },
     surge: { blade: 0.45, heat: 0.35 },
+    'amp-core': { blade: 0.4, heat: 0.5 },
     overclock: { blade: 0.4 },
     hardwire: { bulwark: 0.4 },
     patch: { bulwark: 0.25 },
@@ -68,7 +77,7 @@ export const scoreDeckArchetypes = (
             continue;
         }
 
-        const weights = CARD_ARCHETYPE_WEIGHTS[definitionId];
+        const weights = CARD_ARCHETYPE_WEIGHTS[getCardArchetypeBaseId(definitionId)];
 
         if (!weights)
         {
@@ -114,7 +123,7 @@ export const getCardRewardWeight = (
     scores: DeckArchetypeScores,
 ): number =>
 {
-    const tags = CARD_ARCHETYPE_WEIGHTS[definitionId];
+    const tags = CARD_ARCHETYPE_WEIGHTS[getCardArchetypeBaseId(definitionId)];
 
     if (!tags)
     {

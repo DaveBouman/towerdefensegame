@@ -53,8 +53,12 @@ Helpers: `getFloorForColumn`, `getFloorColumnRange`, `RUN_CONFIG.floorCount` in 
   **Warden** — except **Saboteur** (regular fights only) and **Warden**, which stay named. First column
   is always `enemy`; column 4 (row index 3) is always a **semi-boss** lieutenant fight
   (`smokebinder` / `saboteur`); last column is the `boss`; other middle columns are weighted-random
-  (`rollNodeKind`: 70% enemy, 20% event, 10% shop). **Event nodes** open `RunEventOverlay` (`runEvents.ts`) — wheel,
-  icon matcher (4×4 memory grid, 4 attempts), **combo trials** (damage puzzles), stasis patches, gambles, body mods.
+  (`rollNodeKind`: 70% enemy, 20% event, 10% shop). The column **before the Warden** is always **Safehouse**
+  (`rest` nodes): rest for 30% max integrity or free-upgrade one card (`RestOverlay`, `restSite.ts`).
+  **Signal nodes** resolve on visit (`signalEncounter.ts`):
+  first jack-in is always an encounter; each prior signal raises ambush chance into a regular street fight.
+  Encounters roll from `runEvents.ts` — wheel, matcher, combo trials, stasis patches, gambles, body mods,
+  dead drops, malware spikes, wire rats, and more. Map always shows the generic **Signal** label until you arrive.
 - **Ripperdoc shop** (`ShopOverlay`, `shop.ts`): seeded offers (`seedScope(seed, shop:<nodeId>)`) — buy a card, body mod, Integrity heal, or remove a card from the run deck. Spend creds; leave without buying is always available.
 - **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
 - **Deck persists and grows**: the run owns the deck as a list of card definition ids (`getDefaultDeckDefinitionIds`). Each battle builds instances from those ids (`buildDeckFromDefinitionIds`).
@@ -107,9 +111,10 @@ RunReward =
   - `pickCount > 1` → "pick two cards"
   - `rerollable: true` → reroll the offered choices (`CardRewardOverlay` already renders the button + `App` handles reroll)
   - add new `RunReward` kinds without touching existing handling.
-- Card choices come from `REWARD_CARD_POOL` / `ELITE_REWARD_CARD_POOL` via `rollCardReward(choiceCount, pool, deck)`.
-  Offers are **weighted by deck archetypes** (`deckArchetypes.ts`) so the run weaves you into blade / toxin / heat / bulwark based on what you already picked — no explicit class select.
-- Starter deck is a **neutral core** (attacks/defends/leaps + joker/echo/battle-mods). Specialty cards arrive through rewards/shop/events.
+- Card choices come from `REWARD_CARD_POOL` / `ELITE_REWARD_CARD_POOL` via `rollCardReward(choiceCount, pool, { deck, floor })`.
+  Offers are **weighted by deck archetypes** (`deckArchetypes.ts`) and **card tier vs floor** (later floors favor uncommon/rare).
+  Starter deck is a **neutral core**. Specialty cards arrive through rewards/shop/events.
+- Cards have **tiers** (1 common → 3 rare) and **upgrades** (`attack` → `attack-plus`). Ripperdoc **Chrome Grind** upgrades one deck card.
 
 When adding body mods: give body mods a modifier step that adjusts the `RunReward`
 before `rollCardReward`/display, or add a new `RunReward` kind + a case in `App`'s
@@ -275,7 +280,8 @@ remain as a fallback if a portrait fails to load.
 | Map layout / difficulty ramp | `src/game/run/runMap.ts` (`ROW_SIZES`, `ROW_ENEMY_POOLS`, `RUN_CONFIG`) |
 | Map node kinds / icons / tooltips | `src/game/run/nodeKinds.ts` (kinds, weights, tooltip copy), `src/ui/components/NodeKindIcon.tsx` |
 | Shop / event node behavior | `ShopOverlay.tsx`, `shop.ts`, `RunEventOverlay.tsx`, `runEvents.ts`, `runPuzzles.ts`, `PuzzleHud.tsx`, `PuzzleResultOverlay.tsx`; `App.tsx` `visit`/`puzzle` phases |
-| Rewards / reward pool / body-mod hooks | `src/game/run/rewards.ts` (`rewardForNodeKind`, elite pool, deck-weighted `rollCardReward`), `deckArchetypes.ts` |
+| Rewards / reward pool / body-mod hooks | `src/game/run/rewards.ts` (`rewardForNodeKind`, tier×floor weights, deck-weighted `rollCardReward`), `deckArchetypes.ts` |
+| Card tiers / upgrades | `cards.json` (`tier`, `upgrade`); materialize `*-plus` in `cardRegistry.ts`; shop via `cardUpgrades.ts` |
 | Body mods (stats + playstyle) | `src/game/run/bodyMods.ts` — Venom Latch / Razor Feed / Carapace Weave / Pyre Link / Hemorrhage Coil change combat; chrome-heart etc. are economy/stats |
 | Persistent run deck | `getDefaultDeckDefinitionIds` / `buildDeckFromDefinitionIds` in `buildPlayerDeck.ts` (neutral starter; specialties from rewards) |
 | Map / run visuals | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`, `ShopOverlay.tsx`; `.run-map*` / `.run-end*` / `.card-reward*` / `.shop-overlay*` in `public/style.css` |
@@ -299,6 +305,9 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-10 | **Pre-boss safehouse.** The column before the Warden is always Safehouse nodes: rest (30% max HP) or free card upgrade — pick one. |
+| 2026-08-10 | **Signal ambushes + new encounters.** First signal is always an event; repeat signals escalate ambush chance into street fights. Five new encounters: Dead Drop, Signal Echo, Malware Spike, Data Shrine, Wire Rats. Outcomes resolve on visit (map stays generic Signal). |
+| 2026-08-10 | **Card tiers, upgrades, stronger specialties.** Cards have tier 1–3; rewards bias higher tiers on later floors. Most cards upgrade to `*-plus` at Ripperdoc (Chrome Grind). New mid/rare cards: Neurotoxin, Black Ichor, Serration, Exsanguinate, Kindling, White-Hot, Citadel, Execution, Amp Core. |
 | 2026-08-10 | **Build weave + playstyle chrome.** Starter deck is a neutral core. Card rewards/shop/events weight toward the deck’s emerging lane (`deckArchetypes` → blade/toxin/heat/bulwark). New body mods: Venom Latch (×2 poison), Razor Feed (+2 damage), Carapace Weave (+50% armor), Pyre Link (fire ×1.5), Hemorrhage Coil (bleed ×1.5). |
 | 2026-08-10 | **Craftpix UI icons.** Replaced game-icons.net SVGs with Craftpix cyberpunk PNGs (`public/assets/ui-icons/`) for card behaviors, passives, intents, traits, map nodes, and events. Avatar packs remain for enemy portraits. |
 | 2026-08-10 | **Enemy portrait presentation.** Portraits fill the target frame; HP/shield chrome sits under the art (no text over the face). Larger panel; accent on frame only. |

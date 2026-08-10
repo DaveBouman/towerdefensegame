@@ -88,6 +88,11 @@ const EVENT_POOL: readonly (readonly [string, number])[] = [
     [ 'healing-spring', 2 ],
     [ 'cursed-idol', 2 ],
     [ 'gambler-offer', 2 ],
+    [ 'dead-drop', 2 ],
+    [ 'signal-echo', 2 ],
+    [ 'malware-spike', 2 ],
+    [ 'data-shrine', 2 ],
+    [ 'wire-rats', 2 ],
 ];
 
 const WHEEL_SEGMENT_LIST: readonly WheelSegment[] = [
@@ -239,6 +244,135 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
             },
         ],
     },
+    'dead-drop': {
+        id: 'dead-drop',
+        title: 'Dead Drop',
+        intro: 'A burst packet leaves creds in a wall cache — fuse malware tags the payload.',
+        icon: 'gold',
+        choices: [
+            {
+                id: 'take',
+                label: 'Crack the Cache',
+                description: 'Gain 25 creds, but a Fuse is added to your deck.',
+                icon: 'gold',
+                effects: [
+                    { kind: 'gold', amount: 25 },
+                    { kind: 'add-curse', cardId: 'fuse', count: 1 },
+                ],
+            },
+            {
+                id: 'leave',
+                label: 'Leave It',
+                description: 'Walk away clean.',
+                icon: 'coin',
+                effects: [],
+            },
+        ],
+    },
+    'signal-echo': {
+        id: 'signal-echo',
+        title: 'Signal Echo',
+        intro: 'The ping returns twice — once as warmth, once as cred chime.',
+        icon: 'heal',
+        choices: [
+            {
+                id: 'patch',
+                label: 'Take the Patch',
+                description: 'Restore 10 HP.',
+                icon: 'heal',
+                effects: [ { kind: 'heal', amount: 10 } ],
+            },
+            {
+                id: 'siphon',
+                label: 'Siphon Creds',
+                description: 'Gain 14 creds.',
+                icon: 'gold',
+                effects: [ { kind: 'gold', amount: 14 } ],
+            },
+        ],
+    },
+    'malware-spike': {
+        id: 'malware-spike',
+        title: 'Malware Spike',
+        intro: 'Black ICE lashes out of the signal — creds scatter if you can soak the hit.',
+        icon: 'trap',
+        choices: [
+            {
+                id: 'ride',
+                label: 'Ride the Spike',
+                description: 'Take 10 damage and grab 30 creds.',
+                icon: 'gold',
+                effects: [
+                    { kind: 'damage', amount: 10 },
+                    { kind: 'gold', amount: 30 },
+                ],
+            },
+            {
+                id: 'disconnect',
+                label: 'Hard Disconnect',
+                description: 'Drop the line with no payout.',
+                icon: 'shield',
+                effects: [],
+            },
+        ],
+    },
+    'data-shrine': {
+        id: 'data-shrine',
+        title: 'Data Shrine',
+        intro: 'A quiet node hums with archived vitals — pay for a full restore or take a trickle free.',
+        icon: 'spring',
+        choices: [
+            {
+                id: 'premium',
+                label: 'Premium Sync',
+                description: 'Restore 14 HP for 12 creds (or all you carry).',
+                icon: 'heal',
+                effects: [
+                    { kind: 'heal', amount: 14 },
+                    { kind: 'lose-gold', amount: 12 },
+                ],
+            },
+            {
+                id: 'trickle',
+                label: 'Trickle Feed',
+                description: 'Restore 5 HP for free.',
+                icon: 'heal',
+                effects: [ { kind: 'heal', amount: 5 } ],
+            },
+        ],
+    },
+    'wire-rats': {
+        id: 'wire-rats',
+        title: 'Wire Rats',
+        intro: 'Scrap-code vermin chew your deck lines. Pay them off or eat the bite.',
+        icon: 'skull',
+        choices: [
+            {
+                id: 'feed',
+                label: 'Feed the Rats',
+                description: 'Take 6 damage and receive a random card.',
+                icon: 'card',
+                effects: [
+                    { kind: 'damage', amount: 6 },
+                    { kind: 'add-card', cardId: '__random__' },
+                ],
+            },
+            {
+                id: 'pay',
+                label: 'Pay Them Off',
+                description: 'Lose 8 creds (or all you carry).',
+                icon: 'coin',
+                effects: [ { kind: 'lose-gold', amount: 8 } ],
+            },
+            {
+                id: 'run',
+                label: 'Cut the Line',
+                description: 'Take 4 damage and leave.',
+                icon: 'trap',
+                effects: [ { kind: 'damage', amount: 4 } ],
+            },
+        ],
+    },
 };
 
 /** Weighted-random event id (caller must seed first). */
@@ -292,7 +426,7 @@ export const buildIconMatchGrid = (): IconMatchGrid =>
 };
 
 const resolveRandomCard = (deckDefinitionIds: readonly string[]): string =>
-    rollCardReward(1, 'standard', deckDefinitionIds)[0] ?? 'attack';
+    rollCardReward(1, 'standard', { deckDefinitionIds, floor: 2 })[0] ?? 'attack';
 
 const resolveRandomBodyMod = (ownedBodyMods: readonly string[]): string | null =>
     rollBodyModReward(ownedBodyMods);

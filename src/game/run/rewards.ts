@@ -1,5 +1,5 @@
 import { pickWeighted } from '../random/rng';
-import { getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
+import { getCardDefinitionOrThrow, type CardTier } from '../cardGame/config/cardRegistry';
 import { getCardRewardWeight, scoreDeckArchetypes } from './deckArchetypes';
 import type { RunMapNodeKind } from './nodeKinds';
 
@@ -69,9 +69,9 @@ export const rewardForNodeKind = (kind: RunMapNodeKind): RunReward | undefined =
 
 /** Shown on battle victory card rewards. */
 export const BATTLE_REWARD_RULES: readonly string[] = [
-    'Three cards are offered — biased toward the specialty your deck is already leaning into.',
+    'Three cards are offered — biased toward your deck’s specialty, with higher tiers later in the run.',
     'Select one card to add to your deck, or continue without taking a card.',
-    'Your choice is permanent for the rest of the run.',
+    'Upgrade copies at the Ripperdoc. Your choices are permanent for the rest of the run.',
 ];
 
 /** Shown on combo-trial briefs and reward screens. */
@@ -83,7 +83,7 @@ export const PUZZLE_TRIAL_RULES: readonly string[] = [
     'Pass: pick one reward card (or none). Fail: take damage.',
 ];
 
-/** Card definition ids eligible to be offered as battle rewards. */
+/** Base (unupgraded) cards eligible as battle rewards. */
 export const REWARD_CARD_POOL: readonly string[] = [
     'attack',
     'defend',
@@ -105,6 +105,15 @@ export const REWARD_CARD_POOL: readonly string[] = [
     'lacerate',
     'scorch',
     'bramble',
+    'neurotoxin',
+    'serration',
+    'kindling',
+    'black-ichor',
+    'exsanguinate',
+    'white-hot',
+    'citadel',
+    'execution',
+    'amp-core',
     'glitch',
     'hardwire',
     'patch',
@@ -134,6 +143,15 @@ export const ELITE_REWARD_CARD_POOL: readonly string[] = [
     'lacerate',
     'scorch',
     'bramble',
+    'neurotoxin',
+    'serration',
+    'kindling',
+    'black-ichor',
+    'exsanguinate',
+    'white-hot',
+    'citadel',
+    'execution',
+    'amp-core',
     'glitch',
     'hardwire',
     'patch',
@@ -146,18 +164,48 @@ export const ELITE_REWARD_CARD_POOL: readonly string[] = [
 const poolForId = (poolId: RewardPoolId = 'standard'): readonly string[] =>
     poolId === 'elite' ? ELITE_REWARD_CARD_POOL : REWARD_CARD_POOL;
 
+/** Relative weight for a card tier given the current floor (1–3). */
+export const getCardTierOfferWeight = (tier: CardTier, floor: number): number =>
+{
+    const clampedFloor = Math.max(1, Math.min(3, Math.round(floor)));
+
+    if (clampedFloor <= 1)
+    {
+        return tier === 1 ? 3.2 : tier === 2 ? 1.15 : 0.28;
+    }
+
+    if (clampedFloor === 2)
+    {
+        return tier === 1 ? 1.1 : tier === 2 ? 2.6 : 1.35;
+    }
+
+    return tier === 1 ? 0.45 : tier === 2 ? 1.55 : 3.4;
+};
+
+export interface RollCardRewardOptions {
+    deckDefinitionIds?: readonly string[];
+    /** Logical run floor (1–3). Higher floors favor higher card tiers. */
+    floor?: number;
+}
+
 /**
- * Picks `choiceCount` distinct card definition ids from the pool.
- * When `deckDefinitionIds` is provided, offers weave toward the deck's emerging specialty.
+ * Picks `choiceCount` distinct base card ids from the pool.
+ * Biased by deck specialty and run floor (later → rarer / stronger).
  */
 export const rollCardReward = (
     choiceCount: number,
     poolId: RewardPoolId = 'standard',
-    deckDefinitionIds: readonly string[] = [],
+    deckOrOptions: readonly string[] | RollCardRewardOptions = [],
 ): string[] =>
 {
+    const options: RollCardRewardOptions = Array.isArray(deckOrOptions)
+        ? { deckDefinitionIds: deckOrOptions }
+        : deckOrOptions;
+    const deckDefinitionIds = options.deckDefinitionIds ?? [];
+    const floor = options.floor ?? 1;
     const pool = [ ...poolForId(poolId) ];
     const scores = scoreDeckArchetypes(deckDefinitionIds);
+    const eliteBias = poolId === 'elite' ? 1.35 : 1;
     const picks: string[] = [];
     const count = Math.max(0, Math.min(choiceCount, pool.length));
 
@@ -170,10 +218,15 @@ export const rollCardReward = (
             break;
         }
 
-        const pick = pickWeighted(
-            remaining,
-            (id) => getCardRewardWeight(id, scores),
-        );
+        const pick = pickWeighted(remaining, (id) =>
+        {
+            const definition = getCardDefinitionOrThrow(id);
+            const specialty = getCardRewardWeight(id, scores);
+            const tierWeight = getCardTierOfferWeight(definition.tier, floor);
+            const rareEliteBoost = poolId === 'elite' && definition.tier >= 3 ? eliteBias : 1;
+
+            return specialty * tierWeight * rareEliteBoost;
+        });
 
         picks.push(pick);
     }
@@ -198,6 +251,15 @@ const CARD_BLURBS: Record<string, string> = {
     lacerate: 'Lunge + bleed — skip a tile and stack attack bonuses.',
     scorch: 'Corner fire — hooks around a bend while igniting alternation.',
     bramble: 'Corner fortify — bends the chain while stacking defend bonuses.',
+    neurotoxin: 'Stronger poison trail — denser stacks on subsequent defends.',
+    'black-ichor': 'Rare diagonal toxin — heavy poison payload from off-axis routes.',
+    serration: 'Bleed engine — fat attack that scales with long attack chains.',
+    exsanguinate: 'Rare lunge bleed — skip a tile and tear open big bleed payoffs.',
+    kindling: 'Hotter fire starter — stronger alternation fuel.',
+    'white-hot': 'Rare corner fire — bend the chain while detonating alternation.',
+    citadel: 'Rare fortify wall — big armor from long defend chains.',
+    execution: 'Rare finish — huge hit, exhausts, heals hard on kill.',
+    'amp-core': 'Rare overload core — pays off when the chain is packed with skills.',
     glitch: 'Enemy attack -10% for the rest of the energy round (until energy refills).',
     hardwire: 'Shield gained +10% from defend cards and armor effects.',
     patch: 'Damage taken -10% from enemy attacks and reflect damage.',
@@ -212,17 +274,20 @@ export interface CardRewardDisplay {
     label: string;
     power: number;
     blurb: string;
+    tier: CardTier;
 }
 
 /** Resolves display data for a card offered as a reward. */
 export const describeCardReward = (definitionId: string): CardRewardDisplay =>
 {
     const definition = getCardDefinitionOrThrow(definitionId);
+    const baseId = definition.upgradeOf ?? definitionId;
 
     return {
         definitionId,
         label: definition.label,
         power: definition.power,
-        blurb: CARD_BLURBS[definitionId] ?? definition.label,
+        blurb: CARD_BLURBS[baseId] ?? definition.label,
+        tier: definition.tier,
     };
 };

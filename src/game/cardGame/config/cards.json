@@ -6,7 +6,11 @@
       "power": 5,
       "behaviorId": "attack",
       "visualId": "attack",
-      "arrowPool": "orthogonal"
+      "arrowPool": "orthogonal",
+      "tier": 1,
+      "upgrade": {
+        "power": 8
+      }
     },
     {
       "id": "defend",
@@ -14,7 +18,11 @@
       "power": 3,
       "behaviorId": "defend",
       "visualId": "defend",
-      "arrowPool": "orthogonal"
+      "arrowPool": "orthogonal",
+      "tier": 1,
+      "upgrade": {
+        "power": 5
+      }
     },
     {
       "id": "attack-special",
@@ -23,7 +31,11 @@
       "behaviorId": "attack",
       "visualId": "attack",
       "arrowPool": "diagonal",
-      "maxChainActivations": 2
+      "maxChainActivations": 2,
+      "tier": 2,
+      "upgrade": {
+        "power": 9
+      }
     },
     {
       "id": "attack-leap",
@@ -32,7 +44,11 @@
       "behaviorId": "attack",
       "visualId": "attack",
       "arrowPool": "orthogonal",
-      "chainStepDistance": 2
+      "chainStepDistance": 2,
+      "tier": 1,
+      "upgrade": {
+        "power": 7
+      }
     },
     {
       "id": "defend-special",
@@ -40,7 +56,11 @@
       "power": 5,
       "behaviorId": "defend",
       "visualId": "defend",
-      "arrowPool": "diagonal"
+      "arrowPool": "diagonal",
+      "tier": 2,
+      "upgrade": {
+        "power": 7
+      }
     },
     {
       "id": "defend-leap",
@@ -49,7 +69,11 @@
       "behaviorId": "defend",
       "visualId": "defend",
       "arrowPool": "orthogonal",
-      "chainStepDistance": 2
+      "chainStepDistance": 2,
+      "tier": 1,
+      "upgrade": {
+        "power": 5
+      }
     },
     {
       "id": "joker",
@@ -58,7 +82,11 @@
       "behaviorId": "joker",
       "visualId": "joker",
       "arrowPool": "joker",
-      "chainStepDistance": 2
+      "chainStepDistance": 2,
+      "tier": 1,
+      "upgrade": {
+        "chainStepDistance": 3
+      }
     },
     {
       "id": "loop-reset",
@@ -66,7 +94,9 @@
       "power": 0,
       "behaviorId": "loop-reset",
       "visualId": "loop-reset",
-      "arrowPool": "orthogonal"
+      "arrowPool": "orthogonal",
+      "tier": 1,
+      "noUpgrade": true
     },
     {
       "id": "poison",
@@ -75,7 +105,13 @@
       "behaviorId": "poison",
       "visualId": "poison",
       "arrowPool": "orthogonal",
-      "chainAbilityIds": [ "poison-trail" ]
+      "chainAbilityIds": [
+        "poison-trail"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 2
+      }
     },
     {
       "id": "fire",
@@ -84,7 +120,13 @@
       "behaviorId": "fire",
       "visualId": "fire",
       "arrowPool": "orthogonal",
-      "chainAbilityIds": [ "fire-alternation" ]
+      "chainAbilityIds": [
+        "fire-alternation"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 7
+      }
     },
     {
       "id": "hazard",
@@ -92,7 +134,9 @@
       "power": 4,
       "behaviorId": "hazard",
       "visualId": "hazard",
-      "arrowPool": "orthogonal"
+      "arrowPool": "orthogonal",
+      "tier": 1,
+      "noUpgrade": true
     },
     {
       "id": "boost",
@@ -100,7 +144,9 @@
       "power": 0,
       "behaviorId": "boost",
       "visualId": "boost",
-      "arrowPool": "orthogonal"
+      "arrowPool": "orthogonal",
+      "tier": 1,
+      "noUpgrade": true
     },
     {
       "id": "rupture",
@@ -109,7 +155,13 @@
       "behaviorId": "attack",
       "visualId": "attack",
       "arrowPool": "orthogonal",
-      "chainAbilityIds": [ "bleed" ]
+      "chainAbilityIds": [
+        "bleed"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 8
+      }
     },
     {
       "id": "bulwark",
@@ -118,7 +170,13 @@
       "behaviorId": "defend",
       "visualId": "defend",
       "arrowPool": "orthogonal",
-      "chainAbilityIds": [ "fortify" ]
+      "chainAbilityIds": [
+        "fortify"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 6
+      }
     },
     {
       "id": "surge",
@@ -127,7 +185,13 @@
       "behaviorId": "attack",
       "visualId": "fire",
       "arrowPool": "diagonal",
-      "chainAbilityIds": [ "overload" ]
+      "chainAbilityIds": [
+        "overload"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 6
+      }
     },
     {
       "id": "corner-strike",
@@ -136,7 +200,11 @@
       "behaviorId": "attack",
       "visualId": "attack",
       "arrowPool": "orthogonal",
-      "cornerTurn": true
+      "cornerTurn": true,
+      "tier": 2,
+      "upgrade": {
+        "power": 8
+      }
     },
     {
       "id": "corner-defense",
@@ -145,7 +213,11 @@
       "behaviorId": "defend",
       "visualId": "defend",
       "arrowPool": "orthogonal",
-      "cornerTurn": true
+      "cornerTurn": true,
+      "tier": 2,
+      "upgrade": {
+        "power": 7
+      }
     },
     {
       "id": "burden",
@@ -155,7 +227,9 @@
       "visualId": "curse",
       "arrowPool": "orthogonal",
       "nonRerollable": true,
-      "handEndPenalty": 5
+      "handEndPenalty": 5,
+      "tier": 1,
+      "noUpgrade": true
     },
     {
       "id": "fuse",
@@ -164,7 +238,12 @@
       "behaviorId": "attack",
       "visualId": "fuse",
       "arrowPool": "orthogonal",
-      "handEndPenalty": 8
+      "handEndPenalty": 8,
+      "tier": 1,
+      "upgrade": {
+        "power": 4,
+        "handEndPenalty": 5
+      }
     },
     {
       "id": "courier",
@@ -174,7 +253,11 @@
       "visualId": "courier",
       "arrowPool": "orthogonal",
       "discardFromHandOnPlay": 2,
-      "exhaustOnPlay": true
+      "exhaustOnPlay": true,
+      "tier": 2,
+      "upgrade": {
+        "discardFromHandOnPlay": 1
+      }
     },
     {
       "id": "shiv",
@@ -183,7 +266,13 @@
       "behaviorId": "attack",
       "visualId": "shiv",
       "arrowPool": "diagonal",
-      "chainAbilityIds": [ "bleed" ]
+      "chainAbilityIds": [
+        "bleed"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 6
+      }
     },
     {
       "id": "miasma",
@@ -192,7 +281,13 @@
       "behaviorId": "poison",
       "visualId": "miasma",
       "arrowPool": "diagonal",
-      "chainAbilityIds": [ "poison-trail" ]
+      "chainAbilityIds": [
+        "poison-trail"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 3
+      }
     },
     {
       "id": "cinder",
@@ -201,7 +296,13 @@
       "behaviorId": "fire",
       "visualId": "cinder",
       "arrowPool": "diagonal",
-      "chainAbilityIds": [ "fire-alternation" ]
+      "chainAbilityIds": [
+        "fire-alternation"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 6
+      }
     },
     {
       "id": "lacerate",
@@ -211,7 +312,13 @@
       "visualId": "lacerate",
       "arrowPool": "orthogonal",
       "chainStepDistance": 2,
-      "chainAbilityIds": [ "bleed" ]
+      "chainAbilityIds": [
+        "bleed"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 7
+      }
     },
     {
       "id": "scorch",
@@ -221,7 +328,13 @@
       "visualId": "scorch",
       "arrowPool": "orthogonal",
       "cornerTurn": true,
-      "chainAbilityIds": [ "fire-alternation" ]
+      "chainAbilityIds": [
+        "fire-alternation"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 9
+      }
     },
     {
       "id": "bramble",
@@ -231,7 +344,13 @@
       "visualId": "bramble",
       "arrowPool": "orthogonal",
       "cornerTurn": true,
-      "chainAbilityIds": [ "fortify" ]
+      "chainAbilityIds": [
+        "fortify"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 6
+      }
     },
     {
       "id": "glitch",
@@ -240,7 +359,17 @@
       "behaviorId": "battle-mod",
       "visualId": "glitch",
       "arrowPool": "orthogonal",
-      "battleModifier": { "stat": "enemy-attack", "delta": -0.1 }
+      "battleModifier": {
+        "stat": "enemy-attack",
+        "delta": -0.1
+      },
+      "tier": 1,
+      "upgrade": {
+        "battleModifier": {
+          "stat": "enemy-attack",
+          "delta": -0.15
+        }
+      }
     },
     {
       "id": "hardwire",
@@ -249,7 +378,17 @@
       "behaviorId": "battle-mod",
       "visualId": "hardwire",
       "arrowPool": "orthogonal",
-      "battleModifier": { "stat": "player-armor", "delta": 0.1 }
+      "battleModifier": {
+        "stat": "player-armor",
+        "delta": 0.1
+      },
+      "tier": 1,
+      "upgrade": {
+        "battleModifier": {
+          "stat": "player-armor",
+          "delta": 0.15
+        }
+      }
     },
     {
       "id": "patch",
@@ -258,7 +397,17 @@
       "behaviorId": "battle-mod",
       "visualId": "patch",
       "arrowPool": "orthogonal",
-      "battleModifier": { "stat": "player-damage-taken", "delta": -0.1 }
+      "battleModifier": {
+        "stat": "player-damage-taken",
+        "delta": -0.1
+      },
+      "tier": 1,
+      "upgrade": {
+        "battleModifier": {
+          "stat": "player-damage-taken",
+          "delta": -0.15
+        }
+      }
     },
     {
       "id": "overclock",
@@ -267,7 +416,17 @@
       "behaviorId": "battle-mod",
       "visualId": "overclock",
       "arrowPool": "orthogonal",
-      "battleModifier": { "stat": "player-damage-dealt", "delta": 0.1 }
+      "battleModifier": {
+        "stat": "player-damage-dealt",
+        "delta": 0.1
+      },
+      "tier": 1,
+      "upgrade": {
+        "battleModifier": {
+          "stat": "player-damage-dealt",
+          "delta": 0.15
+        }
+      }
     },
     {
       "id": "echo",
@@ -275,7 +434,9 @@
       "power": 0,
       "behaviorId": "echo",
       "visualId": "echo",
-      "arrowPool": "orthogonal"
+      "arrowPool": "orthogonal",
+      "tier": 1,
+      "upgrade": {}
     },
     {
       "id": "salvage",
@@ -285,7 +446,149 @@
       "visualId": "salvage",
       "arrowPool": "orthogonal",
       "exhaustOnPlay": true,
-      "healOnKill": 5
+      "healOnKill": 5,
+      "tier": 2,
+      "upgrade": {
+        "power": 6,
+        "healOnKill": 8
+      }
+    },
+    {
+      "id": "neurotoxin",
+      "label": "Neurotoxin",
+      "power": 3,
+      "behaviorId": "poison",
+      "visualId": "poison",
+      "arrowPool": "orthogonal",
+      "chainAbilityIds": [
+        "poison-trail"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 4
+      }
+    },
+    {
+      "id": "black-ichor",
+      "label": "Black Ichor",
+      "power": 4,
+      "behaviorId": "poison",
+      "visualId": "miasma",
+      "arrowPool": "diagonal",
+      "chainAbilityIds": [
+        "poison-trail"
+      ],
+      "tier": 3,
+      "upgrade": {
+        "power": 5
+      }
+    },
+    {
+      "id": "serration",
+      "label": "Serration",
+      "power": 7,
+      "behaviorId": "attack",
+      "visualId": "shiv",
+      "arrowPool": "orthogonal",
+      "chainAbilityIds": [
+        "bleed"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 9
+      }
+    },
+    {
+      "id": "exsanguinate",
+      "label": "Exsanguinate",
+      "power": 8,
+      "behaviorId": "attack",
+      "visualId": "lacerate",
+      "arrowPool": "orthogonal",
+      "chainStepDistance": 2,
+      "chainAbilityIds": [
+        "bleed"
+      ],
+      "tier": 3,
+      "upgrade": {
+        "power": 10
+      }
+    },
+    {
+      "id": "kindling",
+      "label": "Kindling",
+      "power": 6,
+      "behaviorId": "fire",
+      "visualId": "cinder",
+      "arrowPool": "orthogonal",
+      "chainAbilityIds": [
+        "fire-alternation"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 8
+      }
+    },
+    {
+      "id": "white-hot",
+      "label": "White-Hot",
+      "power": 8,
+      "behaviorId": "fire",
+      "visualId": "scorch",
+      "arrowPool": "orthogonal",
+      "cornerTurn": true,
+      "chainAbilityIds": [
+        "fire-alternation"
+      ],
+      "tier": 3,
+      "upgrade": {
+        "power": 10
+      }
+    },
+    {
+      "id": "citadel",
+      "label": "Citadel",
+      "power": 6,
+      "behaviorId": "defend",
+      "visualId": "bramble",
+      "arrowPool": "orthogonal",
+      "chainAbilityIds": [
+        "fortify"
+      ],
+      "tier": 3,
+      "upgrade": {
+        "power": 8
+      }
+    },
+    {
+      "id": "execution",
+      "label": "Execution",
+      "power": 10,
+      "behaviorId": "attack",
+      "visualId": "salvage",
+      "arrowPool": "orthogonal",
+      "exhaustOnPlay": true,
+      "healOnKill": 10,
+      "tier": 3,
+      "upgrade": {
+        "power": 13,
+        "healOnKill": 14
+      }
+    },
+    {
+      "id": "amp-core",
+      "label": "Amp Core",
+      "power": 5,
+      "behaviorId": "attack",
+      "visualId": "fire",
+      "arrowPool": "diagonal",
+      "chainAbilityIds": [
+        "overload"
+      ],
+      "tier": 3,
+      "upgrade": {
+        "power": 7
+      }
     }
   ]
 }

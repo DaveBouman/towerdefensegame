@@ -1,8 +1,9 @@
 import { pickRandom } from '../random/rng';
 import { getBodyModDefinition, rollBodyModReward } from './bodyMods';
+import { listUpgradableCardsInDeck } from './cardUpgrades';
 import { describeCardReward, rollCardReward } from './rewards';
 
-export type ShopOfferKind = 'card' | 'body-mod' | 'heal' | 'remove-card';
+export type ShopOfferKind = 'card' | 'body-mod' | 'heal' | 'remove-card' | 'upgrade-card';
 
 export interface ShopOffer {
     id: string;
@@ -23,6 +24,7 @@ export const SHOP_PRICES = {
     bodyMod: 80,
     heal: 35,
     removeCard: 50,
+    upgradeCard: 60,
 } as const;
 
 export const SHOP_HEAL_AMOUNT = 22;
@@ -34,9 +36,10 @@ export const SHOP_HEAL_AMOUNT = 22;
 export const rollShopOffers = (
     ownedBodyMods: readonly string[],
     deckDefinitionIds: readonly string[] = [],
+    floor = 1,
 ): ShopOffer[] =>
 {
-    const cardId = rollCardReward(1, 'standard', deckDefinitionIds)[0]!;
+    const cardId = rollCardReward(1, 'standard', { deckDefinitionIds, floor })[0]!;
     const card = describeCardReward(cardId);
     const offers: ShopOffer[] = [
         {
@@ -44,7 +47,7 @@ export const rollShopOffers = (
             kind: 'card',
             price: SHOP_PRICES.card,
             label: card.label,
-            blurb: card.blurb,
+            blurb: `Tier ${card.tier}. ${card.blurb}`,
             cardId,
         },
         {
@@ -64,6 +67,17 @@ export const rollShopOffers = (
         },
     ];
 
+    if (listUpgradableCardsInDeck(deckDefinitionIds).length > 0)
+    {
+        offers.splice(1, 0, {
+            id: 'upgrade-card',
+            kind: 'upgrade-card',
+            price: SHOP_PRICES.upgradeCard,
+            label: 'Chrome Grind',
+            blurb: 'Upgrade one card in your deck (permanent for this run).',
+        });
+    }
+
     const bodyModId = rollBodyModReward(ownedBodyMods);
 
     if (bodyModId)
@@ -82,7 +96,8 @@ export const rollShopOffers = (
     else
     {
         // Already fully chrome'd — offer a second random card instead.
-        const extras = rollCardReward(4, 'standard', deckDefinitionIds).filter((id) => id !== cardId);
+        const extras = rollCardReward(4, 'standard', { deckDefinitionIds, floor })
+            .filter((id) => id !== cardId);
 
         if (extras.length > 0)
         {
@@ -94,7 +109,7 @@ export const rollShopOffers = (
                 kind: 'card',
                 price: SHOP_PRICES.card,
                 label: extra.label,
-                blurb: extra.blurb,
+                blurb: `Tier ${extra.tier}. ${extra.blurb}`,
                 cardId: extraId,
             });
         }

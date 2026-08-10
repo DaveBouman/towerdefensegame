@@ -5,7 +5,7 @@ import { random } from '../random/rng';
  * battles; `shop` and `event` are non-battle stops (behavior TBD — placeholder
  * for now). New kinds can be added here plus a case in `App`'s node handling.
  */
-export type RunMapNodeKind = 'enemy' | 'semi-boss' | 'boss' | 'shop' | 'event';
+export type RunMapNodeKind = 'enemy' | 'semi-boss' | 'boss' | 'shop' | 'event' | 'rest';
 
 export interface NodeKindInfo {
     label: string;
@@ -38,7 +38,12 @@ export const NODE_KIND_INFO: Record<RunMapNodeKind, NodeKindInfo> = {
     },
     event: {
         label: 'Signal',
-        tooltip: 'An unknown signal on the grid. Jack in to see what you find.',
+        tooltip: 'An unknown signal on the grid. Jack in for a random encounter — repeat pings may draw hostiles.',
+        isBattle: false,
+    },
+    rest: {
+        label: 'Safehouse',
+        tooltip: 'A quiet stasis pod before the Warden. Rest to recover integrity or grind one card upgrade.',
         isBattle: false,
     },
 };

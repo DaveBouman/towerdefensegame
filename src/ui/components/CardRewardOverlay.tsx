@@ -96,6 +96,9 @@ export const CardRewardOverlay = ({
                                 onClick={() => toggle(card.definitionId)}
                             >
                                 <span className="card-reward__card-power">{card.power}</span>
+                                <span className={`card-reward__card-tier card-reward__card-tier--${card.tier}`}>
+                                    {card.tier === 1 ? 'Common' : card.tier === 2 ? 'Uncommon' : 'Rare'}
+                                </span>
                                 <span className="card-reward__card-name">{card.label}</span>
                                 <span className="card-reward__card-blurb">{card.blurb}</span>
                             </button>
