@@ -305,6 +305,7 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-10 | **Audio polish.** Card/UI SFX retuned to crisp digital ticks (less noise/sub mud). BGM files tail-trimmed via `npm run trim-bgm` so loops skip the outro fade; playback uses simple `loop: true`. |
 | 2026-08-10 | **Background music.** Cyberpunk dubstep loops: *Glass Streets at Midnight* (run/map), *Concrete Veins* (combat/lieutenant/puzzles), *Last Gatekeeper* (Warden intro + boss fight). Crossfade between tracks; mute toggle covers BGM + SFX. Files in `public/assets/music/`. |
 | 2026-08-10 | **Sound effects.** Procedural placeholder WAVs (`scripts/generate-sfx.mjs`); Phaser audio wired for combat hits, card placement, chain steps, kills, shield/heal, map travel, rewards, shop, floor/boss intros, victory/defeat. Mute toggle (top-right); preference stored in localStorage. Replace assets per `public/assets/sfx/README.md` (Kenney CC0 recommended). |
 | 2026-08-10 | **Juice & tension pass (no audio yet).** Combat: camera shake, hitstop, tiered damage numbers, element hit bursts, variable chain timing, high-threat intent pulse. Run: map travel animation, staggered card rewards, floor banner, visit entry fades, victory heal toast, boss/lieutenant intro, low-HP vignette, clutch win callout. |

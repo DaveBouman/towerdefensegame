@@ -159,11 +159,38 @@ const sweep = (fromHz, toHz, duration, volume) =>
 
 const v = (n) => n * GAIN;
 
+/** Metallic shield tone — tonal FM like the original, with softer edges (not hit-crunch). */
+const softShieldTone = (duration, volume) =>
+    mix(
+        fm(210, 315, 1.1, duration * 0.9, volume * 0.5, 5),
+        fm(280, 420, 1.4, duration * 0.75, volume * 0.32, 7),
+        sine(165, duration, volume * 0.22, 4),
+        noise(duration * 0.12, volume * 0.05, 28),
+    );
+
+/** Card / UI — sharp digital transients, minimal noise mud. */
+const digitalTick = (freq, duration, volume) =>
+    mix(
+        sine(freq, duration * 0.35, volume, 38),
+        sine(freq * 1.498, duration * 0.22, volume * 0.45, 48),
+        fm(freq * 2.2, freq * 0.5, 1.2, duration * 0.28, volume * 0.3, 32),
+    );
+
+const cardSnap = (volume) =>
+    mix(
+        digitalTick(920, 0.022, volume),
+        digitalTick(1380, 0.016, volume * 0.55),
+        sine(2100, 0.01, volume * 0.12, 55),
+    );
+
 const SOUNDS = {
-    'ui-click': () => glitchBurst(0.035, v(0.32)),
-    'ui-select': () => mix(glitchBurst(0.04, v(0.28)), subThump(220, 0.03, v(0.18))),
-    'card-place': () => mix(subThump(130, 0.055, v(0.34)), crush(noise(0.035, v(0.22), 32), 5)),
-    'chain-step': () => mix(sweep(180, 420, 0.07, v(0.22)), subThump(90, 0.05, v(0.2))),
+    'ui-click': () => digitalTick(1040, 0.028, v(0.26)),
+    'ui-select': () => mix(digitalTick(780, 0.032, v(0.24)), digitalTick(1170, 0.02, v(0.14))),
+    'card-place': () => cardSnap(v(0.3)),
+    'chain-step': () => mix(
+        sweep(480, 980, 0.042, v(0.18)),
+        digitalTick(720, 0.028, v(0.16)),
+    ),
     'hit-light': () => noiseHit(0.09, v(0.42), 75),
     'hit-heavy': () => noiseHit(0.14, v(0.55), 48),
     'kill': () => concat(
@@ -171,20 +198,15 @@ const SOUNDS = {
         subThump(62, 0.09, v(0.42)),
         crush(mix(noise(0.1, v(0.35), 11), fm(140, 70, 2.5, 0.08, v(0.2), 9)), 4),
     ),
-    'shield': () => crush(mix(
-        noise(0.11, v(0.42), 10),
-        subThump(85, 0.09, v(0.38)),
-        fm(120, 60, 3, 0.07, v(0.22), 14),
-    ), 3),
+    'shield': () => crush(softShieldTone(0.11, v(0.3)), 7),
     'defend-proc': () => crush(mix(
-        noise(0.13, v(0.48), 8),
-        subThump(70, 0.11, v(0.45)),
-        fm(95, 47, 2.5, 0.09, v(0.28), 11),
-    ), 3),
+        softShieldTone(0.13, v(0.32)),
+        sine(130, 0.09, v(0.14), 3),
+    ), 7),
     'ability-cast': () => mix(
-        crush(mix(noise(0.09, v(0.38), 16), sweep(140, 520, 0.1, v(0.24)), fm(200, 100, 2, 0.08, v(0.2), 13)), 4),
-        subThump(110, 0.07, v(0.3)),
-        glitchBurst(0.04, v(0.22)),
+        sweep(320, 920, 0.075, v(0.2)),
+        fm(640, 320, 1.8, 0.055, v(0.18), 16),
+        digitalTick(990, 0.024, v(0.14)),
     ),
     'heal': () => concat(subThump(95, 0.06, v(0.22)), subThump(130, 0.08, v(0.24))),
     'enemy-hit': () => noiseHit(0.11, v(0.48), 52),

@@ -18,8 +18,8 @@ export const BGM_FILES: Record<BgmTrack, string> = {
     'last-gatekeeper': 'assets/music/last-gatekeeper.mp3',
 };
 
-/** Seconds trimmed from the end of each BGM loop (avoids tail silence / bad loop point). */
-export const BGM_LOOP_TRIM_SEC = 1;
+/** BGM files are tail-trimmed via `npm run trim-bgm` (see scripts/trim-bgm.mjs). */
+export const BGM_LOOP_TRIM_SEC = 0;
 
 /** Relative loudness vs SFX master (BGM sits under combat hits). */
 export const BGM_LEVEL: Record<BgmTrack, number> = {

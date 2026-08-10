@@ -8,6 +8,6 @@
 
 Tracks crossfade (~1.4s) when switching between exploration and combat. The mute button controls both music and SFX.
 
-Loop playback skips the last **1 second** of each file at runtime (see `BGM_LOOP_TRIM_SEC` in `bgmManifest.ts`) so tails/outros do not break the loop. To permanently trim files, cut 1s from the end in a DAW and replace these MP3s.
+Tracks crossfade (~1.4s) when switching between exploration and combat. Files are **tail-trimmed** (last ~5s removed) so loops stay tight — re-run `npm run trim-bgm` after replacing MP3s.
 
 Replace files here keeping the same names, or update `src/game/audio/bgmManifest.ts`.

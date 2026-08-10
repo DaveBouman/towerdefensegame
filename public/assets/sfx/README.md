@@ -30,8 +30,8 @@ Keep the same filenames so `src/game/audio/sfxManifest.ts` stays valid.
 | `hit-light.wav` / `hit-heavy.wav` | Player damage to enemies |
 | `enemy-hit.wav` | Damage to player |
 | `kill.wav` | Enemy defeated |
-| `shield.wav` | Armor absorbs damage (block) |
-| `defend-proc.wav` | Gaining armor from defend / ability |
+| `shield.wav` | Armor absorbs damage — soft metallic block (tonal, not hit-crunch) |
+| `defend-proc.wav` | Gaining armor — warm shield-up chime |
 | `ability-cast.wav` | Special cards: boost, echo, joker, fire/poison proc, battle-mod |
 | `heal.wav` | HP restored |
 | `map-travel.wav` | Travel to battle node |

@@ -174,10 +174,10 @@ export const playAbilityProcSfx = (visualId: string, abilityId?: string): void =
 
 export const playShieldAbsorbSfx = (): void =>
 {
-    playSfx('shield', { volume: 0.82, rate: 0.95 });
+    playSfx('shield', { volume: 0.78, rate: 0.92 });
 };
 
 export const playDefendProcSfx = (): void =>
 {
-    playSfx('defend-proc', { volume: 0.9 });
+    playSfx('defend-proc', { volume: 0.82, rate: 0.96 });
 };

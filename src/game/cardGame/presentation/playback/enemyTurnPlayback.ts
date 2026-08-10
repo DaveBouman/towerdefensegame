@@ -187,7 +187,7 @@ export function playEnemyTurnStep (
                 const shielded = session.resolveAllyShield(step.amount ?? 0, targetId);
                 targetView?.setHealth(shielded);
                 targetView?.showShieldGain(step.amount ?? 0);
-                playSfx('shield', { volume: 0.68 });
+                playSfx('shield', { volume: 0.68, rate: 0.92 });
             }
 
             enemySquad.syncFromSession(session);
@@ -205,7 +205,7 @@ export function playEnemyTurnStep (
 
             enemyView?.setHealth(enemy);
             enemyView?.showShieldGain(step.amount ?? 0);
-            playSfx('shield', { volume: 0.65 });
+            playSfx('shield', { volume: 0.68, rate: 0.92 });
         });
 
         scene.time.delayedCall(turnMs, () =>
