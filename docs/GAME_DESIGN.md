@@ -128,8 +128,9 @@ before `rollCardReward`/display, or add a new `RunReward` kind + a case in `App`
 ```
 index.html → src/main.tsx → App.tsx (run controller)
   ├── PhaserGame.tsx → src/game/main.ts → scenes/Game.ts
-  ├── MainMenuOverlay.tsx   (home / settings / how-to-play / credits / quit + card index)
+  ├── MainMenuOverlay.tsx   (home / settings / how-to-play / credits / quit + card index + bestiary)
   ├── CardCollectionOverlay.tsx (unlocked / locked card archive)
+  ├── BestiaryOverlay.tsx   (unlocked / locked enemy archive)
   ├── desktopBridge.ts      (`window.signalChainDesktop` quit/fullscreen hooks for Electron)
   ├── GameHud.tsx           (battle phase)
   ├── Tutorial.tsx          (first-run intro / coach / tip)
@@ -265,7 +266,7 @@ remain as a fallback if a portrait fails to load.
 #### Phase 3 — Meta (~1–2 weeks)
 
 - [x] Unlock system (cards) — `cardCollection.ts` + main-menu Card index; enemy unlocks later
-- [ ] Unlock system (enemies)
+- [x] Unlock system (enemies) — `enemyBestiary.ts` + main-menu Bestiary; unlocks on encounter
 - [x] Steam-ready main menu shell (settings / how-to-play / credits / quit + `signalChainDesktop` bridge)
 - [ ] Daily/weekly seeded challenge
 - [ ] Ascension modifiers (+enemy HP, −rerolls, faster enemy turns)
@@ -350,6 +351,7 @@ remain as a fallback if a portrait fails to load.
 | 2026-08-10 | **Chain start click target.** Column-0 tiles are clickable to set the attack start (no card from hand required). Empty cells use a full-tile hit; cards there tap-to-select / drag-to-move. All five START labels stay visible. |
 | 2026-08-10 | **Iron Gait battle BGM.** Added `iron-gait.mp3` as a second standard combat loop; non-boss fights alternate with *Concrete Veins* by path length so map↔battle crossfades feel less jarring. |
 | 2026-08-10 | **Chain-start arrow scale fix.** `setChainStartActive` no longer calls `setScale(1)` on SVG arrow images (that reset `setDisplaySize` back to the ~512px texture). |
+| 2026-08-10 | **Enemy bestiary.** Main menu / pause **Bestiary** logs hostiles on encounter (`enemyBestiary.ts`, localStorage). Locked entries show `???`; unlocked show portrait, role, stats, and passive/trait dossier. Training Dummy excluded. |
 | 2026-08-10 | **Main menu.** Boot opens on `menu` (`MainMenuOverlay`): set seed, mute/volume, then Start run. Digital map backdrop plays behind the menu. Victory/defeat offer Main menu or New run / Try again. |
 | 2026-08-10 | **Switchback card.** New attack card deals 2× resolved damage (`stepDamageMultiplier`) but cycles lock target to the next living enemy after it hits (`switchTargetAfterHit`). In reward/elite pools. |
 | 2026-08-10 | **First-round off-chain tip.** After dismissing the combat coach on the first battle, a popup explains that loose attack/defense cards on the board still grant off-chain bonuses (+2 damage / +2 armor from `gameRules.json`). |

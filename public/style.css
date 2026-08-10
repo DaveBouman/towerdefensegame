@@ -2551,6 +2551,59 @@ html, body, #root {
 }
 
 /* ---------------------------------------------------------------------------
+   Enemy bestiary (reuses card-collection chrome)
+   --------------------------------------------------------------------------- */
+
+.bestiary__grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+}
+
+.bestiary__item {
+    --bestiary-accent: #7af0ff;
+}
+
+.bestiary__item:hover,
+.bestiary__item.card-collection__item--selected {
+    border-color: color-mix(in srgb, var(--bestiary-accent) 55%, transparent);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--bestiary-accent) 22%, transparent);
+}
+
+.bestiary__portrait {
+    display: grid;
+    place-items: center;
+    width: 88px;
+    height: 88px;
+    margin: 0 auto 8px;
+    border-radius: 8px;
+    border: 1px solid color-mix(in srgb, var(--bestiary-accent) 45%, #1a2438);
+    background:
+        linear-gradient(160deg, color-mix(in srgb, var(--bestiary-accent) 18%, #0a1018), #0a1018 70%);
+    overflow: hidden;
+}
+
+.bestiary__portrait-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center top;
+}
+
+.bestiary__portrait-unknown {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    color: #5e6c88;
+}
+
+.card-collection__item--locked .bestiary__portrait {
+    filter: grayscale(1) brightness(0.45);
+    border-color: rgba(90, 100, 120, 0.45);
+}
+
+.bestiary__detail {
+    gap: 6px;
+}
+
+/* ---------------------------------------------------------------------------
    Card reward overlay — pick a card after a victory
    --------------------------------------------------------------------------- */
 

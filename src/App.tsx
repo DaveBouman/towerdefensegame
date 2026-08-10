@@ -38,6 +38,7 @@ import {
     ensureStarterCollectionUnlocks,
     unlockCards,
 } from './game/run/cardCollection';
+import { unlockEnemies } from './game/run/enemyBestiary';
 import { getBodyModDefinitionOrThrow } from './game/run/bodyMods';
 import { upgradeFirstCardInDeck } from './game/run/cardUpgrades';
 import { EventBus } from './game/EventBus';
@@ -530,6 +531,7 @@ function App()
         selectedNodeRef.current = node;
         setActiveBattleKind(node.kind);
         tutorial.onFirstBattleStart();
+        unlockEnemies(battleEnemyIds);
         const payload = {
             enemyId: battleEnemyIds[0],
             enemyIds: battleEnemyIds.length > 1 ? battleEnemyIds : undefined,
