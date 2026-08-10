@@ -34,6 +34,7 @@ const AXIS_START = '#7af0ff';
 const AXIS_ACTIVE = '#fcee0a';
 /** Tap vs drag on a start-column card: below this, click sets chain start. */
 const CHAIN_START_TAP_SLOP_PX = 10;
+const CHAIN_START_ARROW_SIZE = 22;
 
 export interface BoardCardDragHandlers {
     canDrag: () => boolean;
@@ -199,7 +200,7 @@ export class CardBoardView
         }
 
         indicator.ring.setScale(1);
-        indicator.arrow.setScale(1);
+        this.resetChainStartArrowScale(indicator.arrow);
         this.scene.tweens.killTweensOf(indicator.arrow);
 
         if (active)
@@ -876,7 +877,7 @@ export class CardBoardView
             ring.setOrigin(0.5, 0.5);
 
             const arrow = createDirectionArrowImage(this.scene, 'right', {
-                size: 22,
+                size: CHAIN_START_ARROW_SIZE,
                 tint: 0x7a7a9a,
             }) ?? this.scene.add.text(0, 0, ARROW_GLYPH.right, {
                 ...uiTextStyle(32, '#7a7a9a', { bold: true }),
@@ -926,6 +927,23 @@ export class CardBoardView
         }
 
         this.chainStartHandlers.onSelect(slot);
+    }
+
+    /**
+     * Image arrows use setDisplaySize; setScale(1) would snap them back to the
+     * native SVG texture size (~512px) and create the giant START arrow glitch.
+     */
+    private resetChainStartArrowScale (
+        arrow: Phaser.GameObjects.Image | Phaser.GameObjects.Text,
+    ): void
+    {
+        if ('setDisplaySize' in arrow)
+        {
+            arrow.setDisplaySize(CHAIN_START_ARROW_SIZE, CHAIN_START_ARROW_SIZE);
+            return;
+        }
+
+        arrow.setScale(1);
     }
 
     /** Full-cell hits when empty; player cards use tap-vs-drag instead. */

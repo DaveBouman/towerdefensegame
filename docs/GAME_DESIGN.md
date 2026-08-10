@@ -349,6 +349,7 @@ remain as a fallback if a portrait fails to load.
 | 2026-08-10 | **Board chrome spacing.** Player portrait nudged left; row letter legend sits outside chain-start arrows and stays above them in draw order. |
 | 2026-08-10 | **Chain start click target.** Column-0 tiles are clickable to set the attack start (no card from hand required). Empty cells use a full-tile hit; cards there tap-to-select / drag-to-move. All five START labels stay visible. |
 | 2026-08-10 | **Iron Gait battle BGM.** Added `iron-gait.mp3` as a second standard combat loop; non-boss fights alternate with *Concrete Veins* by path length so map↔battle crossfades feel less jarring. |
+| 2026-08-10 | **Chain-start arrow scale fix.** `setChainStartActive` no longer calls `setScale(1)` on SVG arrow images (that reset `setDisplaySize` back to the ~512px texture). |
 | 2026-08-10 | **Main menu.** Boot opens on `menu` (`MainMenuOverlay`): set seed, mute/volume, then Start run. Digital map backdrop plays behind the menu. Victory/defeat offer Main menu or New run / Try again. |
 | 2026-08-10 | **Switchback card.** New attack card deals 2× resolved damage (`stepDamageMultiplier`) but cycles lock target to the next living enemy after it hits (`switchTargetAfterHit`). In reward/elite pools. |
 | 2026-08-10 | **First-round off-chain tip.** After dismissing the combat coach on the first battle, a popup explains that loose attack/defense cards on the board still grant off-chain bonuses (+2 damage / +2 armor from `gameRules.json`). |
