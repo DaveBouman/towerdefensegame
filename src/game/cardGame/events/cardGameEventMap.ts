@@ -23,4 +23,5 @@ export interface CardGameEventMap {
     'card-game-enemy-turn-completed': { action: EnemyTurnAction; enemy: EnemyState; player: PlayerState };
     'card-game-enemy-turn-cancelled': void;
     'card-game-player-defeated': { player: PlayerState };
+    'card-game-player-healed': { player: PlayerState; amount: number };
 }

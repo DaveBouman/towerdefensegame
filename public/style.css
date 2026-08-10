@@ -34,6 +34,35 @@ html, body, #root {
     background: radial-gradient(circle at top, #111122 0%, #050510 45%, #000000 100%);
 }
 
+.sfx-mute-btn {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 1200;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    background: rgba(8, 14, 24, 0.82);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.sfx-mute-btn:hover {
+    background: rgba(16, 26, 42, 0.92);
+    border-color: rgba(255, 255, 255, 0.32);
+}
+
+.sfx-mute-btn:focus-visible {
+    outline: 2px solid rgba(120, 180, 255, 0.85);
+    outline-offset: 2px;
+}
+
 #game-container,
 .game-canvas-host {
     position: absolute;

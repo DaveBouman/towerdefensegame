@@ -20,6 +20,8 @@ import {
 import { RunToast } from './ui/components/RunToast';
 import { FloorBanner } from './ui/components/FloorBanner';
 import { BattleIntroOverlay } from './ui/components/BattleIntroOverlay';
+import { SfxMuteButton } from './ui/components/SfxMuteButton';
+import { emitRunSfx } from './game/audio/emitRunSfx';
 import type { RunMapNodeKind } from './game/run/nodeKinds';
 import { isBattleKind } from './game/run/nodeKinds';
 import { applyRunEventEffects } from './game/run/runEvents';
@@ -238,6 +240,32 @@ function App()
         return floorRerollsRef.current;
     }, []);
 
+    useEffect(() =>
+    {
+        if (phase === 'reward' || phase === 'puzzle-reward')
+        {
+            emitRunSfx('reward', { volume: 0.8 });
+        }
+    }, [ phase ]);
+
+    useEffect(() =>
+    {
+        if (floorBanner !== null)
+        {
+            emitRunSfx('floor-enter', { volume: 0.72 });
+        }
+    }, [ floorBanner ]);
+
+    useEffect(() =>
+    {
+        if (battleIntroKind)
+        {
+            emitRunSfx('boss-intro', {
+                volume: battleIntroKind === 'boss' ? 0.9 : 0.75,
+            });
+        }
+    }, [ battleIntroKind ]);
+
     const currentNodeId = path.length > 0 ? path[path.length - 1]! : null;
     const availableIds = useMemo(
         () => reachableNodeIds(map, currentNodeId),
@@ -286,6 +314,7 @@ function App()
             if (healDelta > 0)
             {
                 setRunToast(`+${healDelta} HP after victory`);
+                emitRunSfx('heal', { volume: Math.min(1, 0.55 + healDelta / 25) });
             }
 
             if (remaining > 0 && remaining <= 10)
@@ -481,6 +510,7 @@ function App()
 
     const pickNode = useCallback((node: RunMapNode): void =>
     {
+        emitRunSfx('ui-select', { volume: 0.55 });
         setDepartingNodeId(node.id);
         const rerollsRemaining = enterNodeFloor(node);
         let battleEnemyIds = getBattleEnemyIds(node);
@@ -555,6 +585,8 @@ function App()
 
         finishTravel(() =>
         {
+            emitRunSfx('map-travel', { volume: 0.5 });
+
             if (node.kind === 'semi-boss' || node.kind === 'boss')
             {
                 pendingBattleRef.current = { node, battleEnemyIds, rerollsRemaining };
@@ -576,6 +608,7 @@ function App()
 
         setGold((prev) => prev - offer.price);
         setDeck((prev) => [ ...prev, offer.cardId! ]);
+        emitRunSfx('shop-buy', { volume: 0.75 });
     }, [ gold ]);
 
     const buyShopBodyMod = useCallback((offer: ShopOffer): void =>
@@ -589,6 +622,7 @@ function App()
         setGold((prev) => prev - offer.price);
         setBodyMods((prev) => [ ...prev, offer.bodyModId! ]);
         setPlayerHealth((prev) => Math.min(getRunMaxHealth([ ...bodyMods, offer.bodyModId! ]), prev));
+        emitRunSfx('shop-buy', { volume: 0.75 });
     }, [ gold, bodyMods ]);
 
     const buyShopHeal = useCallback((offer: ShopOffer): void =>
@@ -600,6 +634,8 @@ function App()
 
         setGold((prev) => prev - offer.price);
         setPlayerHealth((prev) => Math.min(runMaxHealth, prev + offer.healAmount!));
+        emitRunSfx('shop-buy', { volume: 0.75 });
+        emitRunSfx('heal', { volume: 0.65 });
     }, [ gold, runMaxHealth ]);
 
     const buyShopRemove = useCallback((offer: ShopOffer, definitionId: string): void =>
@@ -629,6 +665,7 @@ function App()
 
             return next;
         });
+        emitRunSfx('shop-buy', { volume: 0.75 });
     }, [ gold, deck ]);
 
     const buyShopUpgrade = useCallback((offer: ShopOffer, definitionId: string): void =>
@@ -647,11 +684,13 @@ function App()
 
         setGold((prev) => prev - offer.price);
         setDeck(nextDeck);
+        emitRunSfx('shop-buy', { volume: 0.75 });
     }, [ gold, deck ]);
 
     const restHeal = useCallback((healAmount: number): void =>
     {
         setPlayerHealth((prev) => Math.min(runMaxHealth, prev + healAmount));
+        emitRunSfx('heal', { volume: Math.min(1, 0.55 + healAmount / 30) });
     }, [ runMaxHealth ]);
 
     const restUpgrade = useCallback((definitionId: string): void =>
@@ -838,6 +877,7 @@ function App()
     return (
         <div id="app" className={lowHealth && phase !== 'victory' && phase !== 'defeat' ? 'app--low-hp' : undefined}>
             <PhaserGame />
+            {phase !== 'victory' && phase !== 'defeat' && <SfxMuteButton />}
             {bodyMods.length > 0 && phase !== 'victory' && phase !== 'defeat' && (
                 <BodyModsPanel
                     bodyMods={bodyMods}

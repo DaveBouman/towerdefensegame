@@ -33,6 +33,14 @@ export interface PuzzleResolvedPayload {
     damageTarget: number;
 }
 
+import type { SfxKey } from '../audio/sfxManifest';
+
+export interface PlaySfxPayload {
+    key: SfxKey;
+    volume?: number;
+    rate?: number;
+}
+
 export interface GameEventMap {
     'current-scene-ready': Scene;
     'attack': void;
@@ -61,4 +69,5 @@ export interface GameEventMap {
     'battle-lost': { runAttackCount: number };
     'run-attack-count': { runAttackCount: number };
     'pile-view-open': PileViewPayload;
+    'play-sfx': PlaySfxPayload;
 }

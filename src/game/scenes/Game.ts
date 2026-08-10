@@ -21,7 +21,17 @@ import { GAME_EVENTS } from '../events/gameEvents';
 import { reseed } from '../random/rng';
 import { getRunPuzzle } from '../run/runPuzzles';
 import type { PuzzleModeConfig } from '../cardGame/domain/CardGameSession';
-import { Scene } from 'phaser';
+import {
+    bindGameAudioListeners,
+    resetBattleAudioState,
+} from '../audio/bindGameAudio';
+import {
+    bindGameAudioScene,
+    markSfxLoaded,
+    preloadSfx,
+    unbindGameAudioScene,
+} from '../audio/gameAudio';
+import { BlendModes, Scene } from 'phaser';
 
 const sameSlot = (a: SlotPosition, b: SlotPosition): boolean =>
     a.row === b.row && a.col === b.col;
@@ -44,14 +54,24 @@ export class Game extends Scene
     private battleResolved = false;
     private activePuzzleId: string | null = null;
     private lowHpVignette?: Phaser.GameObjects.Rectangle;
+    private unbindAudio?: () => void;
 
     constructor ()
     {
         super('Game');
     }
 
+    preload (): void
+    {
+        preloadSfx(this);
+    }
+
     create (): void
     {
+        bindGameAudioScene(this);
+        markSfxLoaded();
+        this.unbindAudio = bindGameAudioListeners();
+
         void Promise.all([
             preloadEnemyPassiveIcons(this),
             preloadEnemyPortraits(this),
@@ -164,6 +184,8 @@ export class Game extends Scene
         rerollsRemaining = GAME_RULES.rerollsPerFloor,
     ): void
     {
+        resetBattleAudioState();
+
         // Install this battle's deterministic RNG stream before any card is dealt.
         reseed(seed);
 
@@ -307,7 +329,7 @@ export class Game extends Scene
         )
             .setScrollFactor(0)
             .setDepth(9000)
-            .setBlendMode(Phaser.BlendModes.MULTIPLY);
+            .setBlendMode(BlendModes.MULTIPLY);
     }
 
     private syncLowHpVignette (): void
@@ -424,6 +446,10 @@ export class Game extends Scene
 
     shutdown (): void
     {
+        this.unbindAudio?.();
+        this.unbindAudio = undefined;
+        unbindGameAudioScene();
+
         this.scale.off('resize', this.onResize, this);
         EventBus.off(GAME_EVENTS.START_BATTLE, this.onStartBattle, this);
         EventBus.off(GAME_EVENTS.START_PUZZLE, this.onStartPuzzle, this);

@@ -17,4 +17,5 @@ export const GAME_EVENTS = {
     BATTLE_LOST: 'battle-lost',
     RUN_ATTACK_COUNT: 'run-attack-count',
     PILE_VIEW_OPEN: 'pile-view-open',
+    PLAY_SFX: 'play-sfx',
 } as const;

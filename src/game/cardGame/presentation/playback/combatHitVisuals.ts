@@ -10,7 +10,6 @@ import {
     playElementHitBurst,
     shakeCamera,
 } from '../combatJuice';
-import { playFloatingText } from '../visualEffects/visualEffectTweens';
 
 export interface CombatHitVisualDeps
 {
@@ -60,6 +59,7 @@ export function applyEnemyHitResult (
         enemyView?.playHitFlash();
         enemyView?.showDamageNumber(result.healthDamage, tier);
         shakeCamera(scene, tier.shakeIntensity);
+        playCombatHitSfx(result);
 
         if (tier.hitstopMs > 0)
         {
@@ -115,6 +115,7 @@ export function applyEnemyHitResult (
             playerView.playHitFlash();
             playerView.showDamageNumber(result.thornsHealthDamage!);
             shakeCamera(scene, 0.006);
+            playPlayerHitSfx(result.thornsHealthDamage!);
         }
     }
 }
@@ -139,6 +140,7 @@ export function applyPlayerDamage (deps: CombatHitVisualDeps, damage: number): v
         playerView.playHitFlash();
         playerView.showDamageNumber(result.healthDamage, tier);
         shakeCamera(scene, tier.shakeIntensity * 1.2);
+        playPlayerHitSfx(result.healthDamage);
 
         if (tier.hitstopMs > 0)
         {
