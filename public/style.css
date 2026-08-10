@@ -1491,7 +1491,7 @@ html, body, #root {
     position: absolute;
     left: 0;
     top: 0;
-    transform: translate(-50%, calc(-1 * (var(--dot-radius) + 14px)));
+    transform: translate(-50%, calc(-100% - var(--dot-radius) - 6px));
     display: flex;
     flex-direction: column;
     gap: 3px;
@@ -1513,7 +1513,7 @@ html, body, #root {
 .run-map__node:focus-visible .run-map__tooltip {
     opacity: 1;
     visibility: visible;
-    transform: translate(-50%, calc(-1 * (var(--dot-radius) + 14px)));
+    transform: translate(-50%, calc(-100% - var(--dot-radius) - 10px));
 }
 
 .run-map__tooltip::after {
