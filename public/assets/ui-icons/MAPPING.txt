@@ -10,7 +10,8 @@ fire.png              <- 172155/31
 curse.png             <- 172155/44
 fuse.png              <- 172155/4
 echo.png              <- 172155/38
-courier.png           <- 507528/46
+dir-arrow.svg         <- direction chevron (points down; rotated in code)
+dir-loop.svg          <- loop-exit badge (return-arrow, whitened)
 
 # Passives
 thorns.png            <- 172155/11

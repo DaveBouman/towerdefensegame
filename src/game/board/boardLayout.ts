@@ -73,6 +73,8 @@ export const computeBoardLayout = (
     const enemySize = Math.round(tileSize * 1.85);
     const playerSize = Math.round(tileSize * 1.38);
     const enemyGap = Math.round(tileSize * 0.55);
+    // Extra clearance for chain-start arrows + row letter legend left of the grid.
+    const playerGap = enemyGap + Math.round(tileSize * 0.35);
     const handBandHeight = HAND_CARD_HEIGHT + 52;
     const hudTopInset = 72;
     const gridOffsetX = Math.round((canvasWidth - gridWidth) / 2);
@@ -107,7 +109,7 @@ export const computeBoardLayout = (
         handCenterX: Math.round(canvasWidth / 2 - handWidth / 2),
         armorX: Math.round(gridOffsetX + gridWidth / 2),
         armorY: gridOffsetY + gridHeight + 20,
-        playerX: Math.round(gridOffsetX - playerSize - enemyGap),
+        playerX: Math.round(gridOffsetX - playerSize - playerGap),
         playerY: Math.round(gridOffsetY + (gridHeight - playerSize) / 2),
         playerSize,
         deckX,

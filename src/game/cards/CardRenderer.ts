@@ -10,7 +10,6 @@ import { createDirectionArrowImage, createLoopBadgeImage } from './directionArro
 import { cornerTargetDirections } from '../cardGame/domain/cardDirections';
 import { CARD_VISUALS } from './cardVisuals';
 import { formatCardPowerLabel } from './cardVisualUtils';
-import type { CardDirection } from '../cardGame/domain/cardDirections';
 
 export interface CardVisualOptions {
     width: number;

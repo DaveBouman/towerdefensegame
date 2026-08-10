@@ -48,7 +48,7 @@ export const TutorialIntroOverlay = ({ onDismiss }: { onDismiss: () => void }) =
             <p className="tutorial-overlay__eyebrow">First run</p>
             <h1 className="tutorial-overlay__title">Chain the grid</h1>
             <p className="tutorial-overlay__body">
-                Place cards so their arrows form a path. Set chain start in column 0, then Attack —
+                Place cards so their arrows form a path. Click a column-0 tile to set chain start, then Attack —
                 cards resolve in order along the chain.
             </p>
             <p className="tutorial-overlay__body">
@@ -68,7 +68,7 @@ export const TutorialCoachStrip = ({ onDismiss }: { onDismiss: () => void }) => 
         <h2 className="tutorial-coach__title">Combat coach</h2>
         <ol className="tutorial-coach__steps">
             <li>Drag cards from your hand onto the board.</li>
-            <li>Aim arrows so they chain; start from column 0.</li>
+            <li>Click a column-0 tile to set where the chain starts.</li>
             <li>Click Attack — the enemy responds after each strike.</li>
         </ol>
         <button

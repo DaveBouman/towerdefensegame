@@ -12,7 +12,7 @@ A **5×5 card-chain combat** game built with Phaser + React, played across a
 branching **run map** (roguelite-style path of battles).
 
 - Player drags cards from hand onto a grid; arrows define activation order.
-- Player sets chain start (column 0) and clicks **Attack**.
+- Player sets chain start (click a column-0 tile) and clicks **Attack**.
 - Chain resolves step-by-step (attack, defend, fire, poison, joker, hazard, boost).
 - Enemy acts with telegraphed intent (attack/shield + hazard traps).
 - Win: all enemy HP ≤ 0. Lose: player HP ≤ 0.
@@ -344,6 +344,10 @@ remain as a fallback if a portrait fails to load.
 | 2026-08-10 | **Seed on New run only.** Map / run HUD seed is display-only. Seed input + randomize live on Start run / New run confirm; confirming still calls `resetRun(normalizeSeed(...))` as before. |
 | 2026-08-10 | **Board grid legend.** How to play shows a mini 5×5 legend (cols 0–4, rows A–E vertical). Combat board draws matching axis labels; the live chain step highlights its letter + number in yellow. |
 | 2026-08-10 | **Audio unlock fix.** React menu clicks now resume the Web Audio context (`ensureAudioUnlocked`); SFX queue until unlock and BGM restarts after the first gesture so overlays above the canvas are not silent. |
+| 2026-08-10 | **Direction arrow icons.** Card chain arrows use shared `dir-arrow.svg` / `dir-loop.svg` (rotated per direction) on Phaser cards, pile chips, joker picker, and chain-start markers — Unicode glyphs remain as fallback / tooltip text. |
+| 2026-08-10 | **Alpha notice.** Boot main menu shows an Alpha badge + copy that systems, balance, content, and UI are bound to change (`gameMeta.ts`). |
+| 2026-08-10 | **Board chrome spacing.** Player portrait nudged left; row letter legend sits outside chain-start arrows and stays above them in draw order. |
+| 2026-08-10 | **Chain start click target.** Column-0 tiles are clickable to set the attack start (no card from hand required). Empty cells use a full-tile hit; cards there tap-to-select / drag-to-move. All five START labels stay visible. |
 | 2026-08-10 | **Main menu.** Boot opens on `menu` (`MainMenuOverlay`): set seed, mute/volume, then Start run. Digital map backdrop plays behind the menu. Victory/defeat offer Main menu or New run / Try again. |
 | 2026-08-10 | **Switchback card.** New attack card deals 2× resolved damage (`stepDamageMultiplier`) but cycles lock target to the next living enemy after it hits (`switchTargetAfterHit`). In reward/elite pools. |
 | 2026-08-10 | **First-round off-chain tip.** After dismissing the combat coach on the first battle, a popup explains that loose attack/defense cards on the board still grant off-chain bonuses (+2 damage / +2 armor from `gameRules.json`). |

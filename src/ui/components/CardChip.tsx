@@ -1,9 +1,9 @@
 import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistry';
 import type { CardDirection } from '../../game/cardGame/domain/cardDirections';
-import { ARROW_GLYPH } from '../../game/cards/cardArrows';
 import { HAND_CARD_HEIGHT, HAND_CARD_WIDTH } from '../../game/cards/cardVisuals';
 import { cardVisualCssVars, formatCardPowerLabel, resolveCardVisualStyle } from '../../game/cards/cardVisualUtils';
 import { CardBehaviorIcon } from './CardBehaviorIcon';
+import { DirectionArrowIcon } from './DirectionArrowIcon';
 
 export interface CardChipProps {
     definitionId: string;
@@ -68,12 +68,12 @@ export const CardChip = ({
             )}
             {arrow && (
                 <span className={arrowClass(arrow)} aria-label={`Arrow ${arrow}`}>
-                    {ARROW_GLYPH[arrow]}
+                    <DirectionArrowIcon direction={arrow} />
                 </span>
             )}
             {loopArrow && (
                 <span className={`${arrowClass(loopArrow)} card-chip__arrow--loop`} aria-label={`Loop ${loopArrow}`}>
-                    ↺{ARROW_GLYPH[loopArrow]}
+                    <DirectionArrowIcon direction={loopArrow} loop />
                 </span>
             )}
             <CardBehaviorIcon behaviorId={resolvedBehaviorId} className="card-chip__icon" />

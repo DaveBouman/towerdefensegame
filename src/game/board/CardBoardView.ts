@@ -14,6 +14,7 @@ import type { CardInstance, SlotPosition } from '../cardGame/domain/types';
 import { boardColLabel, boardRowLabel } from './boardCoordinates';
 import type { BoardLayout } from './boardLayout';
 import { JokerDirectionPicker } from './JokerDirectionPicker';
+import { createDirectionArrowImage } from '../cards/directionArrowVisual';
 
 const SLOT_FILL = CYBER.slotFill;
 const SLOT_BORDER = CYBER.slotBorder;
@@ -31,6 +32,8 @@ const SLOT_INSET = 4;
 const AXIS_IDLE = '#8aa0bc';
 const AXIS_START = '#7af0ff';
 const AXIS_ACTIVE = '#fcee0a';
+/** Tap vs drag on a start-column card: below this, click sets chain start. */
+const CHAIN_START_TAP_SLOP_PX = 10;
 
 export interface BoardCardDragHandlers {
     canDrag: () => boolean;
@@ -46,7 +49,7 @@ export interface ChainStartHandlers {
 interface ChainStartIndicator {
     slot: SlotPosition;
     ring: Phaser.GameObjects.Rectangle;
-    arrow: Phaser.GameObjects.Text;
+    arrow: Phaser.GameObjects.Image | Phaser.GameObjects.Text;
     label: Phaser.GameObjects.Text;
     hitArea: Phaser.GameObjects.Rectangle;
 }
@@ -201,7 +204,14 @@ export class CardBoardView
 
         if (active)
         {
-            indicator.arrow.setColor('#fcee0a');
+            if ('setColor' in indicator.arrow)
+            {
+                indicator.arrow.setColor('#fcee0a');
+            }
+            else
+            {
+                indicator.arrow.setTint(0xfcee0a);
+            }
             indicator.ring.setStrokeStyle(3, CYBER.cyan, 1);
             indicator.ring.setOrigin(0.5, 0.5);
             this.chainStartTween = this.scene.tweens.add({
@@ -412,6 +422,7 @@ export class CardBoardView
         this.slotBodies[slot.row][slot.col].setStrokeStyle(2, SLOT_BORDER, 0.9);
         this.clearHighlight();
         this.bringChainStartToFront();
+        this.refreshChainStartHitAreas();
     }
 
     moveCard (from: SlotPosition, to: SlotPosition): void
@@ -442,6 +453,7 @@ export class CardBoardView
         this.slotBodies[to.row][to.col].setVisible(false);
         this.clearHighlight();
         this.bringChainStartToFront();
+        this.refreshChainStartHitAreas();
     }
 
     swapCards (a: SlotPosition, b: SlotPosition): void
@@ -496,11 +508,13 @@ export class CardBoardView
 
         this.clearHighlight();
         this.bringChainStartToFront();
+        this.refreshChainStartHitAreas();
     }
 
     placeCard (slot: SlotPosition, card: CardInstance): void
     {
         this.setSlotCard(slot, card);
+        this.refreshChainStartHitAreas();
     }
 
     /** Marks board slots the player cannot place cards on. */
@@ -763,7 +777,8 @@ export class CardBoardView
     ): void
     {
         const axisY = -panelPad - 12;
-        const axisX = -panelPad - 14;
+        // Sit left of chain-start arrows so letters aren't covered.
+        const axisX = -panelPad - 42;
 
         this.colAxisLabels.length = 0;
         this.rowAxisLabels.length = 0;
@@ -796,6 +811,7 @@ export class CardBoardView
         }
 
         this.refreshAxisLegendStyles();
+        this.bringAxisLegendToFront();
     }
 
     private refreshAxisLegendStyles (): void
@@ -859,25 +875,39 @@ export class CardBoardView
             );
             ring.setOrigin(0.5, 0.5);
 
-            const arrow = this.scene.add.text(cellLeftX - 10, centerY, ARROW_GLYPH.right, {
+            const arrow = createDirectionArrowImage(this.scene, 'right', {
+                size: 22,
+                tint: 0x7a7a9a,
+            }) ?? this.scene.add.text(0, 0, ARROW_GLYPH.right, {
                 ...uiTextStyle(32, '#7a7a9a', { bold: true }),
             }).setOrigin(1, 0.5);
+
+            arrow.setPosition(cellLeftX - 10, centerY);
+
+            if ('setOrigin' in arrow)
+            {
+                arrow.setOrigin(1, 0.5);
+            }
 
             const label = this.scene.add.text(cellLeftX - 10, centerY - 24, 'START', {
                 ...uiTextStyle(13, '#a8a8c8', { bold: true }),
             }).setOrigin(1, 0.5);
 
-            const hitArea = this.scene.add.rectangle(cellLeftX - 28, centerY, 36, slotSize + 12, 0x000000, 0);
+            // Full cell hit target — click the first-column tile to set chain start
+            // without needing a card from hand.
+            const hitArea = this.scene.add.rectangle(
+                centerX,
+                centerY,
+                slotSize + 8,
+                slotSize + 8,
+                0x000000,
+                0.001,
+            );
 
             hitArea.setInteractive({ useHandCursor: true });
             hitArea.on('pointerdown', () =>
             {
-                if (!this.chainStartHandlers?.canSelect())
-                {
-                    return;
-                }
-
-                this.chainStartHandlers.onSelect(slot);
+                this.trySelectChainStart(slot);
             });
 
             this.container.add([ ring, arrow, label, hitArea ]);
@@ -885,6 +915,45 @@ export class CardBoardView
         }
 
         this.bringChainStartToFront();
+        this.refreshChainStartHitAreas();
+    }
+
+    private trySelectChainStart (slot: SlotPosition): void
+    {
+        if (!this.chainStartHandlers?.canSelect())
+        {
+            return;
+        }
+
+        this.chainStartHandlers.onSelect(slot);
+    }
+
+    /** Full-cell hits when empty; player cards use tap-vs-drag instead. */
+    private refreshChainStartHitAreas (): void
+    {
+        for (const indicator of this.chainStartIndicators)
+        {
+            if (this.startSlotUsesCardTap(indicator.slot))
+            {
+                indicator.hitArea.disableInteractive();
+            }
+            else if (!indicator.hitArea.input)
+            {
+                indicator.hitArea.setInteractive({ useHandCursor: true });
+            }
+        }
+    }
+
+    private startSlotUsesCardTap (slot: SlotPosition): boolean
+    {
+        const card = this.board.getCardAt(slot);
+
+        if (!card || isEnemyOwnedCard(card) || isFieldOwnedCard(card))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     private getSelectedChainStartIndicator (): ChainStartIndicator | undefined
@@ -903,8 +972,19 @@ export class CardBoardView
 
             indicator.arrow.setAlpha(1);
             indicator.ring.setAlpha(selected ? 1 : 0.45);
-            indicator.label.setVisible(selected);
-            indicator.arrow.setColor(selected ? '#f1c40f' : '#5a5a78');
+            indicator.label.setVisible(true);
+            indicator.label.setAlpha(selected ? 1 : 0.45);
+            indicator.label.setColor(selected ? '#f1c40f' : '#a8a8c8');
+
+            if ('setColor' in indicator.arrow)
+            {
+                indicator.arrow.setColor(selected ? '#f1c40f' : '#5a5a78');
+            }
+            else
+            {
+                indicator.arrow.setTint(selected ? 0xf1c40f : 0x5a5a78);
+            }
+
             indicator.ring.setStrokeStyle(2, selected ? CHAIN_START_SELECTED : CHAIN_START_IDLE, selected ? 0.9 : 0.5);
         }
 
@@ -919,6 +999,29 @@ export class CardBoardView
             this.container.bringToTop(indicator.arrow);
             this.container.bringToTop(indicator.label);
             this.container.bringToTop(indicator.hitArea);
+        }
+
+        // Row/col letters must stay above start arrows after restacks.
+        this.bringAxisLegendToFront();
+        this.refreshChainStartHitAreas();
+    }
+
+    private bringAxisLegendToFront (): void
+    {
+        for (const label of this.colAxisLabels)
+        {
+            if (label)
+            {
+                this.container.bringToTop(label);
+            }
+        }
+
+        for (const label of this.rowAxisLabels)
+        {
+            if (label)
+            {
+                this.container.bringToTop(label);
+            }
         }
     }
 
@@ -989,6 +1092,14 @@ export class CardBoardView
                     return;
                 }
 
+                const startCol = GAME_RULES.activationStartColumn;
+
+                if (col === startCol)
+                {
+                    this.beginStartColumnPointer(currentSlot, currentCard, pointer, size);
+                    return;
+                }
+
                 this.beginBoardDrag(currentSlot, currentCard, pointer, size);
             });
         }
@@ -996,6 +1107,67 @@ export class CardBoardView
         attachCardTooltip(this.scene, hitArea, card);
 
         return wrapper;
+    }
+
+    /** Start-column cards: tap sets chain start; drag still moves the card. */
+    private beginStartColumnPointer (
+        slot: SlotPosition,
+        card: CardInstance,
+        pointer: Phaser.Input.Pointer,
+        size: number,
+    ): void
+    {
+        if (!this.boardDragHandlers?.canDrag() || this.draggingFromSlot)
+        {
+            return;
+        }
+
+        pointer.updateWorldPoint(this.scene.cameras.main);
+        const originX = pointer.worldX;
+        const originY = pointer.worldY;
+        let startedDrag = false;
+
+        const cleanup = (): void =>
+        {
+            this.scene.input.off('pointermove', onPointerMove);
+            this.scene.input.off('pointerup', onPointerUp);
+            this.scene.input.off('pointerupoutside', onPointerUp);
+        };
+
+        const onPointerMove = (movePointer: Phaser.Input.Pointer): void =>
+        {
+            if (startedDrag)
+            {
+                return;
+            }
+
+            movePointer.updateWorldPoint(this.scene.cameras.main);
+            const dx = movePointer.worldX - originX;
+            const dy = movePointer.worldY - originY;
+
+            if ((dx * dx) + (dy * dy) < CHAIN_START_TAP_SLOP_PX * CHAIN_START_TAP_SLOP_PX)
+            {
+                return;
+            }
+
+            startedDrag = true;
+            cleanup();
+            this.beginBoardDrag(slot, card, movePointer, size);
+        };
+
+        const onPointerUp = (): void =>
+        {
+            cleanup();
+
+            if (!startedDrag)
+            {
+                this.trySelectChainStart(slot);
+            }
+        };
+
+        this.scene.input.on('pointermove', onPointerMove);
+        this.scene.input.on('pointerup', onPointerUp);
+        this.scene.input.on('pointerupoutside', onPointerUp);
     }
 
     private findSlotForPosition (centerX: number, centerY: number, tileSize: number): SlotPosition | null

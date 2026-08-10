@@ -1,6 +1,7 @@
 import { uiTextStyle } from '../config/uiTypography';
 import { GRID_CONFIG } from '../config/gridConfig';
 import { ARROW_GLYPH, arrowLabelPosition } from '../cards/cardArrows';
+import { createDirectionArrowImage } from '../cards/directionArrowVisual';
 import type { CardDirection } from '../cardGame/domain/cardDirections';
 import type { SlotPosition } from '../cardGame/domain/types';
 
@@ -66,9 +67,15 @@ export class JokerDirectionPicker
             button.setStrokeStyle(2, BUTTON_BORDER, 1);
             button.setInteractive({ useHandCursor: true });
 
-            const label = scene.add.text(x, y, ARROW_GLYPH[direction], {
+            const icon = createDirectionArrowImage(scene, direction, {
+                size: 18,
+                tint: 0xffffff,
+            });
+            const label = icon ?? scene.add.text(x, y, ARROW_GLYPH[direction], {
                 ...uiTextStyle(20, '#ffffff', { bold: true }),
             }).setOrigin(0.5);
+
+            label.setPosition(x, y);
 
             button.on('pointerover', () => button.setFillStyle(0x4a4a72, 1));
             button.on('pointerout', () => button.setFillStyle(BUTTON_BG, 0.95));

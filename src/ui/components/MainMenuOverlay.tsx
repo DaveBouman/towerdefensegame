@@ -15,7 +15,7 @@ import {
     quitGame,
     setGameFullscreen,
 } from '../../game/desktop/desktopBridge';
-import { GAME_TAGLINE, GAME_TITLE, GAME_VERSION } from '../../game/meta/gameMeta';
+import { GAME_ALPHA_NOTICE, GAME_BUILD_LABEL, GAME_TAGLINE, GAME_TITLE, GAME_VERSION } from '../../game/meta/gameMeta';
 import { getCollectionProgress } from '../../game/run/cardCollection';
 import { createRandomSeed, normalizeSeed } from '../../game/random/rng';
 import {
@@ -219,6 +219,10 @@ export const MainMenuOverlay = ({
                         <>
                             <p className="main-menu__eyebrow">{GAME_TAGLINE}</p>
                             <h1 className="main-menu__brand">{GAME_TITLE}</h1>
+                            <p className="main-menu__alpha" role="note">
+                                <span className="main-menu__alpha-badge">{GAME_BUILD_LABEL}</span>
+                                {GAME_ALPHA_NOTICE}
+                            </p>
                             <p className="main-menu__tagline">
                                 Link the grid, outlast the street, and cut down the Warden.
                             </p>
@@ -550,7 +554,7 @@ export const MainMenuOverlay = ({
                             </div>
                             <ol className="main-menu__manual">
                                 <li>Place cards on the 5×5 grid so their arrows form a chain.</li>
-                                <li>Set chain start in column 0, then press Attack.</li>
+                                <li>Click a column-0 tile to set chain start, then press Attack.</li>
                                 <li>Attack and defense cards off the chain still grant small bonuses.</li>
                                 <li>Each Attack spends energy; when empty, the board clears for a new round.</li>
                                 <li>Pick map nodes to fight, shop, rest, or jack into signals — HP carries over.</li>
@@ -583,7 +587,7 @@ export const MainMenuOverlay = ({
                     )}
 
                     <p className="main-menu__version">
-                        v{GAME_VERSION}
+                        v{GAME_VERSION} · {GAME_BUILD_LABEL}
                         {desktop ? ' · desktop' : ' · web'}
                     </p>
                 </div>
