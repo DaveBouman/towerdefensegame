@@ -10,6 +10,7 @@ export type SfxKey =
     | 'shield'
     | 'heal'
     | 'enemy-hit'
+    | 'enemy-move'
     | 'map-travel'
     | 'reward'
     | 'shop-buy'
@@ -29,6 +30,7 @@ export const ALL_SFX_KEYS: readonly SfxKey[] = [
     'shield',
     'heal',
     'enemy-hit',
+    'enemy-move',
     'map-travel',
     'reward',
     'shop-buy',

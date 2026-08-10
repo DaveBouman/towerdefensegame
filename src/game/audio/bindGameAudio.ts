@@ -42,7 +42,7 @@ export const bindGameAudioListeners = (): (() => void) =>
         lastArmor = armor;
     };
 
-    const onEnemyTurnStarted = (): void => playSfx('ui-select', { volume: 0.62, rate: 0.85 });
+    const onEnemyTurnStarted = (): void => playSfx('enemy-move', { volume: 0.72, rate: 0.92 });
 
     const onPlayerDefeated = (): void => playSfx('defeat', { volume: 1 });
 

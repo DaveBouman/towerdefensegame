@@ -1,7 +1,6 @@
 import { GRID_CONFIG, getGridPixelSize } from '../config/gridConfig';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import { HAND_CARD_GAP, HAND_CARD_HEIGHT, HAND_CARD_WIDTH } from '../cards/cardVisuals';
-import { computeEnemyColumnWidth } from './enemySquadLayout';
 
 export interface BoardLayout {
     canvasWidth: number;
@@ -63,24 +62,22 @@ export const applyBoardLayout = (layout: BoardLayout, views: BoardLayoutViews): 
     views.graveyard.setPosition(layout.graveyardX, layout.graveyardY);
 };
 
-/** Grid sits left of center; enemy is just to the right of the board. */
+/** 5×5 grid centered on screen; player left, enemies right. */
 export const computeBoardLayout = (
     canvasWidth: number,
     canvasHeight: number,
 ): BoardLayout =>
 {
-    const { tileSize, cols, rows } = GRID_CONFIG;
+    const { tileSize } = GRID_CONFIG;
     const { width: gridWidth, height: gridHeight } = getGridPixelSize();
     const enemySize = Math.round(tileSize * 1.85);
     const playerSize = Math.round(tileSize * 1.38);
     const enemyGap = Math.round(tileSize * 0.55);
-    const enemyColumnWidth = computeEnemyColumnWidth(enemySize, tileSize);
     const handBandHeight = HAND_CARD_HEIGHT + 52;
-    const hudTopInset = 56;
-    const contentWidth = gridWidth + enemyGap + enemyColumnWidth;
+    const hudTopInset = 72;
+    const gridOffsetX = Math.round((canvasWidth - gridWidth) / 2);
     const handY = canvasHeight - handBandHeight + 8;
     const availableHeight = canvasHeight - hudTopInset - handBandHeight;
-    const gridOffsetX = Math.round((canvasWidth - contentWidth) / 2 - tileSize * 0.35);
     const gridOffsetY = hudTopInset + Math.round(Math.max(0, availableHeight - gridHeight) / 2);
     const handWidth = HAND_CARD_WIDTH * GAME_RULES.handSize + HAND_CARD_GAP * (GAME_RULES.handSize - 1);
     const pileWidth = 64;

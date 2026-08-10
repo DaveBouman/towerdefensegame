@@ -3,11 +3,13 @@ import {
     ALL_BGM_TRACKS,
     BGM_FILES,
     BGM_LEVEL,
+    BGM_LOOP_TRIM_SEC,
     type BgmTrack,
 } from './bgmManifest';
 import { getSfxVolume, isSfxMuted, subscribeSfxSettings } from './gameAudio';
 
 const CROSSFADE_MS = 1400;
+const LOOP_CHECK_MS = 80;
 
 let scene: Phaser.Scene | null = null;
 let loaded = false;
@@ -15,6 +17,7 @@ let activeTrack: BgmTrack | null = null;
 let activeSound: Phaser.Sound.WebAudioSound | null = null;
 let pendingTrack: BgmTrack | null = null;
 let unsubscribeSettings: (() => void) | null = null;
+let loopGuard: Phaser.Time.TimerEvent | null = null;
 
 const getTargetVolume = (track: BgmTrack): number =>
 {
@@ -24,6 +27,39 @@ const getTargetVolume = (track: BgmTrack): number =>
     }
 
     return getSfxVolume() * BGM_LEVEL[track];
+};
+
+const detachLoopGuard = (): void =>
+{
+    loopGuard?.remove();
+    loopGuard = null;
+};
+
+const attachLoopGuard = (sound: Phaser.Sound.WebAudioSound): void =>
+{
+    detachLoopGuard();
+
+    if (!scene)
+    {
+        return;
+    }
+
+    loopGuard = scene.time.addEvent({
+        delay: LOOP_CHECK_MS,
+        loop: true,
+        callback: () =>
+        {
+            if (!sound.isPlaying || sound.duration <= BGM_LOOP_TRIM_SEC)
+            {
+                return;
+            }
+
+            if (sound.seek >= sound.duration - BGM_LOOP_TRIM_SEC)
+            {
+                sound.seek = 0;
+            }
+        },
+    });
 };
 
 export const preloadBgm = (targetScene: Phaser.Scene): void =>
@@ -66,6 +102,7 @@ export const unbindGameBgmScene = (): void =>
 {
     unsubscribeSettings?.();
     unsubscribeSettings = null;
+    detachLoopGuard();
     stopBgm(true);
     scene = null;
     loaded = false;
@@ -91,7 +128,7 @@ const getSound = (track: BgmTrack): Phaser.Sound.WebAudioSound | null =>
         return null;
     }
 
-    return scene.sound.add(track, { loop: true, volume: 0 }) as Phaser.Sound.WebAudioSound;
+    return scene.sound.add(track, { loop: false, volume: 0 }) as Phaser.Sound.WebAudioSound;
 };
 
 const syncActiveVolume = (): void =>
@@ -148,6 +185,7 @@ export const crossfadeTo = (track: BgmTrack): void =>
 
     activeTrack = track;
     activeSound = nextSound;
+    attachLoopGuard(nextSound);
 
     if (!nextSound.isPlaying)
     {
@@ -187,6 +225,8 @@ export const crossfadeTo = (track: BgmTrack): void =>
 
 export const stopBgm = (immediate = false): void =>
 {
+    detachLoopGuard();
+
     if (!activeSound || !scene)
     {
         activeTrack = null;

@@ -23,6 +23,7 @@ import { BattleIntroOverlay } from './ui/components/BattleIntroOverlay';
 import { SfxMuteButton } from './ui/components/SfxMuteButton';
 import { emitRunSfx } from './game/audio/emitRunSfx';
 import { emitRunBgm } from './game/audio/emitRunBgm';
+import { resolveRunBgmTrack } from './game/audio/bgmManifest';
 import type { RunMapNodeKind } from './game/run/nodeKinds';
 import { isBattleKind } from './game/run/nodeKinds';
 import { applyRunEventEffects } from './game/run/runEvents';
@@ -134,6 +135,7 @@ function App()
     const [ floorBanner, setFloorBanner ] = useState<number | null>(null);
     const [ runToast, setRunToast ] = useState<string | null>(null);
     const [ battleIntroKind, setBattleIntroKind ] = useState<RunMapNodeKind | null>(null);
+    const [ activeBattleKind, setActiveBattleKind ] = useState<RunMapNodeKind | null>(null);
     const [ clutchVictory, setClutchVictory ] = useState(false);
     const [ pendingReward, setPendingReward ] = useState<PendingReward | null>(null);
     const [ visit, setVisit ] = useState<VisitState | null>(null);
@@ -269,14 +271,8 @@ function App()
 
     useEffect(() =>
     {
-        if (phase === 'battle' || phase === 'puzzle' || battleIntroKind)
-        {
-            emitRunBgm('concrete-veins');
-            return;
-        }
-
-        emitRunBgm('glass-streets');
-    }, [ phase, battleIntroKind ]);
+        emitRunBgm(resolveRunBgmTrack({ phase, battleIntroKind, activeBattleKind }));
+    }, [ phase, battleIntroKind, activeBattleKind ]);
 
     const currentNodeId = path.length > 0 ? path[path.length - 1]! : null;
     const availableIds = useMemo(
@@ -313,6 +309,7 @@ function App()
         }): void =>
         {
             setRunAttackCount(nextRunAttackCount);
+            setActiveBattleKind(null);
             const node = selectedNodeRef.current;
             const healed = Math.min(
                 getRunMaxHealth(bodyModsRef.current),
@@ -375,6 +372,7 @@ function App()
         }): void =>
         {
             setRunAttackCount(nextRunAttackCount);
+            setActiveBattleKind(null);
             setPhase('defeat');
         };
 
@@ -484,6 +482,7 @@ function App()
     ): void =>
     {
         selectedNodeRef.current = node;
+        setActiveBattleKind(node.kind);
         tutorial.onFirstBattleStart();
         const payload = {
             enemyId: battleEnemyIds[0],
@@ -865,6 +864,7 @@ function App()
         setFloorBanner(null);
         setRunToast(null);
         setBattleIntroKind(null);
+        setActiveBattleKind(null);
         setClutchVictory(false);
         pendingBattleRef.current = null;
         setPhase('map');

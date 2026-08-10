@@ -1,6 +1,6 @@
 /**
- * Generates lightweight placeholder WAV sfx (procedural, no license issues).
- * Replace files in public/assets/sfx/ with packs from Kenney.nl (CC0) when ready.
+ * Generates cyberpunk-ish placeholder WAV sfx (procedural, no license issues).
+ * Dark sub thumps + crushed noise — not chiptune bleeps.
  *
  * Run: node scripts/generate-sfx.mjs
  */
@@ -12,6 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = path.join(__dirname, '../public/assets/sfx');
 
 const SAMPLE_RATE = 44100;
+const GAIN = 1.35;
 
 const writeWav = (filePath, samples) =>
 {
@@ -71,6 +72,35 @@ const noise = (duration, volume = 0.25, decay = 14) =>
     return out;
 };
 
+const fm = (carrier, modulator, modIndex, duration, volume, decay = 12) =>
+{
+    const count = Math.floor(SAMPLE_RATE * duration);
+    const out = new Float32Array(count);
+
+    for (let i = 0; i < count; i++)
+    {
+        const t = i / SAMPLE_RATE;
+        const env = Math.exp(-t * decay);
+        const mod = Math.sin(2 * Math.PI * modulator * t) * modIndex;
+        out[i] = Math.sin(2 * Math.PI * carrier * t + mod) * volume * env;
+    }
+
+    return out;
+};
+
+const crush = (samples, bits = 5) =>
+{
+    const out = new Float32Array(samples.length);
+    const steps = Math.pow(2, bits);
+
+    for (let i = 0; i < samples.length; i++)
+    {
+        out[i] = Math.round((samples[i] ?? 0) * steps) / steps;
+    }
+
+    return out;
+};
+
 const mix = (...parts) =>
 {
     const len = Math.max(...parts.map((part) => part.length));
@@ -102,30 +132,77 @@ const concat = (...parts) =>
     return out;
 };
 
-const GAIN = 1.45;
+const subThump = (freq, duration, volume) =>
+    mix(sine(freq, duration, volume * 0.85, 22), noise(duration, volume * 0.45, 28));
+
+const glitchBurst = (duration, volume) =>
+    crush(mix(noise(duration, volume, 38), subThump(160, duration * 0.7, volume * 0.35)), 4);
+
+const noiseHit = (duration, volume, subFreq = 70) =>
+    crush(mix(noise(duration, volume, 14), subThump(subFreq, duration * 1.1, volume * 0.55)), 4);
+
+const sweep = (fromHz, toHz, duration, volume) =>
+{
+    const count = Math.floor(SAMPLE_RATE * duration);
+    const out = new Float32Array(count);
+
+    for (let i = 0; i < count; i++)
+    {
+        const t = i / count;
+        const freq = fromHz + (toHz - fromHz) * t;
+        const env = Math.exp(-t * 10) * (1 - t * 0.35);
+        out[i] = Math.sin(2 * Math.PI * freq * (i / SAMPLE_RATE)) * volume * env;
+    }
+
+    return crush(out, 5);
+};
+
+const v = (n) => n * GAIN;
 
 const SOUNDS = {
-    'ui-click': () => sine(880, 0.04, 0.22 * GAIN, 40),
-    'ui-select': () => mix(sine(620, 0.06, 0.2 * GAIN, 18), sine(980, 0.05, 0.12 * GAIN, 22)),
-    'card-place': () => mix(sine(520, 0.05, 0.18 * GAIN, 28), noise(0.03, 0.08 * GAIN, 35)),
-    'chain-step': () => sine(740, 0.07, 0.16 * GAIN, 16),
-    'hit-light': () => mix(noise(0.07, 0.28 * GAIN, 22), sine(180, 0.08, 0.18 * GAIN, 18)),
-    'hit-heavy': () => mix(noise(0.12, 0.42 * GAIN, 12), sine(120, 0.14, 0.28 * GAIN, 10)),
-    'kill': () => concat(sine(420, 0.08, 0.22 * GAIN, 12), sine(660, 0.1, 0.24 * GAIN, 10), sine(880, 0.14, 0.2 * GAIN, 8)),
-    'shield': () => mix(sine(300, 0.1, 0.2 * GAIN, 8), sine(450, 0.08, 0.15 * GAIN, 12)),
-    'heal': () => concat(sine(520, 0.08, 0.14 * GAIN, 10), sine(780, 0.1, 0.16 * GAIN, 8)),
-    'enemy-hit': () => mix(noise(0.09, 0.35 * GAIN, 16), sine(90, 0.11, 0.25 * GAIN, 9)),
-    'map-travel': () => mix(sine(500, 0.05, 0.12 * GAIN, 20), sine(900, 0.06, 0.1 * GAIN, 24)),
-    'reward': () => concat(sine(660, 0.07, 0.16 * GAIN, 12), sine(880, 0.09, 0.18 * GAIN, 10), sine(1100, 0.11, 0.14 * GAIN, 8)),
-    'shop-buy': () => mix(sine(980, 0.05, 0.18 * GAIN, 20), sine(1320, 0.06, 0.12 * GAIN, 24)),
-    'floor-enter': () => concat(sine(330, 0.1, 0.14 * GAIN, 8), sine(440, 0.12, 0.16 * GAIN, 7), sine(660, 0.14, 0.14 * GAIN, 6)),
-    'victory': () => concat(
-        sine(523, 0.12, 0.16 * GAIN, 6),
-        sine(659, 0.12, 0.16 * GAIN, 6),
-        sine(784, 0.18, 0.18 * GAIN, 5),
+    'ui-click': () => glitchBurst(0.035, v(0.32)),
+    'ui-select': () => mix(glitchBurst(0.04, v(0.28)), subThump(220, 0.03, v(0.18))),
+    'card-place': () => mix(subThump(130, 0.055, v(0.34)), crush(noise(0.035, v(0.22), 32), 5)),
+    'chain-step': () => mix(sweep(180, 420, 0.07, v(0.22)), subThump(90, 0.05, v(0.2))),
+    'hit-light': () => noiseHit(0.09, v(0.42), 75),
+    'hit-heavy': () => noiseHit(0.14, v(0.55), 48),
+    'kill': () => concat(
+        subThump(95, 0.07, v(0.38)),
+        subThump(62, 0.09, v(0.42)),
+        crush(mix(noise(0.1, v(0.35), 11), fm(140, 70, 2.5, 0.08, v(0.2), 9)), 4),
     ),
-    'defeat': () => concat(sine(220, 0.18, 0.22 * GAIN, 4), sine(165, 0.22, 0.18 * GAIN, 3)),
-    'boss-intro': () => mix(sine(110, 0.25, 0.3 * GAIN, 3), noise(0.15, 0.12 * GAIN, 6)),
+    'shield': () => crush(mix(fm(280, 560, 2, 0.11, v(0.26), 9), subThump(110, 0.06, v(0.15))), 5),
+    'heal': () => concat(subThump(95, 0.06, v(0.22)), subThump(130, 0.08, v(0.24))),
+    'enemy-hit': () => noiseHit(0.11, v(0.48), 52),
+    'enemy-move': () => mix(
+        fm(160, 80, 2.2, 0.1, v(0.24), 11),
+        crush(noise(0.07, v(0.28), 18), 5),
+    ),
+    'map-travel': () => mix(sweep(120, 280, 0.08, v(0.18)), subThump(100, 0.05, v(0.12))),
+    'reward': () => concat(
+        subThump(140, 0.06, v(0.22)),
+        sweep(200, 360, 0.09, v(0.2)),
+        glitchBurst(0.05, v(0.18)),
+    ),
+    'shop-buy': () => mix(glitchBurst(0.045, v(0.26)), subThump(180, 0.04, v(0.2))),
+    'floor-enter': () => concat(
+        subThump(80, 0.09, v(0.2)),
+        sweep(100, 220, 0.12, v(0.22)),
+        subThump(130, 0.1, v(0.18)),
+    ),
+    'victory': () => concat(
+        sweep(160, 320, 0.1, v(0.2)),
+        subThump(120, 0.1, v(0.24)),
+        glitchBurst(0.06, v(0.16)),
+    ),
+    'defeat': () => concat(
+        subThump(55, 0.14, v(0.38)),
+        crush(mix(noise(0.12, v(0.3), 6), fm(90, 45, 3, 0.14, v(0.22), 4)), 3),
+    ),
+    'boss-intro': () => mix(
+        subThump(45, 0.2, v(0.45)),
+        crush(mix(noise(0.16, v(0.22), 5), fm(70, 35, 2.5, 0.18, v(0.18), 3)), 3),
+    ),
 };
 
 fs.mkdirSync(OUT_DIR, { recursive: true });

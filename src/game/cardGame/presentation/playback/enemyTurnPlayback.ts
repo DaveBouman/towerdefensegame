@@ -8,6 +8,8 @@ import type { ArmorView } from '../../../board/ArmorView';
 import type { BattleModifierStatusView } from '../../../board/BattleModifierStatusView';
 import { describeBattleModifier } from '../../combat/battleModifiers';
 import { getDamageTierStyle, shakeCamera } from '../combatJuice';
+import { playPlayerHitSfx } from '../../../audio/bindGameAudio';
+import { playSfx } from '../../../audio/gameAudio';
 
 export interface EnemyTurnPlaybackDeps
 {
@@ -55,6 +57,7 @@ export function playEnemyTurnStep (
             if (result.shieldAbsorbed > 0)
             {
                 armorView.showShieldAbsorb(result.shieldAbsorbed);
+                playSfx('shield', { volume: 0.7 });
             }
 
             if (result.healthDamage > 0)
@@ -64,6 +67,7 @@ export function playEnemyTurnStep (
                 playerView.playHitFlash();
                 playerView.showDamageNumber(result.healthDamage);
                 shakeCamera(scene, tier.shakeIntensity * 1.25);
+                playPlayerHitSfx(result.healthDamage);
             }
 
             onComplete();
@@ -83,6 +87,7 @@ export function playEnemyTurnStep (
             if (slot)
             {
                 boardView.syncFromBoard(session.board);
+                playSfx('enemy-move', { volume: 0.78 });
             }
 
             onComplete();
@@ -102,6 +107,7 @@ export function playEnemyTurnStep (
             if (field)
             {
                 boardView.setDampenedSlots(session.getDampenedSlots());
+                playSfx('enemy-move', { volume: 0.75 });
             }
 
             onComplete();
@@ -124,6 +130,7 @@ export function playEnemyTurnStep (
                 session.getBombDisabledSlots(),
             );
             enemyView?.showIntentLabel(`Lock col ${column + 1}`);
+            playSfx('enemy-move', { volume: 0.8 });
             onComplete();
         });
 
@@ -146,6 +153,7 @@ export function playEnemyTurnStep (
                 );
             }
 
+            playSfx('enemy-move', { volume: 0.76 });
             onComplete();
         });
 
@@ -172,12 +180,14 @@ export function playEnemyTurnStep (
                 const healed = session.resolveAllyHeal(step.amount ?? 0, targetId);
                 targetView?.setHealth(healed);
                 targetView?.showHealGain(step.amount ?? 0);
+                playSfx('heal', { volume: 0.65 });
             }
             else
             {
                 const shielded = session.resolveAllyShield(step.amount ?? 0, targetId);
                 targetView?.setHealth(shielded);
                 targetView?.showShieldGain(step.amount ?? 0);
+                playSfx('shield', { volume: 0.68 });
             }
 
             enemySquad.syncFromSession(session);
@@ -195,6 +205,7 @@ export function playEnemyTurnStep (
 
             enemyView?.setHealth(enemy);
             enemyView?.showShieldGain(step.amount ?? 0);
+            playSfx('shield', { volume: 0.65 });
         });
 
         scene.time.delayedCall(turnMs, () =>

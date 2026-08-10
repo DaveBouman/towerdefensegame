@@ -4,13 +4,16 @@ import { computeBoardLayout } from './boardLayout';
 
 describe('boardLayout', () =>
 {
-    it('places the grid left of center with the enemy to its right', () =>
+    it('centers the 5×5 grid on screen with enemies to the right', () =>
     {
         const layout = computeBoardLayout(960, 720);
 
         expect(layout.gridWidth).toBe(GRID_CONFIG.cols * GRID_CONFIG.tileSize);
         expect(layout.enemyX).toBeGreaterThan(layout.gridOffsetX + layout.gridWidth);
-        expect(layout.gridOffsetX).toBeLessThan((layout.canvasWidth - layout.gridWidth) / 2);
+        expect(layout.playerX).toBeLessThan(layout.gridOffsetX);
+
+        const gridCenter = layout.gridOffsetX + layout.gridWidth / 2;
+        expect(gridCenter).toBeCloseTo(layout.canvasWidth / 2, 0);
         expect(layout.handY).toBeGreaterThan(layout.gridOffsetY + layout.gridHeight);
         expect(layout.deckY + layout.pileHeight + 34).toBeLessThan(layout.handY);
         expect(layout.deckY).toBeGreaterThan(layout.gridOffsetY);
