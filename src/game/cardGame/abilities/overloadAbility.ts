@@ -19,12 +19,15 @@ const hasAbility = (step: ActivationStep, abilityId: string): boolean =>
     (getCardDefinitionOrThrow(step.definitionId).chainAbilityIds ?? []).includes(abilityId);
 
 /**
- * Payoff for combo chains: deals damage for every other skill card (fire, poison,
- * rupture, bulwark, …) in the chain, doubled when a Joker activates in the chain.
- * Resolves once per chain (only the first Surge contributes).
+ * Payoff for combo chains: when Surge (or Amp Core) activates, deals damage for
+ * every other skill card already in the chain, doubled if a Joker has activated.
+ * Resolves on the skill's own step (readable beat) — put Surge after your setup.
+ * Only the first overload card in the chain contributes.
  */
 export const overloadAbility: ChainAbility = {
     id: 'overload',
+    /** Play during the card's activation, not buried in end-of-chain effects. */
+    resolveOnStep: true,
     resolve ({ chain, stepIndex }: ChainAbilityContext): ChainAbilityDamage | null
     {
         if (chain.findIndex((step) => hasAbility(step, 'overload')) !== stepIndex)

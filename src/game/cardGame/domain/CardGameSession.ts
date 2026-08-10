@@ -1125,6 +1125,11 @@ export class CardGameSession
         return this.combat.getEnemyPoison(instanceId);
     }
 
+    applyPoisonStacks (stacks: number, targetInstanceId?: string): number
+    {
+        return this.combat.applyPoisonStacks(stacks, targetInstanceId);
+    }
+
     tickPoison (instanceId?: string): DamageResult
     {
         return this.combat.tickPoison(instanceId);

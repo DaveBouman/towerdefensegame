@@ -263,4 +263,26 @@ describe('chain abilities', () =>
         expect(resolved.enemyDamage).toBe(6);
         expect(resolved.poisonStacks).toBe(1);
     });
+
+    it('resolves overload on the Surge step from other skills already in the chain', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+        const chain = [
+            activationStep('fire', 0, 0, 'right'),
+            activationStep('poison', 0, 1, 'right'),
+            {
+                ...activationStep('surge', 0, 2, 'right'),
+                behaviorId: 'attack',
+                visualId: 'fire',
+                damage: 4,
+            },
+        ];
+
+        const resolved = resolveChainAbilities(chain, board);
+        const overload = resolved.effects.find((effect) => effect.abilityId === 'overload');
+
+        expect(overload?.stepIndex).toBe(2);
+        expect(overload?.enemyDamage).toBe(6);
+        expect(resolved.enemyDamage).toBeGreaterThanOrEqual(6);
+    });
 });

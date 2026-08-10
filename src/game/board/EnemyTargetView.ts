@@ -31,6 +31,8 @@ const PASSIVE_ICON_SIZE = 26;
 const PASSIVE_ICON_GAP = 4;
 const SHIELD_BADGE_HEIGHT = 30;
 const SHIELD_BADGE_GAP = 8;
+const POISON_BADGE_HEIGHT = 28;
+const POISON_BADGE_GAP = 6;
 const INTENT_ICON_SIZE = 28;
 const INTENT_AMOUNT_FONT_SIZE = 18;
 const INTENT_STACK_GAP = 3;
@@ -72,7 +74,9 @@ export class EnemyTargetView
     private readonly labelY: number;
     private readonly shieldBadge: Phaser.GameObjects.Container;
     private readonly shieldValueText: Phaser.GameObjects.Text;
-    private readonly poisonBadge: Phaser.GameObjects.Text;
+    private readonly poisonBadge: Phaser.GameObjects.Container;
+    private readonly poisonValueText: Phaser.GameObjects.Text;
+    private displayedPoison = 0;
     private readonly enemyLabel: Phaser.GameObjects.Text;
     private readonly combatTraitRowView: CombatTraitRowView;
     private combatTraitCount = 0;
@@ -279,13 +283,18 @@ export class EnemyTargetView
         this.shieldBadge = scene.add.container(enemySize / 2, 0, [ badgeBg, badgeLabel, this.shieldValueText ]);
         this.shieldBadge.setVisible(false);
 
-        this.poisonBadge = scene.add.text(enemySize - 6, 6, '', {
-            ...uiTextStyle(14, '#8fe3a0', {
-                bold: true,
-                backgroundColor: '#0a2a16cc',
-                padding: { x: 5, y: 2 },
-            }),
-        }).setOrigin(1, 0);
+        const poisonBg = scene.add.rectangle(0, 0, 108, POISON_BADGE_HEIGHT, 0x0a2a16, 0.92);
+        poisonBg.setStrokeStyle(2, 0x58d68d, 0.95);
+
+        const poisonLabel = scene.add.text(-46, 0, 'Poison', {
+            ...uiTextStyle(14, '#b8f5c8', { bold: true }),
+        }).setOrigin(0, 0.5);
+
+        this.poisonValueText = scene.add.text(46, 0, '0', {
+            ...uiTextStyle(19, '#8fe3a0', { bold: true }),
+        }).setOrigin(1, 0.5);
+
+        this.poisonBadge = scene.add.container(enemySize / 2, 0, [ poisonBg, poisonLabel, this.poisonValueText ]);
         this.poisonBadge.setVisible(false);
 
         container.add([
@@ -812,18 +821,29 @@ export class EnemyTargetView
             return;
         }
 
-        this.poisonBadge.setText(`\u2620 ${stacks}`);
-        this.poisonBadge.setVisible(stacks > 0);
+        this.displayedPoison = Math.max(0, stacks);
+        this.poisonValueText.setText(String(this.displayedPoison));
+        this.poisonBadge.setVisible(this.displayedPoison > 0);
+        this.syncStatusRowLayout();
     }
 
-    showPoisonApplied (stacks: number): void
+    showPoisonApplied (stacksAdded: number, totalStacks?: number): void
     {
-        if (stacks <= 0)
+        if (stacksAdded <= 0)
         {
             return;
         }
 
-        this.showFloatingNumber(`+${stacks} poison`, '#8fe3a0');
+        if (totalStacks !== undefined)
+        {
+            this.setPoison(totalStacks);
+        }
+        else
+        {
+            this.setPoison(this.displayedPoison + stacksAdded);
+        }
+
+        this.showFloatingNumber(`+${stacksAdded} POISON`, '#8fe3a0');
     }
 
     showPoisonTick (damage: number): void
@@ -833,7 +853,7 @@ export class EnemyTargetView
             return;
         }
 
-        this.showFloatingNumber(`-${damage} poison`, '#8fe3a0');
+        this.showFloatingNumber(`-${damage} POISON`, '#8fe3a0');
     }
 
     playHitFlash (): void
@@ -1127,6 +1147,11 @@ export class EnemyTargetView
             bottom += SHIELD_BADGE_GAP + SHIELD_BADGE_HEIGHT;
         }
 
+        if (this.displayedPoison > 0)
+        {
+            bottom += POISON_BADGE_GAP + POISON_BADGE_HEIGHT;
+        }
+
         return bottom;
     }
 
@@ -1134,6 +1159,7 @@ export class EnemyTargetView
     {
         this.combatTraitRowView.setRowY(this.getTraitRowY());
         this.updateShieldBadgePosition();
+        this.updatePoisonBadgePosition();
     }
 
     private updateShieldBadgePosition (): void
@@ -1141,6 +1167,18 @@ export class EnemyTargetView
         this.shieldBadge.setY(
             this.getContentStackBottomY() + SHIELD_BADGE_GAP + SHIELD_BADGE_HEIGHT / 2,
         );
+    }
+
+    private updatePoisonBadgePosition (): void
+    {
+        let y = this.getContentStackBottomY();
+
+        if (this.displayedShield > 0)
+        {
+            y += SHIELD_BADGE_GAP + SHIELD_BADGE_HEIGHT;
+        }
+
+        this.poisonBadge.setY(y + POISON_BADGE_GAP + POISON_BADGE_HEIGHT / 2);
     }
 
     private applyShieldVisuals (): void

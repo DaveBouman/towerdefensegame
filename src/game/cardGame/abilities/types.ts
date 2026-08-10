@@ -33,5 +33,10 @@ export interface ResolvedChainAbilities extends ChainAbilityDamage {
 
 export interface ChainAbility {
     id: string;
+    /**
+     * When true, playback applies this ability during the card's activation step
+     * (using the chain so far) instead of only in the end-of-chain batch.
+     */
+    resolveOnStep?: boolean;
     resolve (ctx: ChainAbilityContext): ChainAbilityDamage | null;
 }

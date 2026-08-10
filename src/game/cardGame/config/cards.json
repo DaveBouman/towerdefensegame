@@ -446,11 +446,11 @@
       "visualId": "salvage",
       "arrowPool": "orthogonal",
       "exhaustOnPlay": true,
-      "healOnKill": 5,
+      "healOnKill": 7,
       "tier": 2,
       "upgrade": {
         "power": 6,
-        "healOnKill": 8
+        "healOnKill": 10
       }
     },
     {

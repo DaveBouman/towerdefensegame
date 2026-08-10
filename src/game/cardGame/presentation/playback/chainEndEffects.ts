@@ -1,5 +1,6 @@
 import { GAME_RULES } from '../../config/cardRegistry';
 import type { ChainAbilityEffect } from '../../abilities/types';
+import { isOnStepChainAbility } from '../../abilities/chainAbilityRegistry';
 import type { BoardModel } from '../../domain/BoardModel';
 import type { CardGameSession } from '../../domain/CardGameSession';
 import type { ActivationStep, AttackSequence, SlotPosition } from '../../domain/types';
@@ -34,12 +35,15 @@ export function playEndOfChainEffects (
 ): void
 {
     const stepMs = GAME_RULES.activationStepMs;
-    const abilityEffects = [ ...sequence.chainAbilityEffects ].sort((a, b) => a.stepIndex - b.stepIndex);
+    // On-step abilities (e.g. Overload) already played during their card's activation.
+    const abilityEffects = [ ...sequence.chainAbilityEffects ]
+        .filter((effect) => !isOnStepChainAbility(effect.abilityId))
+        .sort((a, b) => a.stepIndex - b.stepIndex);
     const tasks: Array<(done: () => void) => void> = [];
 
     for (const effect of abilityEffects)
     {
-        tasks.push((done) => playAbilityEffectVisual(deps, effect, done));
+        tasks.push((done) => playChainAbilityEffectVisual(deps, effect, done));
     }
 
     if (offChainSlots.length > 0)
@@ -78,7 +82,8 @@ export function playEndOfChainEffects (
     runTask(0);
 }
 
-function playAbilityEffectVisual (
+/** Shared ability beat — used mid-chain (Surge overload) and at end-of-chain. */
+export function playChainAbilityEffectVisual (
     deps: ChainEndEffectsDeps,
     effect: ChainAbilityEffect,
     onComplete: () => void,
@@ -106,7 +111,10 @@ function playAbilityEffectVisual (
         {
             const damage = session.scaleAbilityEnemyDamage(effect.abilityId, effect.enemyDamage);
 
-            applyEnemyHitResult(deps, session.dealAttackDamage(damage));
+            applyEnemyHitResult(deps, session.dealAttackDamage(damage), {
+                visualId: effect.visualId,
+                behaviorId: effect.abilityId === 'overload' ? 'attack' : undefined,
+            });
         }
 
         if (effect.poisonStacks > 0)
@@ -114,9 +122,10 @@ function playAbilityEffectVisual (
             const targetId = session.getAttackTargetId()
                 ?? session.getLivingCombatants()[0]?.instanceId;
             const enemyView = targetId ? deps.enemySquad.getView(targetId) : deps.enemySquad.firstView;
-            const stacks = session.scalePoisonStacks(effect.poisonStacks);
+            const applied = session.applyPoisonStacks(effect.poisonStacks, targetId);
+            const total = session.getEnemyPoison(targetId);
 
-            enemyView?.showPoisonApplied(stacks);
+            enemyView?.showPoisonApplied(applied, total);
         }
 
         if (effect.playerDamage > 0)
@@ -138,7 +147,7 @@ function playAbilityEffectVisual (
                     target.width / 2,
                     target.height * 0.22,
                     label,
-                    '#f39c12',
+                    effect.abilityId === 'overload' ? '#fcee0a' : '#f39c12',
                 );
             }
         }
@@ -228,7 +237,14 @@ function formatAbilityEffectLabel (
 {
     if (effect.enemyDamage > 0)
     {
-        return `+${session.scaleAbilityEnemyDamage(effect.abilityId, effect.enemyDamage)}`;
+        const amount = session.scaleAbilityEnemyDamage(effect.abilityId, effect.enemyDamage);
+
+        if (effect.abilityId === 'overload')
+        {
+            return `OVERLOAD ${amount}`;
+        }
+
+        return `+${amount}`;
     }
 
     if (effect.armorGain > 0)
@@ -238,7 +254,7 @@ function formatAbilityEffectLabel (
 
     if (effect.poisonStacks > 0)
     {
-        return `+${session.scalePoisonStacks(effect.poisonStacks)} poison`;
+        return `POISON +${session.scalePoisonStacks(effect.poisonStacks)}`;
     }
 
     if (effect.playerDamage > 0)

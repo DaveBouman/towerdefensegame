@@ -16,7 +16,7 @@ branching **run map** (roguelite-style path of battles).
 - Chain resolves step-by-step (attack, defend, fire, poison, joker, hazard, boost).
 - Enemy acts with telegraphed intent (attack/shield + hazard traps).
 - Win: all enemy HP ≤ 0. Lose: player HP ≤ 0.
-- Multi-enemy fights: click an enemy to set your attack target before attacking; pick a new target mid-chain if the current one dies.
+- Multi-enemy fights: click an enemy to set your attack target before attacking; pick a new target mid-chain if the current one dies. When **all** enemies are dead, the chain stops (remaining cards do not activate).
 
 ## Run structure
 
@@ -204,7 +204,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | Fire alternation | `fireAlternationAbility.ts` | +3 damage per alternating attack/defend after fire |
 | Bleed (Rupture / Shiv / Lacerate) | `bleedAbility.ts` | +2 damage per attack in the chain beyond 2 (rewards attack-heavy chains) |
 | Fortify (Bulwark / Bramble) | `fortifyAbility.ts` | +2 armor per defend in the chain beyond 2 (rewards defend-heavy chains) |
-| Overload (Surge) | `overloadAbility.ts` | +3 damage per other skill card in the chain, doubled if a Joker activates |
+| Overload (Surge) | `overloadAbility.ts` | When Surge activates: +3 damage per other skill already in the chain, ×2 if a Joker already fired; shows `OVERLOAD N` on the card + enemy hit |
 | Combo starters | `cards.json` — Shiv, Miasma, Cinder, Lacerate, Scorch, Bramble | Diagonal/corner/lunge variants that pair routing with bleed, poison trail, fire alternation, or fortify |
 | Battle modifiers | `battleModifiers.ts`, `battle-mod` behavior, `battle-mod` enemy intent | ±10% to enemy attack, damage taken, shield gained, or damage dealt — player cards (Glitch/Hardwire/Patch/Overclock) and enemy intents. **All modifiers last until energy refills.** Active chips sit **below** the player/enemy panels (`BattleModifierStatusView`): enemy-attack under enemies, other stats under the player. Each stat has a distinct color; % text is green (buff) or red (debuff). |
 | Echo | `echo` behavior, `echoReplay.ts` | Re-activates the previous chain card (damage, armor, battle modifiers) then activates itself |
@@ -337,6 +337,8 @@ remain as a fallback if a portrait fails to load.
 | 2026-08-10 | **Player status layout.** Active battle-modifier chips anchor below the full RUNNER / body-mod trait stack (icon centers no longer overlap the name or trait row). |
 | 2026-08-10 | **Steam-ready main menu.** Home / Settings / How to play / Credits / Quit. Settings holds seed, Master/Music/SFX, text size, fullscreen, and replay tutorial tips. Desktop bridge `window.signalChainDesktop` documented in `docs/electron-steam.md` for future Electron packaging. |
 | 2026-08-10 | **Split audio buses.** Main menu exposes Master / Music / SFX sliders plus mute (`audioSettings.ts`). Effective gains are `master × bus`; BGM still multiplies per-track `BGM_LEVEL`. Legacy single volume migrates into master. |
+| 2026-08-10 | **Chain stops on clear.** When the last living enemy dies mid-chain, remaining cards do not activate (end-of-chain effects still resolve for the partial chain). |
+| 2026-08-10 | **Salvage heal-on-kill.** Salvage restores **7** HP on kill (upgraded **10**). |
 | 2026-08-10 | **Card collection index.** Main menu **Card index** shows every collectible card as unlocked or locked (`???`). Starter deck cards unlock on boot; rewards, shop buys, and event deck gains unlock permanently via `localStorage` (`cardCollection.ts`). |
 | 2026-08-10 | **Card index interaction fix.** Collection overlay mounts outside `.main-menu` (which uses `pointer-events: none`) so scroll, card select, and hover tooltips work; tooltips render below cards to avoid grid clipping. Menu + card index use `emitRunSfx` for open/select/filter/close and primary nav clicks. |
 | 2026-08-10 | **UI text size setting.** Settings → Display offers Small / Medium / Large; persists via `localStorage` and sets CSS `--text-scale` (`textScale.ts`). Medium matches the previous default (1.15). |
@@ -353,6 +355,8 @@ remain as a fallback if a portrait fails to load.
 | 2026-08-10 | **Chain-start arrow scale fix.** `setChainStartActive` no longer calls `setScale(1)` on SVG arrow images (that reset `setDisplaySize` back to the ~512px texture). |
 | 2026-08-10 | **Enemy bestiary.** Main menu / pause **Bestiary** logs hostiles on encounter (`enemyBestiary.ts`, localStorage). Locked entries show `???`; unlocked show portrait, role, stats, and passive/trait dossier. Training Dummy excluded. |
 | 2026-08-10 | **Synergy-seeded starter.** Default Runner deck keeps routing core but seeds Fire, Poison, Rupture, Bulwark, and Surge (plus Echo/Joker/Overclock/Hardwire/Glitch) so early fights preview combo play. Character kits later. |
+| 2026-08-10 | **Surge Overload on activation.** Overload damage plays during the Surge step (not end-of-chain): enemy hit + yellow `OVERLOAD N` float. Counts skills already in the chain — place Surge after setup. |
+| 2026-08-10 | **Poison debuff chip.** Poison stacks apply during the trail beat and show a persistent **Poison N** status chip under the enemy (not only a float). |
 | 2026-08-10 | **Main menu.** Boot opens on `menu` (`MainMenuOverlay`): set seed, mute/volume, then Start run. Digital map backdrop plays behind the menu. Victory/defeat offer Main menu or New run / Try again. |
 | 2026-08-10 | **Switchback card.** New attack card deals 2× resolved damage (`stepDamageMultiplier`) but cycles lock target to the next living enemy after it hits (`switchTargetAfterHit`). In reward/elite pools. |
 | 2026-08-10 | **First-round off-chain tip.** After dismissing the combat coach on the first battle, a popup explains that loose attack/defense cards on the board still grant off-chain bonuses (+2 damage / +2 armor from `gameRules.json`). |

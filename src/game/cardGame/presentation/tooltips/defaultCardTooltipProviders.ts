@@ -179,8 +179,8 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: [
             `Deals ${ctx.definition.power} damage when activated in the chain.`,
-            `Overload: +${GAME_RULES.chainAbilities.overload.damagePerAbilityCard} damage per other skill card in the chain, doubled if a Joker activates.`,
-            'Uses diagonal arrows.',
+            `Overload: when this activates, +${GAME_RULES.chainAbilities.overload.damagePerAbilityCard} damage per other skill card already in the chain (doubled if a Joker already activated).`,
+            'Uses diagonal arrows. Place it after your setup skills so the payoff is clear.',
         ],
     })),
     provider('fire', (ctx) => ({

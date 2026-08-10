@@ -20,12 +20,17 @@ import type { ActivationStep, AttackSequence, AttackStep, SlotPosition } from '.
 import type { CardBoardView } from '../../../board/CardBoardView';
 import type { EnemySquadView } from '../../../board/EnemySquadView';
 import { applyEnemyHitResult, type CombatHitVisualDeps } from './combatHitVisuals';
-import { playEndOfChainEffects } from './chainEndEffects';
+import { playChainAbilityEffectVisual, playEndOfChainEffects } from './chainEndEffects';
 import { getChainStepMs } from '../combatJuice';
 import { playBattleModifierFloatingLabel } from '../battleModifierFloatingLabel';
 import { boostedBuffVisual } from '../visualEffects/boostedBuffVisual';
 import { playFloatingText } from '../visualEffects/visualEffectTweens';
 import { getCardVisualEffectOrThrow } from '../visualEffects/visualEffectRegistry';
+import {
+    isOnStepChainAbility,
+    resolveChainAbilities,
+} from '../../abilities/chainAbilityRegistry';
+import type { ChainAbilityEffect } from '../../abilities/types';
 
 export interface ChainPlaybackDeps extends CombatHitVisualDeps
 {
@@ -112,7 +117,9 @@ export function runChainPlayback (
             ...getUnchainedHazardSlots(board, chain),
             ...getUnchainedCurseSlots(board, chain),
         ];
-        const hasEndEffects = sequence.chainAbilityEffects.length > 0
+        const deferredAbilityEffects = sequence.chainAbilityEffects
+            .filter((effect) => !isOnStepChainAbility(effect.abilityId));
+        const hasEndEffects = deferredAbilityEffects.length > 0
             || offChainSlots.length > 0
             || hazardSlots.length > 0
             || sequence.abilityPlayerDamage > 0
@@ -455,6 +462,13 @@ export function runChainPlayback (
         {
             finishActiveStep();
 
+            // No living enemies left — skip remaining chain cards.
+            if (deps.session.getLivingCombatants().length === 0)
+            {
+                finalize();
+                return;
+            }
+
             if (chain.length >= GAME_RULES.maxChainSteps)
             {
                 finalize();
@@ -487,13 +501,51 @@ export function runChainPlayback (
         deps.activateStep(step, boosted ? boostMultiplier : 1);
         grantStepArmor(step);
 
+        const playOnStepAbilitiesThen = (next: () => void): void =>
+        {
+            const onStepEffects = resolveChainAbilities(resolvedChain, board).effects
+                .filter((effect: ChainAbilityEffect) =>
+                    effect.stepIndex === stepIndex && isOnStepChainAbility(effect.abilityId));
+
+            if (onStepEffects.length === 0)
+            {
+                next();
+                return;
+            }
+
+            let effectIndex = 0;
+
+            const playNextEffect = (): void =>
+            {
+                if (effectIndex >= onStepEffects.length)
+                {
+                    next();
+                    return;
+                }
+
+                const effect = onStepEffects[effectIndex]!;
+                effectIndex += 1;
+                playChainAbilityEffectVisual(
+                    {
+                        ...deps,
+                        scheduleAttackTimer: deps.scheduleAttackTimer,
+                    },
+                    effect,
+                    playNextEffect,
+                );
+            };
+
+            playNextEffect();
+        };
+
         if (resolvedStep.damage > 0)
         {
             dealStepDamage(
                 resolvedStep.damage,
                 definition.id,
                 resolvedStep,
-                () => scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs),
+                () => playOnStepAbilitiesThen(() =>
+                    scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs)),
             );
             return;
         }
@@ -503,7 +555,8 @@ export function runChainPlayback (
             deps.boardView.showJokerDirectionPicker(step.slot, (direction) =>
             {
                 applyJokerChosenDirection(step, direction);
-                scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs);
+                playOnStepAbilitiesThen(() =>
+                    scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs));
             });
 
             return;
@@ -511,16 +564,17 @@ export function runChainPlayback (
 
         if (chain.length >= GAME_RULES.maxChainSteps)
         {
-            scheduleStepCompletion(() =>
+            playOnStepAbilitiesThen(() => scheduleStepCompletion(() =>
             {
                 finishActiveStep();
                 finalize();
-            }, stepActivatedAt, stepDurationMs);
+            }, stepActivatedAt, stepDurationMs));
 
             return;
         }
 
-        scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs);
+        playOnStepAbilitiesThen(() =>
+            scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs));
     };
 
     runStep();

@@ -43,6 +43,9 @@ export const getChainAbilityOrThrow = (id: string): ChainAbility =>
     return ability;
 };
 
+export const isOnStepChainAbility = (abilityId: string): boolean =>
+    getChainAbility(abilityId)?.resolveOnStep === true;
+
 const emptyDamage = (): ChainAbilityDamage => ({
     enemyDamage: 0,
     playerDamage: 0,

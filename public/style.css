@@ -3480,7 +3480,7 @@ html, body, #root {
 .tutorial-overlay {
     position: fixed;
     inset: 0;
-    z-index: 50;
+    z-index: 400;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3489,7 +3489,7 @@ html, body, #root {
 }
 
 .tutorial-overlay--battle {
-    z-index: 310;
+    z-index: 410;
     background: rgba(4, 8, 16, 0.55);
     pointer-events: auto;
 }

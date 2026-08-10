@@ -389,8 +389,8 @@ describe('CardGameSession enemy turn', () =>
         const result = session.dealAttackDamage(999, 'enemy-0', 'salvage');
 
         expect(result.enemyKilled).toBe(true);
-        expect(result.healOnKill).toBe(5);
-        expect(session.getPlayer().health).toBe(before + 5);
+        expect(result.healOnKill).toBe(7);
+        expect(session.getPlayer().health).toBe(before + 7);
     });
 
     it('keeps glitch active across enemy turns until energy resets', () =>

@@ -52,6 +52,7 @@ export class CombatResolver
     private attackInProgress = false;
     private damageDealtThisAttack = 0;
     private armorGrantedThisAttack = 0;
+    private poisonAppliedThisAttack = 0;
     private runAttackCount: number;
     private doubleDamageThisAttack = false;
     private playerHitsBlockedRemaining?: number;
@@ -104,6 +105,7 @@ export class CombatResolver
         this.attackInProgress = true;
         this.damageDealtThisAttack = 0;
         this.armorGrantedThisAttack = 0;
+        this.poisonAppliedThisAttack = 0;
         this.doubleDamageThisAttack = false;
 
         if (!this.ctx.puzzleMode)
@@ -323,14 +325,19 @@ export class CombatResolver
 
         this.ctx.player.shield += this.scalePlayerArmorGain(remainingArmor);
 
-        if (sequence.abilityPoisonStacks > 0)
+        const remainingPoison = Math.max(
+            0,
+            this.scalePoisonStacks(sequence.abilityPoisonStacks) - this.poisonAppliedThisAttack,
+        );
+
+        if (remainingPoison > 0)
         {
-            target.state.poison = (target.state.poison ?? 0)
-                + this.scalePoisonStacks(sequence.abilityPoisonStacks);
+            target.state.poison = (target.state.poison ?? 0) + remainingPoison;
         }
 
         this.damageDealtThisAttack = 0;
         this.armorGrantedThisAttack = 0;
+        this.poisonAppliedThisAttack = 0;
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_COMPLETED, {
             sequence,
@@ -349,6 +356,7 @@ export class CombatResolver
     {
         this.damageDealtThisAttack = 0;
         this.armorGrantedThisAttack = 0;
+        this.poisonAppliedThisAttack = 0;
         this.attackInProgress = false;
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_CANCELLED);
     }
@@ -450,6 +458,25 @@ export class CombatResolver
             : this.ctx.getTargetCombatant();
 
         return combatant?.state.poison ?? 0;
+    }
+
+    /** Applies poison stacks during chain playback; completeAttack only adds any remainder. */
+    applyPoisonStacks (stacks: number, targetInstanceId?: string): number
+    {
+        const scaled = this.scalePoisonStacks(stacks);
+
+        if (scaled <= 0 || this.ctx.getLivingCombatants().length === 0)
+        {
+            return 0;
+        }
+
+        const targetId = this.ctx.resolveAttackTargetId(targetInstanceId);
+        const combatant = this.ctx.getCombatantOrThrow(targetId);
+
+        combatant.state.poison = (combatant.state.poison ?? 0) + scaled;
+        this.poisonAppliedThisAttack += scaled;
+
+        return scaled;
     }
 
     tickPoison (instanceId?: string): DamageResult
