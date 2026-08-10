@@ -16,7 +16,7 @@ export const SfxMuteButton = () =>
             title={muted ? 'Unmute audio' : 'Mute audio'}
             onClick={() => toggleSfxMuted()}
         >
-            {muted ? '🔇' : '🔊'}
+            {muted ? 'MUTE' : 'AUDIO'}
         </button>
     );
 };

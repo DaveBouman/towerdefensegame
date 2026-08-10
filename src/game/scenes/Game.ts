@@ -1,4 +1,5 @@
 import { applyBoardLayout, computeBoardLayout, type BoardLayout } from '../board/boardLayout';
+import { BattlefieldBackgroundView } from '../board/BattlefieldBackgroundView';
 import { ArmorView } from '../board/ArmorView';
 import { CardBoardView } from '../board/CardBoardView';
 import { CardHandView } from '../board/CardHandView';
@@ -61,6 +62,7 @@ export class Game extends Scene
     private battleResolved = false;
     private activePuzzleId: string | null = null;
     private lowHpVignette?: Phaser.GameObjects.Rectangle;
+    private battlefieldBackground?: BattlefieldBackgroundView;
     private unbindAudio?: () => void;
     private unbindBgm?: () => void;
 
@@ -209,6 +211,11 @@ export class Game extends Scene
         const { width, height } = this.scale;
         this.layout = computeBoardLayout(width, height);
         const layout = this.layout;
+
+        this.battlefieldBackground?.destroy();
+        this.battlefieldBackground = new BattlefieldBackgroundView(this);
+        this.battlefieldBackground.resize(width, height, layout);
+
         this.rerollModeActive = false;
         this.battleResolved = false;
         this.session = new CardGameSession(
@@ -377,6 +384,7 @@ export class Game extends Scene
         }
 
         this.layout = computeBoardLayout(gameSize.width, gameSize.height);
+        this.battlefieldBackground?.resize(gameSize.width, gameSize.height, this.layout);
         applyBoardLayout(this.layout, {
             board: this.boardView,
             hand: this.handView.container,
@@ -417,6 +425,8 @@ export class Game extends Scene
         this.battleActive = false;
         this.activePuzzleId = null;
         this.rerollModeActive = false;
+        this.battlefieldBackground?.destroy();
+        this.battlefieldBackground = undefined;
         this.lowHpVignette?.destroy();
         this.lowHpVignette = undefined;
     }

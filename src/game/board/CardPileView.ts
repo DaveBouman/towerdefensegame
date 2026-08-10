@@ -1,7 +1,7 @@
 import { buildCardBackGraphic, buildCardGraphic } from '../cards/CardRenderer';
 import { PILE_CARD_HEIGHT, PILE_CARD_WIDTH } from '../cards/cardVisuals';
 import { CYBER } from '../config/cyberpunkTheme';
-import { drawCornerBrackets } from '../config/cyberpunkUiGraphics';
+import { drawCornerBrackets, drawNeonPanel } from '../config/cyberpunkUiGraphics';
 import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
 import type { CardInstance } from '../cardGame/domain/types';
 import type { BoardLayout } from './boardLayout';
@@ -16,8 +16,8 @@ export class CardPileView
     private readonly countText: Phaser.GameObjects.Text;
     private readonly stackContainer: Phaser.GameObjects.Container;
     private readonly stackSlots: Phaser.GameObjects.Container[] = [];
-    private readonly frame: Phaser.GameObjects.Rectangle;
-    private frameBorder = 0xffffff;
+    private readonly frame: Phaser.GameObjects.Graphics;
+    private readonly frameHitArea: Phaser.GameObjects.Rectangle;
     private count = 0;
     private readonly kind: 'deck' | 'graveyard';
 
@@ -43,16 +43,43 @@ export class CardPileView
 
         this.container = scene.add.container(x, y);
 
-        const frame = scene.add.rectangle(0, 0, frameW, frameH, fill, 0.94);
+        const frame = scene.add.graphics();
 
-        frame.setOrigin(0, 0);
-        frame.setStrokeStyle(2, border, 0.95);
+        drawNeonPanel(frame, 0, 0, frameW, frameH, fill, border, 0.96, 0.72);
         this.frame = frame;
-        this.frameBorder = border;
+
+        const well = scene.add.graphics();
+
+        well.fillStyle(0x060a12, 0.92);
+        well.fillRect(WELL_PAD, WELL_PAD, pileWidth, pileHeight);
+        well.lineStyle(1, border, 0.18);
+
+        for (let xLine = WELL_PAD; xLine <= WELL_PAD + pileWidth; xLine += 12)
+        {
+            well.beginPath();
+            well.moveTo(xLine, WELL_PAD);
+            well.lineTo(xLine, WELL_PAD + pileHeight);
+            well.strokePath();
+        }
+
+        for (let yLine = WELL_PAD; yLine <= WELL_PAD + pileHeight; yLine += 12)
+        {
+            well.beginPath();
+            well.moveTo(WELL_PAD, yLine);
+            well.lineTo(WELL_PAD + pileWidth, yLine);
+            well.strokePath();
+        }
 
         const brackets = scene.add.graphics();
 
         drawCornerBrackets(brackets, 4, 4, frameW - 8, frameH - 8, border, { arm: 10, alpha: 0.8 });
+
+        const accent = scene.add.graphics();
+
+        accent.fillStyle(border, 0.35);
+        accent.fillRect(0, 0, frameW, 2);
+        accent.fillStyle(border, 0.12);
+        accent.fillRect(0, frameH - 3, frameW, 1);
 
         const maxStackDepth = (MAX_VISIBLE_STACK - 1) * STACK_OFFSET;
         const stackX = Math.round((frameW - PILE_CARD_WIDTH - maxStackDepth) / 2);
@@ -91,24 +118,42 @@ export class CardPileView
             ...uiTextStyle(13, kind === 'deck' ? '#7af0ff' : '#ffd4b8', { bold: true }),
         }).setOrigin(0.5, 0);
 
-        this.container.add([ frame, brackets, stackMaskShape, this.stackContainer, this.countText, title ]);
+        this.container.add([ frame, well, brackets, accent, stackMaskShape, this.stackContainer, this.countText, title ]);
         this.applyStack(0, null);
+
+        const hitArea = scene.add.rectangle(0, 0, frameW, frameH, 0x000000, 0);
+
+        hitArea.setOrigin(0, 0);
+        hitArea.setInteractive({ useHandCursor: true });
+        this.frameHitArea = hitArea;
+        this.container.add(hitArea);
     }
 
     /** Makes the pile clickable to inspect its contents. */
     setClickHandler (handler: () => void): void
     {
-        this.frame.setInteractive({ useHandCursor: true });
-
-        this.frame.on('pointerover', () =>
+        this.frameHitArea.removeAllListeners();
+        this.frameHitArea.on('pointerover', () =>
         {
-            this.frame.setStrokeStyle(3, this.frameBorder, 1);
+            this.scene.tweens.add({
+                targets: this.container,
+                scaleX: 1.04,
+                scaleY: 1.04,
+                duration: 120,
+                ease: 'Quad.easeOut',
+            });
         });
-        this.frame.on('pointerout', () =>
+        this.frameHitArea.on('pointerout', () =>
         {
-            this.frame.setStrokeStyle(2, this.frameBorder, 0.95);
+            this.scene.tweens.add({
+                targets: this.container,
+                scaleX: 1,
+                scaleY: 1,
+                duration: 120,
+                ease: 'Quad.easeOut',
+            });
         });
-        this.frame.on('pointerdown', () =>
+        this.frameHitArea.on('pointerdown', () =>
         {
             handler();
         });

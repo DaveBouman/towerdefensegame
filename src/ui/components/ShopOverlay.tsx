@@ -3,6 +3,7 @@ import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistr
 import { listUpgradableCardsInDeck } from '../../game/run/cardUpgrades';
 import type { ShopOffer } from '../../game/run/shop';
 import { NodeKindIcon } from './NodeKindIcon';
+import { CyberPanelChrome } from './CyberPanel';
 
 interface ShopOverlayProps {
     offers: ShopOffer[];
@@ -146,7 +147,9 @@ export const ShopOverlay = ({
 
         return (
             <div className="shop-overlay shop-overlay--enter">
-                <div className="shop-overlay__panel">
+                <div className="cp-overlay__backdrop" aria-hidden="true" />
+                <div className="shop-overlay__panel cp-panel cp-panel--gold">
+                    <CyberPanelChrome variant="gold" />
                     <p className="shop-overlay__eyebrow">Ripperdoc</p>
                     <h1 className="shop-overlay__title">
                         {picking === 'remove' ? 'Choose a card to remove' : 'Choose a card to upgrade'}
@@ -186,7 +189,9 @@ export const ShopOverlay = ({
 
     return (
         <div className="shop-overlay shop-overlay--enter">
-            <div className="shop-overlay__panel">
+            <div className="cp-overlay__backdrop" aria-hidden="true" />
+            <div className="shop-overlay__panel cp-panel cp-panel--gold">
+                <CyberPanelChrome variant="gold" />
                 <div className="shop-overlay__header">
                     <span className="shop-overlay__icon">
                         <NodeKindIcon kind="shop" />

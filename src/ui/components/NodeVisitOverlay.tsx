@@ -1,6 +1,7 @@
 import { NODE_KIND_INFO } from '../../game/run/nodeKinds';
 import type { RunMapNode } from '../../game/run/runMap';
 import { NodeKindIcon } from './NodeKindIcon';
+import { CyberPanelChrome } from './CyberPanel';
 
 interface NodeVisitOverlayProps {
     node: RunMapNode;
@@ -18,7 +19,9 @@ export const NodeVisitOverlay = ({ node, gold, onContinue }: NodeVisitOverlayPro
 
     return (
         <div className={`node-visit node-visit--${node.kind}`}>
-            <div className="node-visit__panel">
+            <div className="cp-overlay__backdrop" aria-hidden="true" />
+            <div className="node-visit__panel cp-panel cp-panel--cyan">
+                <CyberPanelChrome variant="cyan" />
                 <span className="node-visit__icon">
                     <NodeKindIcon kind={node.kind} />
                 </span>

@@ -3,6 +3,7 @@ import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistr
 import { listUpgradableCardsInDeck } from '../../game/run/cardUpgrades';
 import { getRestHealAmount, REST_HEAL_FRACTION } from '../../game/run/restSite';
 import { NodeKindIcon } from './NodeKindIcon';
+import { CyberPanelChrome } from './CyberPanel';
 
 interface RestOverlayProps {
     deck: readonly string[];
@@ -74,7 +75,9 @@ export const RestOverlay = ({
     {
         return (
             <div className="shop-overlay rest-overlay rest-overlay--enter">
-                <div className="shop-overlay__panel">
+                <div className="cp-overlay__backdrop" aria-hidden="true" />
+                <div className="shop-overlay__panel cp-panel cp-panel--green">
+                    <CyberPanelChrome variant="green" />
                     <p className="shop-overlay__eyebrow">Safehouse</p>
                     <h1 className="shop-overlay__title">Choose a card to upgrade</h1>
                     <p className="shop-overlay__subtitle">Free chrome grind — this cannot be undone.</p>
@@ -106,7 +109,9 @@ export const RestOverlay = ({
 
     return (
         <div className="shop-overlay rest-overlay rest-overlay--enter">
-            <div className="shop-overlay__panel">
+            <div className="cp-overlay__backdrop" aria-hidden="true" />
+            <div className="shop-overlay__panel cp-panel cp-panel--green">
+                <CyberPanelChrome variant="green" />
                 <div className="shop-overlay__header">
                     <span className="shop-overlay__icon">
                         <NodeKindIcon kind="rest" />

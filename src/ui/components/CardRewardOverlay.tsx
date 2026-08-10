@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { describeCardReward } from '../../game/run/rewards';
+import { CardChip } from './CardChip';
+import { CyberPanelChrome } from './CyberPanel';
 
 interface CardRewardOverlayProps {
     /** Card definition ids offered as choices. */
@@ -88,7 +90,9 @@ export const CardRewardOverlay = ({
 
     return (
         <div className="card-reward">
-            <div className="card-reward__panel">
+            <div className="cp-overlay__backdrop" aria-hidden="true" />
+            <div className="card-reward__panel cp-panel cp-panel--cyan">
+                <CyberPanelChrome variant="cyan" />
                 <p className="card-reward__eyebrow">{eyebrow}</p>
                 <h1 className="card-reward__title">{resolvedTitle}</h1>
                 {subtitle && <p className="card-reward__subtitle">{subtitle}</p>}
@@ -111,15 +115,19 @@ export const CardRewardOverlay = ({
                             <button
                                 key={`${card.definitionId}-${index}`}
                                 type="button"
-                                className={`card-reward__card${isSelected ? ' card-reward__card--selected' : ''}${isRevealed ? ' card-reward__card--revealed' : ''}`}
+                                className={`card-reward__choice${isSelected ? ' card-reward__choice--selected' : ''}${isRevealed ? ' card-reward__choice--revealed' : ''}`}
                                 onClick={() => toggle(card.definitionId)}
                             >
-                                <span className="card-reward__card-power">{card.power}</span>
-                                <span className={`card-reward__card-tier card-reward__card-tier--${card.tier}`}>
+                                <CardChip
+                                    definitionId={card.definitionId}
+                                    label={card.label}
+                                    power={card.power}
+                                    size="hand"
+                                />
+                                <span className={`card-reward__tier card-reward__tier--${card.tier}`}>
                                     {card.tier === 1 ? 'Common' : card.tier === 2 ? 'Uncommon' : 'Rare'}
                                 </span>
-                                <span className="card-reward__card-name">{card.label}</span>
-                                <span className="card-reward__card-blurb">{card.blurb}</span>
+                                <span className="card-reward__blurb">{card.blurb}</span>
                             </button>
                         );
                     })}

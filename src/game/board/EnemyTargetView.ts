@@ -29,6 +29,8 @@ import type { BoardLayout } from './boardLayout';
 
 const PASSIVE_ICON_SIZE = 26;
 const PASSIVE_ICON_GAP = 4;
+const SHIELD_BADGE_HEIGHT = 30;
+const SHIELD_BADGE_GAP = 8;
 const INTENT_ICON_SIZE = 28;
 const INTENT_AMOUNT_FONT_SIZE = 18;
 const INTENT_STACK_GAP = 3;
@@ -274,7 +276,7 @@ export class EnemyTargetView
             ...uiTextStyle(19, '#ffffff', { bold: true }),
         }).setOrigin(1, 0.5);
 
-        this.shieldBadge = scene.add.container(enemySize / 2, enemySize + 52, [ badgeBg, badgeLabel, this.shieldValueText ]);
+        this.shieldBadge = scene.add.container(enemySize / 2, 0, [ badgeBg, badgeLabel, this.shieldValueText ]);
         this.shieldBadge.setVisible(false);
 
         this.poisonBadge = scene.add.text(enemySize - 6, 6, '', {
@@ -307,12 +309,14 @@ export class EnemyTargetView
         this.container = container;
         this.lastEnemyState = enemy;
         this.setHealth(enemy);
+        this.updateShieldBadgePosition();
         this.startIdlePulse();
     }
 
     setEnemyLabel (label: string): void
     {
         this.enemyLabel.setText(label);
+        this.updateShieldBadgePosition();
     }
 
     setCombatTraits (traits: readonly CombatTraitConfig[]): void
@@ -706,6 +710,7 @@ export class EnemyTargetView
         this.shieldBarBg.setVisible(shield > 0);
         this.shieldBarFill.setVisible(shield > 0);
         this.shieldBarFill.setScale(Math.min(1, shield / 10), 1);
+        this.updateShieldBadgePosition();
         this.applyShieldVisuals();
     }
 
@@ -1072,19 +1077,36 @@ export class EnemyTargetView
         return this.getTraitRowY() + COMBAT_TRAIT_ICON_SIZE + COMBAT_TRAIT_ICON_GAP + 4;
     }
 
+    private getStatusStackBottomY (): number
+    {
+        let bottom = this.labelY + this.enemyLabel.height;
+
+        if (this.combatTraitCount > 0)
+        {
+            bottom = this.getTraitRowY() + COMBAT_TRAIT_ICON_SIZE;
+        }
+
+        if (this.passiveCount > 0)
+        {
+            bottom = this.getPassiveRowY() + PASSIVE_ICON_SIZE;
+        }
+
+        if (this.thresholdLineCount > 0)
+        {
+            const thresholdTop = this.getPassiveRowY()
+                + (this.passiveCount > 0 ? PASSIVE_ICON_SIZE / 2 + 12 : 4);
+
+            bottom = thresholdTop + this.thresholdLineCount * 14 + 8;
+        }
+
+        return bottom;
+    }
+
     private updateShieldBadgePosition (): void
     {
-        const belowTraits = this.combatTraitCount > 0
-            ? COMBAT_TRAIT_ICON_SIZE + 8
-            : 0;
-        const belowPassives = this.passiveCount > 0
-            ? PASSIVE_ICON_SIZE + 8
-            : 0;
-        const belowThreshold = this.thresholdLineCount > 0
-            ? 12 + this.thresholdLineCount * 14
-            : 0;
-
-        this.shieldBadge.setY(this.getTraitRowY() + belowTraits + belowPassives + belowThreshold + 10);
+        this.shieldBadge.setY(
+            this.getStatusStackBottomY() + SHIELD_BADGE_GAP + SHIELD_BADGE_HEIGHT / 2,
+        );
     }
 
     private applyShieldVisuals (): void

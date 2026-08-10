@@ -305,6 +305,9 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-10 | **UI polish pass.** Shared cyber panel chrome (`CyberPanel.tsx`) applied across shop, safehouse, card rewards, run end, node visit. Card rewards use `CardChip`; phase-based canvas dimming; hand dock tray; cyberpunk theme extended to shop/rest/tutorial/banners/body mods/audio toggle. |
+| 2026-08-10 | **Deck / graveyard UI polish.** Pile inspector overlay restyled (corner brackets, scanlines, cyan deck / magenta graveyard accents, card slots with hover glow). Battlefield pile widgets use neon panels + grid well. |
+| 2026-08-10 | **Battlefield backdrop.** Procedural cyberpunk arena background during fights (perspective grid, neon glow behind board, circuit traces, scan sweep, HUD corner brackets). `BattlefieldBackgroundView` in `src/game/board/`. |
 | 2026-08-10 | **Audio polish.** Card/UI SFX retuned to crisp digital ticks (less noise/sub mud). BGM files tail-trimmed via `npm run trim-bgm` so loops skip the outro fade; playback uses simple `loop: true`. |
 | 2026-08-10 | **Background music.** Cyberpunk dubstep loops: *Glass Streets at Midnight* (run/map), *Concrete Veins* (combat/lieutenant/puzzles), *Last Gatekeeper* (Warden intro + boss fight). Crossfade between tracks; mute toggle covers BGM + SFX. Files in `public/assets/music/`. |
 | 2026-08-10 | **Sound effects.** Procedural placeholder WAVs (`scripts/generate-sfx.mjs`); Phaser audio wired for combat hits, card placement, chain steps, kills, shield/heal, map travel, rewards, shop, floor/boss intros, victory/defeat. Mute toggle (top-right); preference stored in localStorage. Replace assets per `public/assets/sfx/README.md` (Kenney CC0 recommended). |

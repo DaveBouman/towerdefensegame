@@ -886,9 +886,16 @@ function App()
     }, [ resetRun ]);
 
     const lowHealth = runMaxHealth > 0 && playerHealth / runMaxHealth <= 0.25;
+    const appPhaseClass = `app--phase-${phase}`;
 
     return (
-        <div id="app" className={lowHealth && phase !== 'victory' && phase !== 'defeat' ? 'app--low-hp' : undefined}>
+        <div
+            id="app"
+            className={[
+                appPhaseClass,
+                lowHealth && phase !== 'victory' && phase !== 'defeat' ? 'app--low-hp' : '',
+            ].filter(Boolean).join(' ') || undefined}
+        >
             <PhaserGame />
             {phase !== 'victory' && phase !== 'defeat' && <SfxMuteButton />}
             {bodyMods.length > 0 && phase !== 'victory' && phase !== 'defeat' && (

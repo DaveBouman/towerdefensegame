@@ -3,6 +3,7 @@ import { getCardDefinitionOrThrow, isCardNonRerollable, isCardUnplayable } from 
 import { buildCardGraphic } from '../cards/CardRenderer';
 import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
 import { CYBER } from '../config/cyberpunkTheme';
+import { drawCornerBrackets, drawNeonPanel } from '../config/cyberpunkUiGraphics';
 import { HAND_CARD_GAP, HAND_CARD_HEIGHT, HAND_CARD_WIDTH } from '../cards/cardVisuals';
 import type { BoardLayout } from './boardLayout';
 
@@ -28,6 +29,8 @@ export class CardHandView
     private dragOffsetX = 0;
     private dragOffsetY = 0;
     private rerollMode = false;
+    private readonly handDock: Phaser.GameObjects.Graphics;
+    private readonly handBrackets: Phaser.GameObjects.Graphics;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -39,7 +42,15 @@ export class CardHandView
     )
     {
         this.container = scene.add.container(layout.handCenterX, layout.handY);
+        this.handDock = scene.add.graphics();
+        this.handBrackets = scene.add.graphics();
+        this.container.add([ this.handDock, this.handBrackets ]);
         this.renderHand();
+    }
+
+    setPosition (x: number, y: number): void
+    {
+        this.container.setPosition(x, y);
     }
 
     syncHand (hand: readonly CardInstance[]): void
@@ -107,7 +118,17 @@ export class CardHandView
 
         this.slotContainers.length = 0;
         this.hoverOutlines.length = 0;
-        this.container.removeAll(true);
+
+        const slotsToRemove = this.container.list.filter(
+            (entry) => entry !== this.handDock && entry !== this.handBrackets,
+        );
+
+        for (const entry of slotsToRemove)
+        {
+            this.container.remove(entry, true);
+        }
+
+        this.updateHandDock();
 
         const center = (this.hand.length - 1) / 2;
 
@@ -197,6 +218,30 @@ export class CardHandView
         });
 
         this.updateSelectionVisuals();
+    }
+
+    private updateHandDock (): void
+    {
+        const cardSpan = this.hand.length > 0
+            ? this.hand.length * (HAND_CARD_WIDTH + HAND_CARD_GAP) - HAND_CARD_GAP
+            : HAND_CARD_WIDTH;
+        const padX = 22;
+        const padY = 16;
+        const dockW = cardSpan + padX * 2;
+        const dockH = HAND_CARD_HEIGHT + padY * 2;
+        const dockX = -padX;
+        const dockY = -padY + HAND_FAN_DROP;
+
+        drawNeonPanel(this.handDock, dockX, dockY, dockW, dockH, 0x0a1018, CYBER.cyan, 0.78, 0.38);
+        drawCornerBrackets(
+            this.handBrackets,
+            dockX + 4,
+            dockY + 4,
+            dockW - 8,
+            dockH - 8,
+            CYBER.cyan,
+            { arm: 10, alpha: 0.55 },
+        );
     }
 
     private toggleRerollSelection (index: number): void

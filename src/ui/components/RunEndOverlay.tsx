@@ -1,3 +1,5 @@
+import { CyberPanelChrome } from './CyberPanel';
+
 interface RunEndOverlayProps {
     variant: 'victory' | 'defeat';
     clutch?: boolean;
@@ -22,10 +24,13 @@ const COPY = {
 export const RunEndOverlay = ({ variant, clutch = false, onRestart }: RunEndOverlayProps) =>
 {
     const copy = COPY[variant];
+    const panelVariant = variant === 'victory' ? 'green' : 'magenta';
 
     return (
         <div className={`run-end run-end--${variant}${clutch ? ' run-end--clutch' : ''}`}>
-            <div className="run-end__panel">
+            <div className="cp-overlay__backdrop" aria-hidden="true" />
+            <div className={`run-end__panel cp-panel cp-panel--${panelVariant}`}>
+                <CyberPanelChrome variant={panelVariant} />
                 {clutch && variant === 'victory' && (
                     <p className="run-end__clutch">Clutch clear — you limped out at critical integrity.</p>
                 )}
