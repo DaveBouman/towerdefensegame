@@ -24,6 +24,8 @@ interface RunMapOverlayProps {
     /** Completed nodes, in the order they were cleared. */
     path: string[];
     availableIds: string[];
+    /** Node the player just picked — animates travel before the next screen. */
+    departingNodeId?: string | null;
     playerHealth: number;
     maxHealth: number;
     gold: number;
@@ -43,6 +45,7 @@ export const RunMapOverlay = ({
     map,
     path,
     availableIds,
+    departingNodeId = null,
     playerHealth,
     maxHealth,
     gold,
@@ -85,6 +88,11 @@ export const RunMapOverlay = ({
 
     const edgeClass = (fromId: string | null, to: RunMapNode): string =>
     {
+        if (departingNodeId && fromId && departingNodeId === to.id && fromId === currentNodeId)
+        {
+            return 'run-map__edge run-map__edge--departing';
+        }
+
         if (fromId && travelled.has(`${fromId}->${to.id}`))
         {
             return 'run-map__edge run-map__edge--travelled';
@@ -213,6 +221,7 @@ export const RunMapOverlay = ({
                     if (isCompleted) classes.push('run-map__node--completed');
                     if (isCurrent) classes.push('run-map__node--current');
                     if (isAvailable) classes.push('run-map__node--available');
+                    if (node.id === departingNodeId) classes.push('run-map__node--departing');
                     if (!isAvailable && !isCompleted && !isCurrent) classes.push('run-map__node--locked');
 
                     return (

@@ -171,10 +171,14 @@ export const playFloatingText = (
     y: number,
     text: string,
     color: string,
+    options: { fontSize?: number; floatDistance?: number } = {},
 ): void =>
 {
+    const fontSize = options.fontSize ?? 26;
+    const floatDistance = options.floatDistance ?? 48;
+
     const popup = scene.add.text(x, y, text, {
-        ...uiTextStyle(26, color, { bold: true, strokeColor: '#020408' }),
+        ...uiTextStyle(fontSize, color, { bold: true, strokeColor: '#020408' }),
     }).setOrigin(0.5, 1).setAlpha(0);
 
     parent.add(popup);
@@ -189,7 +193,7 @@ export const playFloatingText = (
         {
             scene.tweens.add({
                 targets: popup,
-                y: y - 48,
+                y: y - floatDistance,
                 alpha: 0,
                 scaleX: 1.12,
                 scaleY: 1.12,

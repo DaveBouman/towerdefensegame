@@ -22,6 +22,7 @@ export class CardGamePresenter
     private activeBoostBuffSlot: SlotPosition | null = null;
     private attackTimer?: Phaser.Time.TimerEvent;
     private displayedArmor = 0;
+    private pendingHitstopMs = 0;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -42,7 +43,15 @@ export class CardGamePresenter
     private scheduleAttackTimer (callback: () => void, delayMs: number): void
     {
         this.clearAttackTimer();
-        this.attackTimer = this.scene.time.delayedCall(delayMs, callback);
+        const totalDelay = delayMs + this.pendingHitstopMs;
+
+        this.pendingHitstopMs = 0;
+        this.attackTimer = this.scene.time.delayedCall(totalDelay, callback);
+    }
+
+    private requestHitstop (ms: number): void
+    {
+        this.pendingHitstopMs = Math.max(this.pendingHitstopMs, ms);
     }
 
     private clearAttackTimer (): void
@@ -68,6 +77,7 @@ export class CardGamePresenter
             deactivateBoostBuff: () => this.deactivateBoostBuff(),
             activateStep: (step: ActivationStep, boostMultiplier?: number) => this.activateStep(step, boostMultiplier),
             deactivateStep: (step: ActivationStep) => this.deactivateStep(step),
+            requestHitstop: (ms: number) => this.requestHitstop(ms),
         };
     }
 

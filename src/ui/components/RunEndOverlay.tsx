@@ -1,5 +1,6 @@
 interface RunEndOverlayProps {
     variant: 'victory' | 'defeat';
+    clutch?: boolean;
     onRestart: () => void;
 }
 
@@ -18,13 +19,16 @@ const COPY = {
     },
 } as const;
 
-export const RunEndOverlay = ({ variant, onRestart }: RunEndOverlayProps) =>
+export const RunEndOverlay = ({ variant, clutch = false, onRestart }: RunEndOverlayProps) =>
 {
     const copy = COPY[variant];
 
     return (
-        <div className={`run-end run-end--${variant}`}>
+        <div className={`run-end run-end--${variant}${clutch ? ' run-end--clutch' : ''}`}>
             <div className="run-end__panel">
+                {clutch && variant === 'victory' && (
+                    <p className="run-end__clutch">Clutch clear — you limped out at critical integrity.</p>
+                )}
                 <p className="run-end__eyebrow">{copy.eyebrow}</p>
                 <h1 className="run-end__title">{copy.title}</h1>
                 <p className="run-end__summary">{copy.summary}</p>

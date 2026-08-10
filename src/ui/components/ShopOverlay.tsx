@@ -145,7 +145,7 @@ export const ShopOverlay = ({
         const entries = picking === 'remove' ? removeEntries : upgradeEntries;
 
         return (
-            <div className="shop-overlay">
+            <div className="shop-overlay shop-overlay--enter">
                 <div className="shop-overlay__panel">
                     <p className="shop-overlay__eyebrow">Ripperdoc</p>
                     <h1 className="shop-overlay__title">
@@ -185,7 +185,7 @@ export const ShopOverlay = ({
     }
 
     return (
-        <div className="shop-overlay">
+        <div className="shop-overlay shop-overlay--enter">
             <div className="shop-overlay__panel">
                 <div className="shop-overlay__header">
                     <span className="shop-overlay__icon">

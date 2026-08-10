@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { describeCardReward } from '../../game/run/rewards';
 
 interface CardRewardOverlayProps {
@@ -34,7 +34,25 @@ export const CardRewardOverlay = ({
 }: CardRewardOverlayProps) =>
 {
     const [ selected, setSelected ] = useState<string[]>([]);
+    const [ revealedCount, setRevealedCount ] = useState(0);
     const cards = useMemo(() => options.map(describeCardReward), [ options ]);
+
+    useEffect(() =>
+    {
+        setSelected([]);
+        setRevealedCount(0);
+
+        if (cards.length === 0)
+        {
+            return;
+        }
+
+        const timers = cards.map((_card, index) =>
+            window.setTimeout(() => setRevealedCount((prev) => Math.max(prev, index + 1)), 120 + index * 140),
+        );
+
+        return () => timers.forEach((timer) => window.clearTimeout(timer));
+    }, [ cards ]);
 
     const resolvedTitle = title ?? (pickCount > 1
         ? `Add up to ${pickCount} cards to your deck`
@@ -87,12 +105,13 @@ export const CardRewardOverlay = ({
                     {cards.map((card, index) =>
                     {
                         const isSelected = selected.includes(card.definitionId);
+                        const isRevealed = index < revealedCount;
 
                         return (
                             <button
                                 key={`${card.definitionId}-${index}`}
                                 type="button"
-                                className={`card-reward__card${isSelected ? ' card-reward__card--selected' : ''}`}
+                                className={`card-reward__card${isSelected ? ' card-reward__card--selected' : ''}${isRevealed ? ' card-reward__card--revealed' : ''}`}
                                 onClick={() => toggle(card.definitionId)}
                             >
                                 <span className="card-reward__card-power">{card.power}</span>

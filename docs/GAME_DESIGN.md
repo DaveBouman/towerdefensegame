@@ -305,6 +305,7 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-10 | **Juice & tension pass (no audio yet).** Combat: camera shake, hitstop, tiered damage numbers, element hit bursts, variable chain timing, high-threat intent pulse. Run: map travel animation, staggered card rewards, floor banner, visit entry fades, victory heal toast, boss/lieutenant intro, low-HP vignette, clutch win callout. |
 | 2026-08-10 | **Pre-boss safehouse.** The column before the Warden is always Safehouse nodes: rest (30% max HP) or free card upgrade — pick one. |
 | 2026-08-10 | **Signal ambushes + new encounters.** First signal is always an event; repeat signals escalate ambush chance into street fights. Five new encounters: Dead Drop, Signal Echo, Malware Spike, Data Shrine, Wire Rats. Outcomes resolve on visit (map stays generic Signal). |
 | 2026-08-10 | **Card tiers, upgrades, stronger specialties.** Cards have tier 1–3; rewards bias higher tiers on later floors. Most cards upgrade to `*-plus` at Ripperdoc (Chrome Grind). New mid/rare cards: Neurotoxin, Black Ichor, Serration, Exsanguinate, Kindling, White-Hot, Citadel, Execution, Amp Core. |

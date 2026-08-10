@@ -310,7 +310,7 @@ export const RunEventOverlay = ({
     };
 
     return (
-        <div className="run-event">
+        <div className="run-event run-event--enter">
             <div className="run-event__panel">
                 <header className="run-event__header">
                     <span className="run-event__icon">

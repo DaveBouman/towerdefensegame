@@ -11,6 +11,11 @@ import {
     getEnemyIntentStepVisuals,
     type EnemyIntentStepVisual,
 } from '../cardGame/presentation/enemyIntentVisuals';
+import {
+    getIntentThreatLevel,
+    isHighThreatIntent,
+    type DamageTierStyle,
+} from '../cardGame/presentation/combatJuice';
 import { attachEnemyPassiveTooltip } from '../cardGame/presentation/tooltips/EnemyPassiveTooltipController';
 import { attachEnemyIntentTooltip } from '../cardGame/presentation/tooltips/EnemyIntentTooltipController';
 import { playFloatingText, playHitFlash as playHitFlashTween } from '../cardGame/presentation/visualEffects/visualEffectTweens';
@@ -448,6 +453,21 @@ export class EnemyTargetView
             duration: phase === 'executing' ? 160 : 220,
             ease: 'Cubic.easeOut',
         });
+
+        const threat = getIntentThreatLevel(action);
+
+        if (isHighThreatIntent(threat) && phase === 'upcoming')
+        {
+            this.scene.tweens.add({
+                targets: this.intentContainer,
+                scaleX: fitScale * 1.08,
+                scaleY: fitScale * 1.08,
+                duration: 420,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+            });
+        }
     }
 
     private getIntentMetrics (): {
@@ -818,14 +838,24 @@ export class EnemyTargetView
         });
     }
 
-    showDamageNumber (damage: number): void
+    showDamageNumber (damage: number, tier?: DamageTierStyle): void
     {
         if (damage <= 0)
         {
             return;
         }
 
-        this.showFloatingNumber(`-${damage}`, '#ff7675');
+        const style = tier ?? { color: '#ff7675', fontSize: 24, shakeIntensity: 0, hitstopMs: 0 };
+
+        playFloatingText(
+            this.scene,
+            this.container,
+            this.body.width / 2,
+            -8,
+            `-${damage}`,
+            style.color,
+            { fontSize: style.fontSize },
+        );
     }
 
     showHealGain (heal: number): void

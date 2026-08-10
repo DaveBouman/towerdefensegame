@@ -17,6 +17,10 @@ import {
     TutorialRewardTipOverlay,
     useTutorial,
 } from './ui/tutorial/Tutorial';
+import { RunToast } from './ui/components/RunToast';
+import { FloorBanner } from './ui/components/FloorBanner';
+import { BattleIntroOverlay } from './ui/components/BattleIntroOverlay';
+import type { RunMapNodeKind } from './game/run/nodeKinds';
 import { isBattleKind } from './game/run/nodeKinds';
 import { applyRunEventEffects } from './game/run/runEvents';
 import { resolveSignalVisit } from './game/run/signalEncounter';
@@ -123,6 +127,11 @@ function App()
     const [ currentFloor, setCurrentFloor ] = useState(1);
     const [ floorRerollsRemaining, setFloorRerollsRemaining ] = useState(GAME_RULES.rerollsPerFloor);
     const [ phase, setPhase ] = useState<RunPhase>('map');
+    const [ departingNodeId, setDepartingNodeId ] = useState<string | null>(null);
+    const [ floorBanner, setFloorBanner ] = useState<number | null>(null);
+    const [ runToast, setRunToast ] = useState<string | null>(null);
+    const [ battleIntroKind, setBattleIntroKind ] = useState<RunMapNodeKind | null>(null);
+    const [ clutchVictory, setClutchVictory ] = useState(false);
     const [ pendingReward, setPendingReward ] = useState<PendingReward | null>(null);
     const [ visit, setVisit ] = useState<VisitState | null>(null);
     const [ puzzleResult, setPuzzleResult ] = useState<PuzzleResultState | null>(null);
@@ -152,6 +161,14 @@ function App()
             seed: number;
             bodyMods: string[];
             runAttackCount: number;
+            rerollsRemaining: number;
+            nodeKind?: RunMapNodeKind;
+        } | null
+    >(null);
+    const pendingBattleRef = useRef<
+        {
+            node: RunMapNode;
+            battleEnemyIds: string[];
             rerollsRemaining: number;
         } | null
     >(null);
@@ -213,6 +230,7 @@ function App()
         {
             currentFloorRef.current = nodeFloor;
             setCurrentFloor(nodeFloor);
+            setFloorBanner(nodeFloor);
             floorRerollsRef.current = GAME_RULES.rerollsPerFloor;
             setFloorRerollsRemaining(GAME_RULES.rerollsPerFloor);
         }
@@ -259,10 +277,21 @@ function App()
                 getRunMaxHealth(bodyModsRef.current),
                 remaining + RUN_CONFIG.healOnVictory,
             );
+            const healDelta = healed - remaining;
 
             setPlayerHealth(healed);
             setGold((prev) => prev + getVictoryGoldBonus(bodyModsRef.current));
             tutorialRef.current.onFirstBattleWon();
+
+            if (healDelta > 0)
+            {
+                setRunToast(`+${healDelta} HP after victory`);
+            }
+
+            if (remaining > 0 && remaining <= 10)
+            {
+                setClutchVictory(true);
+            }
 
             if (node)
             {
@@ -406,10 +435,64 @@ function App()
         };
     }, []);
 
+    const startBattleForNode = useCallback((
+        node: RunMapNode,
+        battleEnemyIds: string[],
+        rerollsRemaining: number,
+    ): void =>
+    {
+        selectedNodeRef.current = node;
+        tutorial.onFirstBattleStart();
+        const payload = {
+            enemyId: battleEnemyIds[0],
+            enemyIds: battleEnemyIds.length > 1 ? battleEnemyIds : undefined,
+            startHealth: playerHealth,
+            deck: [ ...deck ],
+            seed: deriveSeed(seed, `battle:${node.id}`),
+            bodyMods: [ ...bodyMods ],
+            runAttackCount,
+            rerollsRemaining,
+            nodeKind: node.kind,
+        };
+        setPhase('battle');
+
+        if (sceneReadyRef.current)
+        {
+            EventBus.emit(GAME_EVENTS.START_BATTLE, payload);
+        }
+        else
+        {
+            pendingStartRef.current = payload;
+        }
+    }, [ playerHealth, deck, seed, bodyMods, runAttackCount, tutorial ]);
+
+    const finishBattleIntro = useCallback((): void =>
+    {
+        const pending = pendingBattleRef.current;
+
+        setBattleIntroKind(null);
+
+        if (pending)
+        {
+            startBattleForNode(pending.node, pending.battleEnemyIds, pending.rerollsRemaining);
+            pendingBattleRef.current = null;
+        }
+    }, [ startBattleForNode ]);
+
     const pickNode = useCallback((node: RunMapNode): void =>
     {
+        setDepartingNodeId(node.id);
         const rerollsRemaining = enterNodeFloor(node);
         let battleEnemyIds = getBattleEnemyIds(node);
+
+        const finishTravel = (callback: () => void, delayMs: number): void =>
+        {
+            window.setTimeout(() =>
+            {
+                setDepartingNodeId(null);
+                callback();
+            }, delayMs);
+        };
 
         if (node.kind === 'event')
         {
@@ -427,8 +510,12 @@ function App()
             else
             {
                 node.eventId = outcome.eventId;
-                setVisit({ node, eventId: outcome.eventId });
-                setPhase('visit');
+                finishTravel(() =>
+                {
+                    setVisit({ node, eventId: outcome.eventId });
+                    setPhase('visit');
+                }, 280);
+
                 return;
             }
         }
@@ -437,52 +524,48 @@ function App()
 
         if (!isBattleKind(node.kind) && !isSignalAmbush)
         {
-            if (node.kind === 'shop')
+            finishTravel(() =>
             {
-                seedScope(seed, `shop:${node.id}`);
-                setVisit({
-                    node,
-                    eventId: null,
-                    shopOffers: rollShopOffers(bodyMods, deck, currentFloor),
-                });
-            }
-            else if (node.kind === 'rest')
-            {
-                setVisit({ node, eventId: null });
-            }
+                if (node.kind === 'shop')
+                {
+                    seedScope(seed, `shop:${node.id}`);
+                    setVisit({
+                        node,
+                        eventId: null,
+                        shopOffers: rollShopOffers(bodyMods, deck, currentFloor),
+                    });
+                }
+                else if (node.kind === 'rest')
+                {
+                    setVisit({ node, eventId: null });
+                }
 
-            setPhase('visit');
+                setPhase('visit');
+            }, 280);
+
             return;
         }
 
         if (battleEnemyIds.length === 0)
         {
+            setDepartingNodeId(null);
+
             return;
         }
 
-        selectedNodeRef.current = node;
-        tutorial.onFirstBattleStart();
-        const payload = {
-            enemyId: battleEnemyIds[0],
-            enemyIds: battleEnemyIds.length > 1 ? battleEnemyIds : undefined,
-            startHealth: playerHealth,
-            deck: [ ...deck ],
-            seed: deriveSeed(seed, `battle:${node.id}`),
-            bodyMods: [ ...bodyMods ],
-            runAttackCount,
-            rerollsRemaining,
-        };
-        setPhase('battle');
+        finishTravel(() =>
+        {
+            if (node.kind === 'semi-boss' || node.kind === 'boss')
+            {
+                pendingBattleRef.current = { node, battleEnemyIds, rerollsRemaining };
+                setBattleIntroKind(node.kind);
 
-        if (sceneReadyRef.current)
-        {
-            EventBus.emit(GAME_EVENTS.START_BATTLE, payload);
-        }
-        else
-        {
-            pendingStartRef.current = payload;
-        }
-    }, [ playerHealth, deck, seed, bodyMods, runAttackCount, signalsVisited, enterNodeFloor, tutorial, currentFloor ]);
+                return;
+            }
+
+            startBattleForNode(node, battleEnemyIds, rerollsRemaining);
+        }, 380);
+    }, [ deck, seed, bodyMods, runAttackCount, signalsVisited, enterNodeFloor, tutorial, currentFloor, startBattleForNode ]);
 
     const buyShopCard = useCallback((offer: ShopOffer): void =>
     {
@@ -726,6 +809,12 @@ function App()
         setPuzzleResult(null);
         setPendingPuzzleReward(null);
         eventVisitRef.current = null;
+        setDepartingNodeId(null);
+        setFloorBanner(null);
+        setRunToast(null);
+        setBattleIntroKind(null);
+        setClutchVictory(false);
+        pendingBattleRef.current = null;
         setPhase('map');
     }, []);
 
@@ -744,8 +833,10 @@ function App()
         resetRun(createRandomSeed());
     }, [ resetRun ]);
 
+    const lowHealth = runMaxHealth > 0 && playerHealth / runMaxHealth <= 0.25;
+
     return (
-        <div id="app">
+        <div id="app" className={lowHealth && phase !== 'victory' && phase !== 'defeat' ? 'app--low-hp' : undefined}>
             <PhaserGame />
             {bodyMods.length > 0 && phase !== 'victory' && phase !== 'defeat' && (
                 <BodyModsPanel
@@ -775,11 +866,21 @@ function App()
             {tutorial.showRewardTip && (
                 <TutorialRewardTipOverlay onDismiss={tutorial.dismissRewardTip} />
             )}
+            {floorBanner !== null && (
+                <FloorBanner floor={floorBanner} onDone={() => setFloorBanner(null)} />
+            )}
+            {runToast && (
+                <RunToast message={runToast} tone="good" onDone={() => setRunToast(null)} />
+            )}
+            {battleIntroKind && (
+                <BattleIntroOverlay nodeKind={battleIntroKind} onDone={finishBattleIntro} />
+            )}
             {phase === 'map' && !tutorial.showIntro && (
                 <RunMapOverlay
                     map={map}
                     path={path}
                     availableIds={availableIds}
+                    departingNodeId={departingNodeId}
                     playerHealth={playerHealth}
                     maxHealth={runMaxHealth}
                     gold={gold}
@@ -869,7 +970,9 @@ function App()
                     onContinue={finishPuzzleResult}
                 />
             )}
-            {phase === 'victory' && <RunEndOverlay variant="victory" onRestart={startNewRun} />}
+            {phase === 'victory' && (
+                <RunEndOverlay variant="victory" clutch={clutchVictory} onRestart={startNewRun} />
+            )}
             {phase === 'defeat' && <RunEndOverlay variant="defeat" onRestart={startNewRun} />}
         </div>
     );

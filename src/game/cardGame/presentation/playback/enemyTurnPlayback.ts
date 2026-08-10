@@ -7,6 +7,7 @@ import type { PlayerHealthView } from '../../../board/PlayerHealthView';
 import type { ArmorView } from '../../../board/ArmorView';
 import type { BattleModifierStatusView } from '../../../board/BattleModifierStatusView';
 import { describeBattleModifier } from '../../combat/battleModifiers';
+import { getDamageTierStyle, shakeCamera } from '../combatJuice';
 
 export interface EnemyTurnPlaybackDeps
 {
@@ -58,8 +59,11 @@ export function playEnemyTurnStep (
 
             if (result.healthDamage > 0)
             {
+                const tier = getDamageTierStyle(result.healthDamage);
+
                 playerView.playHitFlash();
                 playerView.showDamageNumber(result.healthDamage);
+                shakeCamera(scene, tier.shakeIntensity * 1.25);
             }
 
             onComplete();

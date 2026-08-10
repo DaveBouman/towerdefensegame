@@ -73,7 +73,7 @@ export const RestOverlay = ({
     if (pickingUpgrade)
     {
         return (
-            <div className="shop-overlay rest-overlay">
+            <div className="shop-overlay rest-overlay rest-overlay--enter">
                 <div className="shop-overlay__panel">
                     <p className="shop-overlay__eyebrow">Safehouse</p>
                     <h1 className="shop-overlay__title">Choose a card to upgrade</h1>
@@ -105,7 +105,7 @@ export const RestOverlay = ({
     }
 
     return (
-        <div className="shop-overlay rest-overlay">
+        <div className="shop-overlay rest-overlay rest-overlay--enter">
             <div className="shop-overlay__panel">
                 <div className="shop-overlay__header">
                     <span className="shop-overlay__icon">

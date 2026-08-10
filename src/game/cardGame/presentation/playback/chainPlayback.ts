@@ -21,6 +21,7 @@ import type { CardBoardView } from '../../../board/CardBoardView';
 import type { EnemySquadView } from '../../../board/EnemySquadView';
 import { applyEnemyHitResult, type CombatHitVisualDeps } from './combatHitVisuals';
 import { playEndOfChainEffects } from './chainEndEffects';
+import { getChainStepMs } from '../combatJuice';
 import { playBattleModifierFloatingLabel } from '../battleModifierFloatingLabel';
 import { boostedBuffVisual } from '../visualEffects/boostedBuffVisual';
 import { playFloatingText } from '../visualEffects/visualEffectTweens';
@@ -39,6 +40,7 @@ export interface ChainPlaybackDeps extends CombatHitVisualDeps
     deactivateBoostBuff: () => void;
     activateStep: (step: ActivationStep, boostMultiplier?: number) => void;
     deactivateStep: (step: ActivationStep) => void;
+    requestHitstop: (ms: number) => void;
 }
 
 export function runChainPlayback (
@@ -166,10 +168,10 @@ export function runChainPlayback (
     };
 
     /** Keeps each card's activation visual visible for at least one chain step. */
-    const scheduleStepCompletion = (callback: () => void, activatedAt: number): void =>
+    const scheduleStepCompletion = (callback: () => void, activatedAt: number, durationMs: number): void =>
     {
         const elapsed = deps.scene.time.now - activatedAt;
-        const remaining = Math.max(0, stepMs - elapsed);
+        const remaining = Math.max(0, durationMs - elapsed);
 
         deps.scheduleAttackTimer(callback, remaining);
     };
@@ -251,7 +253,10 @@ export function runChainPlayback (
 
             const result = deps.session.dealAttackDamage(damage, targetId, sourceDefinitionId);
 
-            applyEnemyHitResult(deps, result);
+            applyEnemyHitResult(deps, result, {
+                visualId: resolvedStep.visualId,
+                behaviorId: resolvedStep.behaviorId,
+            });
 
             attackSteps.push({
                 slot: resolvedStep.slot,
@@ -356,7 +361,10 @@ export function runChainPlayback (
                 targetId,
                 prevResolved.definitionId,
             );
-            applyEnemyHitResult(deps, result);
+            applyEnemyHitResult(deps, result, {
+                visualId: prevResolved.visualId,
+                behaviorId: prevResolved.behaviorId,
+            });
 
             attackSteps.push({
                 slot: prevResolved.slot,
@@ -406,6 +414,7 @@ export function runChainPlayback (
         const boosted = isBoostedChainStep(resolvedChain, stepIndex);
         const boostMultiplier = getBoostMultiplierForStep(resolvedChain, stepIndex);
         const definition = getCardDefinitionOrThrow(step.definitionId);
+        const stepDurationMs = getChainStepMs(resolvedStep.behaviorId, stepMs);
 
         const proceedAfterStep = (): void =>
         {
@@ -432,7 +441,7 @@ export function runChainPlayback (
                 replayPriorStep(replay, () =>
                 {
                     grantStepArmor(step);
-                    scheduleStepCompletion(proceedAfterStep, stepActivatedAt);
+                    scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs);
                 });
                 return;
             }
@@ -449,7 +458,7 @@ export function runChainPlayback (
                 resolvedStep.damage,
                 definition.id,
                 resolvedStep,
-                () => scheduleStepCompletion(proceedAfterStep, stepActivatedAt),
+                () => scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs),
             );
             return;
         }
@@ -459,7 +468,7 @@ export function runChainPlayback (
             deps.boardView.showJokerDirectionPicker(step.slot, (direction) =>
             {
                 applyJokerChosenDirection(step, direction);
-                scheduleStepCompletion(proceedAfterStep, stepActivatedAt);
+                scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs);
             });
 
             return;
@@ -471,12 +480,12 @@ export function runChainPlayback (
             {
                 finishActiveStep();
                 finalize();
-            }, stepActivatedAt);
+            }, stepActivatedAt, stepDurationMs);
 
             return;
         }
 
-        scheduleStepCompletion(proceedAfterStep, stepActivatedAt);
+        scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs);
     };
 
     runStep();

@@ -4,6 +4,12 @@ import type { ArmorView } from '../../../board/ArmorView';
 import type { CardBoardView } from '../../../board/CardBoardView';
 import type { EnemySquadView } from '../../../board/EnemySquadView';
 import type { PlayerHealthView } from '../../../board/PlayerHealthView';
+import {
+    getDamageTierStyle,
+    getElementHitColor,
+    playElementHitBurst,
+    shakeCamera,
+} from '../combatJuice';
 import { playFloatingText } from '../visualEffects/visualEffectTweens';
 
 export interface CombatHitVisualDeps
@@ -15,11 +21,22 @@ export interface CombatHitVisualDeps
     playerView: PlayerHealthView;
     armorView: ArmorView;
     setDisplayedArmor: (armor: number) => void;
+    requestHitstop?: (ms: number) => void;
 }
 
-export function applyEnemyHitResult (deps: CombatHitVisualDeps, result: DamageResult): void
+export interface EnemyHitVisualContext
 {
-    const { scene, session, enemySquad, playerView, armorView, setDisplayedArmor } = deps;
+    visualId?: string;
+    behaviorId?: string;
+}
+
+export function applyEnemyHitResult (
+    deps: CombatHitVisualDeps,
+    result: DamageResult,
+    context: EnemyHitVisualContext = {},
+): void
+{
+    const { scene, session, enemySquad, playerView, armorView, setDisplayedArmor, requestHitstop } = deps;
     const targetId = result.targetInstanceId ?? session.getAttackTargetId();
     const enemyView = targetId ? enemySquad.getView(targetId) : enemySquad.firstView;
 
@@ -38,8 +55,33 @@ export function applyEnemyHitResult (deps: CombatHitVisualDeps, result: DamageRe
 
     if (result.healthDamage > 0)
     {
+        const tier = getDamageTierStyle(result.healthDamage);
+
         enemyView?.playHitFlash();
-        enemyView?.showDamageNumber(result.healthDamage);
+        enemyView?.showDamageNumber(result.healthDamage, tier);
+        shakeCamera(scene, tier.shakeIntensity);
+
+        if (tier.hitstopMs > 0)
+        {
+            requestHitstop?.(tier.hitstopMs);
+        }
+
+        if (enemyView)
+        {
+            playElementHitBurst(
+                scene,
+                enemyView.container,
+                enemyView.container.width / 2,
+                enemyView.container.height * 0.35,
+                getElementHitColor(context.visualId, context.behaviorId),
+            );
+        }
+    }
+
+    if (result.enemyKilled)
+    {
+        shakeCamera(scene, 0.014);
+        requestHitstop?.(70);
     }
 
     if ((result.healOnKill ?? 0) > 0)
@@ -72,13 +114,14 @@ export function applyEnemyHitResult (deps: CombatHitVisualDeps, result: DamageRe
         {
             playerView.playHitFlash();
             playerView.showDamageNumber(result.thornsHealthDamage!);
+            shakeCamera(scene, 0.006);
         }
     }
 }
 
 export function applyPlayerDamage (deps: CombatHitVisualDeps, damage: number): void
 {
-    const { session, playerView, armorView, setDisplayedArmor } = deps;
+    const { scene, session, playerView, armorView, setDisplayedArmor, requestHitstop } = deps;
     const result = session.resolveHazardDamage(damage);
 
     playerView.setHealth(result.player);
@@ -91,7 +134,15 @@ export function applyPlayerDamage (deps: CombatHitVisualDeps, damage: number): v
 
     if (result.healthDamage > 0)
     {
+        const tier = getDamageTierStyle(result.healthDamage);
+
         playerView.playHitFlash();
-        playerView.showDamageNumber(result.healthDamage);
+        playerView.showDamageNumber(result.healthDamage, tier);
+        shakeCamera(scene, tier.shakeIntensity * 1.2);
+
+        if (tier.hitstopMs > 0)
+        {
+            requestHitstop?.(tier.hitstopMs);
+        }
     }
 }

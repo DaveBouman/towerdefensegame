@@ -43,6 +43,7 @@ export class Game extends Scene
     private battleActive = false;
     private battleResolved = false;
     private activePuzzleId: string | null = null;
+    private lowHpVignette?: Phaser.GameObjects.Rectangle;
 
     constructor ()
     {
@@ -282,8 +283,55 @@ export class Game extends Scene
         }
 
         this.battleActive = true;
+        this.syncLowHpVignette();
         this.emitAttackReadiness();
         this.emitRerollState();
+    }
+
+    private ensureLowHpVignette (): void
+    {
+        if (this.lowHpVignette?.active)
+        {
+            return;
+        }
+
+        const camera = this.cameras.main;
+
+        this.lowHpVignette = this.add.rectangle(
+            camera.centerX,
+            camera.centerY,
+            camera.width,
+            camera.height,
+            0x8b0000,
+            0,
+        )
+            .setScrollFactor(0)
+            .setDepth(9000)
+            .setBlendMode(Phaser.BlendModes.MULTIPLY);
+    }
+
+    private syncLowHpVignette (): void
+    {
+        if (!this.session || !this.battleActive || this.session.isPuzzleMode())
+        {
+            this.lowHpVignette?.setAlpha(0);
+
+            return;
+        }
+
+        this.ensureLowHpVignette();
+
+        const player = this.session.getPlayer();
+        const ratio = player.maxHealth > 0 ? player.health / player.maxHealth : 1;
+
+        if (ratio <= 0.25 && ratio > 0)
+        {
+            this.lowHpVignette!.setAlpha(0.1 + (0.25 - ratio) * 0.3);
+        }
+        else
+        {
+            this.lowHpVignette!.setAlpha(0);
+        }
     }
 
     private onResize = (gameSize: Phaser.Structs.Size): void =>
@@ -335,6 +383,8 @@ export class Game extends Scene
         this.battleActive = false;
         this.activePuzzleId = null;
         this.rerollModeActive = false;
+        this.lowHpVignette?.destroy();
+        this.lowHpVignette = undefined;
     }
 
     private winBattle (): void
@@ -549,6 +599,9 @@ export class Game extends Scene
             return;
         }
 
+        this.playerView?.setHealth(this.session.getPlayer());
+        this.syncLowHpVignette();
+
         if (this.session.isPuzzleMode())
         {
             this.session.spendEnergy();
@@ -672,6 +725,8 @@ export class Game extends Scene
             syncPileViews: () => this.syncPileViews(),
             onPhaseSettled: (result) =>
             {
+                this.playerView?.setHealth(this.session!.getPlayer());
+                this.syncLowHpVignette();
                 this.unlockPlayerInput();
 
                 if (result.kind === 'player-defeated')
