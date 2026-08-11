@@ -21,7 +21,8 @@ export type EnemyPassiveId =
     | 'bodyguard'
     | 'stutterClock'
     | 'phantomIntent'
-    | 'phaseShift';
+    | 'phaseShift'
+    | 'handRedirect';
 
 export interface ThornsPassiveConfig {
     id: 'thorns';
@@ -194,6 +195,13 @@ export interface PhaseShiftPassiveConfig {
     extraTraps: number;
 }
 
+/** Scrambles hand-card arrows for the rest of the current energy round. */
+export interface HandRedirectPassiveConfig {
+    id: 'handRedirect';
+    /** Cast on turns where (turnsTaken % everyTurns === 0). */
+    everyTurns: number;
+}
+
 export type EnemyPassiveConfig =
     | ThornsPassiveConfig
     | EnragePassiveConfig
@@ -217,6 +225,7 @@ export type EnemyPassiveConfig =
     | BodyguardPassiveConfig
     | StutterClockPassiveConfig
     | PhantomIntentPassiveConfig
-    | PhaseShiftPassiveConfig;
+    | PhaseShiftPassiveConfig
+    | HandRedirectPassiveConfig;
 
 export type EnemyPassiveInput = EnemyPassiveId | EnemyPassiveConfig;

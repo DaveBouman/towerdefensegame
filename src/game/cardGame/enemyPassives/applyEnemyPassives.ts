@@ -133,6 +133,7 @@ export const planEnemyTurnWithPassives = ({
     const escalate = getEnemyPassive(passives, 'escalate');
     const dampen = getEnemyPassive(passives, 'dampenTiles');
     const pressure = getEnemyPassive(passives, 'pressureColumn');
+    const handRedirect = getEnemyPassive(passives, 'handRedirect');
     const phaseShift = getEnemyPassive(passives, 'phaseShift');
     const inLastStand = lastStand ? isLastStandActive(enemyState, lastStand) : false;
     const baseHazards = inLastStand ? lastStand!.hazardsPerTurn : enemy.hazardsPerTurn;
@@ -196,6 +197,12 @@ export const planEnemyTurnWithPassives = ({
 
             steps.push({ kind: 'lock-column', column, amount: column + 1 });
         }
+    }
+
+    // Signal Twist: scramble hand arrows for the rest of the energy round.
+    if (handRedirect && handRedirect.everyTurns > 0 && turnsTaken % handRedirect.everyTurns === 0)
+    {
+        steps.push({ kind: 'redirect-hand' });
     }
 
     for (let i = 0; i < hazardCount; i++)

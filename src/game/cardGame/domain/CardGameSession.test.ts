@@ -725,6 +725,33 @@ describe('CardGameSession enemy turn', () =>
         expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
     });
 
+    it('scrambles hand arrows for the rest of the energy round via Signal Twist', () =>
+    {
+        const session = new CardGameSession('vector-haunt');
+        const before = session.getHand().map((card) => ({
+            id: card.instanceId,
+            arrow: card.arrow,
+        }));
+
+        expect(session.applyHandRedirect()).toBeGreaterThan(0);
+        expect(session.hasHandRedirect()).toBe(true);
+
+        const after = session.getHand();
+        const changed = after.some((card, index) =>
+            card.definitionId !== 'joker' && card.arrow !== before[index]?.arrow);
+
+        expect(changed).toBe(true);
+
+        // Spend all energy so the next finishPlayerRound clears the twist.
+        while (session.getEnergy() > 0)
+        {
+            session.spendEnergy();
+        }
+
+        session.finishPlayerRound();
+        expect(session.hasHandRedirect()).toBe(false);
+    });
+
     it('swaps board cards without limit', () =>
     {
         const session = new CardGameSession();

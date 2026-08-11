@@ -78,6 +78,17 @@ export const resolveEnemyIntentTooltip = (
                 ],
             };
         }
+        case 'redirect-hand':
+            return {
+                title: 'Signal Twist',
+                lines: [
+                    upcoming
+                        ? 'Will scramble the arrows on cards in your hand for the rest of this energy round.'
+                        : 'Scrambles hand-card arrows for the rest of this energy round.',
+                    'Reroute cards are unaffected. Arrows snap back when your energy refills.',
+                    'Rebuild your chain — old routes may no longer connect.',
+                ],
+            };
         case 'battle-mod':
         {
             const stat = step.modifierStat ?? 'enemy-attack';

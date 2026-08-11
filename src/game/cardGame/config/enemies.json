@@ -266,6 +266,18 @@
       ]
     },
     {
+      "id": "vector-haunt",
+      "label": "Vector Haunt",
+      "maxHealth": 38,
+      "attackDamage": 11,
+      "shieldGain": 12,
+      "attackChance": 0.5,
+      "hazardsPerTurn": 1,
+      "passives": [
+        { "id": "handRedirect", "everyTurns": 1 }
+      ]
+    },
+    {
       "id": "twin-clip",
       "label": "Twin Clip",
       "maxHealth": 26,

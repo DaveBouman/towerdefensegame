@@ -51,6 +51,7 @@ export const ENEMY_PASSIVE_DEFAULTS: Record<EnemyPassiveId, EnemyPassiveConfig> 
         attackBonus: 4,
         extraTraps: 1,
     },
+    handRedirect: { id: 'handRedirect', everyTurns: 1 },
 };
 
 export const normalizeEnemyPassives = (

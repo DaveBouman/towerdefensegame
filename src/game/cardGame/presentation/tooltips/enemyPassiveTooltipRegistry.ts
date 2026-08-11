@@ -213,5 +213,14 @@ export const resolveEnemyPassiveTooltip = (
                     `Triggers below ${Math.round(passive.healthRatio * 100)}% integrity: +${passive.attackBonus} attack, +${passive.extraTraps} trap(s).`,
                 ],
             };
+        case 'handRedirect':
+            return {
+                title: 'Signal Twist',
+                lines: [
+                    `Every ${passive.everyTurns} turn(s), scrambles the arrows on cards in your hand.`,
+                    'Lasts for the rest of that energy round — arrows restore when energy refills.',
+                    'Reroute cards keep their wild direction pick.',
+                ],
+            };
     }
 };

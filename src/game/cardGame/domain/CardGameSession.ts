@@ -63,6 +63,7 @@ import type {
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
 import type { CardDirection } from './cardDirections';
+import { randomDirectionForPool, randomOrthogonalPair } from './cardDirections';
 
 export interface PuzzleModeConfig {
     handCards: readonly {
@@ -92,6 +93,15 @@ export class CardGameSession
     private player: PlayerState;
     private energy: number;
     private readonly maxEnergy: number;
+    /** Original arrows for cards scrambled by redirect-hand this energy round. */
+    private readonly handRedirectOriginals = new Map<string, {
+        arrow: CardDirection;
+        loopArrow?: CardDirection;
+    }>();
+    /** When true, scramble the next renewed hand (enemy acted as energy hit 0). */
+    private pendingHandRedirect = false;
+    /** Hand arrows stay twisted until the current energy round ends. */
+    private handRedirectActiveThisRound = false;
     private readonly battleModifiers: BattleModifier[] = [];
     private readonly puzzleMode: PuzzleModeConfig | null;
     private puzzleFinished = false;
@@ -1074,6 +1084,135 @@ export class CardGameSession
         return this.fieldEffects.activateDampenField(passives);
     }
 
+    /**
+     * Scrambles arrows on cards currently in hand for the rest of this energy round.
+     * If energy is already spent, queues the scramble for the next renewed hand.
+     */
+    applyHandRedirect (): number
+    {
+        if (this.energy <= 0)
+        {
+            this.pendingHandRedirect = true;
+
+            return 0;
+        }
+
+        this.handRedirectActiveThisRound = true;
+
+        return this.scrambleHandArrows();
+    }
+
+    /** True while hand arrows are twisted (or queued for the next hand). */
+    hasHandRedirect (): boolean
+    {
+        return this.handRedirectActiveThisRound
+            || this.handRedirectOriginals.size > 0
+            || this.pendingHandRedirect;
+    }
+
+    private scrambleHandArrows (): number
+    {
+        let changed = 0;
+
+        for (const card of this.deckHand.getHand())
+        {
+            const definition = getCardDefinitionOrThrow(card.definitionId);
+
+            if (definition.arrowPool === 'joker')
+            {
+                continue;
+            }
+
+            if (!this.handRedirectOriginals.has(card.instanceId))
+            {
+                this.handRedirectOriginals.set(card.instanceId, {
+                    arrow: card.arrow,
+                    loopArrow: card.loopArrow,
+                });
+            }
+
+            if (definition.behaviorId === 'loop-reset')
+            {
+                const pair = randomOrthogonalPair();
+                card.arrow = pair.arrow;
+                card.loopArrow = pair.loopArrow;
+            }
+            else
+            {
+                card.arrow = randomDirectionForPool(definition.arrowPool);
+            }
+
+            changed += 1;
+        }
+
+        if (changed > 0)
+        {
+            CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, {
+                hand: [ ...this.deckHand.getHand() ],
+            });
+        }
+
+        return changed;
+    }
+
+    /** Restores any arrows twisted this round (hand, board, or piles). */
+    private clearHandRedirect (): void
+    {
+        if (this.handRedirectOriginals.size === 0)
+        {
+            return;
+        }
+
+        const restore = (card: CardInstance): void =>
+        {
+            const original = this.handRedirectOriginals.get(card.instanceId);
+
+            if (!original)
+            {
+                return;
+            }
+
+            card.arrow = original.arrow;
+
+            if (original.loopArrow !== undefined)
+            {
+                card.loopArrow = original.loopArrow;
+            }
+            else
+            {
+                delete card.loopArrow;
+            }
+        };
+
+        for (const card of this.deckHand.getHand())
+        {
+            restore(card);
+        }
+
+        for (const card of this.deckHand.getDeckCards())
+        {
+            restore(card);
+        }
+
+        for (const card of this.deckHand.getDiscardCards())
+        {
+            restore(card);
+        }
+
+        for (const slot of this.board.slotsInOrder())
+        {
+            const card = this.board.getCardAt(slot);
+
+            if (card)
+            {
+                restore(card);
+            }
+        }
+
+        this.handRedirectOriginals.clear();
+        this.handRedirectActiveThisRound = false;
+    }
+
     getDampenField (): DampenField | null
     {
         return this.fieldEffects.getDampenField();
@@ -1336,6 +1475,12 @@ export class CardGameSession
         }
 
         this.refillHand();
+
+        if (this.handRedirectActiveThisRound)
+        {
+            this.scrambleHandArrows();
+        }
+
         this.clearTransientBattleModifiers();
         this.applyEnemyCurseHand();
     }
@@ -1348,9 +1493,18 @@ export class CardGameSession
             return;
         }
 
+        this.clearHandRedirect();
         this.renewHand();
         this.resetEnergy();
         this.clearBattleModifiers();
+
+        if (this.pendingHandRedirect)
+        {
+            this.pendingHandRedirect = false;
+            this.handRedirectActiveThisRound = true;
+            this.scrambleHandArrows();
+        }
+
         this.applyEnemyCurseHand();
     }
 

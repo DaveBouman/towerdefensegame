@@ -31,6 +31,7 @@ describe('enemyPassiveTooltipRegistry', () =>
             'stutterClock',
             'phantomIntent',
             'phaseShift',
+            'handRedirect',
         ]);
 
         for (const passive of passives)

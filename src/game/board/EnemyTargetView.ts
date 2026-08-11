@@ -52,6 +52,16 @@ const PASSIVE_ROW_COLORS: Record<EnemyPassiveConfig['id'], number> = {
     pressureColumn: 0x00c8e0,
     spawnMinion: 0x7af0ff,
     shatterOnDeath: 0xff6b9a,
+    credLeech: 0xf1c40f,
+    rerollTax: 0xe67e22,
+    cardThief: 0xc97b9b,
+    skillJam: 0x95a5a6,
+    linkRage: 0xe74c3c,
+    bodyguard: 0x3498db,
+    stutterClock: 0x9b8cff,
+    phantomIntent: 0x9b59b6,
+    phaseShift: 0x8e44ad,
+    handRedirect: 0xd4a5ff,
 };
 
 const ENEMY_BAR_BG = CYBER.enemyBarBg;

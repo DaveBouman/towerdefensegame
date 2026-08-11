@@ -235,6 +235,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | `null-scribe` | **Skill Jam** — first 3 skill cards in each chain have abilities negated. |
 | `stutter-node` | **Stutter Clock** — every other enemy phase, its attack/shield step executes twice (telegraphed). |
 | `phantom-relay` | **Phantom Intent** — telegraphs both attack and shield; only the real step fires. |
+| `vector-haunt` | **Signal Twist** — telegraphed `redirect-hand` intent; scrambles arrows on cards in your hand for the rest of the energy round (Reroute untouched). Arrows restore when energy refills. |
 | `twin-clip` | **Link Rage** — duo fight; killing one enrages the survivor (+6 atk, +1 trap next turn). |
 | `bulwark-runner` + `glass-striker` | **Buffer pair** — Bulwark redirects the first hit each chain aimed at the 16 HP Glass Striker. |
 | `chrome-saint` + `glass-striker` | **Healer pair** — 72 HP Chrome Saint heals the fragile striker each turn. |
@@ -328,6 +329,7 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-11 | **Signal Twist intent + Vector Haunt.** New enemy turn step `redirect-hand` (passive `handRedirect`) scrambles hand-card arrows for the rest of the energy round; restores on energy refill. Mid-run street enemy **Vector Haunt** telegraphs the twist each turn. |
 | 2026-08-11 | **Rewards, ascension, routing, and run polish.** Street ops: pick a card or take nothing. Lieutenants: elite card then lieutenant relic. Warden: **Gatekeeper Seal** relic (+15 max integrity, +1 energy). Ascension 0–10 auto counter (+10% enemy integrity per level) — no pre-run picker; unlock banner after Warden only. Map **hot/safe** route tags (+15% / −10% enemy HP; hot pays +12 creds). Lieutenant **phase shift** at 50% HP (Smokebinder/Saboteur). Floor briefings, combat recap strip, reward synergy hints, run-end stats screen. |
 | 2026-08-11 | **Encounter pool sync.** Street + signal ambush share `battleEncounterPools.ts` / `battleEncounterRoll.ts`. **Bulwark Runner** and **Chrome Saint** duos added to late columns (6–8); signal ambushes use the same pools and duo expansion as the map. |
 | 2026-08-10 | **UI polish pass.** Shared cyber panel chrome (`CyberPanel.tsx`) applied across shop, safehouse, card rewards, run end, node visit. Card rewards use `CardChip`; phase-based canvas dimming; hand dock tray; cyberpunk theme extended to shop/rest/tutorial/banners/body mods/audio toggle. |

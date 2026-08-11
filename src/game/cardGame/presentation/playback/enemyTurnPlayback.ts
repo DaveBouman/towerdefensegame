@@ -137,6 +137,21 @@ export function playEnemyTurnStep (
         return;
     }
 
+    if (step.kind === 'redirect-hand')
+    {
+        enemyView?.playEnemyAttackPulse();
+
+        scene.time.delayedCall(turnMs, () =>
+        {
+            const changed = session.applyHandRedirect();
+            enemyView?.showIntentLabel(changed > 0 ? 'Hand twisted' : 'Twist queued');
+            playSfx('enemy-move', { volume: 0.82, rate: 1.08 });
+            onComplete();
+        });
+
+        return;
+    }
+
     if (step.kind === 'battle-mod')
     {
         enemyView?.playEnemyAttackPulse();

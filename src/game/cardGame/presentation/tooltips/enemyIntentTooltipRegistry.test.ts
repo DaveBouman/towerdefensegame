@@ -35,4 +35,13 @@ describe('enemyIntentTooltipRegistry', () =>
         expect(tooltip.title).toBe('Dead Zone');
         expect(tooltip.lines.some((line) => line.includes('checkerboard'))).toBe(true);
     });
+
+    it('describes Signal Twist hand redirect', () =>
+    {
+        const tooltip = resolveEnemyIntentTooltip({ kind: 'redirect-hand' }, 'upcoming');
+
+        expect(tooltip.title).toBe('Signal Twist');
+        expect(tooltip.lines.some((line) => line.includes('scramble'))).toBe(true);
+        expect(tooltip.lines.some((line) => line.includes('energy round'))).toBe(true);
+    });
 });

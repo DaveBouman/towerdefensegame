@@ -38,6 +38,14 @@ export const describeEnemyStep = (
         };
     }
 
+    if (step.kind === 'redirect-hand')
+    {
+        return {
+            title: 'Twist hand',
+            color: '#d4a5ff',
+        };
+    }
+
     if (step.kind === 'heal-ally')
     {
         return {
@@ -109,6 +117,8 @@ export const describeEnemyPassives = (
         bodyguard: 'Bodyguard',
         stutterClock: 'Stutter',
         phantomIntent: 'Phantom',
+        phaseShift: 'Phase Shift',
+        handRedirect: 'Signal Twist',
     };
 
     return enemy.passives.map((passive) => labels[passive.id] ?? passive.id);

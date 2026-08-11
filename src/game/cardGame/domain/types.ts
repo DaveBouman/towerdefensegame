@@ -75,6 +75,7 @@ export type EnemyTurnKind =
     | 'place-hazard'
     | 'dampen-field'
     | 'lock-column'
+    | 'redirect-hand'
     | 'battle-mod'
     | 'heal-ally'
     | 'shield-ally';

@@ -147,6 +147,27 @@ describe('enemy passives', () =>
         expect(lock?.amount).toBe((lock?.column ?? 0) + 1);
     });
 
+    it('telegraphs Signal Twist for handRedirect enemies', () =>
+    {
+        const enemy = {
+            ...getDefaultCardGameEnemy(),
+            attackChance: 1,
+            passives: normalizeEnemyPassives([ { id: 'handRedirect', everyTurns: 2 } ]),
+        };
+
+        const castsOn = (turnsTaken: number): boolean =>
+            planEnemyTurnWithPassives({
+                enemy,
+                enemyState: { health: 40, maxHealth: 40, shield: 0 },
+                enrageStacks: 0,
+                turnsTaken,
+            }).steps.some((step) => step.kind === 'redirect-hand');
+
+        expect(castsOn(0)).toBe(true);
+        expect(castsOn(1)).toBe(false);
+        expect(castsOn(2)).toBe(true);
+    });
+
     it('halves damage and armor on dampened even tiles', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));

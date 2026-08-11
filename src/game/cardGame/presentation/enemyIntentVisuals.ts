@@ -34,6 +34,10 @@ const INTENT_STYLE: Record<EnemyTurnKind, {
         upcoming: { tint: 0x00c8e0, text: '#7af0ff' },
         executing: { tint: 0x00a8bf, text: '#5ad8ef' },
     },
+    'redirect-hand': {
+        upcoming: { tint: 0xd4a5ff, text: '#e6c8ff' },
+        executing: { tint: 0xb57aff, text: '#d4a5ff' },
+    },
     'battle-mod': {
         upcoming: { tint: 0xfcee0a, text: '#fff9b0' },
         executing: { tint: 0xffd43b, text: '#ffe680' },
@@ -105,7 +109,9 @@ export const getEnemyIntentStepVisuals = (
             textureKey: ENEMY_INTENT_TEXTURE_KEY[step.kind],
             tint: style.tint,
             textColor: style.text,
-            amountLabel: step.kind === 'place-hazard' || step.kind === 'dampen-field'
+            amountLabel: step.kind === 'place-hazard'
+                || step.kind === 'dampen-field'
+                || step.kind === 'redirect-hand'
                 ? undefined
                 : step.kind === 'shield' || step.kind === 'shield-ally'
                     ? `+${step.amount ?? 0}`
