@@ -275,7 +275,7 @@ remain as a fallback if a portrait fails to load.
 - [x] **Column pressure** — Gridlock locks a telegraphed board column each turn (`pressureColumn` / `lock-column`)
 - [x] **Threshold telegraphs** — HUD shows Last Stand / Enrage breakpoints (`EnemyTargetView`)
 - [ ] **Perfect-fight rewards** — bonus reroll or card upgrade for clean wins
-- [x] **Ascension modifiers** — 0–10 tiers, +10% enemy integrity per level; next tier unlocks after clearing the Warden at the current tier (`ascension.ts`)
+- [x] **Ascension modifiers** — 0–10 counter (+10% enemy integrity per level); next tier unlocks after clearing the Warden; shown on map HUD; unlock message on victory screen only (`ascension.ts`)
 - [x] **Route risk tags** — hot/safe branches on the map (`routeKind`, `routeModifiers.ts`)
 
 #### Phase 3 — Meta (~1–2 weeks)
@@ -328,7 +328,7 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
-| 2026-08-11 | **Rewards, ascension, routing, and run polish.** Street ops: pick a card or take nothing. Lieutenants: elite card then lieutenant relic. Warden: **Gatekeeper Seal** relic (+15 max integrity, +1 energy). Ascension 0–10 (+10% enemy integrity per level) on Start run. Map **hot/safe** route tags (+15% / −10% enemy HP; hot pays +12 creds). Lieutenant **phase shift** at 50% HP (Smokebinder/Saboteur). Floor briefings, combat recap strip, reward synergy hints, run-end stats screen. |
+| 2026-08-11 | **Rewards, ascension, routing, and run polish.** Street ops: pick a card or take nothing. Lieutenants: elite card then lieutenant relic. Warden: **Gatekeeper Seal** relic (+15 max integrity, +1 energy). Ascension 0–10 auto counter (+10% enemy integrity per level) — no pre-run picker; unlock banner after Warden only. Map **hot/safe** route tags (+15% / −10% enemy HP; hot pays +12 creds). Lieutenant **phase shift** at 50% HP (Smokebinder/Saboteur). Floor briefings, combat recap strip, reward synergy hints, run-end stats screen. |
 | 2026-08-11 | **Encounter pool sync.** Street + signal ambush share `battleEncounterPools.ts` / `battleEncounterRoll.ts`. **Bulwark Runner** and **Chrome Saint** duos added to late columns (6–8); signal ambushes use the same pools and duo expansion as the map. |
 | 2026-08-10 | **UI polish pass.** Shared cyber panel chrome (`CyberPanel.tsx`) applied across shop, safehouse, card rewards, run end, node visit. Card rewards use `CardChip`; phase-based canvas dimming; hand dock tray; cyberpunk theme extended to shop/rest/tutorial/banners/body mods/audio toggle. |
 | 2026-08-10 | **Deck / graveyard UI polish.** Pile inspector overlay restyled (corner brackets, scanlines, cyan deck / magenta graveyard accents, card slots with hover glow). Battlefield pile widgets use neon panels + grid well. |

@@ -33,6 +33,7 @@ interface RunMapOverlayProps {
     floorCount: number;
     floorRerollsRemaining: number;
     floorRerollsMax: number;
+    ascensionLevel?: number;
     seed: string;
     onPick: (node: RunMapNode) => void;
 }
@@ -49,6 +50,7 @@ export const RunMapOverlay = ({
     floorCount,
     floorRerollsRemaining,
     floorRerollsMax,
+    ascensionLevel = 0,
     seed,
     onPick,
 }: RunMapOverlayProps) =>
@@ -132,6 +134,12 @@ export const RunMapOverlay = ({
                         <span className="run-map__rerolls-label">Rerolls</span>
                         <span className="run-map__rerolls-value">{floorRerollsRemaining}/{floorRerollsMax}</span>
                     </div>
+                    {ascensionLevel > 0 && (
+                        <div className="run-map__ascension" role="status">
+                            <span className="run-map__ascension-label">Ascension</span>
+                            <span className="run-map__ascension-value">{ascensionLevel}</span>
+                        </div>
+                    )}
                 </div>
             </div>
 

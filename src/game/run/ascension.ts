@@ -1,5 +1,4 @@
-const STORAGE_KEY = 'signal-chain-ascension';
-const UNLOCKED_STORAGE_KEY = 'signal-chain-ascension-unlocked';
+const UNLOCKED_STORAGE_KEY = 'signal-chain-ascension';
 
 export const MAX_ASCENSION_LEVEL = 10;
 
@@ -16,11 +15,11 @@ export const getAscensionEnemyHealthMultiplier = (level: number): number =>
 const clampAscension = (level: number): number =>
     Math.max(0, Math.min(MAX_ASCENSION_LEVEL, Math.round(level)));
 
-const readStoredInt = (key: string, fallback: number): number =>
+const readStoredInt = (fallback: number): number =>
 {
     try
     {
-        const raw = localStorage.getItem(key);
+        const raw = localStorage.getItem(UNLOCKED_STORAGE_KEY);
 
         if (raw === null)
         {
@@ -37,11 +36,11 @@ const readStoredInt = (key: string, fallback: number): number =>
     }
 };
 
-const writeStoredInt = (key: string, value: number): void =>
+const writeStoredInt = (value: number): void =>
 {
     try
     {
-        localStorage.setItem(key, String(value));
+        localStorage.setItem(UNLOCKED_STORAGE_KEY, String(value));
     }
     catch
     {
@@ -49,34 +48,32 @@ const writeStoredInt = (key: string, value: number): void =>
     }
 };
 
-/** Highest ascension tier the player may select (0 until the Warden is cleared). */
-export const readMaxUnlockedAscension = (): number =>
-    clampAscension(readStoredInt(UNLOCKED_STORAGE_KEY, 0));
+/** Current ascension counter — run difficulty tier (0 until first Warden clear). */
+export const readRunAscensionLevel = (): number =>
+    clampAscension(readStoredInt(0));
 
-/** After clearing the Warden at `clearedLevel`, unlock the next tier if applicable. */
+/** @deprecated Use readRunAscensionLevel. */
+export const readMaxUnlockedAscension = readRunAscensionLevel;
+
+/** @deprecated Use readRunAscensionLevel. */
+export const readAscensionLevel = readRunAscensionLevel;
+
+/**
+ * After clearing the Warden at `clearedLevel`, bump the counter for the next run.
+ * Returns the new ascension level (unchanged if already at max).
+ */
 export const recordAscensionClear = (clearedLevel: number): number =>
 {
     const cleared = clampAscension(clearedLevel);
-    const nextUnlock = Math.min(MAX_ASCENSION_LEVEL, cleared + 1);
-    const current = readMaxUnlockedAscension();
+    const nextLevel = Math.min(MAX_ASCENSION_LEVEL, cleared + 1);
+    const current = readRunAscensionLevel();
 
-    if (nextUnlock > current)
+    if (nextLevel > current)
     {
-        writeStoredInt(UNLOCKED_STORAGE_KEY, nextUnlock);
+        writeStoredInt(nextLevel);
     }
 
-    return readMaxUnlockedAscension();
-};
-
-export const clampSelectableAscension = (level: number): number =>
-    Math.min(clampAscension(level), readMaxUnlockedAscension());
-
-export const readAscensionLevel = (): number =>
-    clampSelectableAscension(readStoredInt(STORAGE_KEY, 0));
-
-export const writeAscensionLevel = (level: number): void =>
-{
-    writeStoredInt(STORAGE_KEY, clampSelectableAscension(level));
+    return readRunAscensionLevel();
 };
 
 export const describeAscensionLevel = (level: number): string =>
@@ -91,17 +88,15 @@ export const describeAscensionLevel = (level: number): string =>
     return `Ascension ${level} — enemies +${bonus}% integrity`;
 };
 
-export const describeAscensionUnlockHint = (maxUnlocked: number): string =>
+/** Shown on the Warden victory screen when a new ascension tier unlocks. */
+export const formatAscensionUnlockMessage = (unlockedLevel: number): string =>
 {
-    if (maxUnlocked >= MAX_ASCENSION_LEVEL)
+    if (unlockedLevel <= 0)
     {
-        return 'All ascension tiers unlocked.';
+        return '';
     }
 
-    if (maxUnlocked <= 0)
-    {
-        return 'Clear the Warden on base difficulty to unlock Ascension 1.';
-    }
+    const bonus = Math.round(unlockedLevel * ASCENSION_HP_BONUS_PER_LEVEL * 100);
 
-    return `Clear the Warden at Ascension ${maxUnlocked} to unlock Ascension ${maxUnlocked + 1}.`;
+    return `Ascension ${unlockedLevel} unlocked — enemies +${bonus}% integrity on your next run.`;
 };

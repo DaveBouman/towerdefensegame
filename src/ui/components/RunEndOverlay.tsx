@@ -1,4 +1,5 @@
 import { CyberPanelChrome } from './CyberPanel';
+import { formatAscensionUnlockMessage } from '../../game/run/ascension';
 import type { RunStats } from '../../game/run/runStats';
 
 interface RunEndOverlayProps {
@@ -45,9 +46,9 @@ export const RunEndOverlay = ({
                 {clutch && variant === 'victory' && (
                     <p className="run-end__clutch">Clutch clear — you limped out at critical integrity.</p>
                 )}
-                {variant === 'victory' && unlockedAscension !== null && (
+                {variant === 'victory' && unlockedAscension !== null && unlockedAscension > 0 && (
                     <p className="run-end__unlock">
-                        Ascension {unlockedAscension} unlocked — harder runs await.
+                        {formatAscensionUnlockMessage(unlockedAscension)}
                     </p>
                 )}
                 <p className="run-end__eyebrow">{copy.eyebrow}</p>

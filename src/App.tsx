@@ -59,7 +59,7 @@ import {
 } from './game/run/runMap';
 import { rollCardReward, BATTLE_REWARD_RULES, PUZZLE_TRIAL_RULES, flattenRunReward, getCardSynergyHint, type CardReward, type RunReward } from './game/run/rewards';
 import { rollBattleBodyModReward, type BodyModRewardPool } from './game/run/bodyMods';
-import { readAscensionLevel, recordAscensionClear } from './game/run/ascension';
+import { readRunAscensionLevel, recordAscensionClear } from './game/run/ascension';
 import { HOT_ROUTE_VICTORY_GOLD } from './game/run/routeModifiers';
 import { getFloorBriefing } from './game/run/floorBriefings';
 import { createEmptyRunStats, type RunStats } from './game/run/runStats';
@@ -229,9 +229,9 @@ function App()
     const [ runToast, setRunToast ] = useState<string | null>(null);
     const [ battleIntroKind, setBattleIntroKind ] = useState<RunMapNodeKind | null>(null);
     const [ activeBattleKind, setActiveBattleKind ] = useState<RunMapNodeKind | null>(null);
-    const [ ascensionLevel, setAscensionLevel ] = useState(readAscensionLevel);
+    const [ ascensionLevel, setAscensionLevel ] = useState(readRunAscensionLevel);
     const [ ascensionUnlockedToast, setAscensionUnlockedToast ] = useState<number | null>(null);
-    const [ runStats, setRunStats ] = useState<RunStats>(() => createEmptyRunStats(readAscensionLevel()));
+    const [ runStats, setRunStats ] = useState<RunStats>(() => createEmptyRunStats(readRunAscensionLevel()));
     const [ floorBriefing, setFloorBriefing ] = useState<number | null>(null);
     const [ combatRecap, setCombatRecap ] = useState<{ damageDealt: number; armorGained: number; damageTaken: number } | null>(null);
     const [ clutchVictory, setClutchVictory ] = useState(false);
@@ -375,6 +375,7 @@ function App()
             setAscensionUnlockedToast(unlocked);
         }
 
+        setAscensionLevel(unlocked);
         setPhase('victory');
     }, []);
 
@@ -1207,8 +1208,8 @@ function App()
         setFloorRerollsRemaining(GAME_RULES.rerollsPerFloor);
         currentFloorRef.current = 1;
         floorRerollsRef.current = GAME_RULES.rerollsPerFloor;
-        setAscensionLevel(readAscensionLevel());
-        setRunStats(createEmptyRunStats(readAscensionLevel()));
+        setAscensionLevel(readRunAscensionLevel());
+        setRunStats(createEmptyRunStats(readRunAscensionLevel()));
         setFloorBriefing(null);
         setCombatRecap(null);
         setPendingRewardFlow(null);
@@ -1251,7 +1252,6 @@ function App()
 
     const startRunFromMenu = useCallback((nextSeed: string): void =>
     {
-        setAscensionLevel(readAscensionLevel());
         resetRun(normalizeSeed(nextSeed), 'map');
     }, [ resetRun ]);
 
@@ -1317,8 +1317,6 @@ function App()
                 <MainMenuOverlay
                     mode="boot"
                     seed={seed}
-                    ascensionLevel={ascensionLevel}
-                    onAscensionChange={setAscensionLevel}
                     onStart={startRunFromMenu}
                     onReplayTutorial={tutorial.replayTutorial}
                 />
@@ -1387,6 +1385,7 @@ function App()
                     floorCount={RUN_CONFIG.floorCount}
                     floorRerollsRemaining={floorRerollsRemaining}
                     floorRerollsMax={GAME_RULES.rerollsPerFloor}
+                    ascensionLevel={ascensionLevel}
                     seed={seed}
                     onPick={pickNode}
                 />

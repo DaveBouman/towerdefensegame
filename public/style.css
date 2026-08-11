@@ -523,10 +523,19 @@ html, body, #root {
     font-weight: 600;
 }
 
+.run-map__ascension {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
 .run-map__gold-label,
 .run-map__body-mods-label,
 .run-map__floor-label,
-.run-map__rerolls-label {
+.run-map__rerolls-label,
+.run-map__ascension-label {
     color: #8fa0d8;
     text-transform: uppercase;
     font-size: 11px;
@@ -535,7 +544,8 @@ html, body, #root {
 
 .run-map__gold-value,
 .run-map__floor-value,
-.run-map__rerolls-value {
+.run-map__rerolls-value,
+.run-map__ascension-value {
     color: #f2cf82;
     font-variant-numeric: tabular-nums;
 }

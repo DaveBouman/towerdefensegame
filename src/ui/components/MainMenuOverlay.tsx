@@ -20,17 +20,6 @@ import { getCollectionProgress } from '../../game/run/cardCollection';
 import { getBestiaryProgress } from '../../game/run/enemyBestiary';
 import { createRandomSeed, normalizeSeed } from '../../game/random/rng';
 import {
-    ASCENSION_HP_BONUS_PER_LEVEL,
-    MAX_ASCENSION_LEVEL,
-    clampSelectableAscension,
-    describeAscensionLevel,
-    describeAscensionUnlockHint,
-    readAscensionLevel,
-    readMaxUnlockedAscension,
-    recordAscensionClear,
-    writeAscensionLevel,
-} from '../../game/run/ascension';
-import {
     TEXT_SCALE_SIZES,
     type TextScaleSize,
     readTextScale,
@@ -47,8 +36,6 @@ type MenuScreen = 'home' | 'settings' | 'how-to-play' | 'credits' | 'confirm-new
 interface MainMenuOverlayProps {
     mode?: MenuMode;
     seed: string;
-    ascensionLevel?: number;
-    onAscensionChange?: (level: number) => void;
     onStart: (seed: string) => void;
     onResume?: () => void;
     onNewRun?: (seed: string) => void;
@@ -104,8 +91,6 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
 export const MainMenuOverlay = ({
     mode = 'boot',
     seed,
-    ascensionLevel: ascensionLevelProp,
-    onAscensionChange,
     onStart,
     onResume,
     onNewRun,
@@ -115,10 +100,6 @@ export const MainMenuOverlay = ({
     const pause = mode === 'pause';
     const [ screen, setScreen ] = useState<MenuScreen>('home');
     const [ draftSeed, setDraftSeed ] = useState(seed);
-    const [ ascensionLevel, setAscensionLevel ] = useState(
-        () => clampSelectableAscension(ascensionLevelProp ?? readAscensionLevel()),
-    );
-    const [ maxUnlockedAscension, setMaxUnlockedAscension ] = useState(readMaxUnlockedAscension);
     const [ audio, setAudio ] = useState<AudioSettings>(getAudioSettings);
     const [ showCollection, setShowCollection ] = useState(false);
     const [ showBestiary, setShowBestiary ] = useState(false);
@@ -186,8 +167,6 @@ export const MainMenuOverlay = ({
         if (next === 'confirm-new-run')
         {
             setDraftSeed(createRandomSeed());
-            setMaxUnlockedAscension(readMaxUnlockedAscension());
-            setAscensionLevel(clampSelectableAscension(readAscensionLevel()));
         }
 
         setScreen(next);
@@ -208,8 +187,6 @@ export const MainMenuOverlay = ({
     {
         emitRunSfx('ui-select', { volume: 0.88, rate: 0.98 });
         const nextSeed = normalizeSeed(draftSeed);
-        writeAscensionLevel(ascensionLevel);
-        onAscensionChange?.(ascensionLevel);
 
         if (pause)
         {
@@ -218,11 +195,6 @@ export const MainMenuOverlay = ({
         }
 
         onStart(nextSeed);
-    };
-
-    const setAscension = (level: number): void =>
-    {
-        setAscensionLevel(clampSelectableAscension(level));
     };
 
     const openCollection = (): void =>
@@ -446,28 +418,6 @@ export const MainMenuOverlay = ({
                                         &#x21bb;
                                     </button>
                                 </span>
-                            </label>
-                            <label className="main-menu__field">
-                                <span className="main-menu__field-label">Ascension</span>
-                                <span className="main-menu__ascension-row">
-                                    <input
-                                        className="main-menu__volume"
-                                        type="range"
-                                        min={0}
-                                        max={maxUnlockedAscension}
-                                        step={1}
-                                        value={ascensionLevel}
-                                        aria-label="Ascension level"
-                                        onChange={(event) => setAscension(Number(event.target.value))}
-                                    />
-                                    <span className="main-menu__volume-value">{ascensionLevel}</span>
-                                </span>
-                                <span className="main-menu__field-hint">{describeAscensionLevel(ascensionLevel)}</span>
-                                {maxUnlockedAscension < MAX_ASCENSION_LEVEL && (
-                                    <span className="main-menu__field-hint main-menu__field-hint--muted">
-                                        {describeAscensionUnlockHint(maxUnlockedAscension)}
-                                    </span>
-                                )}
                             </label>
                             <div className="main-menu__actions">
                                 <button
