@@ -1,3 +1,4 @@
+import { Actions, Geom } from 'phaser';
 import { buildCardBackGraphic, buildCardGraphic } from '../cards/CardRenderer';
 import { PILE_CARD_HEIGHT, PILE_CARD_WIDTH } from '../cards/cardVisuals';
 import { CYBER } from '../config/cyberpunkTheme';
@@ -87,12 +88,16 @@ export class CardPileView
 
         this.stackContainer = scene.add.container(stackX, stackY);
 
-        const stackMaskShape = scene.add.graphics();
-
-        stackMaskShape.fillStyle(0xffffff);
-        stackMaskShape.fillRect(WELL_PAD, WELL_PAD, pileWidth, pileHeight);
-        stackMaskShape.setVisible(false);
-        this.stackContainer.setMask(stackMaskShape.createGeometryMask());
+        Actions.AddMaskShape(this.stackContainer, {
+            shape: 'rectangle',
+            region: new Geom.Rectangle(
+                WELL_PAD - stackX,
+                WELL_PAD - stackY,
+                pileWidth,
+                pileHeight,
+            ),
+            useInternal: true,
+        });
 
         for (let i = 0; i < MAX_VISIBLE_STACK; i++)
         {
@@ -118,7 +123,7 @@ export class CardPileView
             ...uiTextStyle(13, kind === 'deck' ? '#7af0ff' : '#ffd4b8', { bold: true }),
         }).setOrigin(0.5, 0);
 
-        this.container.add([ frame, well, brackets, accent, stackMaskShape, this.stackContainer, this.countText, title ]);
+        this.container.add([ frame, well, brackets, accent, this.stackContainer, this.countText, title ]);
         this.applyStack(0, null);
 
         const hitArea = scene.add.rectangle(0, 0, frameW, frameH, 0x000000, 0);
