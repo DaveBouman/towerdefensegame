@@ -6,6 +6,11 @@
 import { rewardForNodeKind, type RunReward } from './rewards';
 import { isBattleKind, rollNodeKind, type RunMapNodeKind } from './nodeKinds';
 import { pickRandom, random } from '../random/rng';
+import { STREET_ENEMY_POOLS } from './battleEncounterPools';
+import {
+    expandRolledEnemy,
+    maybeAppendFieldMedic,
+} from './battleEncounterRoll';
 
 export interface RunMapNode {
     id: string;
@@ -94,26 +99,6 @@ export const getFloorColumnRange = (floor: number): { startCol: number; endCol: 
 
 /** Elite enemies used for the fixed semi-boss column. */
 const SEMI_BOSS_ENEMY_POOL: readonly string[] = [ 'smokebinder', 'saboteur' ];
-
-/** Enemy pools per column, ramping in difficulty. Last column is the boss. */
-const ROW_ENEMY_POOLS: readonly (readonly string[])[] = [
-    [ 'basic' ],
-    [ 'basic', 'thornward', 'cred-vulture' ],
-    [ 'basic', 'thornward', 'broodframe', 'toll-bot' ],
-    [ 'thornward', 'saboteur', 'android', 'wire-thief' ],
-    [ 'thornward', 'saboteur', 'gridlock', 'broodframe', 'null-scribe' ],
-    [ 'saboteur', 'smokebinder', 'gridlock', 'android', 'stutter-node' ],
-    [ 'saboteur', 'smokebinder', 'gridlock', 'broodframe', 'phantom-relay' ],
-    [ 'saboteur', 'smokebinder', 'android', 'cred-vulture' ],
-    [ 'smokebinder', 'gridlock', 'twin-clip' ],
-    [ 'smokebinder', 'toll-bot' ],
-    [ 'warden' ],
-];
-
-/** Chance a mid-run fight brings a Field Medic ally alongside the rolled enemy. */
-const MEDIC_DUO_CHANCE = 0.22;
-const MEDIC_DUO_START_ROW = 4;
-const MEDIC_DUO_END_ROW = 8;
 
 /** Branching width per column (first → boss). */
 const ROW_SIZES: readonly number[] = [ 2, 3, 3, 3, 4, 4, 4, 3, 3, 2, 1 ];
@@ -207,50 +192,20 @@ const resolveBattleEnemies = (
 
     const enemyId = kind === 'semi-boss'
         ? pickRandom(SEMI_BOSS_ENEMY_POOL)
-        : pickRandom(ROW_ENEMY_POOLS[row] ?? ROW_ENEMY_POOLS[0]!);
+        : pickRandom(STREET_ENEMY_POOLS[row] ?? STREET_ENEMY_POOLS[0]!);
 
-    if (enemyId === 'broodframe')
-    {
-        return { enemyId, enemyIds: [ 'broodframe', 'wire-drone' ] };
-    }
+    const expanded = expandRolledEnemy(enemyId);
 
-    if (enemyId === 'twin-clip')
-    {
-        return { enemyId, enemyIds: [ 'twin-clip', 'twin-clip' ] };
-    }
-
-    if (enemyId === 'bulwark-runner')
-    {
-        return { enemyId, enemyIds: [ 'bulwark-runner', 'glass-striker' ] };
-    }
-
-    if (enemyId === 'chrome-saint')
-    {
-        return { enemyId, enemyIds: [ 'chrome-saint', 'glass-striker' ] };
-    }
-
-    if (
-        kind === 'enemy'
-        && row >= MEDIC_DUO_START_ROW
-        && row <= MEDIC_DUO_END_ROW
-        && enemyId !== 'field-medic'
-        && enemyId !== 'android'
-        && random() < MEDIC_DUO_CHANCE
-    )
-    {
-        return { enemyId, enemyIds: [ enemyId, 'field-medic' ] };
-    }
-
-    return { enemyId };
+    return maybeAppendFieldMedic(expanded, row, kind === 'enemy');
 };
 
 export const generateRunMap = (): RunMap =>
 {
     const rows = RUN_CONFIG.middleColumns + 2;
 
-    if (ROW_SIZES.length !== rows || ROW_ENEMY_POOLS.length !== rows)
+    if (ROW_SIZES.length !== rows || STREET_ENEMY_POOLS.length !== rows)
     {
-        throw new Error(`Run map config expects ${rows} columns (ROW_SIZES / ROW_ENEMY_POOLS mismatch).`);
+        throw new Error(`Run map config expects ${rows} columns (ROW_SIZES / STREET_ENEMY_POOLS mismatch).`);
     }
 
     const grid: RunMapNode[][] = ROW_SIZES.map((size, row) =>

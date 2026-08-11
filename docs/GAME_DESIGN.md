@@ -326,7 +326,7 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
-| 2026-08-11 | **Economy + role enemy pack.** Ten new enemies with passives: Cred Vulture (`credLeech`), Toll Bot (`rerollTax`), Wire Thief (`cardThief` flee), Null Scribe (`skillJam`), Stutter Node, Phantom Relay, Link Twins (`twin-clip` duo + `linkRage`), Buffer pair (`bulwark-runner` + `glass-striker` bodyguard), Chrome Saint healer tank duo. Battle syncs stolen creds/cards to run state via `BATTLE_WON` / `BATTLE_LOST`. |
+| 2026-08-11 | **Encounter pool sync.** Street + signal ambush share `battleEncounterPools.ts` / `battleEncounterRoll.ts`. **Bulwark Runner** and **Chrome Saint** duos added to late columns (6–8); signal ambushes use the same pools and duo expansion as the map. |
 | 2026-08-10 | **UI polish pass.** Shared cyber panel chrome (`CyberPanel.tsx`) applied across shop, safehouse, card rewards, run end, node visit. Card rewards use `CardChip`; phase-based canvas dimming; hand dock tray; cyberpunk theme extended to shop/rest/tutorial/banners/body mods/audio toggle. |
 | 2026-08-10 | **Deck / graveyard UI polish.** Pile inspector overlay restyled (corner brackets, scanlines, cyan deck / magenta graveyard accents, card slots with hover glow). Battlefield pile widgets use neon panels + grid well. |
 | 2026-08-10 | **Battlefield backdrop.** Procedural cyberpunk arena background during fights (perspective grid, neon glow behind board, circuit traces, scan sweep, HUD corner brackets). `BattlefieldBackgroundView` in `src/game/board/`. |

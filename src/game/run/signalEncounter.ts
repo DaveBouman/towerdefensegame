@@ -1,26 +1,12 @@
 import { pickRandom, random } from '../random/rng';
+import { STREET_ENEMY_POOLS } from './battleEncounterPools';
+import {
+    expandRolledEnemy,
+    maybeAppendFieldMedic,
+} from './battleEncounterRoll';
 import { rewardForNodeKind } from './rewards';
 import { rollRunEventIdExcluding } from './runEvents';
 import type { RunReward } from './rewards';
-
-/** Enemy pools per column — mirrors street-op difficulty in `runMap.ts`. */
-const SIGNAL_AMBUSH_ENEMY_POOLS: readonly (readonly string[])[] = [
-    [ 'basic' ],
-    [ 'basic', 'thornward' ],
-    [ 'basic', 'thornward' ],
-    [ 'thornward', 'saboteur' ],
-    [ 'thornward', 'saboteur', 'gridlock' ],
-    [ 'saboteur', 'smokebinder', 'gridlock' ],
-    [ 'saboteur', 'smokebinder', 'gridlock' ],
-    [ 'saboteur', 'smokebinder' ],
-    [ 'smokebinder', 'gridlock' ],
-    [ 'smokebinder' ],
-    [ 'warden' ],
-];
-
-const MEDIC_DUO_CHANCE = 0.22;
-const MEDIC_DUO_START_ROW = 4;
-const MEDIC_DUO_END_ROW = 8;
 
 export type SignalOutcome =
     | { kind: 'event'; eventId: string }
@@ -40,22 +26,10 @@ export const getSignalAmbushChance = (priorSignalVisits: number): number =>
 
 const rollAmbushEnemies = (row: number): { enemyId: string; enemyIds?: string[] } =>
 {
-    const pool = SIGNAL_AMBUSH_ENEMY_POOLS[row] ?? SIGNAL_AMBUSH_ENEMY_POOLS[0]!;
+    const pool = STREET_ENEMY_POOLS[row] ?? STREET_ENEMY_POOLS[0]!;
     const enemyId = pickRandom([ ...pool ]);
 
-    if (
-        row >= MEDIC_DUO_START_ROW
-        && row <= MEDIC_DUO_END_ROW
-        && enemyId !== 'field-medic'
-        && enemyId !== 'android'
-        && enemyId !== 'broodframe'
-        && random() < MEDIC_DUO_CHANCE
-    )
-    {
-        return { enemyId, enemyIds: [ enemyId, 'field-medic' ] };
-    }
-
-    return { enemyId };
+    return maybeAppendFieldMedic(expandRolledEnemy(enemyId), row, true);
 };
 
 /**
