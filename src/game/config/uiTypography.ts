@@ -1,6 +1,6 @@
 import type Phaser from 'phaser';
 
-/** Shared UI font — loaded in index.html (Rajdhani + Orbitron). */
+/** Shared UI font — self-hosted in public/fonts (offline). */
 export const UI_FONT_FAMILY = 'Rajdhani, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif';
 
 export const TEXT_RESOLUTION = typeof window !== 'undefined'
@@ -81,10 +81,15 @@ export const loadUIFont = async (): Promise<void> =>
     }
 
     await Promise.all([
+        document.fonts.load('400 16px "Rajdhani"'),
         document.fonts.load('500 16px "Rajdhani"'),
         document.fonts.load('600 16px "Rajdhani"'),
         document.fonts.load('700 16px "Rajdhani"'),
+        document.fonts.load('500 16px "Orbitron"'),
+        document.fonts.load('600 16px "Orbitron"'),
         document.fonts.load('700 16px "Orbitron"'),
+        document.fonts.load('800 16px "Orbitron"'),
+        document.fonts.load('400 16px "Share Tech Mono"'),
     ]);
     await document.fonts.ready;
 };
