@@ -3746,6 +3746,12 @@ html, body, #root {
     text-transform: uppercase;
 }
 
+.run-end__unlock {
+    margin: 0 0 0.85rem;
+    color: #9df0d0;
+    font-size: 0.92rem;
+}
+
 .run-end__stats {
     list-style: none;
     margin: 1rem 0 1.25rem;
@@ -3890,4 +3896,9 @@ html, body, #root {
     margin-top: 0.35rem;
     color: rgba(200, 220, 255, 0.72);
     font-size: 0.82rem;
+}
+
+.main-menu__field-hint--muted {
+    color: rgba(180, 200, 230, 0.55);
+    font-size: 0.78rem;
 }

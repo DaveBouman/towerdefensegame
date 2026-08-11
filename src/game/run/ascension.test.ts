@@ -1,15 +1,36 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     ASCENSION_HP_BONUS_PER_LEVEL,
     MAX_ASCENSION_LEVEL,
+    clampSelectableAscension,
     describeAscensionLevel,
+    describeAscensionUnlockHint,
     getAscensionEnemyHealthMultiplier,
     readAscensionLevel,
+    readMaxUnlockedAscension,
+    recordAscensionClear,
     writeAscensionLevel,
 } from './ascension';
 
+let store: Record<string, string> = {};
+
 describe('ascension', () =>
 {
+    beforeEach(() =>
+    {
+        store = {};
+        vi.stubGlobal('localStorage', {
+            getItem: (key: string) => store[key] ?? null,
+            setItem: (key: string, value: string) => { store[key] = value; },
+            removeItem: (key: string) => { delete store[key]; },
+        });
+    });
+
+    afterEach(() =>
+    {
+        vi.unstubAllGlobals();
+    });
+
     it('scales enemy integrity by 10% per level', () =>
     {
         expect(getAscensionEnemyHealthMultiplier(0)).toBe(1);
@@ -20,32 +41,41 @@ describe('ascension', () =>
         );
     });
 
-    it('persists ascension level in localStorage', () =>
+    it('starts with only base difficulty selectable', () =>
     {
-        const storage = new Map<string, string>();
-        const original = globalThis.localStorage;
+        expect(readMaxUnlockedAscension()).toBe(0);
+        expect(clampSelectableAscension(5)).toBe(0);
+        expect(readAscensionLevel()).toBe(0);
+    });
 
-        Object.defineProperty(globalThis, 'localStorage', {
-            configurable: true,
-            value: {
-                getItem: (key: string) => storage.get(key) ?? null,
-                setItem: (key: string, value: string) => { storage.set(key, value); },
-            },
-        });
+    it('unlocks the next tier only after clearing the Warden at the current tier', () =>
+    {
+        expect(recordAscensionClear(0)).toBe(1);
+        expect(readMaxUnlockedAscension()).toBe(1);
+        expect(clampSelectableAscension(1)).toBe(1);
+        expect(clampSelectableAscension(2)).toBe(1);
 
-        writeAscensionLevel(4);
-        expect(readAscensionLevel()).toBe(4);
-        writeAscensionLevel(0);
+        expect(recordAscensionClear(0)).toBe(1);
+        expect(recordAscensionClear(1)).toBe(2);
+        expect(readMaxUnlockedAscension()).toBe(2);
+    });
 
-        Object.defineProperty(globalThis, 'localStorage', {
-            configurable: true,
-            value: original,
-        });
+    it('persists selected ascension clamped to unlocked tiers', () =>
+    {
+        recordAscensionClear(0);
+        writeAscensionLevel(1);
+        expect(readAscensionLevel()).toBe(1);
+        expect(clampSelectableAscension(5)).toBe(1);
+
+        recordAscensionClear(1);
+        writeAscensionLevel(5);
+        expect(readAscensionLevel()).toBe(2);
     });
 
     it('describes ascension for the menu', () =>
     {
         expect(describeAscensionLevel(0)).toContain('Base');
         expect(describeAscensionLevel(3)).toContain('Ascension 3');
+        expect(describeAscensionUnlockHint(0)).toContain('Ascension 1');
     });
 });

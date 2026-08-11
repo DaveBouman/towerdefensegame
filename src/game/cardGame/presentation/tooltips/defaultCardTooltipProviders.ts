@@ -258,7 +258,6 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         lines: [
             ...attackLines(ctx),
             `Bleed: +${GAME_RULES.chainAbilities.bleed.bonusPerExtraAttack} damage for each attack in the chain beyond ${GAME_RULES.chainAbilities.bleed.attackThreshold}.`,
-            'Uses diagonal arrows.',
         ],
     })),
     provider('miasma', (ctx) => ({

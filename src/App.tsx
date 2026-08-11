@@ -59,7 +59,7 @@ import {
 } from './game/run/runMap';
 import { rollCardReward, BATTLE_REWARD_RULES, PUZZLE_TRIAL_RULES, flattenRunReward, getCardSynergyHint, type CardReward, type RunReward } from './game/run/rewards';
 import { rollBattleBodyModReward, type BodyModRewardPool } from './game/run/bodyMods';
-import { readAscensionLevel } from './game/run/ascension';
+import { readAscensionLevel, recordAscensionClear } from './game/run/ascension';
 import { HOT_ROUTE_VICTORY_GOLD } from './game/run/routeModifiers';
 import { getFloorBriefing } from './game/run/floorBriefings';
 import { createEmptyRunStats, type RunStats } from './game/run/runStats';
@@ -230,6 +230,7 @@ function App()
     const [ battleIntroKind, setBattleIntroKind ] = useState<RunMapNodeKind | null>(null);
     const [ activeBattleKind, setActiveBattleKind ] = useState<RunMapNodeKind | null>(null);
     const [ ascensionLevel, setAscensionLevel ] = useState(readAscensionLevel);
+    const [ ascensionUnlockedToast, setAscensionUnlockedToast ] = useState<number | null>(null);
     const [ runStats, setRunStats ] = useState<RunStats>(() => createEmptyRunStats(readAscensionLevel()));
     const [ floorBriefing, setFloorBriefing ] = useState<number | null>(null);
     const [ combatRecap, setCombatRecap ] = useState<{ damageDealt: number; armorGained: number; damageTaken: number } | null>(null);
@@ -286,6 +287,7 @@ function App()
     const phaseRef = useRef(phase);
     const currentFloorRef = useRef(currentFloor);
     const floorRerollsRef = useRef(floorRerollsRemaining);
+    const ascensionLevelRef = useRef(ascensionLevel);
     const tutorialRef = useRef(tutorial);
     const pendingStartRef = useRef<
         {
@@ -357,6 +359,24 @@ function App()
     {
         tutorialRef.current = tutorial;
     }, [ tutorial ]);
+
+    useEffect(() =>
+    {
+        ascensionLevelRef.current = ascensionLevel;
+    }, [ ascensionLevel ]);
+
+    const completeWardenVictory = useCallback((): void =>
+    {
+        const level = ascensionLevelRef.current;
+        const unlocked = recordAscensionClear(level);
+
+        if (unlocked > level)
+        {
+            setAscensionUnlockedToast(unlocked);
+        }
+
+        setPhase('victory');
+    }, []);
 
     /** Refills floor hand-rerolls when the player first enters a higher floor. */
     const enterNodeFloor = useCallback((node: RunMapNode): number =>
@@ -554,7 +574,7 @@ function App()
 
             if (node?.kind === 'boss')
             {
-                setPhase('victory');
+                completeWardenVictory();
                 return;
             }
 
@@ -1055,6 +1075,8 @@ function App()
         bodyModAdded: boolean,
     ): void =>
     {
+        let wardenCleared = false;
+
         setPendingRewardFlow((prev) =>
         {
             if (!prev)
@@ -1068,7 +1090,7 @@ function App()
             {
                 if (prev.nodeKind === 'boss')
                 {
-                    setPhase('victory');
+                    wardenCleared = true;
                 }
                 else
                 {
@@ -1088,6 +1110,11 @@ function App()
             };
         });
 
+        if (wardenCleared)
+        {
+            completeWardenVictory();
+        }
+
         if (cardsAdded > 0)
         {
             setRunStats((stats) => ({
@@ -1103,7 +1130,7 @@ function App()
                 bodyModsCollected: stats.bodyModsCollected + 1,
             }));
         }
-    }, []);
+    }, [ completeWardenVictory ]);
 
     const finishReward = useCallback((chosen: string[]): void =>
     {
@@ -1195,6 +1222,7 @@ function App()
         setBattleIntroKind(null);
         setActiveBattleKind(null);
         setClutchVictory(false);
+        setAscensionUnlockedToast(null);
         pendingBattleRef.current = null;
         setPhase(nextPhase);
     }, []);
@@ -1459,6 +1487,7 @@ function App()
                     variant="victory"
                     clutch={clutchVictory}
                     stats={runStats}
+                    unlockedAscension={ascensionUnlockedToast}
                     onRestart={startNewRun}
                     onMainMenu={returnToMenu}
                 />

@@ -5,6 +5,7 @@ interface RunEndOverlayProps {
     variant: 'victory' | 'defeat';
     clutch?: boolean;
     stats?: RunStats;
+    unlockedAscension?: number | null;
     onRestart: () => void;
     onMainMenu: () => void;
 }
@@ -28,6 +29,7 @@ export const RunEndOverlay = ({
     variant,
     clutch = false,
     stats,
+    unlockedAscension = null,
     onRestart,
     onMainMenu,
 }: RunEndOverlayProps) =>
@@ -42,6 +44,11 @@ export const RunEndOverlay = ({
                 <CyberPanelChrome variant={panelVariant} />
                 {clutch && variant === 'victory' && (
                     <p className="run-end__clutch">Clutch clear — you limped out at critical integrity.</p>
+                )}
+                {variant === 'victory' && unlockedAscension !== null && (
+                    <p className="run-end__unlock">
+                        Ascension {unlockedAscension} unlocked — harder runs await.
+                    </p>
                 )}
                 <p className="run-end__eyebrow">{copy.eyebrow}</p>
                 <h1 className="run-end__title">{copy.title}</h1>

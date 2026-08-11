@@ -275,7 +275,7 @@ remain as a fallback if a portrait fails to load.
 - [x] **Column pressure** — Gridlock locks a telegraphed board column each turn (`pressureColumn` / `lock-column`)
 - [x] **Threshold telegraphs** — HUD shows Last Stand / Enrage breakpoints (`EnemyTargetView`)
 - [ ] **Perfect-fight rewards** — bonus reroll or card upgrade for clean wins
-- [x] **Ascension modifiers** — 0–10 tiers, +10% enemy integrity per level (`ascension.ts`, main menu)
+- [x] **Ascension modifiers** — 0–10 tiers, +10% enemy integrity per level; next tier unlocks after clearing the Warden at the current tier (`ascension.ts`)
 - [x] **Route risk tags** — hot/safe branches on the map (`routeKind`, `routeModifiers.ts`)
 
 #### Phase 3 — Meta (~1–2 weeks)

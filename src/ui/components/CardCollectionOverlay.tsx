@@ -182,8 +182,11 @@ export const CardCollectionOverlay = ({ onClose }: CardCollectionOverlayProps) =
                                             <span className="card-collection__tooltip-title">
                                                 {tooltip.title}
                                             </span>
-                                            {tooltip.lines.map((line) => (
-                                                <span key={line} className="card-collection__tooltip-line">
+                                            {tooltip.lines.map((line, lineIndex) => (
+                                                <span
+                                                    key={`${entry.id}-${lineIndex}`}
+                                                    className="card-collection__tooltip-line"
+                                                >
                                                     {line}
                                                 </span>
                                             ))}
@@ -208,8 +211,8 @@ export const CardCollectionOverlay = ({ onClose }: CardCollectionOverlayProps) =
                     {selected?.unlocked && selectedTooltip ? (
                         <>
                             <strong>{selectedTooltip.title}</strong>
-                            {selectedTooltip.lines.map((line) => (
-                                <span key={line}>{line}</span>
+                            {selectedTooltip.lines.map((line, lineIndex) => (
+                                <span key={lineIndex}>{line}</span>
                             ))}
                         </>
                     ) : selected ? (

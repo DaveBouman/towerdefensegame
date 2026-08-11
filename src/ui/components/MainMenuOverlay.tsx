@@ -20,9 +20,14 @@ import { getCollectionProgress } from '../../game/run/cardCollection';
 import { getBestiaryProgress } from '../../game/run/enemyBestiary';
 import { createRandomSeed, normalizeSeed } from '../../game/random/rng';
 import {
+    ASCENSION_HP_BONUS_PER_LEVEL,
     MAX_ASCENSION_LEVEL,
+    clampSelectableAscension,
     describeAscensionLevel,
+    describeAscensionUnlockHint,
     readAscensionLevel,
+    readMaxUnlockedAscension,
+    recordAscensionClear,
     writeAscensionLevel,
 } from '../../game/run/ascension';
 import {
@@ -111,8 +116,9 @@ export const MainMenuOverlay = ({
     const [ screen, setScreen ] = useState<MenuScreen>('home');
     const [ draftSeed, setDraftSeed ] = useState(seed);
     const [ ascensionLevel, setAscensionLevel ] = useState(
-        () => ascensionLevelProp ?? readAscensionLevel(),
+        () => clampSelectableAscension(ascensionLevelProp ?? readAscensionLevel()),
     );
+    const [ maxUnlockedAscension, setMaxUnlockedAscension ] = useState(readMaxUnlockedAscension);
     const [ audio, setAudio ] = useState<AudioSettings>(getAudioSettings);
     const [ showCollection, setShowCollection ] = useState(false);
     const [ showBestiary, setShowBestiary ] = useState(false);
@@ -180,6 +186,8 @@ export const MainMenuOverlay = ({
         if (next === 'confirm-new-run')
         {
             setDraftSeed(createRandomSeed());
+            setMaxUnlockedAscension(readMaxUnlockedAscension());
+            setAscensionLevel(clampSelectableAscension(readAscensionLevel()));
         }
 
         setScreen(next);
@@ -214,8 +222,7 @@ export const MainMenuOverlay = ({
 
     const setAscension = (level: number): void =>
     {
-        const clamped = Math.max(0, Math.min(MAX_ASCENSION_LEVEL, level));
-        setAscensionLevel(clamped);
+        setAscensionLevel(clampSelectableAscension(level));
     };
 
     const openCollection = (): void =>
@@ -447,7 +454,7 @@ export const MainMenuOverlay = ({
                                         className="main-menu__volume"
                                         type="range"
                                         min={0}
-                                        max={MAX_ASCENSION_LEVEL}
+                                        max={maxUnlockedAscension}
                                         step={1}
                                         value={ascensionLevel}
                                         aria-label="Ascension level"
@@ -456,6 +463,11 @@ export const MainMenuOverlay = ({
                                     <span className="main-menu__volume-value">{ascensionLevel}</span>
                                 </span>
                                 <span className="main-menu__field-hint">{describeAscensionLevel(ascensionLevel)}</span>
+                                {maxUnlockedAscension < MAX_ASCENSION_LEVEL && (
+                                    <span className="main-menu__field-hint main-menu__field-hint--muted">
+                                        {describeAscensionUnlockHint(maxUnlockedAscension)}
+                                    </span>
+                                )}
                             </label>
                             <div className="main-menu__actions">
                                 <button
