@@ -4,7 +4,6 @@ import { drawCornerBrackets, drawNeonPanel } from '../config/cyberpunkUiGraphics
 import { GRID_CONFIG } from '../config/gridConfig';
 import { buildCardGraphic } from '../cards/CardRenderer';
 import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
-import { ARROW_GLYPH } from '../cards/cardArrows';
 import { getJokerDirectionChoices } from '../cardGame/combat/AttackPipeline';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import type { BoardModel } from '../cardGame/domain/BoardModel';
@@ -14,7 +13,6 @@ import type { CardInstance, SlotPosition } from '../cardGame/domain/types';
 import { boardColLabel, boardRowLabel } from './boardCoordinates';
 import type { BoardLayout } from './boardLayout';
 import { JokerDirectionPicker } from './JokerDirectionPicker';
-import { createDirectionArrowImage } from '../cards/directionArrowVisual';
 
 const SLOT_FILL = CYBER.slotFill;
 const SLOT_BORDER = CYBER.slotBorder;
@@ -34,7 +32,7 @@ const AXIS_START = '#7af0ff';
 const AXIS_ACTIVE = '#fcee0a';
 /** Tap vs drag on a start-column card: below this, click sets chain start. */
 const CHAIN_START_TAP_SLOP_PX = 10;
-const CHAIN_START_ARROW_SIZE = 22;
+const CHAIN_START_BADGE = 'START';
 
 export interface BoardCardDragHandlers {
     canDrag: () => boolean;
@@ -50,8 +48,8 @@ export interface ChainStartHandlers {
 interface ChainStartIndicator {
     slot: SlotPosition;
     ring: Phaser.GameObjects.Rectangle;
-    arrow: Phaser.GameObjects.Image | Phaser.GameObjects.Text;
-    label: Phaser.GameObjects.Text;
+    brackets: Phaser.GameObjects.Graphics;
+    badge: Phaser.GameObjects.Text;
     hitArea: Phaser.GameObjects.Rectangle;
 }
 
@@ -200,19 +198,10 @@ export class CardBoardView
         }
 
         indicator.ring.setScale(1);
-        this.resetChainStartArrowScale(indicator.arrow);
-        this.scene.tweens.killTweensOf(indicator.arrow);
+        this.scene.tweens.killTweensOf(indicator.brackets);
 
         if (active)
         {
-            if ('setColor' in indicator.arrow)
-            {
-                indicator.arrow.setColor('#fcee0a');
-            }
-            else
-            {
-                indicator.arrow.setTint(0xfcee0a);
-            }
             indicator.ring.setStrokeStyle(3, CYBER.cyan, 1);
             indicator.ring.setOrigin(0.5, 0.5);
             this.chainStartTween = this.scene.tweens.add({
@@ -226,7 +215,7 @@ export class CardBoardView
                 repeat: -1,
             });
             this.scene.tweens.add({
-                targets: indicator.arrow,
+                targets: indicator.brackets,
                 alpha: { from: 0.55, to: 1 },
                 duration: 320,
                 ease: 'Sine.easeInOut',
@@ -778,8 +767,7 @@ export class CardBoardView
     ): void
     {
         const axisY = -panelPad - 12;
-        // Sit left of chain-start arrows so letters aren't covered.
-        const axisX = -panelPad - 42;
+        const axisX = -panelPad - 16;
 
         this.colAxisLabels.length = 0;
         this.rowAxisLabels.length = 0;
@@ -853,6 +841,25 @@ export class CardBoardView
         }
     }
 
+    private redrawChainStartBrackets (
+        brackets: Phaser.GameObjects.Graphics,
+        slot: SlotPosition,
+        tileSize: number,
+        selected: boolean,
+    ): void
+    {
+        const slotSize = tileSize - SLOT_INSET * 2;
+        const left = slot.col * tileSize + SLOT_INSET;
+        const top = slot.row * tileSize + SLOT_INSET;
+        const color = selected ? CHAIN_START_SELECTED : CHAIN_START_IDLE;
+
+        drawCornerBrackets(brackets, left, top, slotSize, slotSize, color, {
+            arm: Math.max(8, Math.round(slotSize * 0.22)),
+            lineWidth: selected ? 2 : 1,
+            alpha: selected ? 0.95 : 0.42,
+        });
+    }
+
     private drawChainStartIndicators (): void
     {
         const { tileSize, rows } = GRID_CONFIG;
@@ -864,7 +871,6 @@ export class CardBoardView
             const centerX = slot.col * tileSize + tileSize / 2;
             const centerY = slot.row * tileSize + tileSize / 2;
             const slotSize = tileSize - SLOT_INSET * 2;
-            const cellLeftX = slot.col * tileSize;
 
             const ring = this.scene.add.rectangle(
                 centerX,
@@ -876,23 +882,16 @@ export class CardBoardView
             );
             ring.setOrigin(0.5, 0.5);
 
-            const arrow = createDirectionArrowImage(this.scene, 'right', {
-                size: CHAIN_START_ARROW_SIZE,
-                tint: 0x7a7a9a,
-            }) ?? this.scene.add.text(0, 0, ARROW_GLYPH.right, {
-                ...uiTextStyle(32, '#7a7a9a', { bold: true }),
-            }).setOrigin(1, 0.5);
+            const brackets = this.scene.add.graphics();
+            this.redrawChainStartBrackets(brackets, slot, tileSize, false);
 
-            arrow.setPosition(cellLeftX - 10, centerY);
-
-            if ('setOrigin' in arrow)
-            {
-                arrow.setOrigin(1, 0.5);
-            }
-
-            const label = this.scene.add.text(cellLeftX - 10, centerY - 24, 'START', {
-                ...uiTextStyle(13, '#a8a8c8', { bold: true }),
-            }).setOrigin(1, 0.5);
+            const badge = this.scene.add.text(
+                centerX,
+                centerY + slotSize * 0.28,
+                CHAIN_START_BADGE,
+                uiTextStyle(9, '#7af0ff', { bold: true, stroke: false }),
+            ).setOrigin(0.5, 0.5);
+            badge.setVisible(false);
 
             // Full cell hit target — click the first-column tile to set chain start
             // without needing a card from hand.
@@ -911,12 +910,13 @@ export class CardBoardView
                 this.trySelectChainStart(slot);
             });
 
-            this.container.add([ ring, arrow, label, hitArea ]);
-            this.chainStartIndicators.push({ slot, ring, arrow, label, hitArea });
+            this.container.add([ ring, brackets, badge, hitArea ]);
+            this.chainStartIndicators.push({ slot, ring, brackets, badge, hitArea });
         }
 
         this.bringChainStartToFront();
         this.refreshChainStartHitAreas();
+        this.updateChainStartSelection();
     }
 
     private trySelectChainStart (slot: SlotPosition): void
@@ -927,23 +927,6 @@ export class CardBoardView
         }
 
         this.chainStartHandlers.onSelect(slot);
-    }
-
-    /**
-     * Image arrows use setDisplaySize; setScale(1) would snap them back to the
-     * native SVG texture size (~512px) and create the giant START arrow glitch.
-     */
-    private resetChainStartArrowScale (
-        arrow: Phaser.GameObjects.Image | Phaser.GameObjects.Text,
-    ): void
-    {
-        if ('setDisplaySize' in arrow)
-        {
-            arrow.setDisplaySize(CHAIN_START_ARROW_SIZE, CHAIN_START_ARROW_SIZE);
-            return;
-        }
-
-        arrow.setScale(1);
     }
 
     /** Full-cell hits when empty; player cards use tap-vs-drag instead. */
@@ -983,25 +966,25 @@ export class CardBoardView
 
     private updateChainStartSelection (): void
     {
+        const { tileSize } = GRID_CONFIG;
+
         for (const indicator of this.chainStartIndicators)
         {
             const selected = indicator.slot.row === this.chainStartSlot.row
                 && indicator.slot.col === this.chainStartSlot.col;
 
-            indicator.arrow.setAlpha(1);
             indicator.ring.setAlpha(selected ? 1 : 0.45);
-            indicator.label.setVisible(true);
-            indicator.label.setAlpha(selected ? 1 : 0.45);
-            indicator.label.setColor(selected ? '#f1c40f' : '#a8a8c8');
+            indicator.brackets.setAlpha(selected ? 1 : 0.55);
+            this.redrawChainStartBrackets(
+                indicator.brackets,
+                indicator.slot,
+                tileSize,
+                selected,
+            );
 
-            if ('setColor' in indicator.arrow)
-            {
-                indicator.arrow.setColor(selected ? '#f1c40f' : '#5a5a78');
-            }
-            else
-            {
-                indicator.arrow.setTint(selected ? 0xf1c40f : 0x5a5a78);
-            }
+            indicator.badge.setVisible(selected);
+            indicator.badge.setAlpha(selected ? 1 : 0);
+            indicator.badge.setColor(selected ? '#fcee0a' : '#7af0ff');
 
             indicator.ring.setStrokeStyle(2, selected ? CHAIN_START_SELECTED : CHAIN_START_IDLE, selected ? 0.9 : 0.5);
         }
@@ -1014,12 +997,11 @@ export class CardBoardView
         for (const indicator of this.chainStartIndicators)
         {
             this.container.bringToTop(indicator.ring);
-            this.container.bringToTop(indicator.arrow);
-            this.container.bringToTop(indicator.label);
+            this.container.bringToTop(indicator.brackets);
+            this.container.bringToTop(indicator.badge);
             this.container.bringToTop(indicator.hitArea);
         }
 
-        // Row/col letters must stay above start arrows after restacks.
         this.bringAxisLegendToFront();
         this.refreshChainStartHitAreas();
     }
