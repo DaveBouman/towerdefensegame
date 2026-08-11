@@ -24,6 +24,12 @@ export interface EnemyTurnPlanningContext {
     enrageStacks: number;
     /** Number of enemy turns already taken this battle — drives Escalate ramp and Dead Zone cadence. */
     turnsTaken?: number;
+    /** Global enemy phases completed — drives Stutter Clock. */
+    globalEnemyTurns?: number;
+    /** Temporary attack bonus from link rage or reroll tax. */
+    bonusAttack?: number;
+    /** Extra traps queued for this turn plan. */
+    bonusTraps?: number;
 }
 
 const isLastStandActive = (
@@ -38,6 +44,7 @@ const planCombatStep = (
     enemyState: EnemyState,
     passives: readonly EnemyPassiveConfig[],
     enrageStacks: number,
+    bonusAttack = 0,
 ): EnemyTurnStep =>
 {
     const lastStand = getEnemyPassive(passives, 'lastStand');
@@ -46,16 +53,16 @@ const planCombatStep = (
     {
         if (lastStand.forceAttack)
         {
-            return { kind: 'attack', amount: lastStand.attackDamage };
+            return { kind: 'attack', amount: lastStand.attackDamage + bonusAttack };
         }
 
         return random() < enemy.attackChance
-            ? { kind: 'attack', amount: lastStand.attackDamage }
+            ? { kind: 'attack', amount: lastStand.attackDamage + bonusAttack }
             : { kind: 'shield', amount: lastStand.shieldGain };
     }
 
     const enrage = getEnemyPassive(passives, 'enrage');
-    const attackBonus = (enrage?.attackBonusPerTrap ?? 0) * enrageStacks;
+    const attackBonus = (enrage?.attackBonusPerTrap ?? 0) * enrageStacks + bonusAttack;
 
     if (random() < enemy.attackChance)
     {
@@ -71,11 +78,50 @@ const planCombatStep = (
     };
 };
 
+const buildCombatSteps = (
+    enemy: LoadedCardGameEnemyDefinition,
+    passives: readonly EnemyPassiveConfig[],
+    combatStep: EnemyTurnStep,
+    globalEnemyTurns: number,
+): EnemyTurnStep[] =>
+{
+    const steps = [ combatStep ];
+    const stutter = getEnemyPassive(passives, 'stutterClock');
+
+    if (
+        stutter
+        && stutter.everyGlobalTurns > 0
+        && globalEnemyTurns > 0
+        && globalEnemyTurns % stutter.everyGlobalTurns === 0
+    )
+    {
+        steps.push({ ...combatStep });
+    }
+
+    if (getEnemyPassive(passives, 'phantomIntent'))
+    {
+        const decoy: EnemyTurnStep = combatStep.kind === 'attack'
+            ? { kind: 'shield', amount: enemy.shieldGain, decoy: true }
+            : {
+                kind: 'attack',
+                amount: combatStep.amount ?? enemy.attackDamage,
+                decoy: true,
+            };
+
+        steps.push(decoy);
+    }
+
+    return steps;
+};
+
 export const planEnemyTurnWithPassives = ({
     enemy,
     enemyState,
     enrageStacks,
     turnsTaken = 0,
+    globalEnemyTurns = 0,
+    bonusAttack = 0,
+    bonusTraps = 0,
 }: EnemyTurnPlanningContext): EnemyTurnAction =>
 {
     const passives = enemy.passives;
@@ -88,7 +134,7 @@ export const planEnemyTurnWithPassives = ({
     const baseHazards = inLastStand ? lastStand!.hazardsPerTurn : enemy.hazardsPerTurn;
     const extraHazards = (enrage?.extraTrapsPerTrap ?? 0) * enrageStacks;
     const escalateHazards = escalate ? escalate.trapsPerRamp * turnsTaken : 0;
-    let hazardCount = baseHazards + extraHazards + escalateHazards;
+    let hazardCount = baseHazards + extraHazards + escalateHazards + bonusTraps;
 
     if (escalate)
     {
@@ -110,7 +156,12 @@ export const planEnemyTurnWithPassives = ({
         });
     }
 
-    steps.push(planCombatStep(enemy, enemyState, passives, enrageStacks));
+    steps.push(...buildCombatSteps(
+        enemy,
+        passives,
+        planCombatStep(enemy, enemyState, passives, enrageStacks, bonusAttack),
+        globalEnemyTurns,
+    ));
 
     // Dead Zone is an event the enemy casts on a cadence (telegraphed like a trap).
     if (dampen && dampen.everyTurns > 0 && turnsTaken % dampen.everyTurns === 0)
@@ -203,23 +254,48 @@ export const applyEnemyPassivesToSequence = (
     sequence: AttackSequence,
     enemyState: EnemyState,
     passives: readonly EnemyPassiveConfig[],
+    chain: readonly ActivationStep[],
 ): AttackSequence =>
 {
     const smoke = getEnemyPassive(passives, 'smoke');
     const wetBlanket = getEnemyPassive(passives, 'wetBlanket');
+    const skillJamCount = passives
+        .filter((passive): passive is Extract<EnemyPassiveConfig, { id: 'skillJam' }> =>
+            passive.id === 'skillJam')
+        .reduce((max, passive) => Math.max(max, passive.suppressedSkillCards), 0);
 
-    if (!smoke && !wetBlanket)
+    if (!smoke && !wetBlanket && skillJamCount === 0)
     {
         return sequence;
     }
 
     let suppressedPoisonCards = smoke?.suppressedPoisonCards ?? 0;
+    let suppressedSkillCards = skillJamCount;
     let abilityEnemyDamage = sequence.abilityEnemyDamage;
     let abilityPoisonStacks = sequence.abilityPoisonStacks;
     const chainAbilityEffects = sequence.chainAbilityEffects.map((effect) => ({ ...effect }));
 
     for (const effect of chainAbilityEffects)
     {
+        const step = chain[effect.stepIndex];
+
+        if (
+            step
+            && suppressedSkillCards > 0
+            && step.behaviorId !== 'attack'
+            && step.behaviorId !== 'defend'
+        )
+        {
+            abilityEnemyDamage -= effect.enemyDamage;
+            abilityPoisonStacks -= effect.poisonStacks;
+            effect.enemyDamage = 0;
+            effect.playerDamage = 0;
+            effect.armorGain = 0;
+            effect.poisonStacks = 0;
+            suppressedSkillCards -= 1;
+            continue;
+        }
+
         if (effect.abilityId === 'poison-trail' && suppressedPoisonCards > 0)
         {
             abilityPoisonStacks -= effect.poisonStacks;

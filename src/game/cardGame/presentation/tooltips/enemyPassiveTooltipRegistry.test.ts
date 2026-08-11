@@ -22,6 +22,14 @@ describe('enemyPassiveTooltipRegistry', () =>
             'pressureColumn',
             'spawnMinion',
             'shatterOnDeath',
+            'credLeech',
+            'rerollTax',
+            'cardThief',
+            'skillJam',
+            'linkRage',
+            'bodyguard',
+            'stutterClock',
+            'phantomIntent',
         ]);
 
         for (const passive of passives)

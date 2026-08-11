@@ -22,7 +22,7 @@ export interface CardGameEventMap {
     'card-game-combatants-changed': {
         added: string[];
         removed: string[];
-        reason: 'spawn' | 'shatter';
+        reason: 'spawn' | 'shatter' | 'flee';
     };
     'card-game-enemy-turn-started': { action: EnemyTurnAction };
     'card-game-enemy-turn-completed': { action: EnemyTurnAction; enemy: EnemyState; player: PlayerState };

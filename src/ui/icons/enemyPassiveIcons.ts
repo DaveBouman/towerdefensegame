@@ -17,6 +17,14 @@ export const ENEMY_PASSIVE_TEXTURE_KEY: Record<EnemyPassiveId, string> = {
     pressureColumn: 'passive-icon-pressure-column',
     spawnMinion: 'passive-icon-spawn-minion',
     shatterOnDeath: 'passive-icon-shatter',
+    credLeech: 'passive-icon-cred-leech',
+    rerollTax: 'passive-icon-reroll-tax',
+    cardThief: 'passive-icon-card-thief',
+    skillJam: 'passive-icon-skill-jam',
+    linkRage: 'passive-icon-link-rage',
+    bodyguard: 'passive-icon-bodyguard',
+    stutterClock: 'passive-icon-stutter',
+    phantomIntent: 'passive-icon-phantom',
 };
 
 const ENEMY_PASSIVE_ICON_FILE: Record<EnemyPassiveId, string> = {
@@ -34,6 +42,14 @@ const ENEMY_PASSIVE_ICON_FILE: Record<EnemyPassiveId, string> = {
     pressureColumn: 'pressure-column.png',
     spawnMinion: 'escalate.png',
     shatterOnDeath: 'last-stand.png',
+    credLeech: 'enrage.png',
+    rerollTax: 'jammer.png',
+    cardThief: 'curse-hand.png',
+    skillJam: 'smoke.png',
+    linkRage: 'enrage.png',
+    bodyguard: 'wet-blanket.png',
+    stutterClock: 'dampen.png',
+    phantomIntent: 'silence.png',
 };
 
 export const ENEMY_PASSIVE_ICON_ENTRIES = (Object.keys(ENEMY_PASSIVE_TEXTURE_KEY) as EnemyPassiveId[]).map((id) => ({

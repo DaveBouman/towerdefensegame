@@ -35,6 +35,14 @@ export const ENEMY_PASSIVE_DEFAULTS: Record<EnemyPassiveId, EnemyPassiveConfig> 
         id: 'shatterOnDeath',
         parts: [ 'android-arm', 'android-core', 'android-legs' ],
     },
+    credLeech: { id: 'credLeech', amountPerTurn: 3 },
+    rerollTax: { id: 'rerollTax', attackBonus: 4, extraTraps: 1 },
+    cardThief: { id: 'cardThief', fleeAfterTurns: 5 },
+    skillJam: { id: 'skillJam', suppressedSkillCards: 3 },
+    linkRage: { id: 'linkRage', attackBonus: 6, extraTraps: 1 },
+    bodyguard: { id: 'bodyguard', protectDefinitionId: 'glass-striker' },
+    stutterClock: { id: 'stutterClock', everyGlobalTurns: 2 },
+    phantomIntent: { id: 'phantomIntent' },
 };
 
 export const normalizeEnemyPassives = (

@@ -184,7 +184,7 @@ export class Game extends Scene
     };
 
     private onStartBattle = (
-        { enemyId, enemyIds, startHealth, deck, seed, bodyMods, runAttackCount, rerollsRemaining, runModifiers }:
+        { enemyId, enemyIds, startHealth, deck, seed, bodyMods, runAttackCount, rerollsRemaining, runModifiers, runGold }:
         {
             enemyId?: string;
             enemyIds?: readonly string[];
@@ -195,6 +195,7 @@ export class Game extends Scene
             runAttackCount: number;
             rerollsRemaining: number;
             runModifiers?: readonly string[];
+            runGold?: number;
         },
     ): void =>
     {
@@ -219,6 +220,7 @@ export class Game extends Scene
             runAttackCount,
             rerollsRemaining,
             runModifiers ?? [],
+            runGold ?? 0,
         );
     };
 
@@ -272,6 +274,7 @@ export class Game extends Scene
         runAttackCount = 0,
         rerollsRemaining = GAME_RULES.rerollsPerFloor,
         runModifiers: readonly string[] = [],
+        runGold = 0,
     ): void
     {
         resetBattleAudioState();
@@ -303,6 +306,7 @@ export class Game extends Scene
             runAttackCount,
             puzzleMode ? 0 : rerollsRemaining,
             runModifiers,
+            runGold,
         );
 
         this.handView = new CardHandView(this, layout, [ ...this.session.getHand() ], {
@@ -520,11 +524,17 @@ export class Game extends Scene
         this.battleResolved = true;
         const playerHealth = this.session.getPlayer().health;
         const runAttackCount = this.session.getRunAttackCount();
+        const { goldStolen, stolenCardIds } = this.session.getRunBattleDeltas();
 
         this.time.delayedCall(900, () =>
         {
             this.endBattle();
-            EventBus.emit(GAME_EVENTS.BATTLE_WON, { playerHealth, runAttackCount });
+            EventBus.emit(GAME_EVENTS.BATTLE_WON, {
+                playerHealth,
+                runAttackCount,
+                goldStolen,
+                stolenCardIds,
+            });
         });
     }
 
@@ -537,11 +547,16 @@ export class Game extends Scene
 
         this.battleResolved = true;
         const runAttackCount = this.session.getRunAttackCount();
+        const { goldStolen, stolenCardIds } = this.session.getRunBattleDeltas();
 
         this.time.delayedCall(900, () =>
         {
             this.endBattle();
-            EventBus.emit(GAME_EVENTS.BATTLE_LOST, { runAttackCount });
+            EventBus.emit(GAME_EVENTS.BATTLE_LOST, {
+                runAttackCount,
+                goldStolen,
+                stolenCardIds,
+            });
         });
     }
 
@@ -590,7 +605,7 @@ export class Game extends Scene
     }: {
         added: string[];
         removed: string[];
-        reason: 'spawn' | 'shatter';
+        reason: 'spawn' | 'shatter' | 'flee';
     }): void =>
     {
         if (!this.session || !this.enemySquad)
@@ -619,7 +634,7 @@ export class Game extends Scene
             anchor,
             anchor.width / 2,
             -8,
-            reason === 'shatter' ? 'SHATTER' : 'SPAWN',
+            reason === 'shatter' ? 'SHATTER' : reason === 'flee' ? 'FLED' : 'SPAWN',
             reason === 'shatter' ? '#ff9a8a' : '#7af0ff',
         );
     };

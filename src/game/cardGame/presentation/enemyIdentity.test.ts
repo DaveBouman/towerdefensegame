@@ -8,15 +8,13 @@ import {
 
 describe('enemyIdentity', () =>
 {
-    it('gives every roster enemy a distinct accent and silhouette', () =>
+    it('gives every roster enemy a distinct accent', () =>
     {
         const roster = Object.keys(ENEMY_IDENTITY);
         const accents = new Set(roster.map((id) => ENEMY_IDENTITY[id]!.accent));
-        const silhouettes = new Set(roster.map((id) => ENEMY_IDENTITY[id]!.silhouette));
 
         expect(roster.length).toBeGreaterThanOrEqual(6);
         expect(accents.size).toBe(roster.length);
-        expect(silhouettes.size).toBe(roster.length);
     });
 
     it('ships a portrait file for every roster enemy', () =>

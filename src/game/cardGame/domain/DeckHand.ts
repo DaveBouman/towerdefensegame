@@ -4,6 +4,7 @@ import { createCardInstance } from './createCardInstance';
 import type { CardInstance } from './types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
+import { randomInt } from '../../random/rng';
 
 export class DeckHand
 {
@@ -85,6 +86,29 @@ export class DeckHand
     getDeckTopCard (): CardInstance | undefined
     {
         return this.deck.length > 0 ? this.deck[this.deck.length - 1] : undefined;
+    }
+
+    /** Removes a random card from the draw pile (card thief). */
+    stealRandomDeckCard (): string | null
+    {
+        if (this.deck.length === 0)
+        {
+            return null;
+        }
+
+        const index = randomInt(this.deck.length);
+        const card = this.deck.splice(index, 1)[0]!;
+
+        this.emitPilesChanged();
+
+        return card.definitionId;
+    }
+
+    /** Returns a stolen card to the draw pile when the thief is killed. */
+    returnStolenCardToDeck (definitionId: string): void
+    {
+        this.deck.push(createCardInstance(definitionId));
+        this.emitPilesChanged();
     }
 
     getDiscardTopCard (): CardInstance | undefined

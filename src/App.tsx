@@ -124,6 +124,36 @@ const rollRewardForNode = (
     });
 };
 
+const applyBattleRunDeltas = (
+    deck: string[],
+    gold: number,
+    deltas: { goldStolen?: number; stolenCardIds?: readonly string[] },
+    victoryGoldBonus = 0,
+): { deck: string[]; gold: number } =>
+{
+    let nextDeck = deck;
+
+    if (deltas.stolenCardIds && deltas.stolenCardIds.length > 0)
+    {
+        nextDeck = [ ...deck ];
+
+        for (const cardId of deltas.stolenCardIds)
+        {
+            const index = nextDeck.indexOf(cardId);
+
+            if (index >= 0)
+            {
+                nextDeck.splice(index, 1);
+            }
+        }
+    }
+
+    return {
+        deck: nextDeck,
+        gold: gold + victoryGoldBonus - (deltas.goldStolen ?? 0),
+    };
+};
+
 function App()
 {
     const [ seed, setSeed ] = useState<string>(createRandomSeed);
@@ -349,9 +379,13 @@ function App()
         const onBattleWon = ({
             playerHealth: remaining,
             runAttackCount: nextRunAttackCount,
+            goldStolen,
+            stolenCardIds,
         }: {
             playerHealth: number;
             runAttackCount: number;
+            goldStolen?: number;
+            stolenCardIds?: readonly string[];
         }): void =>
         {
             setRunAttackCount(nextRunAttackCount);
@@ -364,7 +398,27 @@ function App()
             const healDelta = healed - remaining;
 
             setPlayerHealth(healed);
-            setGold((prev) => prev + getVictoryGoldBonus(bodyModsRef.current));
+            const applied = applyBattleRunDeltas(
+                deckRef.current,
+                goldRef.current,
+                { goldStolen, stolenCardIds },
+                getVictoryGoldBonus(bodyModsRef.current),
+            );
+            setGold(applied.gold);
+
+            if (stolenCardIds && stolenCardIds.length > 0)
+            {
+                setDeck(applied.deck);
+                unlockCards(applied.deck);
+                setRunToast(`Card stolen: ${stolenCardIds.join(', ')}`);
+            }
+
+            if (goldStolen && goldStolen > 0)
+            {
+                setRunToast((prev) =>
+                    prev ? `${prev} · −${goldStolen} creds` : `−${goldStolen} creds stolen`);
+            }
+
             tutorialRef.current.onFirstBattleWon();
 
             if (healDelta > 0)
@@ -413,12 +467,32 @@ function App()
 
         const onBattleLost = ({
             runAttackCount: nextRunAttackCount,
+            goldStolen,
+            stolenCardIds,
         }: {
             runAttackCount: number;
+            goldStolen?: number;
+            stolenCardIds?: readonly string[];
         }): void =>
         {
             setRunAttackCount(nextRunAttackCount);
             setActiveBattleKind(null);
+
+            if ((goldStolen && goldStolen > 0) || (stolenCardIds && stolenCardIds.length > 0))
+            {
+                const applied = applyBattleRunDeltas(deckRef.current, goldRef.current, {
+                    goldStolen,
+                    stolenCardIds,
+                });
+                setGold(applied.gold);
+
+                if (stolenCardIds && stolenCardIds.length > 0)
+                {
+                    setDeck(applied.deck);
+                    unlockCards(applied.deck);
+                }
+            }
+
             setPhase('defeat');
         };
 
@@ -542,6 +616,7 @@ function App()
             runAttackCount,
             rerollsRemaining,
             nodeKind: node.kind,
+            runGold: goldRef.current,
         };
         setPhase('battle');
 

@@ -66,12 +66,22 @@ export interface GameEventMap {
         bodyMods: string[];
         runAttackCount: number;
         rerollsRemaining: number;
+        runGold?: number;
     };
     'start-puzzle': { puzzleId: string; startHealth: number; seed: number; bodyMods: string[]; runAttackCount: number };
     'puzzle-state': PuzzleState;
     'puzzle-resolved': PuzzleResolvedPayload;
-    'battle-won': { playerHealth: number; runAttackCount: number };
-    'battle-lost': { runAttackCount: number };
+    'battle-won': {
+        playerHealth: number;
+        runAttackCount: number;
+        goldStolen?: number;
+        stolenCardIds?: readonly string[];
+    };
+    'battle-lost': {
+        runAttackCount: number;
+        goldStolen?: number;
+        stolenCardIds?: readonly string[];
+    };
     'run-attack-count': { runAttackCount: number };
     'pile-view-open': PileViewPayload;
     'play-sfx': PlaySfxPayload;

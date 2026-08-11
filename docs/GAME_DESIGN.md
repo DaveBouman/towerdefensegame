@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-08-10
+**Last updated:** 2026-08-11
 
 ---
 
@@ -229,6 +229,15 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | `wire-drone` | Fast chip damage minion for Broodframe fights. |
 | `android` (**Severance**) | **Shatter** — on death splits into Arm (thorns-lite), Core (shield-heavy), and Legs (traps). Fight continues until all parts fall. |
 | `android-arm` / `android-core` / `android-legs` | Shatter fragments with distinct intents. |
+| `cred-vulture` | **Cred Leech** — steals 3 run creds after each of its turns (synced back to App on battle end). |
+| `toll-bot` | **Reroll Tax** — each hand reroll adds +4 attack and +1 trap on its next turn. |
+| `wire-thief` | **Card Thief** — steals a random draw-pile card on turn 1; flees after 5 turns (card lost if it escapes; recovered if killed). |
+| `null-scribe` | **Skill Jam** — first 3 skill cards in each chain have abilities negated. |
+| `stutter-node` | **Stutter Clock** — every other enemy phase, its attack/shield step executes twice (telegraphed). |
+| `phantom-relay` | **Phantom Intent** — telegraphs both attack and shield; only the real step fires. |
+| `twin-clip` | **Link Rage** — duo fight; killing one enrages the survivor (+6 atk, +1 trap next turn). |
+| `bulwark-runner` + `glass-striker` | **Buffer pair** — Bulwark redirects the first hit each chain aimed at the 16 HP Glass Striker. |
+| `chrome-saint` + `glass-striker` | **Healer pair** — 72 HP Chrome Saint heals the fragile striker each turn. |
 
 Each enemy should force a **different deck shape and chain strategy**.
 
@@ -317,6 +326,7 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-11 | **Economy + role enemy pack.** Ten new enemies with passives: Cred Vulture (`credLeech`), Toll Bot (`rerollTax`), Wire Thief (`cardThief` flee), Null Scribe (`skillJam`), Stutter Node, Phantom Relay, Link Twins (`twin-clip` duo + `linkRage`), Buffer pair (`bulwark-runner` + `glass-striker` bodyguard), Chrome Saint healer tank duo. Battle syncs stolen creds/cards to run state via `BATTLE_WON` / `BATTLE_LOST`. |
 | 2026-08-10 | **UI polish pass.** Shared cyber panel chrome (`CyberPanel.tsx`) applied across shop, safehouse, card rewards, run end, node visit. Card rewards use `CardChip`; phase-based canvas dimming; hand dock tray; cyberpunk theme extended to shop/rest/tutorial/banners/body mods/audio toggle. |
 | 2026-08-10 | **Deck / graveyard UI polish.** Pile inspector overlay restyled (corner brackets, scanlines, cyan deck / magenta graveyard accents, card slots with hover glow). Battlefield pile widgets use neon panels + grid well. |
 | 2026-08-10 | **Battlefield backdrop.** Procedural cyberpunk arena background during fights (perspective grid, neon glow behind board, circuit traces, scan sweep, HUD corner brackets). `BattlefieldBackgroundView` in `src/game/board/`. |

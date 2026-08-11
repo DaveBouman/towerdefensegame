@@ -50,6 +50,16 @@ const ENEMY_ROLE: Record<string, BestiaryRole> = {
     saboteur: 'lieutenant',
     smokebinder: 'lieutenant',
     'field-medic': 'support',
+    'cred-vulture': 'street',
+    'toll-bot': 'street',
+    'wire-thief': 'street',
+    'null-scribe': 'street',
+    'stutter-node': 'street',
+    'phantom-relay': 'street',
+    'twin-clip': 'street',
+    'bulwark-runner': 'street',
+    'glass-striker': 'support',
+    'chrome-saint': 'support',
     warden: 'boss',
 };
 
@@ -67,6 +77,16 @@ const ENEMY_SUMMARY: Record<string, string> = {
     'android-arm': 'Shatter fragment with light Thorns. Prefer non-Attack finishers or soak the reflect.',
     'android-core': 'Shatter fragment that favors shield. Slow burn or break armor first.',
     'android-legs': 'Shatter fragment that carpets traps. Disarm or pay the board tax.',
+    'cred-vulture': 'Steals 3 creds after each turn. Kill fast or shop visits hurt.',
+    'toll-bot': 'Punishes hand rerolls with +attack and extra traps next turn.',
+    'wire-thief': 'Steals a deck card on turn 1 and flees after 5 turns. Kill it to recover the card.',
+    'null-scribe': 'Negates the first 3 skill abilities in each chain.',
+    'stutter-node': 'Every other enemy phase, its attack/shield step fires twice.',
+    'phantom-relay': 'Shows attack and shield in intent — only one is real.',
+    'twin-clip': 'Link Twins duo. Killing one enrages the survivor (+6 atk, +1 trap).',
+    'bulwark-runner': 'Buffer pair with Glass Striker — redirects the first hit each chain.',
+    'glass-striker': '16 HP glass cannon. Often paired with Bulwark or Chrome Saint.',
+    'chrome-saint': '72 HP healer tank. Keeps Glass Striker alive — focus order matters.',
 };
 
 const ROLE_ORDER: Record<BestiaryRole, number> = {

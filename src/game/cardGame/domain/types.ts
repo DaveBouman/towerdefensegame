@@ -45,6 +45,14 @@ export interface EnemyCombatant {
     enrageStacks: number;
     /** Remaining fully blocked hits from the hitWard passive. */
     hitsBlockedRemaining?: number;
+    /** One-turn attack spike when a linked ally dies. */
+    linkRageAttackBonus?: number;
+    /** Extra traps queued from reroll tax or link rage. */
+    pendingExtraTraps?: number;
+    /** Attack bonus on next turn from reroll tax. */
+    rerollTaxAttackBonus?: number;
+    /** Card definition id held by a card thief (returned if killed before fleeing). */
+    stolenCardId?: string;
 }
 
 export interface PlayerState {
@@ -78,6 +86,8 @@ export interface EnemyTurnStep {
     targetInstanceId?: string;
     /** Board column index for `lock-column` (0-based). */
     column?: number;
+    /** Phantom intent decoy — telegraphed but not executed. */
+    decoy?: boolean;
 }
 
 export interface EnemyTurnAction {

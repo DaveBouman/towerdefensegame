@@ -12,7 +12,15 @@ export type EnemyPassiveId =
     | 'curseHand'
     | 'pressureColumn'
     | 'spawnMinion'
-    | 'shatterOnDeath';
+    | 'shatterOnDeath'
+    | 'credLeech'
+    | 'rerollTax'
+    | 'cardThief'
+    | 'skillJam'
+    | 'linkRage'
+    | 'bodyguard'
+    | 'stutterClock'
+    | 'phantomIntent';
 
 export interface ThornsPassiveConfig {
     id: 'thorns';
@@ -126,6 +134,55 @@ export interface ShatterOnDeathPassiveConfig {
     parts: string[];
 }
 
+/** Steals run creds after each of this enemy's turns. */
+export interface CredLeechPassiveConfig {
+    id: 'credLeech';
+    amountPerTurn: number;
+}
+
+/** Punishes hand rerolls with extra attack and/or traps on the next turn. */
+export interface RerollTaxPassiveConfig {
+    id: 'rerollTax';
+    attackBonus: number;
+    extraTraps: number;
+}
+
+/** Steals a deck card, then flees after N turns (card lost only if it escapes). */
+export interface CardThiefPassiveConfig {
+    id: 'cardThief';
+    fleeAfterTurns: number;
+}
+
+/** Negates chain abilities from the first N skill cards in each attack. */
+export interface SkillJamPassiveConfig {
+    id: 'skillJam';
+    suppressedSkillCards: number;
+}
+
+/** When another enemy dies, this one gains a one-turn attack/trap spike. */
+export interface LinkRagePassiveConfig {
+    id: 'linkRage';
+    attackBonus: number;
+    extraTraps: number;
+}
+
+/** Redirects the first hit each player attack that targets a protected ally. */
+export interface BodyguardPassiveConfig {
+    id: 'bodyguard';
+    protectDefinitionId: string;
+}
+
+/** Acts twice on every Nth enemy phase (telegraphed). */
+export interface StutterClockPassiveConfig {
+    id: 'stutterClock';
+    everyGlobalTurns: number;
+}
+
+/** Shows a decoy attack/shield in intent — only the real step executes. */
+export interface PhantomIntentPassiveConfig {
+    id: 'phantomIntent';
+}
+
 export type EnemyPassiveConfig =
     | ThornsPassiveConfig
     | EnragePassiveConfig
@@ -140,6 +197,14 @@ export type EnemyPassiveConfig =
     | CurseHandPassiveConfig
     | PressureColumnPassiveConfig
     | SpawnMinionPassiveConfig
-    | ShatterOnDeathPassiveConfig;
+    | ShatterOnDeathPassiveConfig
+    | CredLeechPassiveConfig
+    | RerollTaxPassiveConfig
+    | CardThiefPassiveConfig
+    | SkillJamPassiveConfig
+    | LinkRagePassiveConfig
+    | BodyguardPassiveConfig
+    | StutterClockPassiveConfig
+    | PhantomIntentPassiveConfig;
 
 export type EnemyPassiveInput = EnemyPassiveId | EnemyPassiveConfig;

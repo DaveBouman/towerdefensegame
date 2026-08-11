@@ -91,6 +91,9 @@ export class EnemyPhaseController
                 enemyState: combatant.state,
                 enrageStacks: combatant.enrageStacks,
                 turnsTaken: combatant.turnsTaken,
+                globalEnemyTurns: this.enemyTurnsTaken,
+                bonusAttack: (combatant.linkRageAttackBonus ?? 0) + (combatant.rerollTaxAttackBonus ?? 0),
+                bonusTraps: combatant.pendingExtraTraps ?? 0,
             });
             const allySteps = planAllySupportSteps(
                 combatant,
@@ -104,6 +107,9 @@ export class EnemyPhaseController
                 instanceId: combatant.instanceId,
                 enemyId: combatant.definitionId,
             };
+            combatant.linkRageAttackBonus = 0;
+            combatant.rerollTaxAttackBonus = 0;
+            combatant.pendingExtraTraps = 0;
         }
 
         this.queuedEnemyTurn = this.getQueuedEnemyTurn();

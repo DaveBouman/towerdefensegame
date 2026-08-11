@@ -137,5 +137,73 @@ export const resolveEnemyPassiveTooltip = (
                     'Finish the pieces — the fight is not over when the frame drops.',
                 ],
             };
+        case 'credLeech':
+            return {
+                title: 'Cred Leech',
+                lines: [
+                    `Steals ${passive.amountPerTurn} cred(s) from your run wallet after each of its turns.`,
+                    'Kill it fast or arrive at the Ripperdoc broke.',
+                ],
+            };
+        case 'rerollTax':
+            return {
+                title: 'Reroll Tax',
+                lines: [
+                    `Each hand reroll adds +${passive.attackBonus} attack on its next turn.`,
+                    passive.extraTraps > 0
+                        ? `Also queues +${passive.extraTraps} extra trap(s) on the next turn.`
+                        : 'Does not add extra traps.',
+                ].filter((line) => line !== 'Does not add extra traps.'),
+            };
+        case 'cardThief':
+            return {
+                title: 'Card Thief',
+                lines: [
+                    'Steals a random card from your draw pile on its first turn.',
+                    `Escapes after ${passive.fleeAfterTurns} turns — stolen cards are lost if it gets away.`,
+                    'Kill it before it flees to recover the card.',
+                ],
+            };
+        case 'skillJam':
+            return {
+                title: 'Skill Jam',
+                lines: [
+                    `The first ${passive.suppressedSkillCards} skill card(s) in each chain have their abilities negated.`,
+                    'Attacks and defends still resolve normally.',
+                ],
+            };
+        case 'linkRage':
+            return {
+                title: 'Link Rage',
+                lines: [
+                    `When its partner dies, gains +${passive.attackBonus} attack on the next turn.`,
+                    passive.extraTraps > 0
+                        ? `Also places +${passive.extraTraps} extra trap(s) that turn.`
+                        : 'No extra traps.',
+                ].filter((line) => line !== 'No extra traps.'),
+            };
+        case 'bodyguard':
+            return {
+                title: 'Bodyguard',
+                lines: [
+                    `Redirects the first hit of each attack aimed at ${enemyLabel(passive.protectDefinitionId)}.`,
+                    'Break the runner or focus the glass cannon through the guard.',
+                ],
+            };
+        case 'stutterClock':
+            return {
+                title: 'Stutter Clock',
+                lines: [
+                    `Every ${passive.everyGlobalTurns} enemy phase(s), its combat step executes twice (telegraphed).`,
+                ],
+            };
+        case 'phantomIntent':
+            return {
+                title: 'Phantom Intent',
+                lines: [
+                    'Telegraphs both attack and shield — only one is real each turn.',
+                    'Watch which step actually fires.',
+                ],
+            };
     }
 };

@@ -13,6 +13,7 @@ import { applyCombatHitMitigation, applyEnemyHitMitigation } from '../combat/com
 import { collectCombatTraitsFromBodyMods } from '../combat/combatTraits/collect';
 import type { CombatTraitConfig } from '../combat/combatTraits/types';
 import { computeThornsReflectDamage, resolvePostAttackPassives } from '../enemyPassives/applyEnemyPassives';
+import { applyLinkRageToAllies, resolveBodyguardRedirect } from '../enemyPassives/interactionPassives';
 import type { BoardModel } from './BoardModel';
 import type { FieldEffects } from './FieldEffects';
 import { isCombatantAlive } from './enemyCombatants';
@@ -47,6 +48,8 @@ export interface CombatContext
     resolveAttackTargetId (explicit?: string): string;
     /** Shatter parent on kill; returns spawned part instance ids. */
     shatterCombatantIfNeeded (instanceId: string): string[];
+    /** Card thief recovery, link rage, etc. */
+    onCombatantKilled (instanceId: string): void;
 }
 
 export class CombatResolver
@@ -57,6 +60,7 @@ export class CombatResolver
     private poisonAppliedThisAttack = 0;
     private runAttackCount: number;
     private doubleDamageThisAttack = false;
+    private bodyguardRedirectUsedThisAttack = false;
     private playerHitsBlockedRemaining?: number;
 
     constructor (
@@ -109,6 +113,7 @@ export class CombatResolver
         this.armorGrantedThisAttack = 0;
         this.poisonAppliedThisAttack = 0;
         this.doubleDamageThisAttack = false;
+        this.bodyguardRedirectUsedThisAttack = false;
 
         if (!this.ctx.puzzleMode)
         {
@@ -184,7 +189,14 @@ export class CombatResolver
         }
 
         const targetId = this.ctx.resolveAttackTargetId(targetInstanceId);
-        const combatant = this.ctx.getCombatantOrThrow(targetId);
+        const redirect = resolveBodyguardRedirect(
+            targetId,
+            this.ctx.getCombatants(),
+            this.bodyguardRedirectUsedThisAttack,
+        );
+        this.bodyguardRedirectUsedThisAttack = redirect.redirectUsed;
+        const resolvedTargetId = redirect.targetInstanceId;
+        const combatant = this.ctx.getCombatantOrThrow(resolvedTargetId);
         const scaledDamage = this.scalePlayerDamageDealt(damage);
 
         if (scaledDamage <= 0)
@@ -193,7 +205,7 @@ export class CombatResolver
                 enemy: { ...combatant.state },
                 shieldAbsorbed: 0,
                 healthDamage: 0,
-                targetInstanceId: targetId,
+                targetInstanceId: resolvedTargetId,
             };
         }
 
@@ -205,7 +217,7 @@ export class CombatResolver
                 enemy: { ...combatant.state },
                 shieldAbsorbed: 0,
                 healthDamage: 0,
-                targetInstanceId: targetId,
+                targetInstanceId: resolvedTargetId,
                 damageBlocked: true,
             };
         }
@@ -218,7 +230,7 @@ export class CombatResolver
                 enemy: { ...combatant.state },
                 shieldAbsorbed: 0,
                 healthDamage: 0,
-                targetInstanceId: targetId,
+                targetInstanceId: resolvedTargetId,
             };
         }
 
@@ -232,7 +244,7 @@ export class CombatResolver
 
         const enemyKilled = wasAlive && combatant.state.health <= 0;
         const killExtras = enemyKilled
-            ? this.handleEnemyKilled(combatant, targetId, sourceDefinitionId)
+            ? this.handleEnemyKilled(combatant, resolvedTargetId, sourceDefinitionId)
             : {};
 
         const thornsDamage = computeThornsReflectDamage(
@@ -245,7 +257,7 @@ export class CombatResolver
             enemy: { ...combatant.state },
             shieldAbsorbed,
             healthDamage,
-            targetInstanceId: targetId,
+            targetInstanceId: resolvedTargetId,
             enemyKilled,
             spawnedInstanceIds: killExtras.spawnedInstanceIds,
             healOnKill: killExtras.healOnKill,
@@ -281,6 +293,8 @@ export class CombatResolver
             enemy: { ...combatant.state },
             instanceId,
         });
+
+        this.ctx.onCombatantKilled(instanceId);
 
         const spawned = this.ctx.shatterCombatantIfNeeded(instanceId);
         let healOnKill: number | undefined;

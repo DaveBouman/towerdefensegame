@@ -178,6 +178,128 @@
       "hazardsPerTurn": 2
     },
     {
+      "id": "cred-vulture",
+      "label": "Cred Vulture",
+      "maxHealth": 36,
+      "attackDamage": 11,
+      "shieldGain": 10,
+      "attackChance": 0.55,
+      "hazardsPerTurn": 0,
+      "passives": [
+        { "id": "credLeech", "amountPerTurn": 3 }
+      ]
+    },
+    {
+      "id": "toll-bot",
+      "label": "Toll Bot",
+      "maxHealth": 34,
+      "attackDamage": 10,
+      "shieldGain": 12,
+      "attackChance": 0.5,
+      "hazardsPerTurn": 1,
+      "passives": [
+        { "id": "rerollTax", "attackBonus": 4, "extraTraps": 1 }
+      ]
+    },
+    {
+      "id": "wire-thief",
+      "label": "Wire Thief",
+      "maxHealth": 28,
+      "attackDamage": 9,
+      "shieldGain": 8,
+      "attackChance": 0.6,
+      "hazardsPerTurn": 0,
+      "passives": [
+        { "id": "cardThief", "fleeAfterTurns": 5 }
+      ]
+    },
+    {
+      "id": "null-scribe",
+      "label": "Null Scribe",
+      "maxHealth": 40,
+      "attackDamage": 10,
+      "shieldGain": 12,
+      "attackChance": 0.45,
+      "hazardsPerTurn": 1,
+      "passives": [
+        { "id": "skillJam", "suppressedSkillCards": 3 }
+      ]
+    },
+    {
+      "id": "stutter-node",
+      "label": "Stutter Node",
+      "maxHealth": 38,
+      "attackDamage": 9,
+      "shieldGain": 11,
+      "attackChance": 0.55,
+      "hazardsPerTurn": 0,
+      "passives": [
+        { "id": "stutterClock", "everyGlobalTurns": 2 }
+      ]
+    },
+    {
+      "id": "phantom-relay",
+      "label": "Phantom Relay",
+      "maxHealth": 35,
+      "attackDamage": 12,
+      "shieldGain": 13,
+      "attackChance": 0.5,
+      "hazardsPerTurn": 1,
+      "passives": [
+        "phantomIntent"
+      ]
+    },
+    {
+      "id": "twin-clip",
+      "label": "Twin Clip",
+      "maxHealth": 26,
+      "attackDamage": 11,
+      "shieldGain": 9,
+      "attackChance": 0.6,
+      "hazardsPerTurn": 1,
+      "passives": [
+        { "id": "linkRage", "attackBonus": 6, "extraTraps": 1 }
+      ]
+    },
+    {
+      "id": "bulwark-runner",
+      "label": "Bulwark Runner",
+      "maxHealth": 52,
+      "attackDamage": 8,
+      "shieldGain": 14,
+      "attackChance": 0.35,
+      "hazardsPerTurn": 0,
+      "passives": [
+        { "id": "bodyguard", "protectDefinitionId": "glass-striker" }
+      ]
+    },
+    {
+      "id": "glass-striker",
+      "label": "Glass Striker",
+      "maxHealth": 16,
+      "attackDamage": 18,
+      "shieldGain": 4,
+      "attackChance": 0.8,
+      "hazardsPerTurn": 0
+    },
+    {
+      "id": "chrome-saint",
+      "label": "Chrome Saint",
+      "maxHealth": 72,
+      "attackDamage": 7,
+      "shieldGain": 10,
+      "attackChance": 0.3,
+      "hazardsPerTurn": 0,
+      "allyActions": [
+        {
+          "kind": "heal-ally",
+          "amount": 16,
+          "chance": 0.9,
+          "target": "lowest-health"
+        }
+      ]
+    },
+    {
       "id": "training-dummy",
       "label": "Training Dummy",
       "maxHealth": 99999,

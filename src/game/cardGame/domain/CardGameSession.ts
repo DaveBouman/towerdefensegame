@@ -38,6 +38,14 @@ import { isPlayerOwnedCard } from '../domain/cardOwnership';
 import { createCardInstance } from '../domain/createCardInstance';
 import { createEnemyCombatant, isCombatantAlive, normalizeEnemyIds } from './enemyCombatants';
 import { shatterPartsThatFit, shouldSpawnMinionAfterTurn } from '../enemyPassives/spawnShatter';
+import {
+    applyLinkRageToAllies,
+    applyRerollTaxToCombatants,
+    getCardThiefPassive,
+    shouldFleeThisTurn,
+    shouldStealCardThisTurn,
+    stealCredFromRun,
+} from '../enemyPassives/interactionPassives';
 import type {
     ActivationStep,
     AttackReadiness,
@@ -76,6 +84,9 @@ export class CardGameSession
     /** Definition ids exhausted (played) this battle — battle-scoped only. */
     private readonly exhaustedDefinitionIds: string[] = [];
     private readonly combatants: EnemyCombatant[] = [];
+    private readonly runGold: number;
+    private goldStolen = 0;
+    private readonly permanentlyStolenCardIds: string[] = [];
     private nextCombatantIndex = 0;
     private attackTargetId: string | null = null;
     private player: PlayerState;
@@ -99,10 +110,12 @@ export class CardGameSession
         runAttackCount = 0,
         rerollsRemaining?: number,
         runModifiers: readonly string[] = [],
+        runGold = 0,
     )
     {
         this.puzzleMode = puzzleMode;
         this.bodyMods = bodyMods;
+        this.runGold = Math.max(0, runGold);
 
         for (const [ index, definitionId ] of normalizeEnemyIds(enemyIds).entries())
         {
@@ -142,6 +155,7 @@ export class CardGameSession
             ensureAttackTarget: () => this.ensureAttackTarget(),
             resolveAttackTargetId: (explicit) => this.resolveAttackTargetId(explicit),
             shatterCombatantIfNeeded: (instanceId) => this.shatterCombatantIfNeeded(instanceId),
+            onCombatantKilled: (instanceId) => this.onCombatantKilled(instanceId),
         }, runAttackCount);
         this.enemyPhase = new EnemyPhaseController({
             combatants: this.combatants,
@@ -550,7 +564,20 @@ export class CardGameSession
             return false;
         }
 
-        return this.deckHand.rerollHandCards(handIndices);
+        const rerolled = this.deckHand.rerollHandCards(handIndices);
+
+        if (rerolled)
+        {
+            this.applyRerollTaxPassives();
+        }
+
+        return rerolled;
+    }
+
+    /** Applies reroll-tax passives after a successful hand reroll. */
+    private applyRerollTaxPassives (): void
+    {
+        applyRerollTaxToCombatants(this.getLivingCombatants());
     }
 
     /** Discards the current hand and draws a fresh one for the next player turn. */
@@ -668,7 +695,7 @@ export class CardGameSession
     private emitCombatantsChanged (
         added: readonly string[],
         removed: readonly string[],
-        reason: 'spawn' | 'shatter',
+        reason: 'spawn' | 'shatter' | 'flee',
     ): void
     {
         CardGameEventBus.emit(CARD_GAME_EVENTS.COMBATANTS_CHANGED, {
@@ -729,6 +756,48 @@ export class CardGameSession
         this.emitCombatantsChanged([ spawned.instanceId ], [], 'spawn');
 
         return spawned;
+    }
+
+    onCombatantKilled (instanceId: string): void
+    {
+        const combatant = this.getCombatant(instanceId);
+
+        if (combatant?.stolenCardId)
+        {
+            this.deckHand.returnStolenCardToDeck(combatant.stolenCardId);
+            combatant.stolenCardId = undefined;
+        }
+
+        applyLinkRageToAllies(
+            this.getLivingCombatants().filter((entry) => entry.instanceId !== instanceId),
+        );
+    }
+
+    fleeCombatant (instanceId: string): void
+    {
+        const combatant = this.getCombatant(instanceId);
+
+        if (!combatant)
+        {
+            return;
+        }
+
+        if (combatant.stolenCardId)
+        {
+            this.permanentlyStolenCardIds.push(combatant.stolenCardId);
+            combatant.stolenCardId = undefined;
+        }
+
+        this.removeCombatant(instanceId);
+        this.emitCombatantsChanged([], [ instanceId ], 'flee');
+    }
+
+    getRunBattleDeltas (): { goldStolen: number; stolenCardIds: readonly string[] }
+    {
+        return {
+            goldStolen: this.goldStolen,
+            stolenCardIds: [ ...this.permanentlyStolenCardIds ],
+        };
     }
 
     getAttackTargetId (): string | null
@@ -938,10 +1007,13 @@ export class CardGameSession
     ): AttackSequence
     {
         const target = this.getTargetCombatant();
+        const raw = buildRawAttackSequence(chain, this.board, stepMs);
+        const passives = this.getLivingCombatants().flatMap((combatant) => combatant.definition.passives);
         const sequence = applyEnemyPassivesToSequence(
-            buildRawAttackSequence(chain, this.board, stepMs),
+            raw,
             target.state,
-            target.definition.passives,
+            passives,
+            chain,
         );
 
         return this.fieldEffects.applyDampeningToSequence(sequence);
@@ -1160,7 +1232,46 @@ export class CardGameSession
 
         if (action.instanceId)
         {
+            this.applyPostEnemyTurnPassives(action.instanceId);
             this.trySpawnMinionAfterEnemyTurn(action.instanceId);
+        }
+    }
+
+    private applyPostEnemyTurnPassives (instanceId: string): void
+    {
+        const combatant = this.getCombatant(instanceId);
+
+        if (!combatant || !isCombatantAlive(combatant))
+        {
+            return;
+        }
+
+        const credLeech = getEnemyPassive(combatant.definition.passives, 'credLeech');
+
+        if (credLeech && this.runGold > 0)
+        {
+            const result = stealCredFromRun(this.runGold, this.goldStolen, credLeech.amountPerTurn);
+            this.goldStolen = result.goldStolen;
+        }
+
+        const thief = getCardThiefPassive(combatant);
+
+        if (thief)
+        {
+            if (shouldStealCardThisTurn(combatant, thief))
+            {
+                const stolen = this.deckHand.stealRandomDeckCard();
+
+                if (stolen)
+                {
+                    combatant.stolenCardId = stolen;
+                }
+            }
+
+            if (shouldFleeThisTurn(combatant, thief))
+            {
+                this.fleeCombatant(instanceId);
+            }
         }
     }
 

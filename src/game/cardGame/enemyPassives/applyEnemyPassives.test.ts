@@ -230,6 +230,7 @@ describe('enemy passives', () =>
             raw,
             { health: 80, maxHealth: 80, shield: 0 },
             normalizeEnemyPassives([ 'smoke' ]),
+            chain,
         );
 
         expect(raw.abilityPoisonStacks).toBe(1);
@@ -279,6 +280,7 @@ describe('enemy passives', () =>
             raw,
             { health: 80, maxHealth: 80, shield: 5 },
             normalizeEnemyPassives([ { id: 'wetBlanket', fireAlternationMultiplier: 0.5 } ]),
+            chain,
         );
 
         expect(raw.abilityEnemyDamage).toBe(3);

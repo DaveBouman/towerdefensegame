@@ -101,6 +101,14 @@ export const describeEnemyPassives = (
         pressureColumn: 'Column Pressure',
         spawnMinion: 'Spawn',
         shatterOnDeath: 'Shatter',
+        credLeech: 'Cred Leech',
+        rerollTax: 'Reroll Tax',
+        cardThief: 'Card Thief',
+        skillJam: 'Skill Jam',
+        linkRage: 'Link Rage',
+        bodyguard: 'Bodyguard',
+        stutterClock: 'Stutter',
+        phantomIntent: 'Phantom',
     };
 
     return enemy.passives.map((passive) => labels[passive.id] ?? passive.id);

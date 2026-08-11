@@ -134,6 +134,12 @@ export class CardGamePresenter
                 return;
             }
 
+            if (step.decoy)
+            {
+                playStep();
+                return;
+            }
+
             playEnemyTurnStep(
                 {
                     scene: this.scene,

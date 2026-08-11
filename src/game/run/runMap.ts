@@ -98,15 +98,15 @@ const SEMI_BOSS_ENEMY_POOL: readonly string[] = [ 'smokebinder', 'saboteur' ];
 /** Enemy pools per column, ramping in difficulty. Last column is the boss. */
 const ROW_ENEMY_POOLS: readonly (readonly string[])[] = [
     [ 'basic' ],
-    [ 'basic', 'thornward' ],
-    [ 'basic', 'thornward', 'broodframe' ],
-    [ 'thornward', 'saboteur', 'android' ],
-    [ 'thornward', 'saboteur', 'gridlock', 'broodframe' ],
-    [ 'saboteur', 'smokebinder', 'gridlock', 'android' ],
-    [ 'saboteur', 'smokebinder', 'gridlock', 'broodframe' ],
-    [ 'saboteur', 'smokebinder', 'android' ],
-    [ 'smokebinder', 'gridlock' ],
-    [ 'smokebinder' ],
+    [ 'basic', 'thornward', 'cred-vulture' ],
+    [ 'basic', 'thornward', 'broodframe', 'toll-bot' ],
+    [ 'thornward', 'saboteur', 'android', 'wire-thief' ],
+    [ 'thornward', 'saboteur', 'gridlock', 'broodframe', 'null-scribe' ],
+    [ 'saboteur', 'smokebinder', 'gridlock', 'android', 'stutter-node' ],
+    [ 'saboteur', 'smokebinder', 'gridlock', 'broodframe', 'phantom-relay' ],
+    [ 'saboteur', 'smokebinder', 'android', 'cred-vulture' ],
+    [ 'smokebinder', 'gridlock', 'twin-clip' ],
+    [ 'smokebinder', 'toll-bot' ],
     [ 'warden' ],
 ];
 
@@ -212,6 +212,21 @@ const resolveBattleEnemies = (
     if (enemyId === 'broodframe')
     {
         return { enemyId, enemyIds: [ 'broodframe', 'wire-drone' ] };
+    }
+
+    if (enemyId === 'twin-clip')
+    {
+        return { enemyId, enemyIds: [ 'twin-clip', 'twin-clip' ] };
+    }
+
+    if (enemyId === 'bulwark-runner')
+    {
+        return { enemyId, enemyIds: [ 'bulwark-runner', 'glass-striker' ] };
+    }
+
+    if (enemyId === 'chrome-saint')
+    {
+        return { enemyId, enemyIds: [ 'chrome-saint', 'glass-striker' ] };
     }
 
     if (
