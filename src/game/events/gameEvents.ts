@@ -19,6 +19,8 @@ export const GAME_EVENTS = {
     PILE_VIEW_OPEN: 'pile-view-open',
     UI_OVERLAY_ACTIVE: 'ui-overlay-active',
     RUN_PHASE: 'run-phase',
+    COMBAT_RECAP: 'combat-recap',
+    PHASE_SHIFT: 'phase-shift',
     PLAY_SFX: 'play-sfx',
     SET_BGM: 'set-bgm',
 } as const;

@@ -1,6 +1,7 @@
 import { pickWeighted } from '../random/rng';
 import { getCardDefinitionOrThrow, type CardTier } from '../cardGame/config/cardRegistry';
 import { getCardRewardWeight, scoreDeckArchetypes } from './deckArchetypes';
+import type { BodyModRewardPool } from './bodyMods';
 import type { RunMapNodeKind } from './nodeKinds';
 
 /**
@@ -25,9 +26,16 @@ export interface CardReward {
 
 export interface BodyModRunReward {
     kind: 'body-mod';
+    /** Which relic pool to draw from. */
+    pool?: BodyModRewardPool;
 }
 
-export type RunReward = CardReward | BodyModRunReward;
+export interface CompoundRunReward {
+    kind: 'compound';
+    steps: RunReward[];
+}
+
+export type RunReward = CardReward | BodyModRunReward | CompoundRunReward;
 
 export const DEFAULT_CARD_REWARD: CardReward = {
     kind: 'card',
@@ -46,17 +54,44 @@ export const SEMI_BOSS_CARD_REWARD: CardReward = {
     pool: 'elite',
 };
 
+/** Lieutenant / semi-boss: elite card pick, then a relic. */
+export const SEMI_BOSS_REWARD: CompoundRunReward = {
+    kind: 'compound',
+    steps: [
+        {
+            kind: 'card',
+            choiceCount: 3,
+            pickCount: 1,
+            rerollable: false,
+            pool: 'elite',
+        },
+        {
+            kind: 'body-mod',
+            pool: 'lieutenant',
+        },
+    ],
+};
+
+/** Warden: unique gatekeeper relic. */
+export const WARDEN_RELIC_REWARD: BodyModRunReward = {
+    kind: 'body-mod',
+    pool: 'warden',
+};
+
 /** Resolves the battle reward template for a map node kind. */
 export const rewardForNodeKind = (kind: RunMapNodeKind): RunReward | undefined =>
 {
     if (kind === 'boss')
     {
-        return undefined;
+        return { ...WARDEN_RELIC_REWARD };
     }
 
     if (kind === 'semi-boss')
     {
-        return { ...SEMI_BOSS_CARD_REWARD };
+        return {
+            kind: 'compound',
+            steps: SEMI_BOSS_REWARD.steps.map((step) => ({ ...step })),
+        };
     }
 
     if (kind === 'enemy')
@@ -67,10 +102,22 @@ export const rewardForNodeKind = (kind: RunMapNodeKind): RunReward | undefined =
     return undefined;
 };
 
+/** Flattens compound rewards into sequential steps for the reward flow. */
+export const flattenRunReward = (reward: RunReward): RunReward[] =>
+{
+    if (reward.kind === 'compound')
+    {
+        return reward.steps.flatMap((step) => flattenRunReward(step));
+    }
+
+    return [ reward ];
+};
+
 /** Shown on battle victory card rewards. */
 export const BATTLE_REWARD_RULES: readonly string[] = [
     'Three cards are offered — biased toward your deck’s specialty, with higher tiers later in the run.',
-    'Select one card to add to your deck, or continue without taking a card.',
+    'Select one card to add to your deck, or take nothing and continue.',
+    'Lieutenants also grant a relic after you pick a card. The Warden grants a unique relic.',
     'Upgrade copies at the Ripperdoc. Your choices are permanent for the rest of the run.',
 ];
 
@@ -292,4 +339,37 @@ export const describeCardReward = (definitionId: string): CardRewardDisplay =>
         blurb: CARD_BLURBS[baseId] ?? definition.label,
         tier: definition.tier,
     };
+};
+
+const ARCHETYPE_LABELS: Record<string, string> = {
+    blade: 'Blade',
+    toxin: 'Toxin',
+    heat: 'Heat',
+    bulwark: 'Bulwark',
+};
+
+/** Player-facing synergy hint for a reward card given the current deck. */
+export const getCardSynergyHint = (
+    definitionId: string,
+    deckDefinitionIds: readonly string[],
+): string | null =>
+{
+    const scores = scoreDeckArchetypes(deckDefinitionIds);
+
+    if (!scores.dominant)
+    {
+        return null;
+    }
+
+    const weight = getCardRewardWeight(definitionId, scores);
+    const baseWeight = getCardRewardWeight('attack', scores);
+
+    if (weight <= baseWeight * 1.05)
+    {
+        return null;
+    }
+
+    const label = ARCHETYPE_LABELS[scores.dominant] ?? scores.dominant;
+
+    return `Reinforces your ${label} lane`;
 };

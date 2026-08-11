@@ -205,5 +205,13 @@ export const resolveEnemyPassiveTooltip = (
                     'Watch which step actually fires.',
                 ],
             };
+        case 'phaseShift':
+            return {
+                title: passive.label,
+                lines: [
+                    passive.message,
+                    `Triggers below ${Math.round(passive.healthRatio * 100)}% integrity: +${passive.attackBonus} attack, +${passive.extraTraps} trap(s).`,
+                ],
+            };
     }
 };

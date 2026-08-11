@@ -12,6 +12,9 @@ import {
     maybeAppendFieldMedic,
 } from './battleEncounterRoll';
 
+/** Path risk label — hot routes hit harder but pay bonus creds. */
+export type RouteKind = 'standard' | 'hot' | 'safe';
+
 export interface RunMapNode {
     id: string;
     /** Column index in the progression (0 = first choice). */
@@ -21,6 +24,8 @@ export interface RunMapNode {
     /** Number of nodes in this node's column (for layout). */
     colCount: number;
     kind: RunMapNodeKind;
+    /** Route risk for battle nodes — affects enemy HP and victory creds. */
+    routeKind?: RouteKind;
     /** Seeded encounter for `event` nodes — shown on the map before you travel there. */
     eventId?: string;
     /** Enemy fought at this node (battle kinds only). */
@@ -178,6 +183,7 @@ const resolveNodeKind = (row: number, rows: number): RunMapNodeKind =>
 const resolveBattleEnemies = (
     row: number,
     kind: RunMapNodeKind,
+    routeKind: RouteKind = 'standard',
 ): { enemyId?: string; enemyIds?: string[] } =>
 {
     if (!isBattleKind(kind))
@@ -190,9 +196,20 @@ const resolveBattleEnemies = (
         return { enemyId: 'basic', enemyIds: [ 'basic', 'basic' ] };
     }
 
+    let poolRow = row;
+
+    if (routeKind === 'hot')
+    {
+        poolRow = Math.min(row + 1, STREET_ENEMY_POOLS.length - 2);
+    }
+    else if (routeKind === 'safe')
+    {
+        poolRow = Math.max(0, row - 1);
+    }
+
     const enemyId = kind === 'semi-boss'
         ? pickRandom(SEMI_BOSS_ENEMY_POOL)
-        : pickRandom(STREET_ENEMY_POOLS[row] ?? STREET_ENEMY_POOLS[0]!);
+        : pickRandom(STREET_ENEMY_POOLS[poolRow] ?? STREET_ENEMY_POOLS[row] ?? STREET_ENEMY_POOLS[0]!);
 
     const expanded = expandRolledEnemy(enemyId);
 
@@ -221,6 +238,7 @@ export const generateRunMap = (): RunMap =>
                 col,
                 colCount: size,
                 kind,
+                routeKind: battle ? 'standard' : undefined,
                 enemyId: enemies.enemyId,
                 enemyIds: enemies.enemyIds,
                 reward: battle ? rewardForNodeKind(kind) : undefined,
@@ -249,20 +267,27 @@ export const generateRunMap = (): RunMap =>
             const target = next[targetIndex]!;
             connect(node, target);
             hasIncoming.add(target.id);
+            target.routeKind = target.routeKind ?? 'standard';
 
-            // Saboteur nodes always branch up/down; others occasionally branch.
+            // Saboteur nodes always branch up/down; others fork when the column is wide enough.
             if (next.length > 1)
             {
                 if (node.enemyId === 'saboteur')
                 {
                     connectSaboteurBranches(node, index, current, next, connect, hasIncoming);
                 }
-                else if (random() < 0.45)
+                else if (next.length >= 3 || random() < 0.55)
                 {
                     const dir = random() < 0.5 ? -1 : 1;
-                    const branch = next[clamp(targetIndex + dir, 0, next.length - 1)]!;
-                    connect(node, branch);
-                    hasIncoming.add(branch.id);
+                    const branchIndex = clamp(targetIndex + dir, 0, next.length - 1);
+                    const branch = next[branchIndex]!;
+
+                    if (branch.id !== target.id)
+                    {
+                        connect(node, branch);
+                        hasIncoming.add(branch.id);
+                        branch.routeKind = branchIndex < targetIndex ? 'safe' : 'hot';
+                    }
                 }
             }
         });

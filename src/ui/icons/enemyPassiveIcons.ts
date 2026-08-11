@@ -25,6 +25,7 @@ export const ENEMY_PASSIVE_TEXTURE_KEY: Record<EnemyPassiveId, string> = {
     bodyguard: 'passive-icon-bodyguard',
     stutterClock: 'passive-icon-stutter',
     phantomIntent: 'passive-icon-phantom',
+    phaseShift: 'passive-icon-phase-shift',
 };
 
 const ENEMY_PASSIVE_ICON_FILE: Record<EnemyPassiveId, string> = {
@@ -50,6 +51,7 @@ const ENEMY_PASSIVE_ICON_FILE: Record<EnemyPassiveId, string> = {
     bodyguard: 'wet-blanket.png',
     stutterClock: 'dampen.png',
     phantomIntent: 'silence.png',
+    phaseShift: 'last-stand.png',
 };
 
 export const ENEMY_PASSIVE_ICON_ENTRIES = (Object.keys(ENEMY_PASSIVE_TEXTURE_KEY) as EnemyPassiveId[]).map((id) => ({

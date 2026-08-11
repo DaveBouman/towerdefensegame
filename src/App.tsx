@@ -6,6 +6,9 @@ import { PuzzleResultOverlay } from './ui/components/PuzzleResultOverlay';
 import { RunMapOverlay } from './ui/components/RunMapOverlay';
 import { RunEndOverlay } from './ui/components/RunEndOverlay';
 import { CardRewardOverlay } from './ui/components/CardRewardOverlay';
+import { BodyModRewardOverlay } from './ui/components/BodyModRewardOverlay';
+import { CombatRecapStrip } from './ui/components/CombatRecapStrip';
+import { FloorBriefingOverlay } from './ui/components/FloorBriefingOverlay';
 import { NodeVisitOverlay } from './ui/components/NodeVisitOverlay';
 import { ShopOverlay } from './ui/components/ShopOverlay';
 import { RunEventOverlay } from './ui/components/RunEventOverlay';
@@ -54,7 +57,13 @@ import {
     type RunMap,
     type RunMapNode,
 } from './game/run/runMap';
-import { rollCardReward, BATTLE_REWARD_RULES, PUZZLE_TRIAL_RULES, type CardReward } from './game/run/rewards';
+import { rollCardReward, BATTLE_REWARD_RULES, PUZZLE_TRIAL_RULES, flattenRunReward, getCardSynergyHint, type CardReward, type RunReward } from './game/run/rewards';
+import { rollBattleBodyModReward, type BodyModRewardPool } from './game/run/bodyMods';
+import { readAscensionLevel } from './game/run/ascension';
+import { HOT_ROUTE_VICTORY_GOLD } from './game/run/routeModifiers';
+import { getFloorBriefing } from './game/run/floorBriefings';
+import { createEmptyRunStats, type RunStats } from './game/run/runStats';
+import { scoreDeckArchetypes } from './game/run/deckArchetypes';
 import type { RerollState } from './game/cardGame/domain/types';
 import { BodyModsPanel } from './ui/components/BodyModsPanel';
 import {
@@ -64,13 +73,17 @@ import {
     seedScope,
 } from './game/random/rng';
 
-type RunPhase = 'menu' | 'map' | 'battle' | 'reward' | 'visit' | 'puzzle' | 'puzzle-result' | 'puzzle-reward' | 'victory' | 'defeat';
+type RunPhase = 'menu' | 'map' | 'battle' | 'reward' | 'relic-reward' | 'visit' | 'puzzle' | 'puzzle-result' | 'puzzle-reward' | 'victory' | 'defeat';
 
-interface PendingReward {
+type RewardStep =
+    | { kind: 'card'; reward: CardReward; options: string[]; rerollIndex: number }
+    | { kind: 'body-mod'; pool: BodyModRewardPool; options: string[] };
+
+interface PendingRewardFlow {
     nodeId: string;
-    reward: CardReward;
-    options: string[];
-    rerollIndex: number;
+    nodeKind: RunMapNodeKind;
+    steps: RewardStep[];
+    stepIndex: number;
 }
 
 const MAX_HEALTH = GAME_RULES.player.maxHealth;
@@ -124,6 +137,49 @@ const rollRewardForNode = (
     });
 };
 
+const buildRewardSteps = (
+    seed: string,
+    nodeId: string,
+    reward: RunReward,
+    deckDefinitionIds: readonly string[],
+    floor: number,
+    ownedBodyMods: readonly string[],
+): RewardStep[] =>
+{
+    const steps: RewardStep[] = [];
+
+    for (const step of flattenRunReward(reward))
+    {
+        if (step.kind === 'card')
+        {
+            steps.push({
+                kind: 'card',
+                reward: step,
+                options: rollRewardForNode(seed, nodeId, step, 0, deckDefinitionIds, floor),
+                rerollIndex: 0,
+            });
+            continue;
+        }
+
+        if (step.kind === 'body-mod')
+        {
+            seedScope(seed, `reward:${nodeId}:mod:${steps.length}`);
+            const modId = rollBattleBodyModReward(step.pool ?? 'standard', ownedBodyMods);
+
+            if (modId)
+            {
+                steps.push({
+                    kind: 'body-mod',
+                    pool: step.pool ?? 'standard',
+                    options: [ modId ],
+                });
+            }
+        }
+    }
+
+    return steps;
+};
+
 const applyBattleRunDeltas = (
     deck: string[],
     gold: number,
@@ -173,8 +229,12 @@ function App()
     const [ runToast, setRunToast ] = useState<string | null>(null);
     const [ battleIntroKind, setBattleIntroKind ] = useState<RunMapNodeKind | null>(null);
     const [ activeBattleKind, setActiveBattleKind ] = useState<RunMapNodeKind | null>(null);
+    const [ ascensionLevel, setAscensionLevel ] = useState(readAscensionLevel);
+    const [ runStats, setRunStats ] = useState<RunStats>(() => createEmptyRunStats(readAscensionLevel()));
+    const [ floorBriefing, setFloorBriefing ] = useState<number | null>(null);
+    const [ combatRecap, setCombatRecap ] = useState<{ damageDealt: number; armorGained: number; damageTaken: number } | null>(null);
     const [ clutchVictory, setClutchVictory ] = useState(false);
-    const [ pendingReward, setPendingReward ] = useState<PendingReward | null>(null);
+    const [ pendingRewardFlow, setPendingRewardFlow ] = useState<PendingRewardFlow | null>(null);
     const [ visit, setVisit ] = useState<VisitState | null>(null);
     const [ puzzleResult, setPuzzleResult ] = useState<PuzzleResultState | null>(null);
     const [ pendingPuzzleReward, setPendingPuzzleReward ] = useState<PendingPuzzleReward | null>(null);
@@ -238,6 +298,8 @@ function App()
             runAttackCount: number;
             rerollsRemaining: number;
             nodeKind?: RunMapNodeKind;
+            ascensionLevel?: number;
+            routeKind?: import('./game/run/runMap').RouteKind;
         } | null
     >(null);
     const pendingBattleRef = useRef<
@@ -306,6 +368,12 @@ function App()
             currentFloorRef.current = nodeFloor;
             setCurrentFloor(nodeFloor);
             setFloorBanner(nodeFloor);
+
+            if (getFloorBriefing(nodeFloor))
+            {
+                setFloorBriefing(nodeFloor);
+            }
+
             floorRerollsRef.current = GAME_RULES.rerollsPerFloor;
             setFloorRerollsRemaining(GAME_RULES.rerollsPerFloor);
         }
@@ -381,30 +449,48 @@ function App()
             runAttackCount: nextRunAttackCount,
             goldStolen,
             stolenCardIds,
+            battleDamageDealt = 0,
+            battleDamageTaken = 0,
         }: {
             playerHealth: number;
             runAttackCount: number;
             goldStolen?: number;
             stolenCardIds?: readonly string[];
+            battleDamageDealt?: number;
+            battleDamageTaken?: number;
         }): void =>
         {
             setRunAttackCount(nextRunAttackCount);
             setActiveBattleKind(null);
+            setCombatRecap(null);
             const node = selectedNodeRef.current;
             const healed = Math.min(
                 getRunMaxHealth(bodyModsRef.current),
                 remaining + RUN_CONFIG.healOnVictory,
             );
             const healDelta = healed - remaining;
+            const hotBonus = node?.routeKind === 'hot' ? HOT_ROUTE_VICTORY_GOLD : 0;
 
             setPlayerHealth(healed);
             const applied = applyBattleRunDeltas(
                 deckRef.current,
                 goldRef.current,
                 { goldStolen, stolenCardIds },
-                getVictoryGoldBonus(bodyModsRef.current),
+                getVictoryGoldBonus(bodyModsRef.current) + hotBonus,
             );
             setGold(applied.gold);
+
+        setRunStats((prev) => ({
+            ...prev,
+            battlesWon: prev.battlesWon + 1,
+            damageDealt: prev.damageDealt + battleDamageDealt,
+            damageTaken: prev.damageTaken + battleDamageTaken,
+            credsEarned: prev.credsEarned + Math.max(
+                0,
+                getVictoryGoldBonus(bodyModsRef.current) + hotBonus - (goldStolen ?? 0),
+            ),
+            pathLength: path.length + (node && !path.includes(node.id) ? 1 : 0),
+        }));
 
             if (stolenCardIds && stolenCardIds.length > 0)
             {
@@ -432,33 +518,43 @@ function App()
                 setClutchVictory(true);
             }
 
+            if (hotBonus > 0)
+            {
+                setRunToast(`Hot route bonus +${hotBonus} creds`);
+            }
+
             if (node)
             {
                 setPath((prev) => (prev.includes(node.id) ? prev : [ ...prev, node.id ]));
             }
 
+            if (node?.reward)
+            {
+                const steps = buildRewardSteps(
+                    seedRef.current,
+                    node.id,
+                    node.reward,
+                    deckRef.current,
+                    currentFloorRef.current,
+                    bodyModsRef.current,
+                );
+
+                if (steps.length > 0)
+                {
+                    setPendingRewardFlow({
+                        nodeId: node.id,
+                        nodeKind: node.kind,
+                        steps,
+                        stepIndex: 0,
+                    });
+                    setPhase(steps[0]!.kind === 'body-mod' ? 'relic-reward' : 'reward');
+                    return;
+                }
+            }
+
             if (node?.kind === 'boss')
             {
                 setPhase('victory');
-                return;
-            }
-
-            if (node && node.reward?.kind === 'card')
-            {
-                setPendingReward({
-                    nodeId: node.id,
-                    reward: node.reward,
-                    options: rollRewardForNode(
-                        seedRef.current,
-                        node.id,
-                        node.reward,
-                        0,
-                        deckRef.current,
-                        currentFloorRef.current,
-                    ),
-                    rerollIndex: 0,
-                });
-                setPhase('reward');
                 return;
             }
 
@@ -578,12 +674,34 @@ function App()
             setPhase('puzzle-result');
         };
 
+        const onCombatRecap = (recap: { damageDealt: number; armorGained: number; damageTaken: number }): void =>
+        {
+            if (phaseRef.current !== 'battle')
+            {
+                return;
+            }
+
+            setCombatRecap(recap);
+        };
+
+        const onPhaseShift = ({ label, message }: { label: string; message: string }): void =>
+        {
+            if (phaseRef.current !== 'battle')
+            {
+                return;
+            }
+
+            setRunToast(`${label}: ${message}`);
+        };
+
         EventBus.on(GAME_EVENTS.SCENE_READY, onSceneReady);
         EventBus.on(GAME_EVENTS.BATTLE_WON, onBattleWon);
         EventBus.on(GAME_EVENTS.BATTLE_LOST, onBattleLost);
         EventBus.on(GAME_EVENTS.RUN_ATTACK_COUNT, onRunAttackCount);
         EventBus.on(GAME_EVENTS.REROLL_STATE, onRerollState);
         EventBus.on(GAME_EVENTS.PUZZLE_RESOLVED, onPuzzleResolved);
+        EventBus.on(GAME_EVENTS.COMBAT_RECAP, onCombatRecap);
+        EventBus.on(GAME_EVENTS.PHASE_SHIFT, onPhaseShift);
 
         return () =>
         {
@@ -593,6 +711,8 @@ function App()
             EventBus.off(GAME_EVENTS.RUN_ATTACK_COUNT, onRunAttackCount);
             EventBus.off(GAME_EVENTS.REROLL_STATE, onRerollState);
             EventBus.off(GAME_EVENTS.PUZZLE_RESOLVED, onPuzzleResolved);
+            EventBus.off(GAME_EVENTS.COMBAT_RECAP, onCombatRecap);
+            EventBus.off(GAME_EVENTS.PHASE_SHIFT, onPhaseShift);
         };
     }, []);
 
@@ -617,6 +737,8 @@ function App()
             rerollsRemaining,
             nodeKind: node.kind,
             runGold: goldRef.current,
+            ascensionLevel,
+            routeKind: node.routeKind,
         };
         setPhase('battle');
 
@@ -628,7 +750,7 @@ function App()
         {
             pendingStartRef.current = payload;
         }
-    }, [ playerHealth, deck, seed, bodyMods, runAttackCount, tutorial ]);
+    }, [ playerHealth, deck, seed, bodyMods, runAttackCount, tutorial, ascensionLevel ]);
 
     const finishBattleIntro = useCallback((): void =>
     {
@@ -928,6 +1050,61 @@ function App()
         setPhase('map');
     }, []);
 
+    const advanceRewardFlow = useCallback((
+        cardsAdded: number,
+        bodyModAdded: boolean,
+    ): void =>
+    {
+        setPendingRewardFlow((prev) =>
+        {
+            if (!prev)
+            {
+                return null;
+            }
+
+            const nextIndex = prev.stepIndex + 1;
+
+            if (nextIndex >= prev.steps.length)
+            {
+                if (prev.nodeKind === 'boss')
+                {
+                    setPhase('victory');
+                }
+                else
+                {
+                    setPhase('map');
+                }
+
+                return null;
+            }
+
+            const nextStep = prev.steps[nextIndex]!;
+
+            setPhase(nextStep.kind === 'body-mod' ? 'relic-reward' : 'reward');
+
+            return {
+                ...prev,
+                stepIndex: nextIndex,
+            };
+        });
+
+        if (cardsAdded > 0)
+        {
+            setRunStats((stats) => ({
+                ...stats,
+                cardsAdded: stats.cardsAdded + cardsAdded,
+            }));
+        }
+
+        if (bodyModAdded)
+        {
+            setRunStats((stats) => ({
+                ...stats,
+                bodyModsCollected: stats.bodyModsCollected + 1,
+            }));
+        }
+    }, []);
+
     const finishReward = useCallback((chosen: string[]): void =>
     {
         if (chosen.length > 0)
@@ -936,32 +1113,53 @@ function App()
             unlockCards(chosen);
         }
 
-        setPendingReward(null);
-        setPhase('map');
-    }, []);
+        advanceRewardFlow(chosen.length, false);
+    }, [ advanceRewardFlow ]);
+
+    const finishBodyModReward = useCallback((bodyModId: string | null): void =>
+    {
+        if (bodyModId)
+        {
+            setBodyMods((prev) => (prev.includes(bodyModId) ? prev : [ ...prev, bodyModId ]));
+        }
+
+        advanceRewardFlow(0, bodyModId !== null);
+    }, [ advanceRewardFlow ]);
 
     const rerollReward = useCallback((): void =>
     {
-        setPendingReward((prev) =>
+        setPendingRewardFlow((prev) =>
         {
             if (!prev)
             {
                 return prev;
             }
 
-            const rerollIndex = prev.rerollIndex + 1;
+            const step = prev.steps[prev.stepIndex];
 
-            return {
-                ...prev,
+            if (!step || step.kind !== 'card')
+            {
+                return prev;
+            }
+
+            const rerollIndex = step.rerollIndex + 1;
+            const nextSteps = [ ...prev.steps ];
+            nextSteps[prev.stepIndex] = {
+                ...step,
                 rerollIndex,
                 options: rollRewardForNode(
                     seedRef.current,
                     prev.nodeId,
-                    prev.reward,
+                    step.reward,
                     rerollIndex,
                     deckRef.current,
                     currentFloorRef.current,
                 ),
+            };
+
+            return {
+                ...prev,
+                steps: nextSteps,
             };
         });
     }, []);
@@ -982,7 +1180,11 @@ function App()
         setFloorRerollsRemaining(GAME_RULES.rerollsPerFloor);
         currentFloorRef.current = 1;
         floorRerollsRef.current = GAME_RULES.rerollsPerFloor;
-        setPendingReward(null);
+        setAscensionLevel(readAscensionLevel());
+        setRunStats(createEmptyRunStats(readAscensionLevel()));
+        setFloorBriefing(null);
+        setCombatRecap(null);
+        setPendingRewardFlow(null);
         setVisit(null);
         setPuzzleResult(null);
         setPendingPuzzleReward(null);
@@ -1021,8 +1223,45 @@ function App()
 
     const startRunFromMenu = useCallback((nextSeed: string): void =>
     {
+        setAscensionLevel(readAscensionLevel());
         resetRun(normalizeSeed(nextSeed), 'map');
     }, [ resetRun ]);
+
+    const currentRewardStep = pendingRewardFlow?.steps[pendingRewardFlow.stepIndex];
+    const deckArchetypeScores = useMemo(() => scoreDeckArchetypes(deck), [ deck ]);
+    const rewardSynergyHints = useMemo(() =>
+    {
+        if (!currentRewardStep || currentRewardStep.kind !== 'card')
+        {
+            return undefined;
+        }
+
+        const hints: Record<string, string> = {};
+
+        for (const optionId of currentRewardStep.options)
+        {
+            const hint = getCardSynergyHint(optionId, deck);
+
+            if (hint)
+            {
+                hints[optionId] = hint;
+            }
+        }
+
+        return hints;
+    }, [ currentRewardStep, deck ]);
+
+    const combatRecapLines = combatRecap
+        ? [
+            { label: 'Damage dealt', value: String(combatRecap.damageDealt), tone: 'good' as const },
+            ...(combatRecap.armorGained > 0
+                ? [ { label: 'Armor gained', value: `+${combatRecap.armorGained}`, tone: 'good' as const } ]
+                : []),
+            ...(combatRecap.damageTaken > 0
+                ? [ { label: 'Damage taken', value: String(combatRecap.damageTaken), tone: 'bad' as const } ]
+                : []),
+        ]
+        : [];
 
     const lowHealth = runMaxHealth > 0 && playerHealth / runMaxHealth <= 0.25;
     const appPhaseClass = `app--phase-${phase}`;
@@ -1050,6 +1289,8 @@ function App()
                 <MainMenuOverlay
                     mode="boot"
                     seed={seed}
+                    ascensionLevel={ascensionLevel}
+                    onAscensionChange={setAscensionLevel}
                     onStart={startRunFromMenu}
                     onReplayTutorial={tutorial.replayTutorial}
                 />
@@ -1067,6 +1308,7 @@ function App()
             {phase === 'battle' && (
                 <>
                     <GameHud />
+                    <CombatRecapStrip lines={combatRecapLines} />
                     {tutorial.showBattleCoach && (
                         <TutorialCoachStrip onDismiss={tutorial.dismissBattleCoach} />
                     )}
@@ -1087,6 +1329,13 @@ function App()
             )}
             {tutorial.showRewardTip && (
                 <TutorialRewardTipOverlay onDismiss={tutorial.dismissRewardTip} />
+            )}
+            {floorBriefing !== null && getFloorBriefing(floorBriefing) && (
+                <FloorBriefingOverlay
+                    floor={floorBriefing}
+                    briefing={getFloorBriefing(floorBriefing)!}
+                    onDismiss={() => setFloorBriefing(null)}
+                />
             )}
             {floorBanner !== null && (
                 <FloorBanner floor={floorBanner} onDone={() => setFloorBanner(null)} />
@@ -1114,15 +1363,31 @@ function App()
                     onPick={pickNode}
                 />
             )}
-            {phase === 'reward' && pendingReward && (
+            {phase === 'reward' && currentRewardStep?.kind === 'card' && (
                 <CardRewardOverlay
-                    options={pendingReward.options}
-                    pickCount={pendingReward.reward.pickCount}
-                    rerollable={pendingReward.reward.rerollable}
+                    options={currentRewardStep.options}
+                    pickCount={currentRewardStep.reward.pickCount}
+                    rerollable={currentRewardStep.reward.rerollable}
                     rules={BATTLE_REWARD_RULES}
+                    eyebrow={pendingRewardFlow?.nodeKind === 'semi-boss' ? 'Lieutenant spoils' : 'Victory spoils'}
+                    subtitle={deckArchetypeScores.dominant
+                        ? `Deck specialty: ${deckArchetypeScores.dominant.charAt(0).toUpperCase()}${deckArchetypeScores.dominant.slice(1)}`
+                        : undefined}
+                    synergyHints={rewardSynergyHints}
                     onConfirm={finishReward}
                     onSkip={() => finishReward([])}
                     onReroll={rerollReward}
+                />
+            )}
+            {phase === 'relic-reward' && currentRewardStep?.kind === 'body-mod' && (
+                <BodyModRewardOverlay
+                    options={currentRewardStep.options}
+                    eyebrow={pendingRewardFlow?.nodeKind === 'boss' ? 'Warden relic' : 'Lieutenant relic'}
+                    title={pendingRewardFlow?.nodeKind === 'boss'
+                        ? 'Claim the Gatekeeper Seal'
+                        : 'Install a combat relic'}
+                    subtitle="Permanent for the rest of the run."
+                    onConfirm={finishBodyModReward}
                 />
             )}
             {phase === 'puzzle-reward' && pendingPuzzleReward && (
@@ -1193,12 +1458,18 @@ function App()
                 <RunEndOverlay
                     variant="victory"
                     clutch={clutchVictory}
+                    stats={runStats}
                     onRestart={startNewRun}
                     onMainMenu={returnToMenu}
                 />
             )}
             {phase === 'defeat' && (
-                <RunEndOverlay variant="defeat" onRestart={startNewRun} onMainMenu={returnToMenu} />
+                <RunEndOverlay
+                    variant="defeat"
+                    stats={{ ...runStats, pathLength: path.length }}
+                    onRestart={startNewRun}
+                    onMainMenu={returnToMenu}
+                />
             )}
         </div>
     );

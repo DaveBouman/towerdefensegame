@@ -1,8 +1,10 @@
 import { CyberPanelChrome } from './CyberPanel';
+import type { RunStats } from '../../game/run/runStats';
 
 interface RunEndOverlayProps {
     variant: 'victory' | 'defeat';
     clutch?: boolean;
+    stats?: RunStats;
     onRestart: () => void;
     onMainMenu: () => void;
 }
@@ -25,6 +27,7 @@ const COPY = {
 export const RunEndOverlay = ({
     variant,
     clutch = false,
+    stats,
     onRestart,
     onMainMenu,
 }: RunEndOverlayProps) =>
@@ -43,6 +46,22 @@ export const RunEndOverlay = ({
                 <p className="run-end__eyebrow">{copy.eyebrow}</p>
                 <h1 className="run-end__title">{copy.title}</h1>
                 <p className="run-end__summary">{copy.summary}</p>
+
+                {stats && (
+                    <ul className="run-end__stats">
+                        <li><span>Battles won</span><strong>{stats.battlesWon}</strong></li>
+                        <li><span>Nodes cleared</span><strong>{stats.pathLength}</strong></li>
+                        <li><span>Damage dealt</span><strong>{stats.damageDealt}</strong></li>
+                        <li><span>Damage taken</span><strong>{stats.damageTaken}</strong></li>
+                        <li><span>Cards added</span><strong>{stats.cardsAdded}</strong></li>
+                        <li><span>Relics installed</span><strong>{stats.bodyModsCollected}</strong></li>
+                        <li><span>Creds earned</span><strong>{stats.credsEarned}</strong></li>
+                        {stats.ascensionLevel > 0 && (
+                            <li><span>Ascension</span><strong>{stats.ascensionLevel}</strong></li>
+                        )}
+                    </ul>
+                )}
+
                 <div className="run-end__actions">
                     <button type="button" className="run-end__button" onClick={onRestart}>
                         {copy.button}

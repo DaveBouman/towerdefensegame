@@ -3745,3 +3745,149 @@ html, body, #root {
     letter-spacing: 0.06em;
     text-transform: uppercase;
 }
+
+.run-end__stats {
+    list-style: none;
+    margin: 1rem 0 1.25rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid rgba(122, 240, 255, 0.18);
+    background: rgba(4, 10, 18, 0.55);
+    display: grid;
+    gap: 0.45rem;
+}
+
+.run-end__stats li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    color: rgba(220, 235, 255, 0.82);
+    font-size: 0.92rem;
+}
+
+.run-end__stats strong {
+    color: #9df0d0;
+}
+
+.card-reward__synergy {
+    display: block;
+    margin-top: 0.35rem;
+    color: #7af0ff;
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.body-mod-reward__choices {
+    display: grid;
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.body-mod-reward__choice {
+    text-align: left;
+    padding: 0.85rem 1rem;
+    border: 1px solid rgba(255, 120, 180, 0.35);
+    background: rgba(8, 6, 14, 0.8);
+    color: inherit;
+    cursor: pointer;
+}
+
+.body-mod-reward__choice:hover {
+    border-color: rgba(255, 150, 200, 0.75);
+    box-shadow: 0 0 18px rgba(255, 100, 180, 0.18);
+}
+
+.body-mod-reward__label {
+    display: block;
+    font-size: 1.05rem;
+    color: #ffd4f0;
+}
+
+.body-mod-reward__effect {
+    display: block;
+    margin-top: 0.25rem;
+    color: #9df0d0;
+}
+
+.body-mod-reward__blurb {
+    display: block;
+    margin-top: 0.35rem;
+    color: rgba(220, 220, 240, 0.72);
+    font-size: 0.88rem;
+}
+
+.combat-recap {
+    position: fixed;
+    left: 1rem;
+    bottom: 6.5rem;
+    z-index: 12;
+    min-width: 12rem;
+    padding: 0.65rem 0.85rem;
+    border: 1px solid rgba(122, 240, 255, 0.22);
+    background: rgba(4, 10, 18, 0.82);
+    pointer-events: none;
+}
+
+.combat-recap__title {
+    margin: 0 0 0.35rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(122, 240, 255, 0.75);
+}
+
+.combat-recap__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.2rem;
+}
+
+.combat-recap__item {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.82rem;
+    color: rgba(220, 235, 255, 0.85);
+}
+
+.combat-recap__item--good strong { color: #9df0d0; }
+.combat-recap__item--bad strong { color: #f2a8bc; }
+
+.floor-briefing {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: grid;
+    place-items: center;
+}
+
+.floor-briefing__panel {
+    width: min(34rem, calc(100vw - 2rem));
+    padding: 1.25rem 1.35rem 1.4rem;
+}
+
+.floor-briefing__eyebrow,
+.floor-briefing__title,
+.floor-briefing__body,
+.floor-briefing__tip {
+    margin: 0 0 0.65rem;
+}
+
+.floor-briefing__dismiss {
+    margin-top: 0.5rem;
+}
+
+.main-menu__ascension-row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.main-menu__field-hint {
+    display: block;
+    margin-top: 0.35rem;
+    color: rgba(200, 220, 255, 0.72);
+    font-size: 0.82rem;
+}

@@ -16,6 +16,7 @@ interface CardRewardOverlayProps {
     title?: string;
     subtitle?: string;
     rules?: readonly string[];
+    synergyHints?: Record<string, string>;
     onConfirm: (definitionIds: string[]) => void;
     onSkip?: () => void;
     onReroll?: () => void;
@@ -30,6 +31,7 @@ export const CardRewardOverlay = ({
     title,
     subtitle,
     rules,
+    synergyHints,
     onConfirm,
     onSkip,
     onReroll,
@@ -128,6 +130,9 @@ export const CardRewardOverlay = ({
                                     {card.tier === 1 ? 'Common' : card.tier === 2 ? 'Uncommon' : 'Rare'}
                                 </span>
                                 <span className="card-reward__blurb">{card.blurb}</span>
+                                {synergyHints?.[card.definitionId] && (
+                                    <span className="card-reward__synergy">{synergyHints[card.definitionId]}</span>
+                                )}
                             </button>
                         );
                     })}

@@ -50,6 +50,8 @@ export interface CombatContext
     shatterCombatantIfNeeded (instanceId: string): string[];
     /** Card thief recovery, link rage, etc. */
     onCombatantKilled (instanceId: string): void;
+    /** Lieutenant phase shift when HP crosses threshold. */
+    tryTriggerPhaseShift (combatant: EnemyCombatant): { label: string; message: string } | null;
 }
 
 export class CombatResolver
@@ -58,6 +60,11 @@ export class CombatResolver
     private damageDealtThisAttack = 0;
     private armorGrantedThisAttack = 0;
     private poisonAppliedThisAttack = 0;
+    private playerDamageThisEnemyPhase = 0;
+    private battleTotalDamageDealt = 0;
+    private battleTotalDamageTaken = 0;
+    private lastAttackDamageDealt = 0;
+    private lastAttackArmorGained = 0;
     private runAttackCount: number;
     private doubleDamageThisAttack = false;
     private bodyguardRedirectUsedThisAttack = false;
@@ -114,6 +121,7 @@ export class CombatResolver
         this.poisonAppliedThisAttack = 0;
         this.doubleDamageThisAttack = false;
         this.bodyguardRedirectUsedThisAttack = false;
+        this.playerDamageThisEnemyPhase = 0;
 
         if (!this.ctx.puzzleMode)
         {
@@ -241,6 +249,8 @@ export class CombatResolver
         combatant.state.shield -= shieldAbsorbed;
         combatant.state.health = Math.max(0, combatant.state.health - healthDamage);
         this.damageDealtThisAttack += effectiveDamage;
+        this.battleTotalDamageDealt += effectiveDamage;
+        this.ctx.tryTriggerPhaseShift(combatant);
 
         const enemyKilled = wasAlive && combatant.state.health <= 0;
         const killExtras = enemyKilled
@@ -363,6 +373,8 @@ export class CombatResolver
             target.state.poison = (target.state.poison ?? 0) + remainingPoison;
         }
 
+        this.lastAttackDamageDealt = this.damageDealtThisAttack;
+        this.lastAttackArmorGained = this.armorGrantedThisAttack;
         this.damageDealtThisAttack = 0;
         this.armorGrantedThisAttack = 0;
         this.poisonAppliedThisAttack = 0;
@@ -435,6 +447,9 @@ export class CombatResolver
 
         this.ctx.player.shield -= shieldAbsorbed;
         this.ctx.player.health = Math.max(0, this.ctx.player.health - healthDamage);
+        const totalTaken = shieldAbsorbed + healthDamage;
+        this.playerDamageThisEnemyPhase += totalTaken;
+        this.battleTotalDamageTaken += totalTaken;
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: this.ctx.player.shield });
 
@@ -630,5 +645,22 @@ export class CombatResolver
         const totals = this.getModifierTotals();
 
         return scaleIncomingDamage(damage, totals.enemyAttack, totals.playerDamageTaken);
+    }
+
+    getCombatRecap (): { damageDealt: number; armorGained: number; damageTaken: number }
+    {
+        return {
+            damageDealt: this.lastAttackDamageDealt,
+            armorGained: this.lastAttackArmorGained,
+            damageTaken: this.playerDamageThisEnemyPhase,
+        };
+    }
+
+    getBattleDamageTotals (): { dealt: number; taken: number }
+    {
+        return {
+            dealt: this.battleTotalDamageDealt,
+            taken: this.battleTotalDamageTaken,
+        };
     }
 }

@@ -95,13 +95,13 @@ describe('runMap', () =>
         expect(rowZero.every((node) => node.reward?.kind === 'card' && node.reward.pool === 'standard')).toBe(true);
     });
 
-    it('gives lieutenants elite card rewards', () =>
+    it('gives lieutenants compound card + relic rewards', () =>
     {
         seedScope('map-semi-boss-reward', 'map');
         const map = generateRunMap();
         const semiBossRow = map.nodes.filter((node) => node.kind === 'semi-boss');
 
-        expect(semiBossRow.every((node) => node.reward?.kind === 'card' && node.reward.pool === 'elite')).toBe(true);
+        expect(semiBossRow.every((node) => node.reward?.kind === 'compound')).toBe(true);
     });
 
     it('always places safehouses in the column before the warden', () =>

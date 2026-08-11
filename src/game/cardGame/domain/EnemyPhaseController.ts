@@ -94,6 +94,7 @@ export class EnemyPhaseController
                 globalEnemyTurns: this.enemyTurnsTaken,
                 bonusAttack: (combatant.linkRageAttackBonus ?? 0) + (combatant.rerollTaxAttackBonus ?? 0),
                 bonusTraps: combatant.pendingExtraTraps ?? 0,
+                phaseShiftActive: combatant.phaseShiftActive === true,
             });
             const allySteps = planAllySupportSteps(
                 combatant,

@@ -111,15 +111,18 @@ export class CardGameSession
         rerollsRemaining?: number,
         runModifiers: readonly string[] = [],
         runGold = 0,
+        enemyHealthMultiplier = 1,
     )
     {
         this.puzzleMode = puzzleMode;
         this.bodyMods = bodyMods;
         this.runGold = Math.max(0, runGold);
 
+        const healthMultiplier = Math.max(0.5, enemyHealthMultiplier);
+
         for (const [ index, definitionId ] of normalizeEnemyIds(enemyIds).entries())
         {
-            this.combatants.push(createEnemyCombatant(`enemy-${index}`, definitionId));
+            this.combatants.push(createEnemyCombatant(`enemy-${index}`, definitionId, healthMultiplier));
             this.nextCombatantIndex = index + 1;
         }
 
@@ -156,6 +159,7 @@ export class CardGameSession
             resolveAttackTargetId: (explicit) => this.resolveAttackTargetId(explicit),
             shatterCombatantIfNeeded: (instanceId) => this.shatterCombatantIfNeeded(instanceId),
             onCombatantKilled: (instanceId) => this.onCombatantKilled(instanceId),
+            tryTriggerPhaseShift: (combatant) => this.tryTriggerPhaseShift(combatant),
         }, runAttackCount);
         this.enemyPhase = new EnemyPhaseController({
             combatants: this.combatants,
@@ -661,6 +665,49 @@ export class CardGameSession
     hasMultipleEnemies (): boolean
     {
         return this.getLivingCombatants().length > 1;
+    }
+
+    tryTriggerPhaseShift (combatant: EnemyCombatant): { label: string; message: string } | null
+    {
+        if (combatant.phaseShiftActive)
+        {
+            return null;
+        }
+
+        const passive = getEnemyPassive(combatant.definition.passives, 'phaseShift');
+
+        if (!passive || combatant.state.maxHealth <= 0)
+        {
+            return null;
+        }
+
+        const ratio = combatant.state.health / combatant.state.maxHealth;
+
+        if (ratio > passive.healthRatio)
+        {
+            return null;
+        }
+
+        combatant.phaseShiftActive = true;
+
+        const payload = {
+            label: passive.label,
+            message: passive.message,
+        };
+
+        CardGameEventBus.emit(CARD_GAME_EVENTS.PHASE_SHIFT, payload);
+
+        return payload;
+    }
+
+    getCombatRecap (): { damageDealt: number; armorGained: number; damageTaken: number }
+    {
+        return this.combat.getCombatRecap();
+    }
+
+    getBattleDamageTotals (): { dealt: number; taken: number }
+    {
+        return this.combat.getBattleDamageTotals();
     }
 
     /** Adds a living combatant mid-battle (spawn / shatter). */

@@ -23,6 +23,7 @@ export const BODY_MOD_IDS = {
     carapaceWeave: 'carapace-weave',
     pyreLink: 'pyre-link',
     hemorrhageCoil: 'hemorrhage-coil',
+    gatekeeperSeal: 'gatekeeper-seal',
 } as const;
 
 /** Attacks that trigger Mark VII's double-damage proc (7th, 14th, …). */
@@ -113,6 +114,12 @@ export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
         blurb: 'Bleed firmware overclocks rupture payloads mid-chain.',
         effect: 'Bleed ability damage ×1.5.',
     },
+    {
+        id: BODY_MOD_IDS.gatekeeperSeal,
+        label: 'Gatekeeper Seal',
+        blurb: 'Warden core shard — still warm from the final gate.',
+        effect: '+15 max integrity and +1 energy each round for the rest of the run.',
+    },
 ];
 
 const bodyModMap = new Map(BODY_MOD_DEFINITIONS.map((mod) => [ mod.id, mod ]));
@@ -132,12 +139,31 @@ export const getBodyModDefinitionOrThrow = (id: string): BodyModDefinition =>
     return definition;
 };
 
+/** Relics offered after lieutenant victories. */
+export const LIEUTENANT_RELIC_POOL: readonly string[] = [
+    BODY_MOD_IDS.markSeven,
+    BODY_MOD_IDS.reactivePlating,
+    BODY_MOD_IDS.venomLatch,
+    BODY_MOD_IDS.razorFeed,
+    BODY_MOD_IDS.pyreLink,
+    BODY_MOD_IDS.hemorrhageCoil,
+    BODY_MOD_IDS.carapaceWeave,
+    BODY_MOD_IDS.overclockCell,
+];
+
+export type BodyModRewardPool = 'standard' | 'lieutenant' | 'warden';
+
 /** Body mods that can drop from the wheel or black-ice relic (not already owned). */
 export const rollBodyModReward = (ownedIds: readonly string[]): string | null =>
+    rollBodyModFromPool(BODY_MOD_DEFINITIONS.map((mod) => mod.id), ownedIds);
+
+/** Rolls a relic for battle rewards (lieutenant pool or warden unique). */
+export const rollBodyModFromPool = (
+    pool: readonly string[],
+    ownedIds: readonly string[],
+): string | null =>
 {
-    const available = BODY_MOD_DEFINITIONS
-        .map((mod) => mod.id)
-        .filter((id) => !ownedIds.includes(id));
+    const available = pool.filter((id) => !ownedIds.includes(id));
 
     if (available.length === 0)
     {
@@ -145,4 +171,27 @@ export const rollBodyModReward = (ownedIds: readonly string[]): string | null =>
     }
 
     return pickRandom(available);
+};
+
+export const rollBattleBodyModReward = (
+    pool: BodyModRewardPool,
+    ownedIds: readonly string[],
+): string | null =>
+{
+    if (pool === 'warden')
+    {
+        if (!ownedIds.includes(BODY_MOD_IDS.gatekeeperSeal))
+        {
+            return BODY_MOD_IDS.gatekeeperSeal;
+        }
+
+        return rollBodyModFromPool(LIEUTENANT_RELIC_POOL, ownedIds);
+    }
+
+    if (pool === 'lieutenant')
+    {
+        return rollBodyModFromPool(LIEUTENANT_RELIC_POOL, ownedIds);
+    }
+
+    return rollBodyModReward(ownedIds);
 };

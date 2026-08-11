@@ -43,6 +43,14 @@ export const ENEMY_PASSIVE_DEFAULTS: Record<EnemyPassiveId, EnemyPassiveConfig> 
     bodyguard: { id: 'bodyguard', protectDefinitionId: 'glass-striker' },
     stutterClock: { id: 'stutterClock', everyGlobalTurns: 2 },
     phantomIntent: { id: 'phantomIntent' },
+    phaseShift: {
+        id: 'phaseShift',
+        healthRatio: 0.5,
+        label: 'Phase 2',
+        message: 'Systems overclock — pressure intensifies.',
+        attackBonus: 4,
+        extraTraps: 1,
+    },
 };
 
 export const normalizeEnemyPassives = (

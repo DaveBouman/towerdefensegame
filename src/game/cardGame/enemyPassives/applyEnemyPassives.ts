@@ -30,6 +30,8 @@ export interface EnemyTurnPlanningContext {
     bonusAttack?: number;
     /** Extra traps queued for this turn plan. */
     bonusTraps?: number;
+    /** Lieutenant phase shift — adds attack/trap pressure below half HP. */
+    phaseShiftActive?: boolean;
 }
 
 const isLastStandActive = (
@@ -122,6 +124,7 @@ export const planEnemyTurnWithPassives = ({
     globalEnemyTurns = 0,
     bonusAttack = 0,
     bonusTraps = 0,
+    phaseShiftActive = false,
 }: EnemyTurnPlanningContext): EnemyTurnAction =>
 {
     const passives = enemy.passives;
@@ -130,11 +133,21 @@ export const planEnemyTurnWithPassives = ({
     const escalate = getEnemyPassive(passives, 'escalate');
     const dampen = getEnemyPassive(passives, 'dampenTiles');
     const pressure = getEnemyPassive(passives, 'pressureColumn');
+    const phaseShift = getEnemyPassive(passives, 'phaseShift');
     const inLastStand = lastStand ? isLastStandActive(enemyState, lastStand) : false;
     const baseHazards = inLastStand ? lastStand!.hazardsPerTurn : enemy.hazardsPerTurn;
     const extraHazards = (enrage?.extraTrapsPerTrap ?? 0) * enrageStacks;
     const escalateHazards = escalate ? escalate.trapsPerRamp * turnsTaken : 0;
-    let hazardCount = baseHazards + extraHazards + escalateHazards + bonusTraps;
+    let phaseBonusAttack = bonusAttack;
+    let phaseBonusTraps = bonusTraps;
+
+    if (phaseShiftActive && phaseShift)
+    {
+        phaseBonusAttack += phaseShift.attackBonus;
+        phaseBonusTraps += phaseShift.extraTraps;
+    }
+
+    let hazardCount = baseHazards + extraHazards + escalateHazards + phaseBonusTraps;
 
     if (escalate)
     {
@@ -159,7 +172,7 @@ export const planEnemyTurnWithPassives = ({
     steps.push(...buildCombatSteps(
         enemy,
         passives,
-        planCombatStep(enemy, enemyState, passives, enrageStacks, bonusAttack),
+        planCombatStep(enemy, enemyState, passives, enrageStacks, phaseBonusAttack),
         globalEnemyTurns,
     ));
 

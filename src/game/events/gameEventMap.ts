@@ -67,6 +67,8 @@ export interface GameEventMap {
         runAttackCount: number;
         rerollsRemaining: number;
         runGold?: number;
+        ascensionLevel?: number;
+        routeKind?: import('../run/runMap').RouteKind;
     };
     'start-puzzle': { puzzleId: string; startHealth: number; seed: number; bodyMods: string[]; runAttackCount: number };
     'puzzle-state': PuzzleState;
@@ -76,6 +78,8 @@ export interface GameEventMap {
         runAttackCount: number;
         goldStolen?: number;
         stolenCardIds?: readonly string[];
+        battleDamageDealt?: number;
+        battleDamageTaken?: number;
     };
     'battle-lost': {
         runAttackCount: number;
@@ -84,6 +88,12 @@ export interface GameEventMap {
     };
     'run-attack-count': { runAttackCount: number };
     'pile-view-open': PileViewPayload;
+    'combat-recap': {
+        damageDealt: number;
+        armorGained: number;
+        damageTaken: number;
+    };
+    'phase-shift': { label: string; message: string };
     'play-sfx': PlaySfxPayload;
     'set-bgm': SetBgmPayload;
 }

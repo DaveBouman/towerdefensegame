@@ -23,6 +23,8 @@ import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
 import { reseed } from '../random/rng';
 import { getRunPuzzle } from '../run/runPuzzles';
+import { getAscensionEnemyHealthMultiplier } from '../run/ascension';
+import { getRouteEnemyHealthMultiplier } from '../run/routeModifiers';
 import type { PuzzleModeConfig } from '../cardGame/domain/CardGameSession';
 import { unlockEnemies } from '../run/enemyBestiary';
 import {
@@ -71,6 +73,7 @@ export class Game extends Scene
     private unbindAudio?: () => void;
     private unbindBgm?: () => void;
     private pileInspectionBlocked = false;
+    private phaseShiftHandler?: (payload: { label: string; message: string }) => void;
 
     constructor ()
     {
@@ -184,7 +187,20 @@ export class Game extends Scene
     };
 
     private onStartBattle = (
-        { enemyId, enemyIds, startHealth, deck, seed, bodyMods, runAttackCount, rerollsRemaining, runModifiers, runGold }:
+        {
+            enemyId,
+            enemyIds,
+            startHealth,
+            deck,
+            seed,
+            bodyMods,
+            runAttackCount,
+            rerollsRemaining,
+            runModifiers,
+            runGold,
+            ascensionLevel = 0,
+            routeKind,
+        }:
         {
             enemyId?: string;
             enemyIds?: readonly string[];
@@ -196,6 +212,8 @@ export class Game extends Scene
             rerollsRemaining: number;
             runModifiers?: readonly string[];
             runGold?: number;
+            ascensionLevel?: number;
+            routeKind?: import('../run/runMap').RouteKind;
         },
     ): void =>
     {
@@ -210,6 +228,10 @@ export class Game extends Scene
                 ? [ enemyId ]
                 : [ GAME_RULES.defaultEnemyId ];
 
+        const enemyHealthMultiplier =
+            getAscensionEnemyHealthMultiplier(ascensionLevel)
+            * getRouteEnemyHealthMultiplier(routeKind);
+
         this.startBattle(
             battleEnemyIds,
             startHealth,
@@ -221,6 +243,7 @@ export class Game extends Scene
             rerollsRemaining,
             runModifiers ?? [],
             runGold ?? 0,
+            enemyHealthMultiplier,
         );
     };
 
@@ -275,6 +298,7 @@ export class Game extends Scene
         rerollsRemaining = GAME_RULES.rerollsPerFloor,
         runModifiers: readonly string[] = [],
         runGold = 0,
+        enemyHealthMultiplier = 1,
     ): void
     {
         resetBattleAudioState();
@@ -307,7 +331,14 @@ export class Game extends Scene
             puzzleMode ? 0 : rerollsRemaining,
             runModifiers,
             runGold,
+            enemyHealthMultiplier,
         );
+
+        this.phaseShiftHandler = (payload) =>
+        {
+            EventBus.emit(GAME_EVENTS.PHASE_SHIFT, payload);
+        };
+        CardGameEventBus.on(CARD_GAME_EVENTS.PHASE_SHIFT, this.phaseShiftHandler);
 
         this.handView = new CardHandView(this, layout, [ ...this.session.getHand() ], {
             onDragMove: (worldX, worldY) =>
@@ -483,6 +514,12 @@ export class Game extends Scene
 
     private endBattle (): void
     {
+        if (this.phaseShiftHandler)
+        {
+            CardGameEventBus.off(CARD_GAME_EVENTS.PHASE_SHIFT, this.phaseShiftHandler);
+            this.phaseShiftHandler = undefined;
+        }
+
         this.session?.cancelAttack();
         this.session?.cancelEnemyTurn();
         this.presenter?.unbind();
@@ -525,6 +562,7 @@ export class Game extends Scene
         const playerHealth = this.session.getPlayer().health;
         const runAttackCount = this.session.getRunAttackCount();
         const { goldStolen, stolenCardIds } = this.session.getRunBattleDeltas();
+        const battleDamage = this.session.getBattleDamageTotals();
 
         this.time.delayedCall(900, () =>
         {
@@ -534,6 +572,8 @@ export class Game extends Scene
                 runAttackCount,
                 goldStolen,
                 stolenCardIds,
+                battleDamageDealt: battleDamage.dealt,
+                battleDamageTaken: battleDamage.taken,
             });
         });
     }
@@ -929,6 +969,12 @@ export class Game extends Scene
                 if (result.kind === 'enemy-defeated')
                 {
                     this.winBattle();
+                    return;
+                }
+
+                if (result.kind === 'continue' && this.session)
+                {
+                    EventBus.emit(GAME_EVENTS.COMBAT_RECAP, this.session.getCombatRecap());
                 }
             },
         });

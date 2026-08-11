@@ -15,4 +15,5 @@ export const CARD_GAME_EVENTS = {
     ENEMY_TURN_CANCELLED: 'card-game-enemy-turn-cancelled',
     PLAYER_DEFEATED: 'card-game-player-defeated',
     PLAYER_HEALED: 'card-game-player-healed',
+    PHASE_SHIFT: 'card-game-phase-shift',
 } as const;

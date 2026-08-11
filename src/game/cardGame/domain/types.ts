@@ -43,6 +43,8 @@ export interface EnemyCombatant {
     queuedTurn: EnemyTurnAction | null;
     turnsTaken: number;
     enrageStacks: number;
+    /** Lieutenant phase shift triggered at HP threshold. */
+    phaseShiftActive?: boolean;
     /** Remaining fully blocked hits from the hitWard passive. */
     hitsBlockedRemaining?: number;
     /** One-turn attack spike when a linked ally dies. */

@@ -8,6 +8,7 @@ import {
 import {
     ELITE_REWARD_CARD_POOL,
     REWARD_CARD_POOL,
+    flattenRunReward,
     getCardTierOfferWeight,
     rewardForNodeKind,
     rollCardReward,
@@ -18,7 +19,7 @@ import { rollShopOffers, SHOP_HEAL_AMOUNT, SHOP_PRICES } from './shop';
 
 describe('rewards', () =>
 {
-    it('uses standard card rewards for street ops and elite pool for lieutenants', () =>
+    it('uses standard card rewards for street ops and compound rewards for lieutenants', () =>
     {
         expect(rewardForNodeKind('enemy')).toMatchObject({
             kind: 'card',
@@ -27,12 +28,13 @@ describe('rewards', () =>
             pickCount: 1,
         });
         expect(rewardForNodeKind('semi-boss')).toMatchObject({
-            kind: 'card',
-            pool: 'elite',
-            choiceCount: 3,
-            pickCount: 1,
+            kind: 'compound',
         });
-        expect(rewardForNodeKind('boss')).toBeUndefined();
+        expect(flattenRunReward(rewardForNodeKind('semi-boss')!)).toHaveLength(2);
+        expect(rewardForNodeKind('boss')).toMatchObject({
+            kind: 'body-mod',
+            pool: 'warden',
+        });
         expect(rewardForNodeKind('shop')).toBeUndefined();
     });
 

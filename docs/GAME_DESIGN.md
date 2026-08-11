@@ -62,7 +62,7 @@ Helpers: `getFloorForColumn`, `getFloorColumnRange`, `RUN_CONFIG.floorCount` in 
 - **Ripperdoc shop** (`ShopOverlay`, `shop.ts`): seeded offers (`seedScope(seed, shop:<nodeId>)`) — buy a card, body mod, Integrity heal, or remove a card from the run deck. Spend creds; leave without buying is always available.
 - **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
 - **Deck persists and grows**: the run owns the deck as a list of card definition ids (`getDefaultDeckDefinitionIds`). Each battle builds instances from those ids (`buildDeckFromDefinitionIds`).
-- **Victory rewards**: street ops grant a standard 3-pick-1 card reward; lieutenants/semi-bosses draw from the **elite** card pool (`SEMI_BOSS_CARD_REWARD` / `ELITE_REWARD_CARD_POOL`). Boss wins end the run (no card pick).
+- **Victory rewards**: street ops grant a standard 3-pick-1 card reward (skip allowed); lieutenants grant elite card + lieutenant relic; boss wins grant the **Gatekeeper Seal** relic then end the run.
 - Losing any battle, or clearing the boss, ends the run (`RunEndOverlay` → new run).
 - The map regenerates each run.
 
@@ -275,6 +275,8 @@ remain as a fallback if a portrait fails to load.
 - [x] **Column pressure** — Gridlock locks a telegraphed board column each turn (`pressureColumn` / `lock-column`)
 - [x] **Threshold telegraphs** — HUD shows Last Stand / Enrage breakpoints (`EnemyTargetView`)
 - [ ] **Perfect-fight rewards** — bonus reroll or card upgrade for clean wins
+- [x] **Ascension modifiers** — 0–10 tiers, +10% enemy integrity per level (`ascension.ts`, main menu)
+- [x] **Route risk tags** — hot/safe branches on the map (`routeKind`, `routeModifiers.ts`)
 
 #### Phase 3 — Meta (~1–2 weeks)
 
@@ -326,6 +328,7 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-11 | **Rewards, ascension, routing, and run polish.** Street ops: pick a card or take nothing. Lieutenants: elite card then lieutenant relic. Warden: **Gatekeeper Seal** relic (+15 max integrity, +1 energy). Ascension 0–10 (+10% enemy integrity per level) on Start run. Map **hot/safe** route tags (+15% / −10% enemy HP; hot pays +12 creds). Lieutenant **phase shift** at 50% HP (Smokebinder/Saboteur). Floor briefings, combat recap strip, reward synergy hints, run-end stats screen. |
 | 2026-08-11 | **Encounter pool sync.** Street + signal ambush share `battleEncounterPools.ts` / `battleEncounterRoll.ts`. **Bulwark Runner** and **Chrome Saint** duos added to late columns (6–8); signal ambushes use the same pools and duo expansion as the map. |
 | 2026-08-10 | **UI polish pass.** Shared cyber panel chrome (`CyberPanel.tsx`) applied across shop, safehouse, card rewards, run end, node visit. Card rewards use `CardChip`; phase-based canvas dimming; hand dock tray; cyberpunk theme extended to shop/rest/tutorial/banners/body mods/audio toggle. |
 | 2026-08-10 | **Deck / graveyard UI polish.** Pile inspector overlay restyled (corner brackets, scanlines, cyan deck / magenta graveyard accents, card slots with hover glow). Battlefield pile widgets use neon panels + grid well. |

@@ -20,7 +20,8 @@ export type EnemyPassiveId =
     | 'linkRage'
     | 'bodyguard'
     | 'stutterClock'
-    | 'phantomIntent';
+    | 'phantomIntent'
+    | 'phaseShift';
 
 export interface ThornsPassiveConfig {
     id: 'thorns';
@@ -183,6 +184,16 @@ export interface PhantomIntentPassiveConfig {
     id: 'phantomIntent';
 }
 
+export interface PhaseShiftPassiveConfig {
+    id: 'phaseShift';
+    /** Trigger when health / max health drops to or below this ratio. */
+    healthRatio: number;
+    label: string;
+    message: string;
+    attackBonus: number;
+    extraTraps: number;
+}
+
 export type EnemyPassiveConfig =
     | ThornsPassiveConfig
     | EnragePassiveConfig
@@ -205,6 +216,7 @@ export type EnemyPassiveConfig =
     | LinkRagePassiveConfig
     | BodyguardPassiveConfig
     | StutterClockPassiveConfig
-    | PhantomIntentPassiveConfig;
+    | PhantomIntentPassiveConfig
+    | PhaseShiftPassiveConfig;
 
 export type EnemyPassiveInput = EnemyPassiveId | EnemyPassiveConfig;

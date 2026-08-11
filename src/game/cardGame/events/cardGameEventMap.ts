@@ -29,4 +29,5 @@ export interface CardGameEventMap {
     'card-game-enemy-turn-cancelled': void;
     'card-game-player-defeated': { player: PlayerState };
     'card-game-player-healed': { player: PlayerState; amount: number };
+    'card-game-phase-shift': { label: string; message: string };
 }

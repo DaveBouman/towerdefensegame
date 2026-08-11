@@ -6,10 +6,13 @@ export const OVERCLOCK_CELL_BONUS = 1;
 export const CRED_SIPHON_BONUS = 8;
 
 export const getRunMaxHealth = (bodyMods: readonly string[]): number =>
-    GAME_RULES.player.maxHealth + (bodyMods.includes(BODY_MOD_IDS.chromeHeart) ? CHROME_HEART_BONUS : 0);
+    GAME_RULES.player.maxHealth
+    + (bodyMods.includes(BODY_MOD_IDS.chromeHeart) ? CHROME_HEART_BONUS : 0)
+    + (bodyMods.includes(BODY_MOD_IDS.gatekeeperSeal) ? 15 : 0);
 
 export const getBattleEnergyBonus = (bodyMods: readonly string[]): number =>
-    bodyMods.includes(BODY_MOD_IDS.overclockCell) ? OVERCLOCK_CELL_BONUS : 0;
+    (bodyMods.includes(BODY_MOD_IDS.overclockCell) ? OVERCLOCK_CELL_BONUS : 0)
+    + (bodyMods.includes(BODY_MOD_IDS.gatekeeperSeal) ? 1 : 0);
 
 export const getVictoryGoldBonus = (bodyMods: readonly string[]): number =>
     bodyMods.includes(BODY_MOD_IDS.credSiphon) ? CRED_SIPHON_BONUS : 0;
