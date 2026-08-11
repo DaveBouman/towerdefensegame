@@ -1,4 +1,5 @@
 import type { EnemyPassiveConfig } from '../../enemyPassives/types';
+import { getCardGameEnemyDefinition } from '../../config/enemyCatalog';
 
 export interface EnemyPassiveTooltipContent {
     title: string;
@@ -7,6 +8,8 @@ export interface EnemyPassiveTooltipContent {
 
 const percent = (ratio: number): string => `${Math.round(ratio * 100)}%`;
 
+const enemyLabel = (definitionId: string): string =>
+    getCardGameEnemyDefinition(definitionId)?.label ?? definitionId;
 export const resolveEnemyPassiveTooltip = (
     passive: EnemyPassiveConfig,
 ): EnemyPassiveTooltipContent =>
@@ -112,6 +115,26 @@ export const resolveEnemyPassiveTooltip = (
                         ? 'Never locks the chain-start column.'
                         : 'Any column may be locked.',
                     'The lock is telegraphed in the enemy intent.',
+                ],
+            };
+        case 'spawnMinion':
+            return {
+                title: 'Spawn',
+                lines: [
+                    `Deploys a ${enemyLabel(passive.minionId)} when under the living-minion cap (${passive.maxLivingMinions}).`,
+                    `Cadence: every ${passive.everyTurns} of this host's turns.`,
+                    passive.healthRatio !== undefined
+                        ? `Also spawns at ${Math.round(passive.healthRatio * 100)}% HP or below if no minion is alive.`
+                        : 'No low-HP emergency spawn.',
+                ].filter((line) => line !== 'No low-HP emergency spawn.'),
+            };
+        case 'shatterOnDeath':
+            return {
+                title: 'Shatter',
+                lines: [
+                    'When killed, this chassis breaks into separate hostiles.',
+                    `Parts: ${passive.parts.map(enemyLabel).join(', ')}.`,
+                    'Finish the pieces — the fight is not over when the frame drops.',
                 ],
             };
     }

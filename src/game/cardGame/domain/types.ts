@@ -100,6 +100,8 @@ export interface DamageResult {
     healthDamage: number;
     targetInstanceId?: string;
     enemyKilled?: boolean;
+    /** Combatants spawned by shatter-on-death (new instance ids). */
+    spawnedInstanceIds?: string[];
     healOnKill?: number;
     thornsDamage?: number;
     thornsShieldAbsorbed?: number;

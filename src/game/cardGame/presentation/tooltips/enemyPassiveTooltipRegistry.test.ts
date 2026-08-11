@@ -20,6 +20,8 @@ describe('enemyPassiveTooltipRegistry', () =>
             'dampenTiles',
             'curseHand',
             'pressureColumn',
+            'spawnMinion',
+            'shatterOnDeath',
         ]);
 
         for (const passive of passives)

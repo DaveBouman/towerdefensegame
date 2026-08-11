@@ -99,6 +99,8 @@ export const describeEnemyPassives = (
         dampenTiles: 'Dead Zone',
         curseHand: 'Curse Hand',
         pressureColumn: 'Column Pressure',
+        spawnMinion: 'Spawn',
+        shatterOnDeath: 'Shatter',
     };
 
     return enemy.passives.map((passive) => labels[passive.id] ?? passive.id);

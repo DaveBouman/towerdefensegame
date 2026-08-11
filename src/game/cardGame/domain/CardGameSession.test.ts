@@ -405,6 +405,46 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getPlayer().health).toBe(before + 7);
     });
 
+    it('shatters android into three parts on kill', () =>
+    {
+        const session = new CardGameSession('android');
+
+        session.setAttackTarget('enemy-0');
+        session.beginAttack();
+        const result = session.dealAttackDamage(999, 'enemy-0', 'attack');
+
+        expect(result.enemyKilled).toBe(true);
+        expect(result.spawnedInstanceIds).toHaveLength(3);
+        expect(session.getCombatant('enemy-0')).toBeUndefined();
+        expect(session.getLivingCombatants().map((c) => c.definitionId).sort()).toEqual([
+            'android-arm',
+            'android-core',
+            'android-legs',
+        ].sort());
+        expect(session.isEnemyDefeated()).toBe(false);
+    });
+
+    it('respawns a wire drone from broodframe on cadence', () =>
+    {
+        const session = new CardGameSession([ 'broodframe' ]);
+
+        session.completeSingleEnemyTurn({
+            instanceId: 'enemy-0',
+            enemyId: 'broodframe',
+            steps: [ { kind: 'attack', amount: 1 } ],
+        });
+        // First turn → turnsTaken=1, not on cadence yet
+        expect(session.getLivingCombatants().filter((c) => c.definitionId === 'wire-drone')).toHaveLength(0);
+
+        session.completeSingleEnemyTurn({
+            instanceId: 'enemy-0',
+            enemyId: 'broodframe',
+            steps: [ { kind: 'attack', amount: 1 } ],
+        });
+        // Second turn → turnsTaken=2, spawn
+        expect(session.getLivingCombatants().filter((c) => c.definitionId === 'wire-drone')).toHaveLength(1);
+    });
+
     it('keeps glitch active across enemy turns until energy resets', () =>
     {
         const session = new CardGameSession('basic');

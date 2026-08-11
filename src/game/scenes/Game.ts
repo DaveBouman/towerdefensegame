@@ -16,6 +16,7 @@ import { preloadEnemyPassiveIcons } from '../cardGame/presentation/icons/preload
 import { preloadEnemyPortraits } from '../cardGame/presentation/icons/preloadEnemyPortraits';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { resolveEnemyPhasePlayback } from '../cardGame/presentation/playback/enemyPhasePlayback';
+import { playFloatingText } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../cardGame/events/cardGameEvents';
 import { EventBus } from '../EventBus';
@@ -23,6 +24,7 @@ import { GAME_EVENTS } from '../events/gameEvents';
 import { reseed } from '../random/rng';
 import { getRunPuzzle } from '../run/runPuzzles';
 import type { PuzzleModeConfig } from '../cardGame/domain/CardGameSession';
+import { unlockEnemies } from '../run/enemyBestiary';
 import {
     bindGameAudioListeners,
     resetBattleAudioState,
@@ -113,6 +115,7 @@ export class Game extends Scene
         EventBus.on(GAME_EVENTS.RUN_PHASE, this.onRunPhase, this);
         CardGameEventBus.on(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
         CardGameEventBus.on(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
+        CardGameEventBus.on(CARD_GAME_EVENTS.COMBATANTS_CHANGED, this.onCombatantsChanged, this);
         this.scale.on('resize', this.onResize, this);
     }
 
@@ -563,6 +566,7 @@ export class Game extends Scene
         EventBus.off(GAME_EVENTS.RUN_PHASE, this.onRunPhase, this);
         CardGameEventBus.off(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
         CardGameEventBus.off(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
+        CardGameEventBus.off(CARD_GAME_EVENTS.COMBATANTS_CHANGED, this.onCombatantsChanged, this);
         this.mapBackground?.destroy();
         this.mapBackground = undefined;
         this.endBattle();
@@ -577,6 +581,47 @@ export class Game extends Scene
 
         this.deckView?.setStack(deckSize, this.session.getDeckTopCard() ?? null);
         this.graveyardView?.setStack(discardSize, this.session.getDiscardTopCard() ?? null);
+    };
+
+    private onCombatantsChanged = ({
+        added,
+        removed,
+        reason,
+    }: {
+        added: string[];
+        removed: string[];
+        reason: 'spawn' | 'shatter';
+    }): void =>
+    {
+        if (!this.session || !this.enemySquad)
+        {
+            return;
+        }
+
+        const spawned = added
+            .map((instanceId) => this.session!.getCombatant(instanceId))
+            .filter((combatant): combatant is NonNullable<typeof combatant> => Boolean(combatant));
+
+        this.enemySquad.applyRosterChange(this.session, spawned, removed);
+        this.syncBattleModifierLayout();
+        this.emitAttackReadiness();
+        unlockEnemies(spawned.map((combatant) => combatant.definitionId));
+
+        const anchor = this.enemySquad.firstView?.container;
+
+        if (!anchor)
+        {
+            return;
+        }
+
+        playFloatingText(
+            this,
+            anchor,
+            anchor.width / 2,
+            -8,
+            reason === 'shatter' ? 'SHATTER' : 'SPAWN',
+            reason === 'shatter' ? '#ff9a8a' : '#7af0ff',
+        );
     };
 
     private syncPileViews (): void

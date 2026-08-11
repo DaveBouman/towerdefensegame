@@ -74,6 +74,42 @@ export const ENEMY_IDENTITY: Record<string, EnemyIdentity> = {
         labelColor: '#7af0ff',
         portraitFile: 'gridlock.png',
     },
+    broodframe: {
+        accent: 0xff6b35,
+        silhouette: 'hexagon',
+        labelColor: '#ffb088',
+        portraitFile: 'warden.png',
+    },
+    'wire-drone': {
+        accent: 0x7af0ff,
+        silhouette: 'diamond',
+        labelColor: '#b8f7ff',
+        portraitFile: 'basic.png',
+    },
+    android: {
+        accent: 0xc0c8d8,
+        silhouette: 'octagon',
+        labelColor: '#e0e8f4',
+        portraitFile: 'saboteur.png',
+    },
+    'android-arm': {
+        accent: 0xf0a030,
+        silhouette: 'triangle',
+        labelColor: '#ffc878',
+        portraitFile: 'thornward.png',
+    },
+    'android-core': {
+        accent: 0x2ecc8a,
+        silhouette: 'circle',
+        labelColor: '#8fe8c0',
+        portraitFile: 'field-medic.png',
+    },
+    'android-legs': {
+        accent: 0x5dade2,
+        silhouette: 'pillar',
+        labelColor: '#9fd4ff',
+        portraitFile: 'gridlock.png',
+    },
     'training-dummy': {
         accent: 0x7a8499,
         silhouette: 'square',

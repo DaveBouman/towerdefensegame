@@ -41,6 +41,12 @@ const ENEMY_ROLE: Record<string, BestiaryRole> = {
     basic: 'street',
     thornward: 'street',
     gridlock: 'street',
+    broodframe: 'street',
+    'wire-drone': 'support',
+    android: 'street',
+    'android-arm': 'support',
+    'android-core': 'support',
+    'android-legs': 'support',
     saboteur: 'lieutenant',
     smokebinder: 'lieutenant',
     'field-medic': 'support',
@@ -55,6 +61,12 @@ const ENEMY_SUMMARY: Record<string, string> = {
     warden: 'Final gate. Hit Ward, long-chain Jammer, and Wet Blanket while shielded.',
     'field-medic': 'Low threat alone — keeps allies alive. Focus the Medic or burst through heals.',
     gridlock: 'Locks a telegraphed column each turn. Never the start column — plan around the squeeze.',
+    broodframe: '80 HP nest. Starts with a Wire Drone; respawns one every 2 turns or under 50% HP. Focus fire the drone or burn the frame.',
+    'wire-drone': '20 HP minion. High attack chance — kill it or eat chip damage while the Broodframe tanks.',
+    android: 'Severance chassis. On death it shatters into Arm, Core, and Legs — the fight continues.',
+    'android-arm': 'Shatter fragment with light Thorns. Prefer non-Attack finishers or soak the reflect.',
+    'android-core': 'Shatter fragment that favors shield. Slow burn or break armor first.',
+    'android-legs': 'Shatter fragment that carpets traps. Disarm or pay the board tax.',
 };
 
 const ROLE_ORDER: Record<BestiaryRole, number> = {

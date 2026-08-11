@@ -50,6 +50,8 @@ const PASSIVE_ROW_COLORS: Record<EnemyPassiveConfig['id'], number> = {
     dampenTiles: 0x9b8cff,
     curseHand: 0xc97b9b,
     pressureColumn: 0x00c8e0,
+    spawnMinion: 0x7af0ff,
+    shatterOnDeath: 0xff6b9a,
 };
 
 const ENEMY_BAR_BG = CYBER.enemyBarBg;

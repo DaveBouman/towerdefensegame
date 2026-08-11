@@ -225,6 +225,10 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (dormant while loop-reset is out of content), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
 | `field-medic` | Low personal threat — **ally support** in multi-enemy fights: heals weakest ally, can shield the most shielded ally (`allyActions` in `enemies.json`). Can appear as a duo partner in mid-run Street Ops. |
 | `gridlock` | **Column Pressure** — after each turn, locks one board column (telegraphed); you cannot place/move onto that column. Never locks the chain-start column. |
+| `broodframe` | **Spawn** — 80 HP host that opens with a **Wire Drone** (20 HP). Respawns a drone every 2 host turns, or under 50% HP if none live. Focus the drone or burn the frame. |
+| `wire-drone` | Fast chip damage minion for Broodframe fights. |
+| `android` (**Severance**) | **Shatter** — on death splits into Arm (thorns-lite), Core (shield-heavy), and Legs (traps). Fight continues until all parts fall. |
+| `android-arm` / `android-core` / `android-legs` | Shatter fragments with distinct intents. |
 
 Each enemy should force a **different deck shape and chain strategy**.
 
@@ -337,6 +341,7 @@ remain as a fallback if a portrait fails to load.
 | 2026-08-10 | **Player status layout.** Active battle-modifier chips anchor below the full RUNNER / body-mod trait stack (icon centers no longer overlap the name or trait row). |
 | 2026-08-10 | **Steam-ready main menu.** Home / Settings / How to play / Credits / Quit. Settings holds seed, Master/Music/SFX, text size, fullscreen, and replay tutorial tips. Desktop bridge `window.signalChainDesktop` documented in `docs/electron-steam.md` for future Electron packaging. |
 | 2026-08-10 | **Split audio buses.** Main menu exposes Master / Music / SFX sliders plus mute (`audioSettings.ts`). Effective gains are `master × bus`; BGM still multiplies per-track `BGM_LEVEL`. Legacy single volume migrates into master. |
+| 2026-08-11 | **Broodframe + Severance enemies.** Broodframe (80 HP) opens with a Wire Drone (20 HP) and respawns drones on cadence / low HP (`spawnMinion`). Severance chassis shatters into Arm/Core/Legs on death (`shatterOnDeath`). Mid-battle `addCombatant` + squad UI sync via `COMBATANTS_CHANGED`. |
 | 2026-08-10 | **Thorns retune.** Thornward (and default thorns) reflect **1** damage per Attack card hit (was 4 / default 2). |
 | 2026-08-10 | **Boost scales battle mods.** Field Boost now multiplies Hardwire/Glitch/Patch/Overclock deltas (e.g. Boost → Hardwire = +20% shield gained). Previously Boost was consumed with no effect because battle-mod cards have no damage/armor. |
 | 2026-08-10 | **Reroute rename.** Player-facing **Joker** card renamed to **Reroute** (internal id `joker` unchanged). Fits Signal Chain routing lore — mid-chain direction pick. |

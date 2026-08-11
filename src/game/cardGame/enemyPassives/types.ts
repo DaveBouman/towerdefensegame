@@ -10,7 +10,9 @@ export type EnemyPassiveId =
     | 'escalate'
     | 'dampenTiles'
     | 'curseHand'
-    | 'pressureColumn';
+    | 'pressureColumn'
+    | 'spawnMinion'
+    | 'shatterOnDeath';
 
 export interface ThornsPassiveConfig {
     id: 'thorns';
@@ -104,6 +106,26 @@ export interface PressureColumnPassiveConfig {
     avoidStartColumn: boolean;
 }
 
+/** Spawns a minion after this enemy's turn on a cadence (and optionally at low HP). */
+export interface SpawnMinionPassiveConfig {
+    id: 'spawnMinion';
+    /** Enemy definition id for the spawned minion. */
+    minionId: string;
+    /** Spawn when this combatant's turnsTaken is a multiple of this (after the turn). */
+    everyTurns: number;
+    /** Cap on living minions of `minionId` while this host is alive. */
+    maxLivingMinions: number;
+    /** Also spawn when host HP / max HP drops to this ratio (if under the minion cap). */
+    healthRatio?: number;
+}
+
+/** On death, remove this combatant and spawn these part enemies. */
+export interface ShatterOnDeathPassiveConfig {
+    id: 'shatterOnDeath';
+    /** Definition ids spawned when this enemy is killed (order = squad order). */
+    parts: string[];
+}
+
 export type EnemyPassiveConfig =
     | ThornsPassiveConfig
     | EnragePassiveConfig
@@ -116,6 +138,8 @@ export type EnemyPassiveConfig =
     | EscalatePassiveConfig
     | DampenTilesPassiveConfig
     | CurseHandPassiveConfig
-    | PressureColumnPassiveConfig;
+    | PressureColumnPassiveConfig
+    | SpawnMinionPassiveConfig
+    | ShatterOnDeathPassiveConfig;
 
 export type EnemyPassiveInput = EnemyPassiveId | EnemyPassiveConfig;

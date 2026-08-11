@@ -24,6 +24,17 @@ export const ENEMY_PASSIVE_DEFAULTS: Record<EnemyPassiveId, EnemyPassiveConfig> 
     dampenTiles: { id: 'dampenTiles', parity: 'even', multiplier: 0.5, everyTurns: 2, duration: 1 },
     curseHand: { id: 'curseHand', cardId: 'burden', count: 1 },
     pressureColumn: { id: 'pressureColumn', avoidStartColumn: true },
+    spawnMinion: {
+        id: 'spawnMinion',
+        minionId: 'wire-drone',
+        everyTurns: 2,
+        maxLivingMinions: 1,
+        healthRatio: 0.5,
+    },
+    shatterOnDeath: {
+        id: 'shatterOnDeath',
+        parts: [ 'android-arm', 'android-core', 'android-legs' ],
+    },
 };
 
 export const normalizeEnemyPassives = (

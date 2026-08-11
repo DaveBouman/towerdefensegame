@@ -47,6 +47,8 @@ const rollAmbushEnemies = (row: number): { enemyId: string; enemyIds?: string[] 
         row >= MEDIC_DUO_START_ROW
         && row <= MEDIC_DUO_END_ROW
         && enemyId !== 'field-medic'
+        && enemyId !== 'android'
+        && enemyId !== 'broodframe'
         && random() < MEDIC_DUO_CHANCE
     )
     {

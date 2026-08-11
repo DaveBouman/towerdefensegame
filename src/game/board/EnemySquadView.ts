@@ -16,6 +16,7 @@ export class EnemySquadView
     private readonly entries: SquadEntry[] = [];
     private targetPickResolver: ((instanceId: string) => void) | null = null;
     private selectedId: string | null = null;
+    private layout: BoardLayout;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -24,28 +25,88 @@ export class EnemySquadView
         private readonly onSelect?: (instanceId: string) => void,
     )
     {
+        this.layout = layout;
         const slots = computeEnemySlots(layout, combatants.length);
 
         combatants.forEach((combatant, index) =>
         {
             const slot = slots[index]!;
-            const slotLayout: BoardLayout = {
-                ...layout,
-                enemyX: slot.x,
-                enemyY: slot.y,
-                enemySize: slot.size,
-            };
-            const view = new EnemyTargetView(this.scene, slotLayout, combatant.state, combatant.definitionId);
-
-            view.setEnemyLabel(combatant.definition.label);
-            view.setCombatTraits(getEnemyCombatTraits(combatant.definition));
-            view.setEnemyPassives(combatant.definition.passives);
-            view.setEnrageStacks(combatant.enrageStacks);
-            view.reposition(slot.x, slot.y);
-            view.setTargetClickHandler(() => this.onEnemyClicked(combatant.instanceId));
-
-            this.entries.push({ combatant, view });
+            this.entries.push(this.createEntry(combatant, slot));
         });
+    }
+
+    private createEntry (
+        combatant: EnemyCombatant,
+        slot: { x: number; y: number; size: number },
+    ): SquadEntry
+    {
+        const slotLayout: BoardLayout = {
+            ...this.layout,
+            enemyX: slot.x,
+            enemyY: slot.y,
+            enemySize: slot.size,
+        };
+        const view = new EnemyTargetView(this.scene, slotLayout, combatant.state, combatant.definitionId);
+
+        view.setEnemyLabel(combatant.definition.label);
+        view.setCombatTraits(getEnemyCombatTraits(combatant.definition));
+        view.setEnemyPassives(combatant.definition.passives);
+        view.setEnrageStacks(combatant.enrageStacks);
+        view.reposition(slot.x, slot.y);
+        view.setTargetClickHandler(() => this.onEnemyClicked(combatant.instanceId));
+
+        return { combatant, view };
+    }
+
+    /** Inserts a newly spawned combatant (caller should applyLayout once after a batch). */
+    addCombatant (combatant: EnemyCombatant): void
+    {
+        if (this.entries.some((entry) => entry.combatant.instanceId === combatant.instanceId))
+        {
+            return;
+        }
+
+        this.entries.push(this.createEntry(combatant, {
+            x: this.layout.enemyX,
+            y: this.layout.enemyY,
+            size: this.layout.enemySize,
+        }));
+    }
+
+    /** Removes a shattered / despawned combatant view (caller should applyLayout after a batch). */
+    removeCombatant (instanceId: string): void
+    {
+        const index = this.entries.findIndex((entry) => entry.combatant.instanceId === instanceId);
+
+        if (index < 0)
+        {
+            return;
+        }
+
+        const [ removed ] = this.entries.splice(index, 1);
+        removed?.view.destroy();
+    }
+
+    /** Apply add/remove then relayout + sync once. */
+    applyRosterChange (
+        session: CardGameSession,
+        added: readonly EnemyCombatant[],
+        removedIds: readonly string[],
+    ): void
+    {
+        for (const instanceId of removedIds)
+        {
+            this.removeCombatant(instanceId);
+        }
+
+        for (const combatant of added)
+        {
+            this.addCombatant(combatant);
+        }
+
+        this.applyLayout(this.layout);
+        this.syncFromSession(session);
+        this.showAllIntents(session);
     }
 
     get containers (): Phaser.GameObjects.Container[]
@@ -83,6 +144,7 @@ export class EnemySquadView
 
     applyLayout (layout: BoardLayout): void
     {
+        this.layout = layout;
         const slots = computeEnemySlots(layout, this.entries.length);
 
         this.entries.forEach((entry, index) =>

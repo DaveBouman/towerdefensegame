@@ -99,12 +99,12 @@ const SEMI_BOSS_ENEMY_POOL: readonly string[] = [ 'smokebinder', 'saboteur' ];
 const ROW_ENEMY_POOLS: readonly (readonly string[])[] = [
     [ 'basic' ],
     [ 'basic', 'thornward' ],
-    [ 'basic', 'thornward' ],
-    [ 'thornward', 'saboteur' ],
-    [ 'thornward', 'saboteur', 'gridlock' ],
-    [ 'saboteur', 'smokebinder', 'gridlock' ],
-    [ 'saboteur', 'smokebinder', 'gridlock' ],
-    [ 'saboteur', 'smokebinder' ],
+    [ 'basic', 'thornward', 'broodframe' ],
+    [ 'thornward', 'saboteur', 'android' ],
+    [ 'thornward', 'saboteur', 'gridlock', 'broodframe' ],
+    [ 'saboteur', 'smokebinder', 'gridlock', 'android' ],
+    [ 'saboteur', 'smokebinder', 'gridlock', 'broodframe' ],
+    [ 'saboteur', 'smokebinder', 'android' ],
     [ 'smokebinder', 'gridlock' ],
     [ 'smokebinder' ],
     [ 'warden' ],
@@ -209,11 +209,17 @@ const resolveBattleEnemies = (
         ? pickRandom(SEMI_BOSS_ENEMY_POOL)
         : pickRandom(ROW_ENEMY_POOLS[row] ?? ROW_ENEMY_POOLS[0]!);
 
+    if (enemyId === 'broodframe')
+    {
+        return { enemyId, enemyIds: [ 'broodframe', 'wire-drone' ] };
+    }
+
     if (
         kind === 'enemy'
         && row >= MEDIC_DUO_START_ROW
         && row <= MEDIC_DUO_END_ROW
         && enemyId !== 'field-medic'
+        && enemyId !== 'android'
         && random() < MEDIC_DUO_CHANCE
     )
     {

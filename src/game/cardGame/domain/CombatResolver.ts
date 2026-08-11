@@ -45,6 +45,8 @@ export interface CombatContext
     setAttackTargetId (instanceId: string | null): void;
     ensureAttackTarget (): string | null;
     resolveAttackTargetId (explicit?: string): string;
+    /** Shatter parent on kill; returns spawned part instance ids. */
+    shatterCombatantIfNeeded (instanceId: string): string[];
 }
 
 export class CombatResolver
@@ -229,31 +231,9 @@ export class CombatResolver
         this.damageDealtThisAttack += effectiveDamage;
 
         const enemyKilled = wasAlive && combatant.state.health <= 0;
-        let healOnKill = 0;
-
-        if (enemyKilled)
-        {
-            if (this.ctx.getAttackTargetId() === targetId)
-            {
-                this.ctx.setAttackTargetId(null);
-            }
-
-            CardGameEventBus.emit(CARD_GAME_EVENTS.ENEMY_DEFEATED, {
-                enemy: { ...combatant.state },
-                instanceId: targetId,
-            });
-
-            if (sourceDefinitionId)
-            {
-                const sourceDefinition = getCardDefinitionOrThrow(sourceDefinitionId);
-                healOnKill = getCardHealOnKill(sourceDefinition);
-
-                if (healOnKill > 0)
-                {
-                    this.healPlayer(healOnKill);
-                }
-            }
-        }
+        const killExtras = enemyKilled
+            ? this.handleEnemyKilled(combatant, targetId, sourceDefinitionId)
+            : {};
 
         const thornsDamage = computeThornsReflectDamage(
             combatant.definition.passives,
@@ -261,30 +241,64 @@ export class CombatResolver
             sourceBehaviorId,
         );
 
-        if (thornsDamage > 0)
-        {
-            const reflect = this.resolveEnemyAttack(thornsDamage);
-
-            return {
-                enemy: { ...combatant.state },
-                shieldAbsorbed,
-                healthDamage,
-                targetInstanceId: targetId,
-                enemyKilled,
-                healOnKill: healOnKill > 0 ? healOnKill : undefined,
-                thornsDamage: reflect.healthDamage + reflect.shieldAbsorbed,
-                thornsShieldAbsorbed: reflect.shieldAbsorbed,
-                thornsHealthDamage: reflect.healthDamage,
-            };
-        }
-
-        return {
+        const base: DamageResult = {
             enemy: { ...combatant.state },
             shieldAbsorbed,
             healthDamage,
             targetInstanceId: targetId,
             enemyKilled,
-            healOnKill: healOnKill > 0 ? healOnKill : undefined,
+            spawnedInstanceIds: killExtras.spawnedInstanceIds,
+            healOnKill: killExtras.healOnKill,
+        };
+
+        if (thornsDamage <= 0)
+        {
+            return base;
+        }
+
+        const reflect = this.resolveEnemyAttack(thornsDamage);
+
+        return {
+            ...base,
+            thornsDamage: reflect.healthDamage + reflect.shieldAbsorbed,
+            thornsShieldAbsorbed: reflect.shieldAbsorbed,
+            thornsHealthDamage: reflect.healthDamage,
+        };
+    }
+
+    private handleEnemyKilled (
+        combatant: EnemyCombatant,
+        instanceId: string,
+        sourceDefinitionId?: string,
+    ): { healOnKill?: number; spawnedInstanceIds?: string[] }
+    {
+        if (this.ctx.getAttackTargetId() === instanceId)
+        {
+            this.ctx.setAttackTargetId(null);
+        }
+
+        CardGameEventBus.emit(CARD_GAME_EVENTS.ENEMY_DEFEATED, {
+            enemy: { ...combatant.state },
+            instanceId,
+        });
+
+        const spawned = this.ctx.shatterCombatantIfNeeded(instanceId);
+        let healOnKill: number | undefined;
+
+        if (sourceDefinitionId)
+        {
+            const amount = getCardHealOnKill(getCardDefinitionOrThrow(sourceDefinitionId));
+
+            if (amount > 0)
+            {
+                this.healPlayer(amount);
+                healOnKill = amount;
+            }
+        }
+
+        return {
+            healOnKill,
+            spawnedInstanceIds: spawned.length > 0 ? spawned : undefined,
         };
     }
 
@@ -503,19 +517,9 @@ export class CombatResolver
         combatant.state.poison = Math.max(0, stacks - 1);
 
         const enemyKilled = wasAlive && combatant.state.health <= 0;
-
-        if (enemyKilled)
-        {
-            if (this.ctx.getAttackTargetId() === combatant.instanceId)
-            {
-                this.ctx.setAttackTargetId(null);
-            }
-
-            CardGameEventBus.emit(CARD_GAME_EVENTS.ENEMY_DEFEATED, {
-                enemy: { ...combatant.state },
-                instanceId: combatant.instanceId,
-            });
-        }
+        const killExtras = enemyKilled
+            ? this.handleEnemyKilled(combatant, combatant.instanceId)
+            : {};
 
         return {
             enemy: { ...combatant.state },
@@ -523,6 +527,7 @@ export class CombatResolver
             healthDamage,
             targetInstanceId: combatant.instanceId,
             enemyKilled,
+            spawnedInstanceIds: killExtras.spawnedInstanceIds,
         };
     }
 

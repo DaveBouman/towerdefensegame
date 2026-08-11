@@ -106,6 +106,78 @@
       ]
     },
     {
+      "id": "broodframe",
+      "label": "Broodframe",
+      "maxHealth": 80,
+      "attackDamage": 10,
+      "shieldGain": 14,
+      "attackChance": 0.4,
+      "hazardsPerTurn": 0,
+      "passives": [
+        {
+          "id": "spawnMinion",
+          "minionId": "wire-drone",
+          "everyTurns": 2,
+          "maxLivingMinions": 1,
+          "healthRatio": 0.5
+        }
+      ]
+    },
+    {
+      "id": "wire-drone",
+      "label": "Wire Drone",
+      "maxHealth": 20,
+      "attackDamage": 9,
+      "shieldGain": 4,
+      "attackChance": 0.75,
+      "hazardsPerTurn": 0
+    },
+    {
+      "id": "android",
+      "label": "Severance",
+      "maxHealth": 54,
+      "attackDamage": 12,
+      "shieldGain": 10,
+      "attackChance": 0.55,
+      "hazardsPerTurn": 1,
+      "passives": [
+        {
+          "id": "shatterOnDeath",
+          "parts": [ "android-arm", "android-core", "android-legs" ]
+        }
+      ]
+    },
+    {
+      "id": "android-arm",
+      "label": "Severed Arm",
+      "maxHealth": 20,
+      "attackDamage": 11,
+      "shieldGain": 4,
+      "attackChance": 0.7,
+      "hazardsPerTurn": 0,
+      "passives": [
+        { "id": "thorns", "reflectDamage": 1 }
+      ]
+    },
+    {
+      "id": "android-core",
+      "label": "Severed Core",
+      "maxHealth": 22,
+      "attackDamage": 6,
+      "shieldGain": 14,
+      "attackChance": 0.35,
+      "hazardsPerTurn": 0
+    },
+    {
+      "id": "android-legs",
+      "label": "Severed Legs",
+      "maxHealth": 18,
+      "attackDamage": 8,
+      "shieldGain": 6,
+      "attackChance": 0.45,
+      "hazardsPerTurn": 2
+    },
+    {
       "id": "training-dummy",
       "label": "Training Dummy",
       "maxHealth": 99999,

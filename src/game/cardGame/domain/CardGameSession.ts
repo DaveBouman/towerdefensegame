@@ -37,6 +37,7 @@ import { FieldEffects } from '../domain/FieldEffects';
 import { isPlayerOwnedCard } from '../domain/cardOwnership';
 import { createCardInstance } from '../domain/createCardInstance';
 import { createEnemyCombatant, isCombatantAlive, normalizeEnemyIds } from './enemyCombatants';
+import { shatterPartsThatFit, shouldSpawnMinionAfterTurn } from '../enemyPassives/spawnShatter';
 import type {
     ActivationStep,
     AttackReadiness,
@@ -75,6 +76,7 @@ export class CardGameSession
     /** Definition ids exhausted (played) this battle — battle-scoped only. */
     private readonly exhaustedDefinitionIds: string[] = [];
     private readonly combatants: EnemyCombatant[] = [];
+    private nextCombatantIndex = 0;
     private attackTargetId: string | null = null;
     private player: PlayerState;
     private energy: number;
@@ -105,6 +107,7 @@ export class CardGameSession
         for (const [ index, definitionId ] of normalizeEnemyIds(enemyIds).entries())
         {
             this.combatants.push(createEnemyCombatant(`enemy-${index}`, definitionId));
+            this.nextCombatantIndex = index + 1;
         }
 
         const maxHealth = getRunMaxHealth(bodyMods);
@@ -138,6 +141,7 @@ export class CardGameSession
             setAttackTargetId: (instanceId) => { this.attackTargetId = instanceId; },
             ensureAttackTarget: () => this.ensureAttackTarget(),
             resolveAttackTargetId: (explicit) => this.resolveAttackTargetId(explicit),
+            shatterCombatantIfNeeded: (instanceId) => this.shatterCombatantIfNeeded(instanceId),
         }, runAttackCount);
         this.enemyPhase = new EnemyPhaseController({
             combatants: this.combatants,
@@ -629,7 +633,102 @@ export class CardGameSession
 
     hasMultipleEnemies (): boolean
     {
-        return this.combatants.length > 1;
+        return this.getLivingCombatants().length > 1;
+    }
+
+    /** Adds a living combatant mid-battle (spawn / shatter). */
+    addCombatant (definitionId: string): EnemyCombatant
+    {
+        const combatant = createEnemyCombatant(`enemy-${this.nextCombatantIndex}`, definitionId);
+        this.nextCombatantIndex += 1;
+        this.combatants.push(combatant);
+
+        return combatant;
+    }
+
+    removeCombatant (instanceId: string): boolean
+    {
+        const index = this.combatants.findIndex((combatant) => combatant.instanceId === instanceId);
+
+        if (index < 0)
+        {
+            return false;
+        }
+
+        if (this.attackTargetId === instanceId)
+        {
+            this.attackTargetId = null;
+        }
+
+        this.combatants.splice(index, 1);
+
+        return true;
+    }
+
+    private emitCombatantsChanged (
+        added: readonly string[],
+        removed: readonly string[],
+        reason: 'spawn' | 'shatter',
+    ): void
+    {
+        CardGameEventBus.emit(CARD_GAME_EVENTS.COMBATANTS_CHANGED, {
+            added: [ ...added ],
+            removed: [ ...removed ],
+            reason,
+        });
+    }
+
+    /**
+     * On kill: if the combatant has shatterOnDeath, remove it and spawn parts.
+     * Emits COMBATANTS_CHANGED for UI sync.
+     */
+    shatterCombatantIfNeeded (instanceId: string): string[]
+    {
+        const combatant = this.getCombatant(instanceId);
+
+        if (!combatant)
+        {
+            return [];
+        }
+
+        const livingOthers = this.getLivingCombatants()
+            .filter((entry) => entry.instanceId !== instanceId)
+            .length;
+        const partIds = shatterPartsThatFit(combatant, livingOthers);
+
+        if (partIds.length === 0)
+        {
+            return [];
+        }
+
+        this.removeCombatant(instanceId);
+        const added = partIds.map((definitionId) => this.addCombatant(definitionId).instanceId);
+        this.emitCombatantsChanged(added, [ instanceId ], 'shatter');
+
+        return added;
+    }
+
+    /** After a host finishes its turn, maybe spawn a minion. */
+    trySpawnMinionAfterEnemyTurn (instanceId: string): EnemyCombatant | null
+    {
+        const host = this.getCombatant(instanceId);
+
+        if (!host)
+        {
+            return null;
+        }
+
+        const passive = shouldSpawnMinionAfterTurn(host, this.combatants);
+
+        if (!passive)
+        {
+            return null;
+        }
+
+        const spawned = this.addCombatant(passive.minionId);
+        this.emitCombatantsChanged([ spawned.instanceId ], [], 'spawn');
+
+        return spawned;
     }
 
     getAttackTargetId (): string | null
@@ -1058,6 +1157,11 @@ export class CardGameSession
     completeSingleEnemyTurn (action: EnemyTurnAction): void
     {
         this.enemyPhase.completeSingleEnemyTurn(action);
+
+        if (action.instanceId)
+        {
+            this.trySpawnMinionAfterEnemyTurn(action.instanceId);
+        }
     }
 
     completeEnemyPhase (): void
@@ -1156,7 +1260,7 @@ export class CardGameSession
 
     completeEnemyTurn (action: EnemyTurnAction): void
     {
-        this.enemyPhase.completeSingleEnemyTurn(action);
+        this.completeSingleEnemyTurn(action);
 
         if (this.enemyPhase.hasMoreEnemyTurnsInPhase())
         {
