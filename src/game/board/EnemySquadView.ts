@@ -169,6 +169,7 @@ export class EnemySquadView
             entry.combatant = combatant;
             entry.view.setHealth(combatant.state);
             entry.view.setEnrageStacks(combatant.enrageStacks);
+            entry.view.setOverclock(session.getEnemyOverclock());
             entry.view.setDefeated(!isCombatantAlive(combatant));
         }
 
@@ -237,6 +238,7 @@ export class EnemySquadView
 
         view.setHealth(combatant.state);
         view.setEnrageStacks(combatant.enrageStacks);
+        view.setOverclock(session.getEnemyOverclock());
         view.setDefeated(!isCombatantAlive(combatant));
     }
 

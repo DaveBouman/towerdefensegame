@@ -1,4 +1,4 @@
-import { poisonStatusName, poisonStatusNameUpper } from '../copy/strings';
+import { overclockStatusName, poisonStatusName, poisonStatusNameUpper } from '../copy/strings';
 import { ENEMY_PASSIVE_TEXTURE_KEY } from '../../ui/icons/enemyPassiveIcons';
 import { drawCornerBrackets, drawEnemySilhouette } from '../config/cyberpunkUiGraphics';
 import { CYBER } from '../config/cyberpunkTheme';
@@ -34,6 +34,9 @@ const SHIELD_BADGE_HEIGHT = 30;
 const SHIELD_BADGE_GAP = 8;
 const POISON_BADGE_HEIGHT = 28;
 const POISON_BADGE_GAP = 6;
+const OVERCLOCK_BADGE_HEIGHT = 28;
+const OVERCLOCK_BADGE_GAP = 6;
+const OVERCLOCK_BADGE_WIDTH = 128;
 const INTENT_ICON_SIZE = 28;
 const INTENT_AMOUNT_FONT_SIZE = 18;
 const INTENT_STACK_GAP = 3;
@@ -92,6 +95,9 @@ export class EnemyTargetView
     private readonly poisonBadge: Phaser.GameObjects.Container;
     private readonly poisonValueText: Phaser.GameObjects.Text;
     private displayedPoison = 0;
+    private readonly overclockBadge: Phaser.GameObjects.Container;
+    private readonly overclockValueText: Phaser.GameObjects.Text;
+    private displayedOverclock = 0;
     private readonly enemyLabel: Phaser.GameObjects.Text;
     private readonly combatTraitRowView: CombatTraitRowView;
     private combatTraitCount = 0;
@@ -312,6 +318,24 @@ export class EnemyTargetView
         this.poisonBadge = scene.add.container(enemySize / 2, 0, [ poisonBg, poisonLabel, this.poisonValueText ]);
         this.poisonBadge.setVisible(false);
 
+        const overclockBg = scene.add.rectangle(0, 0, OVERCLOCK_BADGE_WIDTH, OVERCLOCK_BADGE_HEIGHT, 0x2a1208, 0.92);
+        overclockBg.setStrokeStyle(2, 0xff6b35, 0.95);
+
+        const overclockLabel = scene.add.text(-56, 0, overclockStatusName(), {
+            ...uiTextStyle(13, '#ffb088', { bold: true }),
+        }).setOrigin(0, 0.5);
+
+        this.overclockValueText = scene.add.text(56, 0, '+0', {
+            ...uiTextStyle(18, '#ff9f43', { bold: true }),
+        }).setOrigin(1, 0.5);
+
+        this.overclockBadge = scene.add.container(enemySize / 2, 0, [
+            overclockBg,
+            overclockLabel,
+            this.overclockValueText,
+        ]);
+        this.overclockBadge.setVisible(false);
+
         container.add([
             this.threatRing,
             this.shieldRing,
@@ -329,6 +353,7 @@ export class EnemyTargetView
             this.targetPromptBadge,
             this.shieldBadge,
             this.poisonBadge,
+            this.overclockBadge,
         ]);
         this.container = container;
         this.lastEnemyState = enemy;
@@ -757,6 +782,7 @@ export class EnemyTargetView
         this.setShield(enemy.shield);
         this.setPoison(enemy.poison ?? 0);
         this.updateThresholdTelegraph(enemy);
+        this.syncStatusRowLayout();
     }
 
     setEnrageStacks (stacks: number): void
@@ -840,6 +866,19 @@ export class EnemyTargetView
         this.displayedPoison = Math.max(0, stacks);
         this.poisonValueText.setText(String(this.displayedPoison));
         this.poisonBadge.setVisible(this.displayedPoison > 0);
+        this.syncStatusRowLayout();
+    }
+
+    setOverclock (bonus: number): void
+    {
+        if (!this.container.active || !this.overclockBadge.active)
+        {
+            return;
+        }
+
+        this.displayedOverclock = Math.max(0, bonus);
+        this.overclockValueText.setText(`+${this.displayedOverclock}`);
+        this.overclockBadge.setVisible(this.displayedOverclock > 0);
         this.syncStatusRowLayout();
     }
 
@@ -1168,6 +1207,11 @@ export class EnemyTargetView
             bottom += POISON_BADGE_GAP + POISON_BADGE_HEIGHT;
         }
 
+        if (this.displayedOverclock > 0)
+        {
+            bottom += OVERCLOCK_BADGE_GAP + OVERCLOCK_BADGE_HEIGHT;
+        }
+
         return bottom;
     }
 
@@ -1176,6 +1220,7 @@ export class EnemyTargetView
         this.combatTraitRowView.setRowY(this.getTraitRowY());
         this.updateShieldBadgePosition();
         this.updatePoisonBadgePosition();
+        this.updateOverclockBadgePosition();
     }
 
     private updateShieldBadgePosition (): void
@@ -1195,6 +1240,23 @@ export class EnemyTargetView
         }
 
         this.poisonBadge.setY(y + POISON_BADGE_GAP + POISON_BADGE_HEIGHT / 2);
+    }
+
+    private updateOverclockBadgePosition (): void
+    {
+        let y = this.getContentStackBottomY();
+
+        if (this.displayedShield > 0)
+        {
+            y += SHIELD_BADGE_GAP + SHIELD_BADGE_HEIGHT;
+        }
+
+        if (this.displayedPoison > 0)
+        {
+            y += POISON_BADGE_GAP + POISON_BADGE_HEIGHT;
+        }
+
+        this.overclockBadge.setY(y + OVERCLOCK_BADGE_GAP + OVERCLOCK_BADGE_HEIGHT / 2);
     }
 
     private applyShieldVisuals (): void

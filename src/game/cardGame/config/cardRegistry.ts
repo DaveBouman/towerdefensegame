@@ -98,6 +98,8 @@ export interface GameRules {
     handSize: number;
     energyPerTurn: number;
     enemyDamageRampPerAttack: number;
+    /** Flat enemy attack added after each completed energy round. */
+    enemyStrengthPerRound: number;
     /** Fight HP rolls this fraction above/below the enemy's median maxHealth. */
     enemyHealthVariance: number;
     /** Hand rerolls shared across all fights on the current floor. */

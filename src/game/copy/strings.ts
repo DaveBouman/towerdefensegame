@@ -152,6 +152,7 @@ const EN = {
     // Combat traits
     'trait.damageCap': 'Damage Cap',
     'trait.hitWard': 'Hit Ward',
+    'status.overclock': 'Overclock',
 
     // Enemy intents
     'intent.shield': 'Shield',
@@ -218,3 +219,5 @@ export const poisonStatusName = (): string => cardLabel('poison');
 export const poisonStatusNameLower = (): string => poisonStatusName().toLowerCase();
 
 export const poisonStatusNameUpper = (): string => poisonStatusName().toUpperCase();
+
+export const overclockStatusName = (): string => t('status.overclock');

@@ -113,7 +113,7 @@ export const GameHud = () =>
         <aside className="game-hud">
             <div
                 className="game-hud__energy"
-                title="Energy: each Attack spends 1. When empty, the board clears and energy refills for the next round."
+                title="Energy: each Attack spends 1. When empty, the board clears, energy refills, and enemies overclock (+attack for the rest of the fight)."
             >
                 <span className="game-hud__energy-label">Energy</span>
                 <span className="game-hud__energy-pips">
@@ -144,8 +144,8 @@ export const GameHud = () =>
                     : needsTarget
                         ? 'Multiple hostiles detected — click an enemy panel to lock your target, then Attack.'
                         : turnState.energy > 0
-                            ? 'Place cards and attack — the enemy strikes back after each attack. Extra attacks this round make the enemy hit harder.'
-                            : 'Out of energy — the enemy acts, then your energy refills.'}
+                            ? 'Place cards and attack — the enemy strikes back after each attack. Extra attacks this round, and each energy refill, make them hit harder.'
+                            : 'Out of energy — the enemy acts, then overclocks as your energy refills.'}
             </p>
             {needsTarget && (
                 <p className="game-hud__target-prompt" role="status">

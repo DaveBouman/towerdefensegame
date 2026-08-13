@@ -642,7 +642,7 @@ export const MainMenuOverlay = ({
                                 <li>Starter seeds teach combos: Fire alternation, {poisonStatusName()}→Defends, Rupture bleed, Bulwark fortify, Surge overload.</li>
                                 <li>Echo repeats the previous card; Reroute steers mid-chain.</li>
                                 <li>Attack and defense cards off the chain still grant small bonuses.</li>
-                                <li>Each Attack spends energy; when empty, the board clears for a new round.</li>
+                                <li>Each Attack spends energy; when empty, the board clears and enemies overclock (+attack) for the rest of the fight.</li>
                                 <li>Pick map nodes to fight, shop, rest, or jack into signals — HP carries over.</li>
                                 <li>In multi-enemy fights, click a host to lock your target.</li>
                             </ol>

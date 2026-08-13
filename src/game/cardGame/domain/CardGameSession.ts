@@ -102,6 +102,8 @@ export class CardGameSession
     private player: PlayerState;
     private energy: number;
     private readonly maxEnergy: number;
+    /** Completed energy rounds — each one adds fight-long enemy attack. */
+    private completedEnergyRounds = 0;
     /** Original arrows for cards scrambled by redirect-hand this energy round. */
     private readonly handRedirectOriginals = new Map<string, {
         arrow: CardDirection;
@@ -342,10 +344,28 @@ export class CardGameSession
         return Math.max(0, this.getAttacksThisRound() - 1) * perAttack;
     }
 
-    /** Applies the round's escalation ramp to an enemy action's attack steps. */
+    /** Fight-long attack bonus: +N after each completed energy round. */
+    getEnemyOverclock (): number
+    {
+        if (this.puzzleMode)
+        {
+            return 0;
+        }
+
+        const perRound = Math.max(0, GAME_RULES.enemyStrengthPerRound ?? 0);
+
+        return this.completedEnergyRounds * perRound;
+    }
+
+    getCompletedEnergyRounds (): number
+    {
+        return this.completedEnergyRounds;
+    }
+
+    /** Applies intra-round ramp and fight-long overclock to enemy attack steps. */
     private rampEnemyAction (action: EnemyTurnAction): EnemyTurnAction
     {
-        const bonus = this.getEnemyDamageRamp();
+        const bonus = this.getEnemyDamageRamp() + this.getEnemyOverclock();
         const totals = aggregateBattleModifiers(this.battleModifiers);
 
         return {
@@ -1539,6 +1559,7 @@ export class CardGameSession
         this.clearHandRedirect();
         this.renewHand();
         this.resetEnergy();
+        this.completedEnergyRounds += 1;
         this.clearBattleModifiers();
 
         if (this.pendingHandRedirect)

@@ -1201,6 +1201,32 @@ describe('CardGameSession enemy turn', () =>
         expect(scaled?.steps[0]).toEqual({ kind: 'attack', amount: 10 + perAttack });
     });
 
+    it('overclocks enemy attack after each completed energy round', () =>
+    {
+        const session = new CardGameSession();
+        const perRound = GAME_RULES.enemyStrengthPerRound;
+
+        expect(session.getEnemyOverclock()).toBe(0);
+
+        session.finishPlayerRound();
+        expect(session.getEnemyOverclock()).toBe(perRound);
+
+        session.finishPlayerRound();
+        expect(session.getEnemyOverclock()).toBe(perRound * 2);
+
+        const combatant = session.getCombatants()[0]!;
+
+        combatant.queuedTurn = {
+            enemyId: 'basic',
+            instanceId: combatant.instanceId,
+            steps: [ { kind: 'attack', amount: 10 } ],
+        };
+
+        const [ scaled ] = session.prepareEnemyPhase();
+
+        expect(scaled?.steps[0]).toEqual({ kind: 'attack', amount: 10 + perRound * 2 });
+    });
+
     it('lets burden be placed as an inert board clog and blocks rerolling it', () =>
     {
         const session = new CardGameSession();
