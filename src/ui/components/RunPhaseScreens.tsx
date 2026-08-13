@@ -1,0 +1,297 @@
+import { GameHud } from './GameHud';
+import { PuzzleHud } from './PuzzleHud';
+import { PuzzleResultOverlay } from './PuzzleResultOverlay';
+import { RunMapOverlay } from './RunMapOverlay';
+import { RunEndOverlay } from './RunEndOverlay';
+import { CardRewardOverlay } from './CardRewardOverlay';
+import { BodyModRewardOverlay } from './BodyModRewardOverlay';
+import { CombatRecapStrip } from './CombatRecapStrip';
+import { FloorBriefingOverlay } from './FloorBriefingOverlay';
+import { NodeVisitOverlay } from './NodeVisitOverlay';
+import { ShopOverlay } from './ShopOverlay';
+import { RunEventOverlay } from './RunEventOverlay';
+import { RestOverlay } from './RestOverlay';
+import { PileViewOverlay } from './PileViewOverlay';
+import {
+    TutorialIntroOverlay,
+    TutorialCoachStrip,
+    TutorialOffChainTipOverlay,
+    TutorialRewardTipOverlay,
+} from '../tutorial/Tutorial';
+import { RunToast } from './RunToast';
+import { FloorBanner } from './FloorBanner';
+import { BattleIntroOverlay } from './BattleIntroOverlay';
+import { GameMenuButton } from './GameMenuButton';
+import { MainMenuOverlay } from './MainMenuOverlay';
+import { BodyModsPanel } from './BodyModsPanel';
+import { BATTLE_REWARD_RULES, PUZZLE_TRIAL_RULES } from '../../game/run/rewards';
+import { getFloorBriefing } from '../../game/run/floorBriefings';
+import { GAME_RULES } from '../../game/cardGame/config/cardRegistry';
+import { RUN_CONFIG } from '../../game/run/runMap';
+import type { RunController } from '../../runController/useRunController';
+
+type RunPhaseScreensProps = RunController;
+
+export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
+{
+    const {
+        phase,
+        pauseMenuOpen,
+        bodyMods,
+        runAttackCount,
+        seed,
+        tutorial,
+        map,
+        path,
+        playerHealth,
+        runMaxHealth,
+        gold,
+        deck,
+        currentFloor,
+        floorRerollsRemaining,
+        ascensionLevel,
+        departingNodeId,
+        availableIds,
+        floorBriefing,
+        setFloorBriefing,
+        floorBanner,
+        setFloorBanner,
+        runToast,
+        setRunToast,
+        battleIntroKind,
+        finishBattleIntro,
+        pickNode,
+        pendingRewardFlow,
+        currentRewardStep,
+        deckArchetypeScores,
+        rewardSynergyHints,
+        finishReward,
+        finishBodyModReward,
+        rerollReward,
+        pendingPuzzleReward,
+        finishPuzzleReward,
+        visit,
+        finishEvent,
+        startPuzzleFromEvent,
+        restHeal,
+        restUpgrade,
+        finishVisit,
+        buyShopCard,
+        buyShopBodyMod,
+        buyShopHeal,
+        buyShopRemove,
+        buyShopUpgrade,
+        puzzleResult,
+        finishPuzzleResult,
+        clutchVictory,
+        runStats,
+        ascensionUnlockedToast,
+        startRunFromMenu,
+        closePauseMenu,
+        startNewRun,
+        returnToMenu,
+        togglePauseMenu,
+        combatRecapLines,
+    } = props;
+
+    return (
+        <>
+            {phase !== 'victory' && phase !== 'defeat' && phase !== 'menu' && (
+                <GameMenuButton open={pauseMenuOpen} onClick={togglePauseMenu} />
+            )}
+            {bodyMods.length > 0 && phase !== 'victory' && phase !== 'defeat' && phase !== 'menu' && (
+                <BodyModsPanel
+                    bodyMods={bodyMods}
+                    runAttackCount={runAttackCount}
+                    className="body-mods-panel--persistent"
+                />
+            )}
+            {phase === 'menu' && (
+                <MainMenuOverlay
+                    mode="boot"
+                    seed={seed}
+                    onStart={startRunFromMenu}
+                    onReplayTutorial={tutorial.replayTutorial}
+                />
+            )}
+            {pauseMenuOpen && phase !== 'menu' && phase !== 'victory' && phase !== 'defeat' && (
+                <MainMenuOverlay
+                    mode="pause"
+                    seed={seed}
+                    onStart={closePauseMenu}
+                    onResume={closePauseMenu}
+                    onNewRun={startNewRun}
+                    onReplayTutorial={tutorial.replayTutorial}
+                />
+            )}
+            {phase === 'battle' && (
+                <>
+                    <GameHud />
+                    <CombatRecapStrip lines={combatRecapLines} />
+                    {tutorial.showBattleCoach && (
+                        <TutorialCoachStrip onDismiss={tutorial.dismissBattleCoach} />
+                    )}
+                    {tutorial.showOffChainTip && (
+                        <TutorialOffChainTipOverlay onDismiss={tutorial.dismissOffChainTip} />
+                    )}
+                </>
+            )}
+            {phase === 'puzzle' && (
+                <>
+                    <GameHud />
+                    <PuzzleHud />
+                </>
+            )}
+            <PileViewOverlay />
+            {phase === 'map' && tutorial.showIntro && (
+                <TutorialIntroOverlay onDismiss={tutorial.dismissIntro} />
+            )}
+            {tutorial.showRewardTip && (
+                <TutorialRewardTipOverlay onDismiss={tutorial.dismissRewardTip} />
+            )}
+            {floorBriefing !== null && getFloorBriefing(floorBriefing) && (
+                <FloorBriefingOverlay
+                    floor={floorBriefing}
+                    briefing={getFloorBriefing(floorBriefing)!}
+                    onDismiss={() => setFloorBriefing(null)}
+                />
+            )}
+            {floorBanner !== null && (
+                <FloorBanner floor={floorBanner} onDone={() => setFloorBanner(null)} />
+            )}
+            {runToast && (
+                <RunToast message={runToast} tone="good" onDone={() => setRunToast(null)} />
+            )}
+            {battleIntroKind && (
+                <BattleIntroOverlay nodeKind={battleIntroKind} onDone={finishBattleIntro} />
+            )}
+            {phase === 'map' && !tutorial.showIntro && (
+                <RunMapOverlay
+                    map={map}
+                    path={path}
+                    availableIds={availableIds}
+                    departingNodeId={departingNodeId}
+                    playerHealth={playerHealth}
+                    maxHealth={runMaxHealth}
+                    gold={gold}
+                    currentFloor={currentFloor}
+                    floorCount={RUN_CONFIG.floorCount}
+                    floorRerollsRemaining={floorRerollsRemaining}
+                    floorRerollsMax={GAME_RULES.rerollsPerFloor}
+                    ascensionLevel={ascensionLevel}
+                    seed={seed}
+                    onPick={pickNode}
+                />
+            )}
+            {phase === 'reward' && currentRewardStep?.kind === 'card' && (
+                <CardRewardOverlay
+                    options={currentRewardStep.options}
+                    pickCount={currentRewardStep.reward.pickCount}
+                    rerollable={currentRewardStep.reward.rerollable}
+                    rules={BATTLE_REWARD_RULES}
+                    eyebrow={pendingRewardFlow?.nodeKind === 'semi-boss' ? 'Lieutenant spoils' : 'Victory spoils'}
+                    subtitle={deckArchetypeScores.dominant
+                        ? `Deck specialty: ${deckArchetypeScores.dominant.charAt(0).toUpperCase()}${deckArchetypeScores.dominant.slice(1)}`
+                        : undefined}
+                    synergyHints={rewardSynergyHints}
+                    onConfirm={finishReward}
+                    onSkip={() => finishReward([])}
+                    onReroll={rerollReward}
+                />
+            )}
+            {phase === 'body-mod-reward' && currentRewardStep?.kind === 'body-mod' && (
+                <BodyModRewardOverlay
+                    options={currentRewardStep.options}
+                    eyebrow={pendingRewardFlow?.nodeKind === 'boss' ? 'Warden body mod' : 'Lieutenant body mod'}
+                    title={pendingRewardFlow?.nodeKind === 'boss'
+                        ? 'Claim the Gatekeeper Seal'
+                        : 'Install a body mod'}
+                    subtitle="Permanent for the rest of the run."
+                    onConfirm={finishBodyModReward}
+                />
+            )}
+            {phase === 'puzzle-reward' && pendingPuzzleReward && (
+                <CardRewardOverlay
+                    eyebrow="Trial passed"
+                    title="Choose a card reward"
+                    subtitle={`Dealt ${pendingPuzzleReward.damageDealt} / ${pendingPuzzleReward.damageTarget} damage.`}
+                    rules={PUZZLE_TRIAL_RULES}
+                    options={pendingPuzzleReward.options}
+                    pickCount={1}
+                    rerollable={false}
+                    onConfirm={finishPuzzleReward}
+                />
+            )}
+            {phase === 'visit' && visit && visit.eventId && (
+                <RunEventOverlay
+                    eventId={visit.eventId}
+                    nodeId={visit.node.id}
+                    seed={seed}
+                    playerHealth={playerHealth}
+                    maxHealth={runMaxHealth}
+                    gold={gold}
+                    deck={deck}
+                    bodyMods={bodyMods}
+                    onFinish={finishEvent}
+                    onStartPuzzle={startPuzzleFromEvent}
+                />
+            )}
+            {phase === 'visit' && visit && !visit.eventId && visit.node.kind === 'rest' && (
+                <RestOverlay
+                    deck={deck}
+                    playerHealth={playerHealth}
+                    maxHealth={runMaxHealth}
+                    onRest={restHeal}
+                    onUpgrade={restUpgrade}
+                    onContinue={finishVisit}
+                />
+            )}
+            {phase === 'visit' && visit && !visit.eventId && visit.node.kind === 'shop' && visit.shopOffers && (
+                <ShopOverlay
+                    offers={visit.shopOffers}
+                    gold={gold}
+                    deck={deck}
+                    playerHealth={playerHealth}
+                    maxHealth={runMaxHealth}
+                    onBuyCard={buyShopCard}
+                    onBuyBodyMod={buyShopBodyMod}
+                    onBuyHeal={buyShopHeal}
+                    onBuyRemove={buyShopRemove}
+                    onBuyUpgrade={buyShopUpgrade}
+                    onContinue={finishVisit}
+                />
+            )}
+            {phase === 'visit' && visit && !visit.eventId && visit.node.kind !== 'shop' && visit.node.kind !== 'rest' && (
+                <NodeVisitOverlay node={visit.node} gold={gold} onContinue={finishVisit} />
+            )}
+            {phase === 'puzzle-result' && puzzleResult && (
+                <PuzzleResultOverlay
+                    puzzleId={puzzleResult.puzzleId}
+                    success={puzzleResult.success}
+                    damageDealt={puzzleResult.damageDealt}
+                    damageTarget={puzzleResult.damageTarget}
+                    messages={puzzleResult.messages}
+                    onContinue={finishPuzzleResult}
+                />
+            )}
+            {phase === 'victory' && (
+                <RunEndOverlay
+                    variant="victory"
+                    clutch={clutchVictory}
+                    stats={runStats}
+                    unlockedAscension={ascensionUnlockedToast}
+                    onRestart={startNewRun}
+                    onMainMenu={returnToMenu}
+                />
+            )}
+            {phase === 'defeat' && (
+                <RunEndOverlay
+                    variant="defeat"
+                    stats={{ ...runStats, pathLength: path.length }}
+                    onRestart={startNewRun}
+                    onMainMenu={returnToMenu}
+                />
+            )}
+        </>
+    );
+};

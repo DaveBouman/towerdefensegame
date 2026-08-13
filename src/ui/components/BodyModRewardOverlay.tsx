@@ -1,5 +1,5 @@
 import { getBodyModDefinitionOrThrow } from '../../game/run/bodyMods';
-import { CyberPanelChrome } from './CyberPanel';
+import { ModalShell } from './CyberPanel';
 
 interface BodyModRewardOverlayProps {
     options: string[];
@@ -20,10 +20,11 @@ export const BodyModRewardOverlay = ({
     const mods = options.map((id) => getBodyModDefinitionOrThrow(id));
 
     return (
-        <div className="card-reward body-mod-reward">
-            <div className="cp-overlay__backdrop" aria-hidden="true" />
-            <div className="card-reward__panel cp-panel cp-panel--magenta">
-                <CyberPanelChrome variant="magenta" />
+        <ModalShell
+            variant="magenta"
+            rootClassName="card-reward body-mod-reward"
+            panelClassName="card-reward__panel"
+        >
                 <p className="card-reward__eyebrow">{eyebrow}</p>
                 <h1 className="card-reward__title">{title}</h1>
                 {subtitle && <p className="card-reward__subtitle">{subtitle}</p>}
@@ -52,7 +53,6 @@ export const BodyModRewardOverlay = ({
                         Leave it
                     </button>
                 </div>
-            </div>
-        </div>
+        </ModalShell>
     );
 };

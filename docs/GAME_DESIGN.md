@@ -126,12 +126,18 @@ before `rollCardReward`/display, or add a new `RunReward` kind + a case in `App`
 ## Architecture (active code only)
 
 ```
-index.html → src/main.tsx → App.tsx (run controller)
+index.html → src/main.tsx → App.tsx (run shell)
+  ├── runController/useRunController.ts (run state, phase machine, handlers)
+  ├── runController/useBattleBridge.ts (Phaser EventBus: battles, puzzles, recap)
+  ├── runController/rewardHelpers.ts (reward rolls, map seeding)
   ├── PhaserGame.tsx → src/game/main.ts → scenes/Game.ts
+  ├── RunPhaseScreens.tsx (phase → overlay JSX)
   ├── MainMenuOverlay.tsx   (home / settings / how-to-play / credits / quit + card index + bestiary)
   ├── CardCollectionOverlay.tsx (unlocked / locked card archive)
   ├── BestiaryOverlay.tsx   (unlocked / locked enemy archive)
-  ├── BodyModBestiaryOverlay.tsx (unlocked / locked body mod archive)
+  ├── BodyModBestiaryOverlay.tsx (unlocked / locked body mod archive; uses ArchiveOverlay)
+  ├── ArchiveOverlay.tsx      (shared archive shell + filter UX)
+  ├── CyberPanel.tsx          (CyberPanelChrome, ModalShell, CyberOverlay)
   ├── desktopBridge.ts      (`window.signalChainDesktop` quit/fullscreen hooks for Electron)
   ├── GameHud.tsx           (battle phase)
   ├── Tutorial.tsx          (first-run intro / coach / tip)
@@ -148,7 +154,8 @@ it waits for `START_BATTLE`, builds a battle, and emits `BATTLE_WON` / `BATTLE_L
 
 | Layer | Path | Role |
 |-------|------|------|
-| Run controller | `src/App.tsx` | Map/battle/end phases, carry-over HP, node picks |
+| Run controller | `src/runController/useRunController.ts` | Map/battle/end phases, carry-over HP, node picks |
+| Run UI shell | `src/App.tsx`, `src/ui/components/RunPhaseScreens.tsx` | Thin React shell + phase overlay mounting |
 | Run map | `src/game/run/runMap.ts` | Graph generation, reachability, run config |
 | Session | `src/game/cardGame/domain/CardGameSession.ts` | Turn flow / combat orchestration facade (delegates to DeckHand, FieldEffects, CombatResolver, EnemyPhaseController, BoardEditController) |
 | Deck / hand | `src/game/cardGame/domain/DeckHand.ts` | Draw pile, hand, discard, rerolls |
@@ -332,6 +339,8 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-13 | **Run controller split.** `App.tsx` slimmed to shell + `RunPhaseScreens`; run state/handlers in `useRunController.ts`, Phaser bridge in `useBattleBridge.ts`, reward helpers in `rewardHelpers.ts`. |
+| 2026-08-13 | **UI shell refactor.** `ModalShell` in `CyberPanel.tsx` dedupes backdrop + panel chrome across reward, shop, rest, run-end, and visit overlays. `ArchiveOverlay` + `useArchiveFilter` share filter/selection UX for card index, bestiary, and body mod archives. |
 | 2026-08-13 | **Body mod index.** Main-menu **Body mods** archive (`bodyModBestiary.ts`, `BodyModBestiaryOverlay`) logs body mods when installed in a run (localStorage). Mirrors enemy bestiary UX. |
 | 2026-08-13 | **Latch Array, Drain Host, faster chains.** Lieutenant body mod **Latch Array** pins the first Attack, Defend, and Skill placed each energy round through the board wipe (pick them up to re-pin). New field card **Leech Node** (`siphon`): in-chain like a trap (converted/disarmed); unchained heals a living enemy for 8 — no revive, no scorched tile. Street enemy **Drain Host** places one node per turn. Chain playback no longer waits a full extra step between cards; later steps accelerate, with holds + hitstop on kills, chunky hits, and on-step detonations (`activationStepMs` 480). |
 | 2026-08-11 | **Signal Twist intent + Vector Haunt.** New enemy turn step `redirect-hand` (passive `handRedirect`) scrambles hand-card arrows for the rest of the energy round; restores on energy refill. Mid-run street enemy **Vector Haunt** telegraphs the twist each turn. |

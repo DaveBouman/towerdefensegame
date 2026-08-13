@@ -3,7 +3,7 @@ import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistr
 import { listUpgradableCardsInDeck } from '../../game/run/cardUpgrades';
 import type { ShopOffer } from '../../game/run/shop';
 import { NodeKindIcon } from './NodeKindIcon';
-import { CyberPanelChrome } from './CyberPanel';
+import { ModalShell } from './CyberPanel';
 
 interface ShopOverlayProps {
     offers: ShopOffer[];
@@ -146,10 +146,11 @@ export const ShopOverlay = ({
         const entries = picking === 'remove' ? removeEntries : upgradeEntries;
 
         return (
-            <div className="shop-overlay shop-overlay--enter">
-                <div className="cp-overlay__backdrop" aria-hidden="true" />
-                <div className="shop-overlay__panel cp-panel cp-panel--gold">
-                    <CyberPanelChrome variant="gold" />
+            <ModalShell
+                variant="gold"
+                rootClassName="shop-overlay shop-overlay--enter"
+                panelClassName="shop-overlay__panel"
+            >
                     <p className="shop-overlay__eyebrow">Ripperdoc</p>
                     <h1 className="shop-overlay__title">
                         {picking === 'remove' ? 'Choose a card to remove' : 'Choose a card to upgrade'}
@@ -182,16 +183,16 @@ export const ShopOverlay = ({
                     >
                         Cancel
                     </button>
-                </div>
-            </div>
+            </ModalShell>
         );
     }
 
     return (
-        <div className="shop-overlay shop-overlay--enter">
-            <div className="cp-overlay__backdrop" aria-hidden="true" />
-            <div className="shop-overlay__panel cp-panel cp-panel--gold">
-                <CyberPanelChrome variant="gold" />
+        <ModalShell
+            variant="gold"
+            rootClassName="shop-overlay shop-overlay--enter"
+            panelClassName="shop-overlay__panel"
+        >
                 <div className="shop-overlay__header">
                     <span className="shop-overlay__icon">
                         <NodeKindIcon kind="shop" />
@@ -241,7 +242,6 @@ export const ShopOverlay = ({
                 <button type="button" className="shop-overlay__continue" onClick={onContinue}>
                     Leave shop
                 </button>
-            </div>
-        </div>
+        </ModalShell>
     );
 };

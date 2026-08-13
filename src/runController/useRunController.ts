@@ -1,0 +1,910 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { EventBus } from '../game/EventBus';
+import { GAME_EVENTS } from '../game/events/gameEvents';
+import { GAME_RULES } from '../game/cardGame/config/cardRegistry';
+import { getDefaultDeckDefinitionIds } from '../game/cardGame/domain/buildPlayerDeck';
+import {
+    createRandomSeed,
+    deriveSeed,
+    normalizeSeed,
+    seedScope,
+} from '../game/random/rng';
+import { emitRunSfx } from '../game/audio/emitRunSfx';
+import { emitRunBgm } from '../game/audio/emitRunBgm';
+import { resolveRunBgmTrack } from '../game/audio/bgmManifest';
+import type { RunMapNodeKind } from '../game/run/nodeKinds';
+import { isBattleKind } from '../game/run/nodeKinds';
+import type { AppliedEventResult } from '../game/run/runEvents';
+import { unlockCards, ensureStarterCollectionUnlocks } from '../game/run/cardCollection';
+import { unlockBodyMods } from '../game/run/bodyModBestiary';
+import { unlockEnemies } from '../game/run/enemyBestiary';
+import { getBodyModDefinitionOrThrow } from '../game/run/bodyMods';
+import { upgradeFirstCardInDeck } from '../game/run/cardUpgrades';
+import { readRunAscensionLevel, recordAscensionClear } from '../game/run/ascension';
+import { getFloorBriefing } from '../game/run/floorBriefings';
+import { createEmptyRunStats, type RunStats } from '../game/run/runStats';
+import { scoreDeckArchetypes } from '../game/run/deckArchetypes';
+import { getCardSynergyHint } from '../game/run/rewards';
+import { getRunMaxHealth } from '../game/run/runResources';
+import { rollShopOffers, type ShopOffer } from '../game/run/shop';
+import {
+    getBattleEnemyIds,
+    getFloorForColumn,
+    reachableNodeIds,
+    RUN_CONFIG,
+    type RunMap,
+    type RunMapNode,
+} from '../game/run/runMap';
+import { resolveSignalVisit } from '../game/run/signalEncounter';
+import { useTutorial } from '../ui/tutorial/Tutorial';
+import {
+    buildMapForSeed,
+    rollRewardForNode,
+} from './rewardHelpers';
+import { useBattleBridge } from './useBattleBridge';
+import type {
+    CombatRecapLine,
+    PendingPuzzleReward,
+    PendingRewardFlow,
+    PuzzleResultState,
+    RunPhase,
+    VisitState,
+} from './types';
+import { MAX_HEALTH } from './types';
+
+export const useRunController = () =>
+{
+    const [ seed, setSeed ] = useState<string>(createRandomSeed);
+    const [ map, setMap ] = useState<RunMap>(() => buildMapForSeed(seed));
+    const [ path, setPath ] = useState<string[]>([]);
+    const [ playerHealth, setPlayerHealth ] = useState(MAX_HEALTH);
+    const [ deck, setDeck ] = useState<string[]>(() => getDefaultDeckDefinitionIds());
+    const [ gold, setGold ] = useState(0);
+    const [ bodyMods, setBodyMods ] = useState<string[]>([]);
+    const [ runAttackCount, setRunAttackCount ] = useState(0);
+    const [ signalsVisited, setSignalsVisited ] = useState(0);
+    const [ currentFloor, setCurrentFloor ] = useState(1);
+    const [ floorRerollsRemaining, setFloorRerollsRemaining ] = useState(GAME_RULES.rerollsPerFloor);
+    const [ phase, setPhase ] = useState<RunPhase>('menu');
+    const [ departingNodeId, setDepartingNodeId ] = useState<string | null>(null);
+    const [ floorBanner, setFloorBanner ] = useState<number | null>(null);
+    const [ runToast, setRunToast ] = useState<string | null>(null);
+    const [ battleIntroKind, setBattleIntroKind ] = useState<RunMapNodeKind | null>(null);
+    const [ activeBattleKind, setActiveBattleKind ] = useState<RunMapNodeKind | null>(null);
+    const [ ascensionLevel, setAscensionLevel ] = useState(readRunAscensionLevel);
+    const [ ascensionUnlockedToast, setAscensionUnlockedToast ] = useState<number | null>(null);
+    const [ runStats, setRunStats ] = useState<RunStats>(() => createEmptyRunStats(readRunAscensionLevel()));
+    const [ floorBriefing, setFloorBriefing ] = useState<number | null>(null);
+    const [ combatRecap, setCombatRecap ] = useState<{ damageDealt: number; armorGained: number; damageTaken: number } | null>(null);
+    const [ clutchVictory, setClutchVictory ] = useState(false);
+    const [ pendingRewardFlow, setPendingRewardFlow ] = useState<PendingRewardFlow | null>(null);
+    const [ visit, setVisit ] = useState<VisitState | null>(null);
+    const [ puzzleResult, setPuzzleResult ] = useState<PuzzleResultState | null>(null);
+    const [ pendingPuzzleReward, setPendingPuzzleReward ] = useState<PendingPuzzleReward | null>(null);
+    const [ pauseMenuOpen, setPauseMenuOpen ] = useState(false);
+    const tutorial = useTutorial();
+
+    const selectedNodeRef = useRef<RunMapNode | null>(null);
+    const eventVisitRef = useRef<VisitState | null>(null);
+    const sceneReadyRef = useRef(false);
+    const seedRef = useRef(seed);
+    const bodyModsRef = useRef(bodyMods);
+    const playerHealthRef = useRef(playerHealth);
+    const goldRef = useRef(gold);
+    const deckRef = useRef(deck);
+    const pathRef = useRef(path);
+    const phaseRef = useRef(phase);
+    const currentFloorRef = useRef(currentFloor);
+    const floorRerollsRef = useRef(floorRerollsRemaining);
+    const ascensionLevelRef = useRef(ascensionLevel);
+    const tutorialRef = useRef(tutorial);
+    const pendingStartRef = useRef<{
+        enemyId?: string;
+        enemyIds?: string[];
+        startHealth: number;
+        deck: string[];
+        seed: number;
+        bodyMods: string[];
+        runAttackCount: number;
+        rerollsRemaining: number;
+        nodeKind?: RunMapNodeKind;
+        ascensionLevel?: number;
+        routeKind?: import('../game/run/runMap').RouteKind;
+        runGold?: number;
+    } | null>(null);
+    const pendingBattleRef = useRef<{ node: RunMapNode; battleEnemyIds: string[]; rerollsRemaining: number } | null>(null);
+    const pendingPuzzleRef = useRef<{
+        puzzleId: string;
+        startHealth: number;
+        seed: number;
+        bodyMods: string[];
+        runAttackCount: number;
+    } | null>(null);
+
+    useEffect(() => { seedRef.current = seed; }, [ seed ]);
+    useEffect(() => { bodyModsRef.current = bodyMods; }, [ bodyMods ]);
+    useEffect(() => { playerHealthRef.current = playerHealth; }, [ playerHealth ]);
+    useEffect(() => { goldRef.current = gold; }, [ gold ]);
+    useEffect(() => { deckRef.current = deck; }, [ deck ]);
+    useEffect(() => { pathRef.current = path; }, [ path ]);
+    useEffect(() => { phaseRef.current = phase; }, [ phase ]);
+    useEffect(() => { currentFloorRef.current = currentFloor; }, [ currentFloor ]);
+    useEffect(() => { floorRerollsRef.current = floorRerollsRemaining; }, [ floorRerollsRemaining ]);
+    useEffect(() => { tutorialRef.current = tutorial; }, [ tutorial ]);
+    useEffect(() => { ascensionLevelRef.current = ascensionLevel; }, [ ascensionLevel ]);
+
+    useEffect(() =>
+    {
+        ensureStarterCollectionUnlocks();
+    }, []);
+
+    useEffect(() =>
+    {
+        if (phase === 'menu' || phase === 'victory' || phase === 'defeat')
+        {
+            setPauseMenuOpen(false);
+        }
+    }, [ phase ]);
+
+    useEffect(() =>
+    {
+        EventBus.emit(GAME_EVENTS.UI_OVERLAY_ACTIVE, {
+            blockPileInspection: pauseMenuOpen
+                || (phase === 'battle'
+                    && (tutorial.showBattleCoach || tutorial.showOffChainTip)),
+        });
+    }, [ phase, pauseMenuOpen, tutorial.showBattleCoach, tutorial.showOffChainTip ]);
+
+    useEffect(() =>
+    {
+        if (!sceneReadyRef.current)
+        {
+            return;
+        }
+
+        EventBus.emit(GAME_EVENTS.RUN_PHASE, { phase });
+    }, [ phase ]);
+
+    useEffect(() =>
+    {
+        if (phase === 'reward' || phase === 'puzzle-reward')
+        {
+            emitRunSfx('reward', { volume: 1 });
+        }
+    }, [ phase ]);
+
+    useEffect(() =>
+    {
+        if (floorBanner !== null)
+        {
+            emitRunSfx('floor-enter', { volume: 0.95 });
+        }
+    }, [ floorBanner ]);
+
+    useEffect(() =>
+    {
+        if (battleIntroKind)
+        {
+            emitRunSfx('boss-intro', {
+                volume: battleIntroKind === 'boss' ? 1 : 0.9,
+            });
+        }
+    }, [ battleIntroKind ]);
+
+    useEffect(() =>
+    {
+        emitRunBgm(resolveRunBgmTrack({
+            phase,
+            battleIntroKind,
+            activeBattleKind,
+            battleMusicIndex: path.length,
+        }));
+    }, [ phase, battleIntroKind, activeBattleKind, path.length ]);
+
+    const runMaxHealth = useMemo(() => getRunMaxHealth(bodyMods), [ bodyMods ]);
+
+    const completeWardenVictory = useCallback((): void =>
+    {
+        const level = ascensionLevelRef.current;
+        const unlocked = recordAscensionClear(level);
+
+        if (unlocked > level)
+        {
+            setAscensionUnlockedToast(unlocked);
+        }
+
+        setAscensionLevel(unlocked);
+        setPhase('victory');
+    }, []);
+
+    const enterNodeFloor = useCallback((node: RunMapNode): number =>
+    {
+        const nodeFloor = getFloorForColumn(node.row);
+
+        if (nodeFloor > currentFloorRef.current)
+        {
+            currentFloorRef.current = nodeFloor;
+            setCurrentFloor(nodeFloor);
+            setFloorBanner(nodeFloor);
+
+            if (getFloorBriefing(nodeFloor))
+            {
+                setFloorBriefing(nodeFloor);
+            }
+
+            floorRerollsRef.current = GAME_RULES.rerollsPerFloor;
+            setFloorRerollsRemaining(GAME_RULES.rerollsPerFloor);
+        }
+
+        return floorRerollsRef.current;
+    }, []);
+
+    useBattleBridge(
+        {
+            seed: seedRef,
+            bodyMods: bodyModsRef,
+            playerHealth: playerHealthRef,
+            gold: goldRef,
+            deck: deckRef,
+            path: pathRef,
+            phase: phaseRef,
+            currentFloor: currentFloorRef,
+            floorRerolls: floorRerollsRef,
+            ascensionLevel: ascensionLevelRef,
+            tutorial: tutorialRef,
+            sceneReady: sceneReadyRef,
+            selectedNode: selectedNodeRef,
+            eventVisit: eventVisitRef,
+            pendingStart: pendingStartRef,
+            pendingPuzzle: pendingPuzzleRef,
+        },
+        {
+            setRunAttackCount,
+            setActiveBattleKind,
+            setCombatRecap,
+            setPlayerHealth,
+            setGold,
+            setDeck,
+            setBodyMods,
+            setPath,
+            setRunToast,
+            setClutchVictory,
+            setRunStats,
+            setPendingRewardFlow,
+            setPendingPuzzleReward,
+            setPuzzleResult,
+            setPhase,
+            setFloorRerollsRemaining,
+            completeWardenVictory,
+        },
+    );
+
+    const startBattleForNode = useCallback((
+        node: RunMapNode,
+        battleEnemyIds: string[],
+        rerollsRemaining: number,
+    ): void =>
+    {
+        selectedNodeRef.current = node;
+        setActiveBattleKind(node.kind);
+        tutorial.onFirstBattleStart();
+        unlockEnemies(battleEnemyIds);
+        const payload = {
+            enemyId: battleEnemyIds[0],
+            enemyIds: battleEnemyIds.length > 1 ? battleEnemyIds : undefined,
+            startHealth: playerHealth,
+            deck: [ ...deck ],
+            seed: deriveSeed(seed, `battle:${node.id}`),
+            bodyMods: [ ...bodyMods ],
+            runAttackCount,
+            rerollsRemaining,
+            nodeKind: node.kind,
+            runGold: goldRef.current,
+            ascensionLevel,
+            routeKind: node.routeKind,
+        };
+        setPhase('battle');
+
+        if (sceneReadyRef.current)
+        {
+            EventBus.emit(GAME_EVENTS.START_BATTLE, payload);
+        }
+        else
+        {
+            pendingStartRef.current = payload;
+        }
+    }, [ playerHealth, deck, seed, bodyMods, runAttackCount, tutorial, ascensionLevel ]);
+
+    const finishBattleIntro = useCallback((): void =>
+    {
+        const pending = pendingBattleRef.current;
+
+        setBattleIntroKind(null);
+
+        if (pending)
+        {
+            startBattleForNode(pending.node, pending.battleEnemyIds, pending.rerollsRemaining);
+            pendingBattleRef.current = null;
+        }
+    }, [ startBattleForNode ]);
+
+    const pickNode = useCallback((node: RunMapNode): void =>
+    {
+        emitRunSfx('ui-select', { volume: 0.78 });
+        setDepartingNodeId(node.id);
+        const rerollsRemaining = enterNodeFloor(node);
+        let battleEnemyIds = getBattleEnemyIds(node);
+
+        const finishTravel = (callback: () => void, delayMs: number): void =>
+        {
+            window.setTimeout(() =>
+            {
+                setDepartingNodeId(null);
+                callback();
+            }, delayMs);
+        };
+
+        if (node.kind === 'event')
+        {
+            seedScope(seed, `signal:${node.id}`);
+            const outcome = resolveSignalVisit(signalsVisited, node.row);
+            setSignalsVisited((prev) => prev + 1);
+
+            if (outcome.kind === 'ambush')
+            {
+                node.enemyId = outcome.enemyId;
+                node.enemyIds = outcome.enemyIds;
+                node.reward = outcome.reward;
+                battleEnemyIds = getBattleEnemyIds(node);
+            }
+            else
+            {
+                finishTravel(() =>
+                {
+                    setVisit({ node, eventId: outcome.eventId });
+                    setPhase('visit');
+                }, 280);
+
+                return;
+            }
+        }
+
+        const isSignalAmbush = node.kind === 'event' && battleEnemyIds.length > 0;
+
+        if (!isBattleKind(node.kind) && !isSignalAmbush)
+        {
+            finishTravel(() =>
+            {
+                if (node.kind === 'shop')
+                {
+                    seedScope(seed, `shop:${node.id}`);
+                    setVisit({
+                        node,
+                        eventId: null,
+                        shopOffers: rollShopOffers(bodyMods, deck, currentFloor),
+                    });
+                }
+                else if (node.kind === 'rest')
+                {
+                    setVisit({ node, eventId: null });
+                }
+
+                setPhase('visit');
+            }, 280);
+
+            return;
+        }
+
+        if (battleEnemyIds.length === 0)
+        {
+            setDepartingNodeId(null);
+
+            return;
+        }
+
+        finishTravel(() =>
+        {
+            emitRunSfx('map-travel', { volume: 0.82 });
+
+            if (node.kind === 'semi-boss' || node.kind === 'boss')
+            {
+                pendingBattleRef.current = { node, battleEnemyIds, rerollsRemaining };
+                setBattleIntroKind(node.kind);
+
+                return;
+            }
+
+            startBattleForNode(node, battleEnemyIds, rerollsRemaining);
+        }, 380);
+    }, [ deck, seed, bodyMods, signalsVisited, enterNodeFloor, currentFloor, startBattleForNode ]);
+
+    const buyShopCard = useCallback((offer: ShopOffer): void =>
+    {
+        if (!offer.cardId || gold < offer.price)
+        {
+            return;
+        }
+
+        setGold((prev) => prev - offer.price);
+        setDeck((prev) => [ ...prev, offer.cardId! ]);
+        unlockCards([ offer.cardId! ]);
+        emitRunSfx('shop-buy', { volume: 0.95 });
+    }, [ gold ]);
+
+    const buyShopBodyMod = useCallback((offer: ShopOffer): void =>
+    {
+        if (!offer.bodyModId || gold < offer.price || bodyMods.includes(offer.bodyModId))
+        {
+            return;
+        }
+
+        getBodyModDefinitionOrThrow(offer.bodyModId);
+        setGold((prev) => prev - offer.price);
+        setBodyMods((prev) => [ ...prev, offer.bodyModId! ]);
+        unlockBodyMods([ offer.bodyModId! ]);
+        setPlayerHealth((prev) => Math.min(getRunMaxHealth([ ...bodyMods, offer.bodyModId! ]), prev));
+        emitRunSfx('shop-buy', { volume: 0.95 });
+    }, [ gold, bodyMods ]);
+
+    const buyShopHeal = useCallback((offer: ShopOffer): void =>
+    {
+        if (gold < offer.price || !offer.healAmount)
+        {
+            return;
+        }
+
+        setGold((prev) => prev - offer.price);
+        setPlayerHealth((prev) => Math.min(runMaxHealth, prev + offer.healAmount!));
+        emitRunSfx('shop-buy', { volume: 0.95 });
+        emitRunSfx('heal', { volume: 0.85 });
+    }, [ gold, runMaxHealth ]);
+
+    const buyShopRemove = useCallback((offer: ShopOffer, definitionId: string): void =>
+    {
+        if (gold < offer.price)
+        {
+            return;
+        }
+
+        const index = deck.indexOf(definitionId);
+
+        if (index < 0)
+        {
+            return;
+        }
+
+        setGold((prev) => prev - offer.price);
+        setDeck((prev) =>
+        {
+            const next = [ ...prev ];
+            const removeAt = next.indexOf(definitionId);
+
+            if (removeAt >= 0)
+            {
+                next.splice(removeAt, 1);
+            }
+
+            return next;
+        });
+        emitRunSfx('shop-buy', { volume: 0.95 });
+    }, [ gold, deck ]);
+
+    const buyShopUpgrade = useCallback((offer: ShopOffer, definitionId: string): void =>
+    {
+        if (gold < offer.price)
+        {
+            return;
+        }
+
+        const nextDeck = upgradeFirstCardInDeck(deck, definitionId);
+
+        if (!nextDeck)
+        {
+            return;
+        }
+
+        setGold((prev) => prev - offer.price);
+        setDeck(nextDeck);
+        emitRunSfx('shop-buy', { volume: 0.95 });
+    }, [ gold, deck ]);
+
+    const restHeal = useCallback((healAmount: number): void =>
+    {
+        setPlayerHealth((prev) => Math.min(runMaxHealth, prev + healAmount));
+        emitRunSfx('heal', { volume: Math.min(1, 0.75 + healAmount / 25) });
+    }, [ runMaxHealth ]);
+
+    const restUpgrade = useCallback((definitionId: string): void =>
+    {
+        const nextDeck = upgradeFirstCardInDeck(deck, definitionId);
+
+        if (nextDeck)
+        {
+            setDeck(nextDeck);
+        }
+    }, [ deck ]);
+
+    const finishVisit = useCallback((): void =>
+    {
+        setVisit((current) =>
+        {
+            if (current?.node)
+            {
+                setPath((prev) => (prev.includes(current.node.id) ? prev : [ ...prev, current.node.id ]));
+            }
+
+            return null;
+        });
+        setPhase('map');
+    }, []);
+
+    const startPuzzleFromEvent = useCallback((puzzleId: string): void =>
+    {
+        const currentVisit = visit;
+
+        if (!currentVisit)
+        {
+            return;
+        }
+
+        eventVisitRef.current = currentVisit;
+        setVisit(null);
+
+        const payload = {
+            puzzleId,
+            startHealth: playerHealth,
+            seed: deriveSeed(seed, `puzzle:${currentVisit.node.id}:${puzzleId}`),
+            bodyMods: [ ...bodyMods ],
+            runAttackCount,
+        };
+        setPhase('puzzle');
+
+        if (sceneReadyRef.current)
+        {
+            EventBus.emit(GAME_EVENTS.START_PUZZLE, payload);
+        }
+        else
+        {
+            pendingPuzzleRef.current = payload;
+        }
+    }, [ visit, playerHealth, seed, bodyMods, runAttackCount ]);
+
+    const finishPuzzleResult = useCallback((): void =>
+    {
+        const node = eventVisitRef.current?.node;
+
+        if (node)
+        {
+            setPath((prev) => (prev.includes(node.id) ? prev : [ ...prev, node.id ]));
+        }
+
+        eventVisitRef.current = null;
+        setPuzzleResult(null);
+        setPhase('map');
+    }, []);
+
+    const finishEvent = useCallback((result: AppliedEventResult): void =>
+    {
+        setPlayerHealth(result.playerHealth);
+        setGold(result.gold);
+        setDeck(result.deck);
+        unlockCards(result.deck);
+        setBodyMods(result.bodyMods);
+        unlockBodyMods(result.bodyMods);
+        finishVisit();
+    }, [ finishVisit ]);
+
+    const finishPuzzleReward = useCallback((chosen: string[]): void =>
+    {
+        if (chosen.length > 0)
+        {
+            setDeck((prev) => [ ...prev, ...chosen ]);
+            unlockCards(chosen);
+        }
+
+        const node = eventVisitRef.current?.node;
+
+        if (node)
+        {
+            setPath((prev) => (prev.includes(node.id) ? prev : [ ...prev, node.id ]));
+        }
+
+        eventVisitRef.current = null;
+        setPendingPuzzleReward(null);
+        setPhase('map');
+    }, []);
+
+    const advanceRewardFlow = useCallback((
+        cardsAdded: number,
+        bodyModAdded: boolean,
+    ): void =>
+    {
+        let wardenCleared = false;
+
+        setPendingRewardFlow((prev) =>
+        {
+            if (!prev)
+            {
+                return null;
+            }
+
+            const nextIndex = prev.stepIndex + 1;
+
+            if (nextIndex >= prev.steps.length)
+            {
+                if (prev.nodeKind === 'boss')
+                {
+                    wardenCleared = true;
+                }
+                else
+                {
+                    setPhase('map');
+                }
+
+                return null;
+            }
+
+            const nextStep = prev.steps[nextIndex]!;
+
+            setPhase(nextStep.kind === 'body-mod' ? 'body-mod-reward' : 'reward');
+
+            return {
+                ...prev,
+                stepIndex: nextIndex,
+            };
+        });
+
+        if (wardenCleared)
+        {
+            completeWardenVictory();
+        }
+
+        if (cardsAdded > 0)
+        {
+            setRunStats((stats) => ({
+                ...stats,
+                cardsAdded: stats.cardsAdded + cardsAdded,
+            }));
+        }
+
+        if (bodyModAdded)
+        {
+            setRunStats((stats) => ({
+                ...stats,
+                bodyModsCollected: stats.bodyModsCollected + 1,
+            }));
+        }
+    }, [ completeWardenVictory ]);
+
+    const finishReward = useCallback((chosen: string[]): void =>
+    {
+        if (chosen.length > 0)
+        {
+            setDeck((prev) => [ ...prev, ...chosen ]);
+            unlockCards(chosen);
+        }
+
+        advanceRewardFlow(chosen.length, false);
+    }, [ advanceRewardFlow ]);
+
+    const finishBodyModReward = useCallback((bodyModId: string | null): void =>
+    {
+        if (bodyModId)
+        {
+            setBodyMods((prev) => (prev.includes(bodyModId) ? prev : [ ...prev, bodyModId ]));
+            unlockBodyMods([ bodyModId ]);
+        }
+
+        advanceRewardFlow(0, bodyModId !== null);
+    }, [ advanceRewardFlow ]);
+
+    const rerollReward = useCallback((): void =>
+    {
+        setPendingRewardFlow((prev) =>
+        {
+            if (!prev)
+            {
+                return prev;
+            }
+
+            const step = prev.steps[prev.stepIndex];
+
+            if (!step || step.kind !== 'card')
+            {
+                return prev;
+            }
+
+            const rerollIndex = step.rerollIndex + 1;
+            const nextSteps = [ ...prev.steps ];
+            nextSteps[prev.stepIndex] = {
+                ...step,
+                rerollIndex,
+                options: rollRewardForNode(
+                    seedRef.current,
+                    prev.nodeId,
+                    step.reward,
+                    rerollIndex,
+                    deckRef.current,
+                    currentFloorRef.current,
+                ),
+            };
+
+            return {
+                ...prev,
+                steps: nextSteps,
+            };
+        });
+    }, []);
+
+    const resetRun = useCallback((nextSeed: string, nextPhase: RunPhase = 'map'): void =>
+    {
+        selectedNodeRef.current = null;
+        setSeed(nextSeed);
+        setMap(buildMapForSeed(nextSeed));
+        setPath([]);
+        setPlayerHealth(MAX_HEALTH);
+        setDeck(getDefaultDeckDefinitionIds());
+        setGold(0);
+        setBodyMods([]);
+        setRunAttackCount(0);
+        setSignalsVisited(0);
+        setCurrentFloor(1);
+        setFloorRerollsRemaining(GAME_RULES.rerollsPerFloor);
+        currentFloorRef.current = 1;
+        floorRerollsRef.current = GAME_RULES.rerollsPerFloor;
+        setAscensionLevel(readRunAscensionLevel());
+        setRunStats(createEmptyRunStats(readRunAscensionLevel()));
+        setFloorBriefing(null);
+        setCombatRecap(null);
+        setPendingRewardFlow(null);
+        setVisit(null);
+        setPuzzleResult(null);
+        setPendingPuzzleReward(null);
+        eventVisitRef.current = null;
+        setDepartingNodeId(null);
+        setFloorBanner(null);
+        setRunToast(null);
+        setBattleIntroKind(null);
+        setActiveBattleKind(null);
+        setClutchVictory(false);
+        setAscensionUnlockedToast(null);
+        pendingBattleRef.current = null;
+        setPhase(nextPhase);
+    }, []);
+
+    const startNewRun = useCallback((nextSeed?: string): void =>
+    {
+        setPauseMenuOpen(false);
+        resetRun(normalizeSeed(nextSeed ?? createRandomSeed()), 'map');
+    }, [ resetRun ]);
+
+    const returnToMenu = useCallback((): void =>
+    {
+        setPauseMenuOpen(false);
+        resetRun(createRandomSeed(), 'menu');
+    }, [ resetRun ]);
+
+    const closePauseMenu = useCallback((): void =>
+    {
+        setPauseMenuOpen(false);
+    }, []);
+
+    const togglePauseMenu = useCallback((): void =>
+    {
+        setPauseMenuOpen((open) => !open);
+    }, []);
+
+    const startRunFromMenu = useCallback((nextSeed: string): void =>
+    {
+        resetRun(normalizeSeed(nextSeed), 'map');
+    }, [ resetRun ]);
+
+    const currentNodeId = path.length > 0 ? path[path.length - 1]! : null;
+    const availableIds = useMemo(
+        () => reachableNodeIds(map, currentNodeId),
+        [ map, currentNodeId ],
+    );
+
+    const currentRewardStep = pendingRewardFlow?.steps[pendingRewardFlow.stepIndex];
+    const deckArchetypeScores = useMemo(() => scoreDeckArchetypes(deck), [ deck ]);
+    const rewardSynergyHints = useMemo(() =>
+    {
+        if (!currentRewardStep || currentRewardStep.kind !== 'card')
+        {
+            return undefined;
+        }
+
+        const hints: Record<string, string> = {};
+
+        for (const optionId of currentRewardStep.options)
+        {
+            const hint = getCardSynergyHint(optionId, deck);
+
+            if (hint)
+            {
+                hints[optionId] = hint;
+            }
+        }
+
+        return hints;
+    }, [ currentRewardStep, deck ]);
+
+    const combatRecapLines: CombatRecapLine[] = combatRecap
+        ? [
+            { label: 'Damage dealt', value: String(combatRecap.damageDealt), tone: 'good' },
+            ...(combatRecap.armorGained > 0
+                ? [ { label: 'Armor gained', value: `+${combatRecap.armorGained}`, tone: 'good' as const } ]
+                : []),
+            ...(combatRecap.damageTaken > 0
+                ? [ { label: 'Damage taken', value: String(combatRecap.damageTaken), tone: 'bad' as const } ]
+                : []),
+        ]
+        : [];
+
+    const lowHealth = runMaxHealth > 0 && playerHealth / runMaxHealth <= 0.25;
+    const appPhaseClass = `app--phase-${phase}`;
+
+    return {
+        phase,
+        pauseMenuOpen,
+        bodyMods,
+        runAttackCount,
+        seed,
+        tutorial,
+        map,
+        path,
+        playerHealth,
+        runMaxHealth,
+        gold,
+        deck,
+        currentFloor,
+        floorRerollsRemaining,
+        ascensionLevel,
+        departingNodeId,
+        availableIds,
+        floorBriefing,
+        setFloorBriefing,
+        floorBanner,
+        setFloorBanner,
+        runToast,
+        setRunToast,
+        battleIntroKind,
+        finishBattleIntro,
+        pickNode,
+        pendingRewardFlow,
+        currentRewardStep,
+        deckArchetypeScores,
+        rewardSynergyHints,
+        finishReward,
+        finishBodyModReward,
+        rerollReward,
+        pendingPuzzleReward,
+        finishPuzzleReward,
+        visit,
+        finishEvent,
+        startPuzzleFromEvent,
+        restHeal,
+        restUpgrade,
+        finishVisit,
+        buyShopCard,
+        buyShopBodyMod,
+        buyShopHeal,
+        buyShopRemove,
+        buyShopUpgrade,
+        puzzleResult,
+        finishPuzzleResult,
+        clutchVictory,
+        runStats,
+        ascensionUnlockedToast,
+        startRunFromMenu,
+        closePauseMenu,
+        startNewRun,
+        returnToMenu,
+        togglePauseMenu,
+        combatRecapLines,
+        lowHealth,
+        appPhaseClass,
+    };
+};
+
+export type RunController = ReturnType<typeof useRunController>;

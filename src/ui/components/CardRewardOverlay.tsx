@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { describeCardReward } from '../../game/run/rewards';
 import { CardChip } from './CardChip';
-import { CyberPanelChrome } from './CyberPanel';
+import { ModalShell } from './CyberPanel';
 
 interface CardRewardOverlayProps {
     /** Card definition ids offered as choices. */
@@ -91,10 +91,11 @@ export const CardRewardOverlay = ({
         : 'Take nothing';
 
     return (
-        <div className="card-reward">
-            <div className="cp-overlay__backdrop" aria-hidden="true" />
-            <div className="card-reward__panel cp-panel cp-panel--cyan">
-                <CyberPanelChrome variant="cyan" />
+        <ModalShell
+            variant="cyan"
+            rootClassName="card-reward"
+            panelClassName="card-reward__panel"
+        >
                 <p className="card-reward__eyebrow">{eyebrow}</p>
                 <h1 className="card-reward__title">{resolvedTitle}</h1>
                 {subtitle && <p className="card-reward__subtitle">{subtitle}</p>}
@@ -158,7 +159,6 @@ export const CardRewardOverlay = ({
                         {confirmLabel}
                     </button>
                 </div>
-            </div>
-        </div>
+        </ModalShell>
     );
 };
