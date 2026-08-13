@@ -305,7 +305,60 @@ export const generateRunMap = (): RunMap =>
         });
     }
 
+    resolveAdjacentShopConflicts(grid);
+
     return { rows, nodes: grid.flat() };
+};
+
+/**
+ * Converts destination Ripperdocs that sit on a shop→shop edge so the player
+ * never travels from one Ripperdoc straight into another.
+ */
+const resolveAdjacentShopConflicts = (grid: RunMapNode[][]): void =>
+{
+    const byId = new Map(grid.flat().map((node) => [ node.id, node ]));
+
+    for (const node of grid.flat())
+    {
+        if (node.kind !== 'shop')
+        {
+            continue;
+        }
+
+        for (const nextId of node.nextIds)
+        {
+            const next = byId.get(nextId);
+
+            if (!next || next.kind !== 'shop')
+            {
+                continue;
+            }
+
+            convertShopNode(next);
+        }
+    }
+};
+
+/** Turns a Ripperdoc into a street fight or signal so adjacent-shop routes dissolve. */
+const convertShopNode = (node: RunMapNode): void =>
+{
+    const kind: RunMapNodeKind = random() < 0.7 ? 'enemy' : 'event';
+    node.kind = kind;
+
+    if (kind === 'enemy')
+    {
+        const enemies = resolveBattleEnemies(node.row, kind, node.routeKind ?? 'standard');
+        node.enemyId = enemies.enemyId;
+        node.enemyIds = enemies.enemyIds;
+        node.reward = rewardForNodeKind(kind);
+        node.routeKind = node.routeKind ?? 'standard';
+        return;
+    }
+
+    node.enemyId = undefined;
+    node.enemyIds = undefined;
+    node.reward = undefined;
+    node.routeKind = undefined;
 };
 
 /** Returns the ids of nodes reachable given the last completed node (null = start). */

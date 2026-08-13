@@ -53,7 +53,9 @@ Helpers: `getFloorForColumn`, `getFloorColumnRange`, `RUN_CONFIG.floorCount` in 
   **Warden** — except **Saboteur** (regular fights only) and **Warden**, which stay named. First column
   is always `enemy`; column 4 (row index 3) is always a **semi-boss** lieutenant fight
   (`smokebinder` / `saboteur`); last column is the `boss`; other middle columns are weighted-random
-  (`rollNodeKind`: 70% enemy, 20% event, 10% shop). The column **before the Warden** is always **Safehouse**
+  (`rollNodeKind`: 70% enemy, 20% event, 10% shop). After edges are built, any shop→shop route is broken by
+  converting the destination Ripperdoc into an enemy or event, so two Ripperdocs never sit back-to-back on a path.
+  The column **before the Warden** is always **Safehouse**
   (`rest` nodes): rest for 30% max integrity or free-upgrade one card (`RestOverlay`, `restSite.ts`).
   **Signal nodes** resolve on visit (`signalEncounter.ts`):
   first jack-in is always an encounter; each prior signal raises ambush chance into a regular street fight.
@@ -353,6 +355,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-13 | **No adjacent Ripperdocs.** Map generation breaks shop→shop route edges by converting the destination Ripperdoc into a street fight or signal, so you cannot travel from one Ripperdoc straight into another. |
 | 2026-08-13 | **Null Strip boss intent.** New `nullifyLane` passive / `nullify-lane` turn step: telegraphs one board column or row. Cards can still be placed there, but deal no damage, grant no armor, and fire no step effects (routing continues). Active strip highlighted on the board. Wired onto the **Warden**. |
 | 2026-08-13 | **Unified card inspectors.** Draw pile, graveyard, and run-deck popups use the same card-index layout (grid tiles, hover dossier, detail panel) as unlocked cards in the collection. |
 | 2026-08-13 | **Reward dossier + deck inspector.** Card rewards show full tooltip text in a detail panel (Switchback and similar no longer fall back to just the name). View-your-deck uses the in-fight pile inspector chrome, with a bestiary-style dossier when you select a card. |

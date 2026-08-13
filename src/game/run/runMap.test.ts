@@ -104,6 +104,29 @@ describe('runMap', () =>
         expect(semiBossRow.every((node) => node.reward?.kind === 'compound')).toBe(true);
     });
 
+    it('never connects two Ripperdocs along a route edge', () =>
+    {
+        for (let attempt = 0; attempt < 50; attempt++)
+        {
+            seedScope(`map-no-adjacent-shops-${attempt}`, 'map');
+            const map = generateRunMap();
+            const byId = new Map(map.nodes.map((node) => [ node.id, node ]));
+
+            for (const node of map.nodes)
+            {
+                if (node.kind !== 'shop')
+                {
+                    continue;
+                }
+
+                for (const nextId of node.nextIds)
+                {
+                    expect(byId.get(nextId)?.kind).not.toBe('shop');
+                }
+            }
+        }
+    });
+
     it('always places safehouses in the column before the warden', () =>
     {
         seedScope('map-rest', 'map');
