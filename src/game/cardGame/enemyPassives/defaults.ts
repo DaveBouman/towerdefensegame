@@ -52,6 +52,7 @@ export const ENEMY_PASSIVE_DEFAULTS: Record<EnemyPassiveId, EnemyPassiveConfig> 
         extraTraps: 1,
     },
     handRedirect: { id: 'handRedirect', everyTurns: 1 },
+    siphonNode: { id: 'siphonNode', nodesPerTurn: 1 },
 };
 
 export const normalizeEnemyPassives = (

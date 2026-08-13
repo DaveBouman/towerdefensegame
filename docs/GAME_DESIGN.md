@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-08-11
+**Last updated:** 2026-08-13
 
 ---
 
@@ -13,8 +13,8 @@ branching **run map** (roguelite-style path of battles).
 
 - Player drags cards from hand onto a grid; arrows define activation order.
 - Player sets chain start (click a column-0 tile) and clicks **Attack**.
-- Chain resolves step-by-step (attack, defend, fire, poison, Reroute, hazard, boost).
-- Enemy acts with telegraphed intent (attack/shield + hazard traps).
+- Chain resolves step-by-step (attack, defend, fire, poison, Reroute, hazard, siphon, boost).
+- Enemy acts with telegraphed intent (attack/shield + hazard traps / leech nodes).
 - Win: all enemy HP ≤ 0. Lose: player HP ≤ 0.
 - Multi-enemy fights: click an enemy to set your attack target before attacking; pick a new target mid-chain if the current one dies. When **all** enemies are dead, the chain stops (remaining cards do not activate).
 
@@ -62,7 +62,7 @@ Helpers: `getFloorForColumn`, `getFloorColumnRange`, `RUN_CONFIG.floorCount` in 
 - **Ripperdoc shop** (`ShopOverlay`, `shop.ts`): seeded offers (`seedScope(seed, shop:<nodeId>)`) — buy a card, body mod, Integrity heal, or remove a card from the run deck. Spend creds; leave without buying is always available.
 - **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
 - **Deck persists and grows**: the run owns the deck as a list of card definition ids (`getDefaultDeckDefinitionIds`). Each battle builds instances from those ids (`buildDeckFromDefinitionIds`).
-- **Victory rewards**: street ops grant a standard 3-pick-1 card reward (skip allowed); lieutenants grant elite card + lieutenant relic; boss wins grant the **Gatekeeper Seal** relic then end the run.
+- **Victory rewards**: street ops grant a standard 3-pick-1 card reward (skip allowed); lieutenants grant elite card + lieutenant body mod; boss wins grant the **Gatekeeper Seal** body mod then end the run.
 - Losing any battle, or clearing the boss, ends the run (`RunEndOverlay` → new run).
 - The map regenerates each run.
 
@@ -131,6 +131,7 @@ index.html → src/main.tsx → App.tsx (run controller)
   ├── MainMenuOverlay.tsx   (home / settings / how-to-play / credits / quit + card index + bestiary)
   ├── CardCollectionOverlay.tsx (unlocked / locked card archive)
   ├── BestiaryOverlay.tsx   (unlocked / locked enemy archive)
+  ├── BodyModBestiaryOverlay.tsx (unlocked / locked body mod archive)
   ├── desktopBridge.ts      (`window.signalChainDesktop` quit/fullscreen hooks for Electron)
   ├── GameHud.tsx           (battle phase)
   ├── Tutorial.tsx          (first-run intro / coach / tip)
@@ -236,6 +237,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | `stutter-node` | **Stutter Clock** — every other enemy phase, its attack/shield step executes twice (telegraphed). |
 | `phantom-relay` | **Phantom Intent** — telegraphs both attack and shield; only the real step fires. |
 | `vector-haunt` | **Signal Twist** — telegraphed `redirect-hand` intent; scrambles arrows on cards in your hand for the rest of the energy round (Reroute untouched). Arrows restore when energy refills. |
+| `drain-host` | **Leech Nodes** — places a siphon field card each turn. Route through it to shut it off; leave it off-chain and the Host heals for the node's power (8). Does not scorch the tile. |
 | `twin-clip` | **Link Rage** — duo fight; killing one enrages the survivor (+6 atk, +1 trap next turn). |
 | `bulwark-runner` + `glass-striker` | **Buffer pair** — Bulwark redirects the first hit each chain aimed at the 16 HP Glass Striker. |
 | `chrome-saint` + `glass-striker` | **Healer pair** — 72 HP Chrome Saint heals the fragile striker each turn. |
@@ -283,6 +285,7 @@ remain as a fallback if a portrait fails to load.
 
 - [x] Unlock system (cards) — `cardCollection.ts` + main-menu Card index (auto from `cards.json`); enemy unlocks later
 - [x] Unlock system (enemies) — `enemyBestiary.ts` + main-menu Bestiary; unlocks on encounter
+- [x] Unlock system (body mods) — `bodyModBestiary.ts` + main-menu Body mods index; unlocks when installed in a run
 - [x] Steam-ready main menu shell (settings / how-to-play / credits / quit + `signalChainDesktop` bridge)
 - [ ] Daily/weekly seeded challenge
 - [ ] Ascension modifiers (+enemy HP, −rerolls, faster enemy turns)
@@ -306,7 +309,7 @@ remain as a fallback if a portrait fails to load.
 | Shop / event node behavior | `ShopOverlay.tsx`, `shop.ts`, `RunEventOverlay.tsx`, `runEvents.ts`, `runPuzzles.ts`, `PuzzleHud.tsx`, `PuzzleResultOverlay.tsx`; `App.tsx` `visit`/`puzzle` phases |
 | Rewards / reward pool / body-mod hooks | `src/game/run/rewards.ts` (`rewardForNodeKind`, tier×floor weights, deck-weighted `rollCardReward`), `deckArchetypes.ts` |
 | Card tiers / upgrades | `cards.json` (`tier`, `upgrade`); materialize `*-plus` in `cardRegistry.ts`; shop via `cardUpgrades.ts` |
-| Body mods (stats + playstyle) | `src/game/run/bodyMods.ts` — Venom Latch / Razor Feed / Carapace Weave / Pyre Link / Hemorrhage Coil change combat; chrome-heart etc. are economy/stats |
+| Body mods (stats + playstyle) | `src/game/run/bodyMods.ts` — Venom Latch / Razor Feed / Carapace Weave / Pyre Link / Hemorrhage Coil change combat; **Latch Array** keeps first Attack/Defend/Skill after wipe; chrome-heart etc. are economy/stats |
 | Persistent run deck | `getDefaultDeckDefinitionIds` / `buildDeckFromDefinitionIds` in `buildPlayerDeck.ts` (neutral starter; specialties from rewards) |
 | Map / run visuals | `src/ui/components/MainMenuOverlay.tsx`, `RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`, `ShopOverlay.tsx`; `.main-menu*` / `.run-map*` / `.run-end*` / `.card-reward*` / `.shop-overlay*` in `public/style.css` |
 | First-run teaching | `src/ui/tutorial/Tutorial.tsx` |
@@ -329,6 +332,8 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-13 | **Body mod index.** Main-menu **Body mods** archive (`bodyModBestiary.ts`, `BodyModBestiaryOverlay`) logs body mods when installed in a run (localStorage). Mirrors enemy bestiary UX. |
+| 2026-08-13 | **Latch Array, Drain Host, faster chains.** Lieutenant body mod **Latch Array** pins the first Attack, Defend, and Skill placed each energy round through the board wipe (pick them up to re-pin). New field card **Leech Node** (`siphon`): in-chain like a trap (converted/disarmed); unchained heals a living enemy for 8 — no revive, no scorched tile. Street enemy **Drain Host** places one node per turn. Chain playback no longer waits a full extra step between cards; later steps accelerate, with holds + hitstop on kills, chunky hits, and on-step detonations (`activationStepMs` 480). |
 | 2026-08-11 | **Signal Twist intent + Vector Haunt.** New enemy turn step `redirect-hand` (passive `handRedirect`) scrambles hand-card arrows for the rest of the energy round; restores on energy refill. Mid-run street enemy **Vector Haunt** telegraphs the twist each turn. |
 | 2026-08-11 | **Rewards, ascension, routing, and run polish.** Street ops: pick a card or take nothing. Lieutenants: elite card then lieutenant relic. Warden: **Gatekeeper Seal** relic (+15 max integrity, +1 energy). Ascension 0–10 auto counter (+10% enemy integrity per level) — no pre-run picker; unlock banner after Warden only. Map **hot/safe** route tags (+15% / −10% enemy HP; hot pays +12 creds). Lieutenant **phase shift** at 50% HP (Smokebinder/Saboteur). Floor briefings, combat recap strip, reward synergy hints, run-end stats screen. |
 | 2026-08-11 | **Encounter pool sync.** Street + signal ambush share `battleEncounterPools.ts` / `battleEncounterRoll.ts`. **Bulwark Runner** and **Chrome Saint** duos added to late columns (6–8); signal ambushes use the same pools and duo expansion as the map. |

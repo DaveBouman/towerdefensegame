@@ -6,6 +6,7 @@ import { defendBehavior } from './defendBehavior';
 import { echoBehavior } from './echoBehavior';
 import { fireBehavior } from './fireBehavior';
 import { hazardBehavior } from './hazardBehavior';
+import { siphonBehavior } from './siphonBehavior';
 import { jokerBehavior } from './jokerBehavior';
 import { loopResetBehavior } from './loopResetBehavior';
 import { poisonBehavior } from './poisonBehavior';
@@ -20,6 +21,7 @@ const behaviors = new Map<string, CardBehavior>([
     [ echoBehavior.id, echoBehavior ],
     [ fireBehavior.id, fireBehavior ],
     [ hazardBehavior.id, hazardBehavior ],
+    [ siphonBehavior.id, siphonBehavior ],
     [ jokerBehavior.id, jokerBehavior ],
     [ loopResetBehavior.id, loopResetBehavior ],
     [ poisonBehavior.id, poisonBehavior ],

@@ -26,6 +26,7 @@ const emptySequence = (): AttackSequence => ({
     offChainDamage: 0,
     offChainArmor: 0,
     hazardDamage: 0,
+    siphonHeal: 0,
     chainAbilityEffects: [],
     abilityEnemyDamage: 0,
     abilityPlayerDamage: 0,
@@ -792,6 +793,7 @@ describe('CardGameSession enemy turn', () =>
             offChainDamage: 0,
             offChainArmor: 0,
             hazardDamage: 0,
+            siphonHeal: 0,
             chainAbilityEffects: [],
             abilityEnemyDamage: 0,
             abilityPlayerDamage: 0,
@@ -1207,6 +1209,100 @@ describe('CardGameSession enemy turn', () =>
 
         expect(session.removeCardFromBoard(slot)).toBe(false);
         expect(session.moveCardOnBoard(slot, { row: 0, col: 3 })).toBe(false);
+    });
+
+    it('keeps the first attack, defend, and skill after a Latch Array wipe', () =>
+    {
+        const session = new CardGameSession(
+            'training-dummy',
+            undefined,
+            undefined,
+            [ BODY_MOD_IDS.latchArray ],
+            {
+                damageTarget: 1,
+                handCards: [
+                    { definitionId: 'attack', arrow: 'right' },
+                    { definitionId: 'attack', arrow: 'right' },
+                    { definitionId: 'defend', arrow: 'right' },
+                    { definitionId: 'fire', arrow: 'right' },
+                ],
+            },
+        );
+
+        expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
+        const firstAttack = session.board.getCardAt({ row: 0, col: 0 })!;
+        expect(session.placeCardFromHand(0, { row: 0, col: 1 })).toBe(true);
+        expect(session.placeCardFromHand(0, { row: 1, col: 0 })).toBe(true);
+        const firstDefend = session.board.getCardAt({ row: 1, col: 0 })!;
+        expect(session.placeCardFromHand(0, { row: 2, col: 0 })).toBe(true);
+        const firstSkill = session.board.getCardAt({ row: 2, col: 0 })!;
+
+        session.clearBoard();
+
+        expect(session.board.getCardAt({ row: 0, col: 0 })?.instanceId).toBe(firstAttack.instanceId);
+        expect(session.board.getCardAt({ row: 0, col: 1 })).toBeNull();
+        expect(session.board.getCardAt({ row: 1, col: 0 })?.instanceId).toBe(firstDefend.instanceId);
+        expect(session.board.getCardAt({ row: 2, col: 0 })?.instanceId).toBe(firstSkill.instanceId);
+        expect(session.getDiscardDefinitionIds()).toEqual([ 'attack' ]);
+    });
+
+    it('lets Latch Array pin a replacement after the kept card is picked up', () =>
+    {
+        const session = new CardGameSession(
+            'training-dummy',
+            undefined,
+            undefined,
+            [ BODY_MOD_IDS.latchArray ],
+            {
+                damageTarget: 1,
+                handCards: [
+                    { definitionId: 'attack', arrow: 'right' },
+                    { definitionId: 'attack', arrow: 'right' },
+                ],
+            },
+        );
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
+        session.placeCardFromHand(0, { row: 0, col: 1 });
+        session.clearBoard();
+
+        expect(session.removeCardFromBoard({ row: 0, col: 0 })).toBe(true);
+        expect(session.placeCardFromHand(0, { row: 1, col: 0 })).toBe(true);
+        const replacement = session.board.getCardAt({ row: 1, col: 0 })!;
+
+        session.clearBoard();
+
+        expect(session.board.getCardAt({ row: 0, col: 0 })).toBeNull();
+        expect(session.board.getCardAt({ row: 1, col: 0 })?.instanceId).toBe(replacement.instanceId);
+    });
+
+    it('heals a living enemy from unchained siphon nodes and does not revive', () =>
+    {
+        const session = new CardGameSession('basic');
+        const slot = session.placeEnemySiphon();
+
+        expect(slot).not.toBeNull();
+        expect(session.board.getCardAt(slot!)?.definitionId).toBe('siphon');
+
+        session.board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        session.dealAttackDamage(12);
+
+        const wounded = session.getEnemy().health;
+        const sequence = session.planAttack()!;
+
+        expect(sequence.siphonHeal).toBe(8);
+        session.completeAttack(sequence);
+
+        expect(session.getEnemy().health).toBe(Math.min(session.getEnemy().maxHealth, wounded + 8));
+        expect(session.board.getCardAt(slot!)).toBeNull();
+        expect(session.isSlotBombDisabled(slot!)).toBe(false);
+
+        session.dealAttackDamage(session.getEnemy().health + 20);
+        expect(session.isEnemyDefeated()).toBe(true);
+
+        session.completeAttack({ ...emptySequence(), siphonHeal: 8 });
+        expect(session.isEnemyDefeated()).toBe(true);
+        expect(session.getEnemy().health).toBe(0);
     });
 
     it('scorches undisarmed trap tiles for the next player turn', () =>

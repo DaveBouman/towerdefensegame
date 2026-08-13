@@ -158,6 +158,12 @@ export const ENEMY_IDENTITY: Record<string, EnemyIdentity> = {
         labelColor: '#e6c8ff',
         portraitFile: 'smokebinder.png',
     },
+    'drain-host': {
+        accent: 0x3dffb0,
+        silhouette: 'circle',
+        labelColor: '#b8ffe0',
+        portraitFile: 'field-medic.png',
+    },
     'twin-clip': {
         accent: 0xd63031,
         silhouette: 'cross',

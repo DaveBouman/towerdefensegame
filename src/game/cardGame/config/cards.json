@@ -141,6 +141,17 @@
       "noUpgrade": true
     },
     {
+      "id": "siphon",
+      "label": "Leech Node",
+      "power": 8,
+      "behaviorId": "siphon",
+      "visualId": "siphon",
+      "arrowPool": "orthogonal",
+      "tier": 1,
+      "collectible": false,
+      "noUpgrade": true
+    },
+    {
       "id": "boost",
       "label": "Boost",
       "power": 0,

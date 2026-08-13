@@ -60,6 +60,7 @@ export class CombatResolver
     private damageDealtThisAttack = 0;
     private armorGrantedThisAttack = 0;
     private poisonAppliedThisAttack = 0;
+    private siphonHealedThisAttack = 0;
     private playerDamageThisEnemyPhase = 0;
     private battleTotalDamageDealt = 0;
     private battleTotalDamageTaken = 0;
@@ -119,6 +120,7 @@ export class CombatResolver
         this.damageDealtThisAttack = 0;
         this.armorGrantedThisAttack = 0;
         this.poisonAppliedThisAttack = 0;
+        this.siphonHealedThisAttack = 0;
         this.doubleDamageThisAttack = false;
         this.bodyguardRedirectUsedThisAttack = false;
         this.playerDamageThisEnemyPhase = 0;
@@ -356,6 +358,13 @@ export class CombatResolver
 
         this.ctx.fieldEffects.resolveHazardsAfterAttack(sequence.chain);
 
+        const remainingSiphonHeal = Math.max(0, sequence.siphonHeal - this.siphonHealedThisAttack);
+
+        if (remainingSiphonHeal > 0)
+        {
+            this.resolveSiphonHeal(remainingSiphonHeal);
+        }
+
         const totalArmor = sequence.chain.reduce((sum, step) => sum + step.armor, 0)
             + sequence.offChainArmor
             + sequence.abilityArmorGain;
@@ -378,6 +387,7 @@ export class CombatResolver
         this.damageDealtThisAttack = 0;
         this.armorGrantedThisAttack = 0;
         this.poisonAppliedThisAttack = 0;
+        this.siphonHealedThisAttack = 0;
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_COMPLETED, {
             sequence,
@@ -397,6 +407,7 @@ export class CombatResolver
         this.damageDealtThisAttack = 0;
         this.armorGrantedThisAttack = 0;
         this.poisonAppliedThisAttack = 0;
+        this.siphonHealedThisAttack = 0;
         this.attackInProgress = false;
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_CANCELLED);
     }
@@ -482,6 +493,35 @@ export class CombatResolver
         );
 
         return { ...combatant.state };
+    }
+
+    /**
+     * Unchained leech nodes heal a living enemy. Does not revive if the fight is over.
+     * Prefers the current attack target when it is still alive.
+     */
+    resolveSiphonHeal (amount: number): { healed: number; targetInstanceId?: string }
+    {
+        const heal = Math.max(0, amount);
+        const living = this.ctx.getLivingCombatants();
+
+        if (heal <= 0 || living.length === 0)
+        {
+            return { healed: 0 };
+        }
+
+        const preferredId = this.ctx.getAttackTargetId();
+        const combatant = living.find((entry) => entry.instanceId === preferredId) ?? living[0]!;
+        const before = combatant.state.health;
+
+        combatant.state.health = Math.min(
+            combatant.state.maxHealth,
+            combatant.state.health + heal,
+        );
+
+        const healed = combatant.state.health - before;
+        this.siphonHealedThisAttack += healed;
+
+        return { healed, targetInstanceId: combatant.instanceId };
     }
 
     resolveAllyShield (amount: number, targetInstanceId: string): EnemyState

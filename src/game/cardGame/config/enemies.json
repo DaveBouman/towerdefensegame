@@ -278,6 +278,18 @@
       ]
     },
     {
+      "id": "drain-host",
+      "label": "Drain Host",
+      "maxHealth": 42,
+      "attackDamage": 10,
+      "shieldGain": 12,
+      "attackChance": 0.45,
+      "hazardsPerTurn": 0,
+      "passives": [
+        { "id": "siphonNode", "nodesPerTurn": 1 }
+      ]
+    },
+    {
       "id": "twin-clip",
       "label": "Twin Clip",
       "maxHealth": 26,

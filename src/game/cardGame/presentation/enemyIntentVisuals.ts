@@ -26,6 +26,10 @@ const INTENT_STYLE: Record<EnemyTurnKind, {
         upcoming: { tint: 0xff9f43, text: '#ffb347' },
         executing: { tint: 0xff6b6b, text: '#ff8a84' },
     },
+    'place-siphon': {
+        upcoming: { tint: 0x7af0c8, text: '#b8ffe8' },
+        executing: { tint: 0x5ddeb8, text: '#9ef5d2' },
+    },
     'dampen-field': {
         upcoming: { tint: 0x9b8cff, text: '#b7a9ff' },
         executing: { tint: 0x7d6cff, text: '#a89bff' },
@@ -110,6 +114,7 @@ export const getEnemyIntentStepVisuals = (
             tint: style.tint,
             textColor: style.text,
             amountLabel: step.kind === 'place-hazard'
+                || step.kind === 'place-siphon'
                 || step.kind === 'dampen-field'
                 || step.kind === 'redirect-hand'
                 ? undefined

@@ -134,6 +134,7 @@ export const planEnemyTurnWithPassives = ({
     const dampen = getEnemyPassive(passives, 'dampenTiles');
     const pressure = getEnemyPassive(passives, 'pressureColumn');
     const handRedirect = getEnemyPassive(passives, 'handRedirect');
+    const siphonNode = getEnemyPassive(passives, 'siphonNode');
     const phaseShift = getEnemyPassive(passives, 'phaseShift');
     const inLastStand = lastStand ? isLastStandActive(enemyState, lastStand) : false;
     const baseHazards = inLastStand ? lastStand!.hazardsPerTurn : enemy.hazardsPerTurn;
@@ -208,6 +209,13 @@ export const planEnemyTurnWithPassives = ({
     for (let i = 0; i < hazardCount; i++)
     {
         steps.push({ kind: 'place-hazard' });
+    }
+
+    const siphonCount = siphonNode?.nodesPerTurn ?? 0;
+
+    for (let i = 0; i < siphonCount; i++)
+    {
+        steps.push({ kind: 'place-siphon' });
     }
 
     return {

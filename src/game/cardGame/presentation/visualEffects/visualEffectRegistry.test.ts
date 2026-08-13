@@ -13,6 +13,7 @@ describe('visualEffectRegistry', () =>
             'poison',
             'fire',
             'hazard',
+            'siphon',
             'boost',
             'curse',
             'fuse',

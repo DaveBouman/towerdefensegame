@@ -18,7 +18,7 @@ export const FLOOR_BRIEFINGS: Record<number, FloorBriefing> = {
     3: {
         title: 'Warden Spire',
         body: 'Elite pairings and column pressure dominate. Safehouse rests sit before the Warden — use them or risk limping in.',
-        tip: 'The Warden drops a unique relic if you clear the gauntlet.',
+        tip: 'The Warden drops a unique body mod if you clear the gauntlet.',
     },
 };
 

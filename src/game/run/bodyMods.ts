@@ -24,6 +24,7 @@ export const BODY_MOD_IDS = {
     pyreLink: 'pyre-link',
     hemorrhageCoil: 'hemorrhage-coil',
     gatekeeperSeal: 'gatekeeper-seal',
+    latchArray: 'latch-array',
 } as const;
 
 /** Attacks that trigger Mark VII's double-damage proc (7th, 14th, …). */
@@ -120,6 +121,12 @@ export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
         blurb: 'Warden core shard — still warm from the final gate.',
         effect: '+15 max integrity and +1 energy each round for the rest of the run.',
     },
+    {
+        id: BODY_MOD_IDS.latchArray,
+        label: 'Latch Array',
+        blurb: 'Grid clamps pin your opening play so the wipe cannot pull it loose.',
+        effect: 'After the board wipes, your first Attack, Defend, and Skill placed this round stay on the grid.',
+    },
 ];
 
 const bodyModMap = new Map(BODY_MOD_DEFINITIONS.map((mod) => [ mod.id, mod ]));
@@ -139,7 +146,7 @@ export const getBodyModDefinitionOrThrow = (id: string): BodyModDefinition =>
     return definition;
 };
 
-/** Relics offered after lieutenant victories. */
+/** Body mods offered after lieutenant victories. */
 export const LIEUTENANT_RELIC_POOL: readonly string[] = [
     BODY_MOD_IDS.markSeven,
     BODY_MOD_IDS.reactivePlating,
@@ -149,15 +156,16 @@ export const LIEUTENANT_RELIC_POOL: readonly string[] = [
     BODY_MOD_IDS.hemorrhageCoil,
     BODY_MOD_IDS.carapaceWeave,
     BODY_MOD_IDS.overclockCell,
+    BODY_MOD_IDS.latchArray,
 ];
 
 export type BodyModRewardPool = 'standard' | 'lieutenant' | 'warden';
 
-/** Body mods that can drop from the wheel or black-ice relic (not already owned). */
+/** Body mods that can drop from the wheel or Black ICE event (not already owned). */
 export const rollBodyModReward = (ownedIds: readonly string[]): string | null =>
     rollBodyModFromPool(BODY_MOD_DEFINITIONS.map((mod) => mod.id), ownedIds);
 
-/** Rolls a relic for battle rewards (lieutenant pool or warden unique). */
+/** Rolls a body mod for battle rewards (lieutenant pool or warden unique). */
 export const rollBodyModFromPool = (
     pool: readonly string[],
     ownedIds: readonly string[],

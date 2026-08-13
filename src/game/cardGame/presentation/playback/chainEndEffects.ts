@@ -31,6 +31,7 @@ export function playEndOfChainEffects (
     board: BoardModel,
     offChainSlots: SlotPosition[],
     hazardSlots: SlotPosition[],
+    siphonSlots: SlotPosition[],
     onComplete: () => void,
 ): void
 {
@@ -54,6 +55,11 @@ export function playEndOfChainEffects (
     if (hazardSlots.length > 0 || sequence.abilityPlayerDamage > 0)
     {
         tasks.push((done) => playHazardBurstVisual(deps, hazardSlots, sequence, done));
+    }
+
+    if (siphonSlots.length > 0 || sequence.siphonHeal > 0)
+    {
+        tasks.push((done) => playSiphonHealVisual(deps, siphonSlots, sequence, done));
     }
 
     if (tasks.length === 0)
@@ -228,6 +234,46 @@ function playHazardBurstVisual (
     }
 
     scheduleAttackTimer(onComplete, GAME_RULES.activationStepMs);
+}
+
+function playSiphonHealVisual (
+    deps: ChainEndEffectsDeps,
+    slots: SlotPosition[],
+    sequence: AttackSequence,
+    onComplete: () => void,
+): void
+{
+    const { session, boardView, enemySquad, scheduleAttackTimer } = deps;
+
+    for (const slot of slots)
+    {
+        boardView.bringCardToFront(slot);
+        pulseAbilityCard(deps, slot, 'siphon', Math.round(GAME_RULES.activationStepMs * 0.7));
+    }
+
+    try
+    {
+        if (sequence.siphonHeal > 0)
+        {
+            const result = session.resolveSiphonHeal(sequence.siphonHeal);
+            const targetId = result.targetInstanceId;
+            const enemyView = targetId ? enemySquad.getView(targetId) : enemySquad.firstView;
+
+            if (result.healed > 0)
+            {
+                enemyView?.setHealth(session.getEnemy(targetId));
+                enemyView?.showHealGain(result.healed);
+                enemySquad.syncFromSession(session);
+            }
+        }
+    }
+    catch
+    {
+        onComplete();
+        return;
+    }
+
+    scheduleAttackTimer(onComplete, Math.round(GAME_RULES.activationStepMs * 0.7));
 }
 
 function formatAbilityEffectLabel (

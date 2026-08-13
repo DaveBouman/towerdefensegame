@@ -95,7 +95,7 @@ describe('runMap', () =>
         expect(rowZero.every((node) => node.reward?.kind === 'card' && node.reward.pool === 'standard')).toBe(true);
     });
 
-    it('gives lieutenants compound card + relic rewards', () =>
+    it('gives lieutenants compound card + body mod rewards', () =>
     {
         seedScope('map-semi-boss-reward', 'map');
         const map = generateRunMap();

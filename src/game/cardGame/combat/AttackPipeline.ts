@@ -98,6 +98,13 @@ export const isEchoDefinition = (definition: CardDefinition): boolean =>
 export const isHazardDefinition = (definition: CardDefinition): boolean =>
     definition.behaviorId === 'hazard';
 
+export const isSiphonDefinition = (definition: CardDefinition): boolean =>
+    definition.behaviorId === 'siphon';
+
+/** Enemy field nodes that convert to attack/defend when routed into the chain. */
+export const isConvertibleFieldNode = (definition: CardDefinition): boolean =>
+    isHazardDefinition(definition) || isSiphonDefinition(definition);
+
 export const isBoostDefinition = (definition: CardDefinition): boolean =>
     definition.behaviorId === 'boost';
 
@@ -397,7 +404,7 @@ export const applyBombConversion = (chain: ActivationStep[]): ActivationStep[] =
     {
         const definition = getCardDefinitionOrThrow(step.definitionId);
 
-        if (!isHazardDefinition(definition))
+        if (!isConvertibleFieldNode(definition))
         {
             converted.push(step);
 
@@ -517,7 +524,7 @@ export const collectDisarmResults = (
 
     for (const step of chain)
     {
-        if (!isHazardDefinition(getCardDefinitionOrThrow(step.definitionId)))
+        if (!isConvertibleFieldNode(getCardDefinitionOrThrow(step.definitionId)))
         {
             continue;
         }
@@ -589,6 +596,7 @@ export const buildAttackSequence = (
     const totalDamage = steps.reduce((sum, step) => sum + step.damage, 0);
     const offChain = board ? computeOffChainBonuses(board, scaledChain) : { damage: 0, armor: 0 };
     const hazardDamage = board ? computeHazardDamage(board, scaledChain) : 0;
+    const siphonHeal = board ? computeSiphonHeal(board, scaledChain) : 0;
     const curseDamage = board ? computeUnchainedCurseDamage(board, scaledChain) : 0;
     const disarmResults = board ? collectDisarmResults(board, scaledChain) : [];
     const abilities = board ? resolveChainAbilities(scaledChain, board) : {
@@ -606,6 +614,7 @@ export const buildAttackSequence = (
         offChainDamage: offChain.damage,
         offChainArmor: offChain.armor,
         hazardDamage,
+        siphonHeal,
         chainAbilityEffects: abilities.effects,
         abilityEnemyDamage: abilities.enemyDamage,
         abilityPlayerDamage: abilities.playerDamage + curseDamage,
@@ -691,6 +700,29 @@ export const computeHazardDamage = (
     return damage;
 };
 
+/** Enemy leech nodes that were not routed into the chain heal the living enemy for their power. */
+export const computeSiphonHeal = (
+    board: BoardModel,
+    chain: readonly ActivationStep[],
+): number =>
+{
+    let heal = 0;
+
+    for (const slot of getUnchainedSiphonSlots(board, chain))
+    {
+        const card = board.getCardAt(slot);
+
+        if (!card)
+        {
+            continue;
+        }
+
+        heal += getCardDefinitionOrThrow(card.definitionId).power;
+    }
+
+    return heal;
+};
+
 /**
  * Player curse cards (Burden) left on the board but not routed into the chain
  * deal double their hand-end penalty when the attack resolves.
@@ -769,6 +801,39 @@ export const getUnchainedHazardSlots = (
         const definition = getCardDefinitionOrThrow(card.definitionId);
 
         if (isHazardDefinition(definition))
+        {
+            slots.push({ ...slot });
+        }
+    }
+
+    return slots;
+};
+
+export const getUnchainedSiphonSlots = (
+    board: BoardModel,
+    chain: readonly ActivationStep[],
+): SlotPosition[] =>
+{
+    const activated = new Set(chain.map((step) => slotKey(step.slot)));
+    const slots: SlotPosition[] = [];
+
+    for (const slot of board.slotsInOrder())
+    {
+        if (activated.has(slotKey(slot)))
+        {
+            continue;
+        }
+
+        const card = board.getCardAt(slot);
+
+        if (!card || !isEnemyOwnedCard(card))
+        {
+            continue;
+        }
+
+        const definition = getCardDefinitionOrThrow(card.definitionId);
+
+        if (isSiphonDefinition(definition))
         {
             slots.push({ ...slot });
         }

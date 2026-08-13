@@ -73,6 +73,7 @@ export type EnemyTurnKind =
     | 'attack'
     | 'shield'
     | 'place-hazard'
+    | 'place-siphon'
     | 'dampen-field'
     | 'lock-column'
     | 'redirect-hand'
@@ -190,6 +191,8 @@ export interface AttackSequence {
     offChainDamage: number;
     offChainArmor: number;
     hazardDamage: number;
+    /** Enemy heal from unchained leech nodes (0 if the fight is already over). */
+    siphonHeal: number;
     chainAbilityEffects: ChainAbilityEffect[];
     abilityEnemyDamage: number;
     abilityPlayerDamage: number;

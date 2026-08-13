@@ -76,18 +76,24 @@ export function resolveEnemyPhasePlayback (deps: EnemyPhaseResolveDeps): void
         }
 
         const graveyardTarget = deps.graveyardView?.getReceivePosition() ?? { x: 0, y: 0 };
+        const keepIds = session.getLatchKeepInstanceIds();
 
-        boardView.animateCardsToGraveyard(graveyardTarget.x, graveyardTarget.y, () =>
-        {
-            session.clearBoard();
-            session.tickDampenField();
-            deps.syncBoardFromSession();
-            deps.graveyardView?.pulse();
-            deps.syncPileViews();
-            session.finishPlayerRound();
-            syncBoardAfterEnemyResponse(deps);
-            deps.onPhaseSettled({ kind: 'continue' });
-        });
+        boardView.animateCardsToGraveyard(
+            graveyardTarget.x,
+            graveyardTarget.y,
+            () =>
+            {
+                session.clearBoard();
+                session.tickDampenField();
+                deps.syncBoardFromSession();
+                deps.graveyardView?.pulse();
+                deps.syncPileViews();
+                session.finishPlayerRound();
+                syncBoardAfterEnemyResponse(deps);
+                deps.onPhaseSettled({ kind: 'continue' });
+            },
+            keepIds,
+        );
     };
 
     const playEnemyResponse = (): void =>

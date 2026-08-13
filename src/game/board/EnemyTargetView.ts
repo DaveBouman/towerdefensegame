@@ -62,6 +62,7 @@ const PASSIVE_ROW_COLORS: Record<EnemyPassiveConfig['id'], number> = {
     phantomIntent: 0x9b59b6,
     phaseShift: 0x8e44ad,
     handRedirect: 0xd4a5ff,
+    siphonNode: 0x55efc4,
 };
 
 const ENEMY_BAR_BG = CYBER.enemyBarBg;

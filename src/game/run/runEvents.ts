@@ -190,7 +190,7 @@ export const RUN_EVENTS: Record<string, RunEventDefinition> = {
     },
     'cursed-idol': {
         id: 'cursed-idol',
-        title: 'Black ICE Relic',
+        title: 'Black ICE Chrome',
         intro: 'Corrupted chrome thrums on a dead server rack — malware clings to the casing.',
         icon: 'idol',
         choices: [

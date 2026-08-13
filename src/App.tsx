@@ -42,6 +42,7 @@ import {
     unlockCards,
 } from './game/run/cardCollection';
 import { unlockEnemies } from './game/run/enemyBestiary';
+import { unlockBodyMods } from './game/run/bodyModBestiary';
 import { getBodyModDefinitionOrThrow } from './game/run/bodyMods';
 import { upgradeFirstCardInDeck } from './game/run/cardUpgrades';
 import { EventBus } from './game/EventBus';
@@ -73,7 +74,7 @@ import {
     seedScope,
 } from './game/random/rng';
 
-type RunPhase = 'menu' | 'map' | 'battle' | 'reward' | 'relic-reward' | 'visit' | 'puzzle' | 'puzzle-result' | 'puzzle-reward' | 'victory' | 'defeat';
+type RunPhase = 'menu' | 'map' | 'battle' | 'reward' | 'body-mod-reward' | 'visit' | 'puzzle' | 'puzzle-result' | 'puzzle-reward' | 'victory' | 'defeat';
 
 type RewardStep =
     | { kind: 'card'; reward: CardReward; options: string[]; rerollIndex: number }
@@ -568,7 +569,7 @@ function App()
                         steps,
                         stepIndex: 0,
                     });
-                    setPhase(steps[0]!.kind === 'body-mod' ? 'relic-reward' : 'reward');
+                    setPhase(steps[0]!.kind === 'body-mod' ? 'body-mod-reward' : 'reward');
                     return;
                 }
             }
@@ -661,6 +662,7 @@ function App()
             setDeck(applied.deck);
             unlockCards(applied.deck);
             setBodyMods(applied.bodyMods);
+            unlockBodyMods(applied.bodyMods);
 
             if (success)
             {
@@ -900,6 +902,7 @@ function App()
         getBodyModDefinitionOrThrow(offer.bodyModId);
         setGold((prev) => prev - offer.price);
         setBodyMods((prev) => [ ...prev, offer.bodyModId! ]);
+        unlockBodyMods([ offer.bodyModId! ]);
         setPlayerHealth((prev) => Math.min(getRunMaxHealth([ ...bodyMods, offer.bodyModId! ]), prev));
         emitRunSfx('shop-buy', { volume: 0.95 });
     }, [ gold, bodyMods ]);
@@ -1048,6 +1051,7 @@ function App()
         setDeck(result.deck);
         unlockCards(result.deck);
         setBodyMods(result.bodyMods);
+        unlockBodyMods(result.bodyMods);
         finishVisit();
     }, [ finishVisit ]);
 
@@ -1103,7 +1107,7 @@ function App()
 
             const nextStep = prev.steps[nextIndex]!;
 
-            setPhase(nextStep.kind === 'body-mod' ? 'relic-reward' : 'reward');
+            setPhase(nextStep.kind === 'body-mod' ? 'body-mod-reward' : 'reward');
 
             return {
                 ...prev,
@@ -1149,6 +1153,7 @@ function App()
         if (bodyModId)
         {
             setBodyMods((prev) => (prev.includes(bodyModId) ? prev : [ ...prev, bodyModId ]));
+            unlockBodyMods([ bodyModId ]);
         }
 
         advanceRewardFlow(0, bodyModId !== null);
@@ -1406,13 +1411,13 @@ function App()
                     onReroll={rerollReward}
                 />
             )}
-            {phase === 'relic-reward' && currentRewardStep?.kind === 'body-mod' && (
+            {phase === 'body-mod-reward' && currentRewardStep?.kind === 'body-mod' && (
                 <BodyModRewardOverlay
                     options={currentRewardStep.options}
-                    eyebrow={pendingRewardFlow?.nodeKind === 'boss' ? 'Warden relic' : 'Lieutenant relic'}
+                    eyebrow={pendingRewardFlow?.nodeKind === 'boss' ? 'Warden body mod' : 'Lieutenant body mod'}
                     title={pendingRewardFlow?.nodeKind === 'boss'
                         ? 'Claim the Gatekeeper Seal'
-                        : 'Install a combat relic'}
+                        : 'Install a body mod'}
                     subtitle="Permanent for the rest of the run."
                     onConfirm={finishBodyModReward}
                 />

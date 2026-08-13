@@ -10,6 +10,7 @@ describe('cardBehaviorIcons', () =>
             'defend',
             'joker',
             'hazard',
+            'siphon',
             'boost',
             'loop-reset',
             'poison',

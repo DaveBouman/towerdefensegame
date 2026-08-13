@@ -62,7 +62,7 @@ export const RunEndOverlay = ({
                         <li><span>Damage dealt</span><strong>{stats.damageDealt}</strong></li>
                         <li><span>Damage taken</span><strong>{stats.damageTaken}</strong></li>
                         <li><span>Cards added</span><strong>{stats.cardsAdded}</strong></li>
-                        <li><span>Relics installed</span><strong>{stats.bodyModsCollected}</strong></li>
+                        <li><span>Body mods installed</span><strong>{stats.bodyModsCollected}</strong></li>
                         <li><span>Creds earned</span><strong>{stats.credsEarned}</strong></li>
                         {stats.ascensionLevel > 0 && (
                             <li><span>Ascension</span><strong>{stats.ascensionLevel}</strong></li>

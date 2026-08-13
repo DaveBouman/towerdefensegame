@@ -203,6 +203,18 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
                 `Deals ${ctx.definition.power} damage when activated in the chain.`,
             ],
     })),
+    provider('siphon', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: isEnemyOwnedCard(ctx.card)
+            ? [
+                `Enemy leech node — heals the enemy for ${ctx.definition.power} if not activated in your chain.`,
+                'Disarm it by including it in your attack chain.',
+                'Does not explode or scorch the tile.',
+            ]
+            : [
+                `Heals the enemy for ${ctx.definition.power} if left off-chain.`,
+            ],
+    })),
     provider('boost', () => ({
         title: 'Boost',
         lines: [

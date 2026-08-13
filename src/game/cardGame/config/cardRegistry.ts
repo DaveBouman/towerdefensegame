@@ -100,6 +100,7 @@ export interface GameRules {
     defaultEnemyId: string;
     offChainBonus: { attackDamage: number; defendArmor: number };
     hazard: { definitionId: string };
+    siphon: { definitionId: string };
     typeStackBonus: { perDuplicate: number };
     fieldBoost: { definitionId: string; nextStepMultiplier: number };
     activationStart: { row: number; col: number };

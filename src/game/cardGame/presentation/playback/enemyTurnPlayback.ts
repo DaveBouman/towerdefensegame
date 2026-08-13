@@ -96,6 +96,26 @@ export function playEnemyTurnStep (
         return;
     }
 
+    if (step.kind === 'place-siphon')
+    {
+        enemyView?.playEnemyAttackPulse();
+
+        scene.time.delayedCall(turnMs, () =>
+        {
+            const slot = session.placeEnemySiphon();
+
+            if (slot)
+            {
+                boardView.syncFromBoard(session.board);
+                playSfx('enemy-move', { volume: 0.78 });
+            }
+
+            onComplete();
+        });
+
+        return;
+    }
+
     if (step.kind === 'dampen-field')
     {
         enemyView?.playEnemyAttackPulse();

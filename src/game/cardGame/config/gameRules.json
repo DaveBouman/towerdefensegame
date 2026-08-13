@@ -1,6 +1,6 @@
 {
-  "activationStepMs": 800,
-  "enemyTurnMs": 800,
+  "activationStepMs": 480,
+  "enemyTurnMs": 640,
   "deckSize": 20,
   "handSize": 8,
   "energyPerTurn": 3,
@@ -16,6 +16,9 @@
   },
   "hazard": {
     "definitionId": "hazard"
+  },
+  "siphon": {
+    "definitionId": "siphon"
   },
   "typeStackBonus": {
     "perDuplicate": 0.15

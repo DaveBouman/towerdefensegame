@@ -5,6 +5,7 @@ import {
     getOffChainSlots,
     getUnchainedCurseSlots,
     getUnchainedHazardSlots,
+    getUnchainedSiphonSlots,
     getBoostMultiplierForStep,
     isBoostedChainStep,
     isEchoDefinition,
@@ -16,12 +17,12 @@ import {
 import { getEchoReplayTarget } from '../../combat/echoReplay';
 import type { EchoReplayTarget } from '../../combat/echoReplay';
 import type { CardGameSession } from '../../domain/CardGameSession';
-import type { ActivationStep, AttackSequence, AttackStep, SlotPosition } from '../../domain/types';
+import type { ActivationStep, AttackSequence, AttackStep, DamageResult, SlotPosition } from '../../domain/types';
 import type { CardBoardView } from '../../../board/CardBoardView';
 import type { EnemySquadView } from '../../../board/EnemySquadView';
 import { applyEnemyHitResult, type CombatHitVisualDeps } from './combatHitVisuals';
 import { playChainAbilityEffectVisual, playEndOfChainEffects } from './chainEndEffects';
-import { getChainStepMs } from '../combatJuice';
+import { getBigMomentHoldMs, getChainGapMs, getChainPaceMultiplier, getChainStepMs } from '../combatJuice';
 import { playBattleModifierFloatingLabel } from '../battleModifierFloatingLabel';
 import { boostedBuffVisual } from '../visualEffects/boostedBuffVisual';
 import { playFloatingText } from '../visualEffects/visualEffectTweens';
@@ -118,12 +119,15 @@ export function runChainPlayback (
             ...getUnchainedHazardSlots(board, chain),
             ...getUnchainedCurseSlots(board, chain),
         ];
+        const siphonSlots = getUnchainedSiphonSlots(board, chain);
         const deferredAbilityEffects = sequence.chainAbilityEffects
             .filter((effect) => !isOnStepChainAbility(effect.abilityId));
         const hasEndEffects = deferredAbilityEffects.length > 0
             || offChainSlots.length > 0
             || hazardSlots.length > 0
+            || siphonSlots.length > 0
             || sequence.abilityPlayerDamage > 0
+            || sequence.siphonHeal > 0
             || sequence.disarmResults.length > 0;
 
         const finishSequence = (): void =>
@@ -147,6 +151,7 @@ export function runChainPlayback (
             board,
             offChainSlots,
             hazardSlots,
+            siphonSlots,
             finishSequence,
         );
     };
@@ -155,13 +160,15 @@ export function runChainPlayback (
     {
         current = next;
 
+        const gapMs = getChainGapMs(stepMs);
+
         if (!current)
         {
-            deps.scheduleAttackTimer(finalize, stepMs);
+            deps.scheduleAttackTimer(finalize, gapMs);
             return;
         }
 
-        deps.scheduleAttackTimer(runStep, stepMs);
+        deps.scheduleAttackTimer(runStep, gapMs);
     };
 
     const finishActiveStep = (): void =>
@@ -231,7 +238,7 @@ export function runChainPlayback (
         damage: number,
         sourceDefinitionId: string,
         resolvedStep: ActivationStep,
-        onStepComplete: () => void,
+        onStepComplete: (result?: DamageResult) => void,
     ): void =>
     {
         const maybeSwitchTargetAfterHit = (definitionId: string): void =>
@@ -299,7 +306,7 @@ export function runChainPlayback (
                 visualId: resolvedStep.visualId,
             });
             deps.session.emitAttackStep(attackSteps.length - 1, buildCurrentSequence());
-            onStepComplete();
+            onStepComplete(result);
         };
 
         deal();
@@ -463,7 +470,10 @@ export function runChainPlayback (
         const boosted = isBoostedChainStep(resolvedChain, stepIndex);
         const boostMultiplier = getBoostMultiplierForStep(resolvedChain, stepIndex);
         const definition = getCardDefinitionOrThrow(step.definitionId);
-        const stepDurationMs = getChainStepMs(resolvedStep.behaviorId, stepMs);
+        const pacedMs = Math.round(
+            getChainStepMs(resolvedStep.behaviorId, stepMs) * getChainPaceMultiplier(stepIndex),
+        );
+        const stepDurationMs = Math.max(220, pacedMs);
 
         const proceedAfterStep = (): void =>
         {
@@ -508,7 +518,7 @@ export function runChainPlayback (
         deps.activateStep(step, boosted ? boostMultiplier : 1);
         grantStepArmor(step);
 
-        const playOnStepAbilitiesThen = (next: () => void): void =>
+        const playOnStepAbilitiesThen = (next: (abilityDetonation: boolean) => void): void =>
         {
             const onStepEffects = resolveChainAbilities(resolvedChain, board).effects
                 .filter((effect: ChainAbilityEffect) =>
@@ -516,7 +526,7 @@ export function runChainPlayback (
 
             if (onStepEffects.length === 0)
             {
-                next();
+                next(false);
                 return;
             }
 
@@ -526,7 +536,7 @@ export function runChainPlayback (
             {
                 if (effectIndex >= onStepEffects.length)
                 {
-                    next();
+                    next(true);
                     return;
                 }
 
@@ -545,14 +555,36 @@ export function runChainPlayback (
             playNextEffect();
         };
 
+        const finishStepWithHold = (result?: DamageResult): void =>
+        {
+            playOnStepAbilitiesThen((abilityDetonation) =>
+            {
+                const hold = getBigMomentHoldMs({
+                    killed: result?.enemyKilled,
+                    damage: result?.healthDamage,
+                    abilityDetonation,
+                });
+
+                if (result?.enemyKilled)
+                {
+                    deps.requestHitstop?.(80);
+                }
+                else if (abilityDetonation)
+                {
+                    deps.requestHitstop?.(45);
+                }
+
+                scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs + hold);
+            });
+        };
+
         if (resolvedStep.damage > 0)
         {
             dealStepDamage(
                 resolvedStep.damage,
                 definition.id,
                 resolvedStep,
-                () => playOnStepAbilitiesThen(() =>
-                    scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs)),
+                finishStepWithHold,
             );
             return;
         }
@@ -562,8 +594,7 @@ export function runChainPlayback (
             deps.boardView.showJokerDirectionPicker(step.slot, (direction) =>
             {
                 applyJokerChosenDirection(step, direction);
-                playOnStepAbilitiesThen(() =>
-                    scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs));
+                finishStepWithHold();
             });
 
             return;
@@ -571,17 +602,16 @@ export function runChainPlayback (
 
         if (chain.length >= GAME_RULES.maxChainSteps)
         {
-            playOnStepAbilitiesThen(() => scheduleStepCompletion(() =>
+            playOnStepAbilitiesThen((abilityDetonation) => scheduleStepCompletion(() =>
             {
                 finishActiveStep();
                 finalize();
-            }, stepActivatedAt, stepDurationMs));
+            }, stepActivatedAt, stepDurationMs + getBigMomentHoldMs({ abilityDetonation })));
 
             return;
         }
 
-        playOnStepAbilitiesThen(() =>
-            scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs));
+        finishStepWithHold();
     };
 
     runStep();

@@ -8,15 +8,15 @@ export interface DamageTierStyle {
 const DAMAGE_TIERS: readonly { min: number; style: DamageTierStyle }[] = [
     {
         min: 40,
-        style: { color: '#ff2d2d', fontSize: 38, shakeIntensity: 0.012, hitstopMs: 55 },
+        style: { color: '#ff2d2d', fontSize: 38, shakeIntensity: 0.012, hitstopMs: 70 },
     },
     {
         min: 20,
-        style: { color: '#ff9f43', fontSize: 32, shakeIntensity: 0.008, hitstopMs: 35 },
+        style: { color: '#ff9f43', fontSize: 32, shakeIntensity: 0.008, hitstopMs: 48 },
     },
     {
         min: 10,
-        style: { color: '#ffe066', fontSize: 28, shakeIntensity: 0.005, hitstopMs: 20 },
+        style: { color: '#ffe066', fontSize: 28, shakeIntensity: 0.005, hitstopMs: 28 },
     },
     {
         min: 0,
@@ -87,6 +87,48 @@ export const getChainStepMs = (behaviorId: string, baseMs: number): number =>
     }
 };
 
+/** Later chain steps snap faster so long routes feel like they accelerate. */
+export const getChainPaceMultiplier = (stepIndex: number): number =>
+    Math.max(0.46, 1 - Math.max(0, stepIndex) * 0.08);
+
+/** Tiny gap between cards — not another full step wait. */
+export const getChainGapMs = (baseMs: number): number =>
+    Math.min(40, Math.max(0, Math.round(baseMs * 0.08)));
+
+export interface ChainMomentInput {
+    killed?: boolean;
+    damage?: number;
+    abilityDetonation?: boolean;
+}
+
+/** Extra hold on kills, chunky hits, and on-step ability detonations. */
+export const getBigMomentHoldMs = (moment: ChainMomentInput): number =>
+{
+    if (moment.killed)
+    {
+        return 160;
+    }
+
+    if (moment.abilityDetonation)
+    {
+        return 110;
+    }
+
+    const damage = moment.damage ?? 0;
+
+    if (damage >= 20)
+    {
+        return 80;
+    }
+
+    if (damage >= 10)
+    {
+        return 36;
+    }
+
+    return 0;
+};
+
 export const playElementHitBurst = (
     scene: Phaser.Scene,
     parent: Phaser.GameObjects.Container,
@@ -120,6 +162,11 @@ export const getIntentThreatLevel = (action: { steps: readonly { kind: string; a
         if (step.kind === 'attack' || step.kind === 'place-hazard')
         {
             threat += step.amount ?? 0;
+        }
+
+        if (step.kind === 'place-siphon')
+        {
+            threat += 6;
         }
     }
 

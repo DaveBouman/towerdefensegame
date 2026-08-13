@@ -50,6 +50,21 @@ export const resolveEnemyIntentTooltip = (
                     'Undisarmed traps scorch that tile for your next turn.',
                 ],
             };
+        case 'place-siphon':
+        {
+            const siphonPower = getCardDefinitionOrThrow(GAME_RULES.siphon.definitionId).power;
+
+            return {
+                title: 'Leech Node',
+                lines: [
+                    upcoming
+                        ? 'Will place a leech node on a random empty tile.'
+                        : 'Places a leech node on a random empty tile.',
+                    `Heals the enemy for ${siphonPower} if you do not route it into your chain.`,
+                    'Include it in your chain to shut the drain off.',
+                ],
+            };
+        }
         case 'dampen-field':
             return {
                 title: 'Dead Zone',

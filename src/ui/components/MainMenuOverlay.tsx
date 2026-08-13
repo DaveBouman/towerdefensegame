@@ -18,6 +18,7 @@ import {
 import { GAME_ALPHA_NOTICE, GAME_BUILD_LABEL, GAME_TAGLINE, GAME_TITLE, GAME_VERSION } from '../../game/meta/gameMeta';
 import { getCollectionProgress } from '../../game/run/cardCollection';
 import { getBestiaryProgress } from '../../game/run/enemyBestiary';
+import { getBodyModBestiaryProgress } from '../../game/run/bodyModBestiary';
 import { createRandomSeed, normalizeSeed } from '../../game/random/rng';
 import {
     TEXT_SCALE_SIZES,
@@ -27,6 +28,7 @@ import {
 } from '../../game/ui/textScale';
 import { BestiaryOverlay } from './BestiaryOverlay';
 import { CardCollectionOverlay } from './CardCollectionOverlay';
+import { BodyModBestiaryOverlay } from './BodyModBestiaryOverlay';
 import { CyberPanelChrome } from './CyberPanel';
 import { BOARD_COL_LABELS, BOARD_ROW_LABELS } from '../../game/board/boardCoordinates';
 
@@ -103,8 +105,10 @@ export const MainMenuOverlay = ({
     const [ audio, setAudio ] = useState<AudioSettings>(getAudioSettings);
     const [ showCollection, setShowCollection ] = useState(false);
     const [ showBestiary, setShowBestiary ] = useState(false);
+    const [ showBodyModBestiary, setShowBodyModBestiary ] = useState(false);
     const [ progress, setProgress ] = useState(getCollectionProgress);
     const [ bestiaryProgress, setBestiaryProgress ] = useState(getBestiaryProgress);
+    const [ bodyModProgress, setBodyModProgress ] = useState(getBodyModBestiaryProgress);
     const [ fullscreen, setFullscreen ] = useState(isDocumentFullscreen);
     const [ textScale, setTextScaleState ] = useState<TextScaleSize>(readTextScale);
     const [ tutorialArmed, setTutorialArmed ] = useState(false);
@@ -127,6 +131,14 @@ export const MainMenuOverlay = ({
             setBestiaryProgress(getBestiaryProgress());
         }
     }, [ showBestiary ]);
+
+    useEffect(() =>
+    {
+        if (!showBodyModBestiary)
+        {
+            setBodyModProgress(getBodyModBestiaryProgress());
+        }
+    }, [ showBodyModBestiary ]);
 
     useEffect(() =>
     {
@@ -201,6 +213,7 @@ export const MainMenuOverlay = ({
     {
         emitRunSfx('ui-select', { volume: 0.74, rate: 1.02 });
         setShowBestiary(false);
+        setShowBodyModBestiary(false);
         setShowCollection(true);
     };
 
@@ -208,7 +221,16 @@ export const MainMenuOverlay = ({
     {
         emitRunSfx('ui-select', { volume: 0.74, rate: 0.96 });
         setShowCollection(false);
+        setShowBodyModBestiary(false);
         setShowBestiary(true);
+    };
+
+    const openBodyModBestiary = (): void =>
+    {
+        emitRunSfx('ui-select', { volume: 0.74, rate: 1.04 });
+        setShowCollection(false);
+        setShowBestiary(false);
+        setShowBodyModBestiary(true);
     };
 
     const chooseTextScale = (size: TextScaleSize): void =>
@@ -270,6 +292,16 @@ export const MainMenuOverlay = ({
                                     Bestiary
                                     <span className="main-menu__collection-count">
                                         {bestiaryProgress.unlocked}/{bestiaryProgress.total}
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className="main-menu__secondary"
+                                    onClick={openBodyModBestiary}
+                                >
+                                    Body mods
+                                    <span className="main-menu__collection-count">
+                                        {bodyModProgress.unlocked}/{bodyModProgress.total}
                                     </span>
                                 </button>
                                 <button
@@ -346,6 +378,16 @@ export const MainMenuOverlay = ({
                                     Bestiary
                                     <span className="main-menu__collection-count">
                                         {bestiaryProgress.unlocked}/{bestiaryProgress.total}
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className="main-menu__secondary"
+                                    onClick={openBodyModBestiary}
+                                >
+                                    Body mods
+                                    <span className="main-menu__collection-count">
+                                        {bodyModProgress.unlocked}/{bodyModProgress.total}
                                     </span>
                                 </button>
                                 <button
@@ -642,6 +684,9 @@ export const MainMenuOverlay = ({
             )}
             {showBestiary && (
                 <BestiaryOverlay onClose={() => setShowBestiary(false)} />
+            )}
+            {showBodyModBestiary && (
+                <BodyModBestiaryOverlay onClose={() => setShowBodyModBestiary(false)} />
             )}
         </>
     );

@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, getJokerDirectionChoices, getNextChainSlot, applyJokerChosenDirection, getNextChainSlotFromStep, resolveChainSteps } from './AttackPipeline';
+import { GAME_RULES } from '../config/cardRegistry';
+import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeSiphonHeal, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, getJokerDirectionChoices, getNextChainSlot, applyJokerChosenDirection, getNextChainSlotFromStep, resolveChainSteps } from './AttackPipeline';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { createCardInstance, resetCardInstanceCounter } from '../domain/createCardInstance';
 import type { ActivationStep, SlotPosition } from '../domain/types';
@@ -343,8 +344,8 @@ describe('AttackPipeline', () =>
 
         expect(sequence.steps).toHaveLength(2);
         expect(sequence.totalDamage).toBe(11);
-        expect(sequence.stepMs).toBe(800);
-        expect(sequence.durationMs).toBe(1600);
+        expect(sequence.stepMs).toBe(GAME_RULES.activationStepMs);
+        expect(sequence.durationMs).toBe(2 * GAME_RULES.activationStepMs);
     });
 
     it('stops at a joker until the player chooses a direction during attack', () =>
@@ -490,6 +491,33 @@ describe('AttackPipeline', () =>
 
         expect(computeHazardDamage(board, chain)).toBe(4);
         expect(planAttack(board, { row: 0, col: 0 }).hazardDamage).toBe(4);
+    });
+
+    it('heals from unchained enemy siphon nodes and converts them in-chain', () =>
+    {
+        const unchained = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        unchained.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        unchained.placeCard({ row: 1, col: 0 }, createCardInstance('siphon', 'right', 'enemy'));
+
+        const unchainedChain = planActivationChain(unchained, { row: 0, col: 0 });
+
+        expect(computeSiphonHeal(unchained, unchainedChain)).toBe(8);
+        expect(planAttack(unchained, { row: 0, col: 0 }).siphonHeal).toBe(8);
+        expect(planAttack(unchained, { row: 0, col: 0 }).hazardDamage).toBe(0);
+
+        const chained = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        chained.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        chained.placeCard({ row: 0, col: 1 }, createCardInstance('siphon', 'left', 'enemy'));
+
+        const sequence = planAttack(chained, { row: 0, col: 0 });
+
+        expect(sequence.chain.some((step) => step.definitionId === 'siphon')).toBe(true);
+        expect(sequence.chain.find((step) => step.definitionId === 'siphon')?.behaviorId).toBe('attack');
+        expect(sequence.chain.find((step) => step.definitionId === 'siphon')?.damage).toBeGreaterThan(0);
+        expect(sequence.siphonHeal).toBe(0);
+        expect(sequence.totalDamage).toBeGreaterThan(0);
     });
 
     it('punishes unchained burden with double hand-end penalty', () =>

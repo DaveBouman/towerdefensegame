@@ -28,6 +28,13 @@ export const describeEnemyStep = (
             : { title: 'Trap', color: '#ff9f43' };
     }
 
+    if (step.kind === 'place-siphon')
+    {
+        return phase === 'executing'
+            ? { title: 'Leech', color: '#5ddeb8' }
+            : { title: 'Leech', color: '#7af0c8' };
+    }
+
     if (step.kind === 'lock-column')
     {
         const column = step.column !== undefined ? step.column + 1 : step.amount ?? '?';
@@ -119,6 +126,7 @@ export const describeEnemyPassives = (
         phantomIntent: 'Phantom',
         phaseShift: 'Phase Shift',
         handRedirect: 'Signal Twist',
+        siphonNode: 'Leech Nodes',
     };
 
     return enemy.passives.map((passive) => labels[passive.id] ?? passive.id);

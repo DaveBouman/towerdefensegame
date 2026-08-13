@@ -6,6 +6,7 @@ export type CardBehaviorIconId =
     | 'defend'
     | 'joker'
     | 'hazard'
+    | 'siphon'
     | 'boost'
     | 'loop-reset'
     | 'poison'
@@ -21,6 +22,7 @@ export const CARD_BEHAVIOR_TEXTURE_KEY: Record<CardBehaviorIconId, string> = {
     defend: 'card-icon-defend',
     joker: 'card-icon-joker',
     hazard: 'card-icon-hazard',
+    siphon: 'card-icon-siphon',
     boost: 'card-icon-boost',
     'loop-reset': 'card-icon-loop',
     poison: 'card-icon-poison',
@@ -36,6 +38,7 @@ const CARD_BEHAVIOR_ICON_FILE: Record<CardBehaviorIconId, string> = {
     defend: 'defend.png',
     joker: 'joker.png',
     hazard: 'hazard.png',
+    siphon: 'intent-heal.png',
     boost: 'boost.png',
     'loop-reset': 'loop.png',
     poison: 'poison.png',

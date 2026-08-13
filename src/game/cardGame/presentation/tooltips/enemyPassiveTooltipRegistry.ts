@@ -222,5 +222,13 @@ export const resolveEnemyPassiveTooltip = (
                     'Reroute cards keep their wild direction pick.',
                 ],
             };
+        case 'siphonNode':
+            return {
+                title: 'Leech Nodes',
+                lines: [
+                    `Places ${passive.nodesPerTurn} leech node(s) after each turn.`,
+                    'Route through a node to shut it off. Leave it off-chain and the enemy drinks its power as integrity.',
+                ],
+            };
     }
 };

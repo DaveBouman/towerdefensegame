@@ -22,7 +22,8 @@ export type EnemyPassiveId =
     | 'stutterClock'
     | 'phantomIntent'
     | 'phaseShift'
-    | 'handRedirect';
+    | 'handRedirect'
+    | 'siphonNode';
 
 export interface ThornsPassiveConfig {
     id: 'thorns';
@@ -202,6 +203,12 @@ export interface HandRedirectPassiveConfig {
     everyTurns: number;
 }
 
+/** Places leech nodes that heal the enemy if left out of the chain. */
+export interface SiphonNodePassiveConfig {
+    id: 'siphonNode';
+    nodesPerTurn: number;
+}
+
 export type EnemyPassiveConfig =
     | ThornsPassiveConfig
     | EnragePassiveConfig
@@ -226,6 +233,7 @@ export type EnemyPassiveConfig =
     | StutterClockPassiveConfig
     | PhantomIntentPassiveConfig
     | PhaseShiftPassiveConfig
-    | HandRedirectPassiveConfig;
+    | HandRedirectPassiveConfig
+    | SiphonNodePassiveConfig;
 
 export type EnemyPassiveInput = EnemyPassiveId | EnemyPassiveConfig;

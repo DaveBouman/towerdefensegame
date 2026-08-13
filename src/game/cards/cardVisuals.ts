@@ -31,6 +31,12 @@ export const CARD_VISUALS: Record<string, CardVisualStyle> = {
         labelColor: '#ffb8c8',
         powerColor: '#ff6b8a',
     },
+    siphon: {
+        fill: 0x0a221c,
+        border: 0x55efc4,
+        labelColor: '#b8ffe8',
+        powerColor: '#7af0c8',
+    },
     boost: {
         fill: 0x141a08,
         border: 0xfcee0a,

@@ -1,3 +1,4 @@
+import { BODY_MOD_IDS } from '../../run/bodyMods';
 import { getBattleEnergyBonus, getRunMaxHealth } from '../../run/runResources';
 import { collectRunModifierBattleModifiers } from '../../run/runModifiers';
 import { GRID_CONFIG } from '../../config/gridConfig';
@@ -35,6 +36,13 @@ import { DeckHand } from '../domain/DeckHand';
 import { EnemyPhaseController } from '../domain/EnemyPhaseController';
 import { FieldEffects } from '../domain/FieldEffects';
 import { isPlayerOwnedCard } from '../domain/cardOwnership';
+import {
+    clearLatchSlots,
+    getLatchKeepInstanceIds,
+    noteLatchPlacement,
+    noteLatchRemoval,
+    type LatchSlots,
+} from '../domain/boardPersist';
 import { createCardInstance } from '../domain/createCardInstance';
 import { createEnemyCombatant, isCombatantAlive, normalizeEnemyIds } from './enemyCombatants';
 import { shatterPartsThatFit, shouldSpawnMinionAfterTurn } from '../enemyPassives/spawnShatter';
@@ -106,6 +114,7 @@ export class CardGameSession
     private readonly puzzleMode: PuzzleModeConfig | null;
     private puzzleFinished = false;
     private readonly bodyMods: readonly string[];
+    private readonly latchSlots: LatchSlots = {};
     private chainStart: SlotPosition = {
         row: GAME_RULES.activationStart.row,
         col: GAME_RULES.activationStartColumn,
@@ -1558,6 +1567,11 @@ export class CardGameSession
         return this.fieldEffects.placeEnemyHazard();
     }
 
+    placeEnemySiphon (): SlotPosition | null
+    {
+        return this.fieldEffects.placeEnemySiphon();
+    }
+
     /** Places a field boost on a random empty board slot (any row/column). */
     placeFieldBoost (): SlotPosition | null
     {
@@ -1568,6 +1582,12 @@ export class CardGameSession
     resolveHazardDamage (damage: number): PlayerDamageResult
     {
         return this.combat.resolveHazardDamage(damage);
+    }
+
+    /** Unchained leech nodes heal a living enemy (no revive if the fight is over). */
+    resolveSiphonHeal (amount: number): { healed: number; targetInstanceId?: string }
+    {
+        return this.combat.resolveSiphonHeal(amount);
     }
 
     completeEnemyTurn (action: EnemyTurnAction): void
@@ -1590,7 +1610,72 @@ export class CardGameSession
     /** Clears player cards from the board at end of player round (before the enemy acts). */
     clearBoard (): void
     {
+        const keepIds = this.getLatchKeepInstanceIds();
         const toDiscard: CardInstance[] = [];
+
+        for (const slot of this.board.slotsInOrder())
+        {
+            const card = this.board.getCardAt(slot);
+
+            if (!card)
+            {
+                continue;
+            }
+
+            if (keepIds.has(card.instanceId))
+            {
+                continue;
+            }
+
+            if (isPlayerOwnedCard(card) && !card.exhausted)
+            {
+                toDiscard.push(card);
+            }
+
+            this.board.removeCard(slot);
+        }
+
+        this.deckHand.discardToPile(toDiscard);
+        this.reseedLatchFromBoard();
+    }
+
+    /** Instance ids Latch Array keeps on the grid through an energy-round wipe. */
+    getLatchKeepInstanceIds (): ReadonlySet<string>
+    {
+        if (!this.bodyMods.includes(BODY_MOD_IDS.latchArray))
+        {
+            return new Set();
+        }
+
+        const pinned = getLatchKeepInstanceIds(this.latchSlots);
+        const onBoard = new Set<string>();
+
+        for (const slot of this.board.slotsInOrder())
+        {
+            const card = this.board.getCardAt(slot);
+
+            if (
+                card
+                && pinned.has(card.instanceId)
+                && isPlayerOwnedCard(card)
+                && !card.exhausted
+            )
+            {
+                onBoard.add(card.instanceId);
+            }
+        }
+
+        return onBoard;
+    }
+
+    private reseedLatchFromBoard (): void
+    {
+        clearLatchSlots(this.latchSlots);
+
+        if (!this.bodyMods.includes(BODY_MOD_IDS.latchArray))
+        {
+            return;
+        }
 
         for (const slot of this.board.slotsInOrder())
         {
@@ -1598,12 +1683,25 @@ export class CardGameSession
 
             if (card && isPlayerOwnedCard(card) && !card.exhausted)
             {
-                toDiscard.push(card);
+                this.trackLatchPlace(card);
             }
         }
+    }
 
-        this.board.clear();
-        this.deckHand.discardToPile(toDiscard);
+    private trackLatchPlace (card: CardInstance): void
+    {
+        if (!this.bodyMods.includes(BODY_MOD_IDS.latchArray))
+        {
+            return;
+        }
+
+        const definition = getCardDefinitionOrThrow(card.definitionId);
+        noteLatchPlacement(this.latchSlots, definition.behaviorId, card.instanceId);
+    }
+
+    private trackLatchRemove (card: CardInstance): void
+    {
+        noteLatchRemoval(this.latchSlots, card.instanceId);
     }
 
     cancelAttack (): void
@@ -1618,12 +1716,38 @@ export class CardGameSession
 
     placeCardFromHand (handIndex: number, slot: SlotPosition): boolean
     {
-        return this.boardEdit.placeCardFromHand(handIndex, slot);
+        const existing = this.board.getCardAt(slot);
+        const placed = this.boardEdit.placeCardFromHand(handIndex, slot);
+
+        if (placed)
+        {
+            if (existing)
+            {
+                this.trackLatchRemove(existing);
+            }
+
+            const card = this.board.getCardAt(slot);
+
+            if (card)
+            {
+                this.trackLatchPlace(card);
+            }
+        }
+
+        return placed;
     }
 
     removeCardFromBoard (slot: SlotPosition): boolean
     {
-        return this.boardEdit.removeCardFromBoard(slot);
+        const existing = this.board.getCardAt(slot);
+        const removed = this.boardEdit.removeCardFromBoard(slot);
+
+        if (removed && existing)
+        {
+            this.trackLatchRemove(existing);
+        }
+
+        return removed;
     }
 
     moveCardOnBoard (from: SlotPosition, to: SlotPosition): boolean

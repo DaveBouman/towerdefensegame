@@ -44,4 +44,13 @@ describe('enemyIntentTooltipRegistry', () =>
         expect(tooltip.lines.some((line) => line.includes('scramble'))).toBe(true);
         expect(tooltip.lines.some((line) => line.includes('energy round'))).toBe(true);
     });
+
+    it('describes leech node placement', () =>
+    {
+        const tooltip = resolveEnemyIntentTooltip({ kind: 'place-siphon' }, 'upcoming');
+
+        expect(tooltip.title).toBe('Leech Node');
+        expect(tooltip.lines.some((line) => line.includes('heals') || line.includes('Heals'))).toBe(true);
+        expect(tooltip.lines.some((line) => line.includes('chain'))).toBe(true);
+    });
 });

@@ -142,3 +142,16 @@ export const hazardGlowVisual = createAlphaGlowVisual({
     duration: 220,
     repeat: 1,
 });
+
+export const siphonGlowVisual = createAlphaGlowVisual({
+    id: 'siphon',
+    fill: 0x1abc9c,
+    stroke: 0x55efc4,
+    fillAlpha: 0.28,
+    pad: 14,
+    strokeWidth: 4,
+    alphaFrom: 0.4,
+    alphaTo: 1,
+    duration: 260,
+    repeat: -1,
+});

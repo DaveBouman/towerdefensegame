@@ -168,6 +168,25 @@ describe('enemy passives', () =>
         expect(castsOn(2)).toBe(true);
     });
 
+    it('telegraphs leech nodes for siphonNode enemies', () =>
+    {
+        const enemy = {
+            ...getDefaultCardGameEnemy(),
+            hazardsPerTurn: 0,
+            passives: normalizeEnemyPassives([ { id: 'siphonNode', nodesPerTurn: 2 } ]),
+        };
+
+        const action = planEnemyTurnWithPassives({
+            enemy,
+            enemyState: { health: 40, maxHealth: 40, shield: 0 },
+            enrageStacks: 0,
+            turnsTaken: 0,
+        });
+
+        expect(action.steps.filter((step) => step.kind === 'place-siphon')).toHaveLength(2);
+        expect(action.steps.some((step) => step.kind === 'place-hazard')).toBe(false);
+    });
+
     it('halves damage and armor on dampened even tiles', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));

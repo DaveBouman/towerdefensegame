@@ -632,8 +632,13 @@ export class CardBoardView
         this.bringChainStartToFront();
     }
 
-    /** Flies proxy cards to the graveyard, then resets empty slots. */
-    animateCardsToGraveyard (targetX: number, targetY: number, onComplete: () => void): void
+    /** Flies proxy cards to the graveyard, then resets empty slots. Latch pins stay. */
+    animateCardsToGraveyard (
+        targetX: number,
+        targetY: number,
+        onComplete: () => void,
+        keepInstanceIds: ReadonlySet<string> = new Set(),
+    ): void
     {
         this.hideJokerDirectionPicker();
         this.clearHighlight();
@@ -655,6 +660,11 @@ export class CardBoardView
                     continue;
                 }
 
+                if (keepInstanceIds.has(card.instanceId))
+                {
+                    continue;
+                }
+
                 const matrix = wrapper.getWorldTransformMatrix();
                 const { container: graphic } = buildCardGraphic(this.scene, card, {
                     width: cardSize,
@@ -665,10 +675,20 @@ export class CardBoardView
                 proxy.setDepth(1500);
                 proxy.add(graphic);
                 proxies.push(proxy);
+
+                this.scene.tweens.killTweensOf(wrapper);
+                wrapper.setScale(1);
+                wrapper.setAlpha(1);
+                wrapper.destroy();
+                this.cardContainers[row][col] = null;
+
+                const slotBody = this.slotBodies[row][col];
+
+                slotBody.setVisible(true);
+                slotBody.setFillStyle(SLOT_FILL);
+                slotBody.setStrokeStyle(2, SLOT_BORDER, 0.9);
             }
         }
-
-        this.clearBoard();
 
         if (proxies.length === 0)
         {

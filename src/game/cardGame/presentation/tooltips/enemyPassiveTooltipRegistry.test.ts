@@ -32,6 +32,7 @@ describe('enemyPassiveTooltipRegistry', () =>
             'phantomIntent',
             'phaseShift',
             'handRedirect',
+            'siphonNode',
         ]);
 
         for (const passive of passives)

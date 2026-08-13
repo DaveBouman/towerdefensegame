@@ -26,7 +26,7 @@ export interface CardReward {
 
 export interface BodyModRunReward {
     kind: 'body-mod';
-    /** Which relic pool to draw from. */
+    /** Which body mod pool to draw from. */
     pool?: BodyModRewardPool;
 }
 
@@ -54,7 +54,7 @@ export const SEMI_BOSS_CARD_REWARD: CardReward = {
     pool: 'elite',
 };
 
-/** Lieutenant / semi-boss: elite card pick, then a relic. */
+/** Lieutenant / semi-boss: elite card pick, then a body mod. */
 export const SEMI_BOSS_REWARD: CompoundRunReward = {
     kind: 'compound',
     steps: [
@@ -72,8 +72,8 @@ export const SEMI_BOSS_REWARD: CompoundRunReward = {
     ],
 };
 
-/** Warden: unique gatekeeper relic. */
-export const WARDEN_RELIC_REWARD: BodyModRunReward = {
+/** Warden: unique Gatekeeper Seal body mod. */
+export const WARDEN_BODY_MOD_REWARD: BodyModRunReward = {
     kind: 'body-mod',
     pool: 'warden',
 };
@@ -83,7 +83,7 @@ export const rewardForNodeKind = (kind: RunMapNodeKind): RunReward | undefined =
 {
     if (kind === 'boss')
     {
-        return { ...WARDEN_RELIC_REWARD };
+        return { ...WARDEN_BODY_MOD_REWARD };
     }
 
     if (kind === 'semi-boss')
@@ -117,7 +117,7 @@ export const flattenRunReward = (reward: RunReward): RunReward[] =>
 export const BATTLE_REWARD_RULES: readonly string[] = [
     'Three cards are offered — biased toward your deck’s specialty, with higher tiers later in the run.',
     'Select one card to add to your deck, or take nothing and continue.',
-    'Lieutenants also grant a relic after you pick a card. The Warden grants a unique relic.',
+    'Lieutenants also grant a body mod after you pick a card. The Warden grants a unique body mod.',
     'Upgrade copies at the Ripperdoc. Your choices are permanent for the rest of the run.',
 ];
 

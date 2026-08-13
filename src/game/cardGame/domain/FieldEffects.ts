@@ -170,18 +170,21 @@ export class FieldEffects
             this.bombDisabledSlots.add(slotKey(slot));
         }
 
-        this.removeEnemyHazardsFromBoard();
+        this.removeEnemyFieldNodesFromBoard();
     }
 
-    private removeEnemyHazardsFromBoard (): void
+    private removeEnemyFieldNodesFromBoard (): void
     {
-        const hazardId = GAME_RULES.hazard.definitionId;
+        const fieldIds = new Set([
+            GAME_RULES.hazard.definitionId,
+            GAME_RULES.siphon.definitionId,
+        ]);
 
         for (const slot of this.board.slotsInOrder())
         {
             const card = this.board.getCardAt(slot);
 
-            if (card?.definitionId === hazardId && card.owner === 'enemy')
+            if (card && fieldIds.has(card.definitionId) && card.owner === 'enemy')
             {
                 this.board.removeCard(slot);
             }
@@ -201,9 +204,22 @@ export class FieldEffects
 
     placeEnemyHazard (): SlotPosition | null
     {
-        const hazardId = GAME_RULES.hazard.definitionId;
+        return this.placeEnemyFieldCard(GAME_RULES.hazard.definitionId);
+    }
+
+    placeEnemySiphon (): SlotPosition | null
+    {
+        return this.placeEnemyFieldCard(GAME_RULES.siphon.definitionId);
+    }
+
+    private placeEnemyFieldCard (definitionId: string): SlotPosition | null
+    {
         const emptySlots: SlotPosition[] = [];
-        const hazardSlots: SlotPosition[] = [];
+        const neighborSlots: SlotPosition[] = [];
+        const fieldIds = new Set([
+            GAME_RULES.hazard.definitionId,
+            GAME_RULES.siphon.definitionId,
+        ]);
 
         for (const slot of this.board.slotsInOrder())
         {
@@ -216,9 +232,9 @@ export class FieldEffects
                     emptySlots.push({ ...slot });
                 }
             }
-            else if (card.definitionId === hazardId)
+            else if (fieldIds.has(card.definitionId))
             {
-                hazardSlots.push({ ...slot });
+                neighborSlots.push({ ...slot });
             }
         }
 
@@ -227,18 +243,18 @@ export class FieldEffects
             return null;
         }
 
-        const isAdjacentToHazard = (candidate: SlotPosition): boolean =>
-            hazardSlots.some((hazard) =>
-                Math.abs(hazard.row - candidate.row) <= 1
-                && Math.abs(hazard.col - candidate.col) <= 1);
+        const isAdjacentToFieldNode = (candidate: SlotPosition): boolean =>
+            neighborSlots.some((occupied) =>
+                Math.abs(occupied.row - candidate.row) <= 1
+                && Math.abs(occupied.col - candidate.col) <= 1);
 
-        const spacedSlots = emptySlots.filter((candidate) => !isAdjacentToHazard(candidate));
+        const spacedSlots = emptySlots.filter((candidate) => !isAdjacentToFieldNode(candidate));
         const candidates = spacedSlots.length > 0 ? spacedSlots : emptySlots;
 
         const slot = pickRandom(candidates);
-        const hazardDefinition = getCardDefinitionOrThrow(GAME_RULES.hazard.definitionId);
-        const hazardArrow = pickFieldCardArrow(this.board, slot, hazardDefinition.arrowPool);
-        const card = createCardInstance(GAME_RULES.hazard.definitionId, hazardArrow, 'enemy');
+        const definition = getCardDefinitionOrThrow(definitionId);
+        const arrow = pickFieldCardArrow(this.board, slot, definition.arrowPool);
+        const card = createCardInstance(definitionId, arrow, 'enemy');
 
         this.board.placeCard(slot, card);
         reconcileFieldCardArrows(this.board, slot);

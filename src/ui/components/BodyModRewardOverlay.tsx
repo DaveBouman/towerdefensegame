@@ -11,7 +11,7 @@ interface BodyModRewardOverlayProps {
 
 export const BodyModRewardOverlay = ({
     options,
-    eyebrow = 'Relic recovered',
+    eyebrow = 'Body mod recovered',
     title = 'Install a body mod',
     subtitle,
     onConfirm,
