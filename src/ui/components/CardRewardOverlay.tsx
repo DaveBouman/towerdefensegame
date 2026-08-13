@@ -9,7 +9,7 @@ import { CardChip } from './CardChip';
 import { ModalShell } from './CyberPanel';
 import { RunDeckViewPopup } from './RunDeckViewPopup';
 import { DirectionArrowIcon } from './DirectionArrowIcon';
-import { getDirectionsForPool, arrowPoolLabel } from '../../game/cardGame/domain/cardDirections';
+import { arrowPoolLabel, getForwardDirectionsForPool } from '../../game/cardGame/domain/cardDirections';
 
 interface CardRewardOverlayProps {
     /** Card definition ids offered as choices. */
@@ -219,7 +219,7 @@ export const CardRewardOverlay = ({
                             {cards.map((card, index) =>
                             {
                                 const definition = getCardDefinitionOrThrow(card.definitionId);
-                                const poolDirections = getDirectionsForPool(definition.arrowPool);
+                                const poolDirections = getForwardDirectionsForPool(definition.arrowPool);
                                 const isSelected = selected.includes(card.definitionId);
                                 const isRevealed = index < revealedCount;
 

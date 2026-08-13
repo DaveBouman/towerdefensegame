@@ -1,7 +1,7 @@
 import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import type { RunDeckCard } from '../../run/runDeck';
 import type { ArrowPool, CardDirection } from './cardDirections';
-import { buildBalancedDirectionsForPool, DIAGONAL_DIRECTIONS, ORTHOGONAL_DIRECTIONS } from './cardDirections';
+import { buildForwardBiasedDirectionsForPool, DIAGONAL_DIRECTIONS, ORTHOGONAL_DIRECTIONS } from './cardDirections';
 import { createCardInstance } from './createCardInstance';
 import type { CardInstance } from './types';
 import { shuffleInPlace } from '../../random/rng';
@@ -37,7 +37,7 @@ export const getDefaultDeckDefinitionIds = (): string[] =>
     DECK_COMPOSITION.flatMap(({ definitionId, count }) =>
         Array.from({ length: count }, () => definitionId));
 
-/** Starting run deck with balanced arrows per pool (same distribution as `buildPlayerDeck`). */
+/** Starting run deck with right-biased arrows per pool (same distribution as `buildPlayerDeck`). */
 export const buildDefaultRunDeck = (): RunDeckCard[] =>
 {
     const arrowQueues = buildBalancedArrowQueues();
@@ -93,7 +93,7 @@ const buildBalancedArrowQueues = (): Map<ArrowPool, CardDirection[]> =>
 
     for (const [ pool, count ] of counts)
     {
-        queues.set(pool, buildBalancedDirectionsForPool(pool, count, shuffleInPlace));
+        queues.set(pool, buildForwardBiasedDirectionsForPool(pool, count, shuffleInPlace));
     }
 
     return queues;
@@ -105,7 +105,7 @@ const takeBalancedArrow = (
 ): CardDirection | undefined =>
     queues.get(pool)?.shift();
 
-/** Builds a shuffled deck with evenly distributed arrows per arrow pool. */
+/** Builds a shuffled deck with right-biased arrows per arrow pool. */
 export const buildPlayerDeck = (size = GAME_RULES.deckSize): CardInstance[] =>
 {
     const arrowQueues = buildBalancedArrowQueues();

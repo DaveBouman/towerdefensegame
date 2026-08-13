@@ -115,12 +115,53 @@ export const getDirectionsForPool = (pool: ArrowPool): readonly CardDirection[] 
     return pool === 'diagonal' ? DIAGONAL_DIRECTIONS : ORTHOGONAL_DIRECTIONS;
 };
 
+/**
+ * Right-first order for pickers and previews — chains start on the left column
+ * and need to travel across the board.
+ */
+export const FORWARD_ORTHOGONAL_DIRECTIONS: readonly CardDirection[] = [
+    'right',
+    'up',
+    'down',
+    'left',
+];
+
+export const FORWARD_DIAGONAL_DIRECTIONS: readonly CardDirection[] = [
+    'up-right',
+    'down-right',
+    'up-left',
+    'down-left',
+];
+
+export const getForwardDirectionsForPool = (pool: ArrowPool): readonly CardDirection[] =>
+{
+    if (pool === 'joker')
+    {
+        return [];
+    }
+
+    return pool === 'diagonal' ? FORWARD_DIAGONAL_DIRECTIONS : FORWARD_ORTHOGONAL_DIRECTIONS;
+};
+
+/**
+ * Right-biased cycle so starter decks have more forward arrows than left turns.
+ * Orthogonal: 4 right / 2 up / 2 down / 1 left.
+ * Diagonal: 2 up-right / 2 down-right / 1 up-left / 1 down-left.
+ */
+const FORWARD_ORTHOGONAL_CYCLE: readonly CardDirection[] = [
+    'right', 'up', 'right', 'down', 'right', 'up', 'right', 'down', 'left',
+];
+
+const FORWARD_DIAGONAL_CYCLE: readonly CardDirection[] = [
+    'up-right', 'down-right', 'up-right', 'down-right', 'up-left', 'down-left',
+];
+
 export const arrowPoolLabel = (pool: ArrowPool): string =>
 {
     switch (pool)
     {
         case 'orthogonal':
-            return 'Left, right, up, or down';
+            return 'Right, up, down, or left';
         case 'diagonal':
             return 'Diagonal';
         case 'joker':
@@ -149,6 +190,29 @@ export const buildBalancedDirectionsForPool = (
     for (let i = 0; i < count; i++)
     {
         assignments.push(directions[i % directions.length]!);
+    }
+
+    return shuffle(assignments);
+};
+
+/** Right-weighted direction list for starter decks (then shuffled). */
+export const buildForwardBiasedDirectionsForPool = (
+    pool: ArrowPool,
+    count: number,
+    shuffle: <T>(items: T[]) => T[] = shuffleDirectionsInPlace,
+): CardDirection[] =>
+{
+    if (count === 0 || pool === 'joker')
+    {
+        return [];
+    }
+
+    const cycle = pool === 'diagonal' ? FORWARD_DIAGONAL_CYCLE : FORWARD_ORTHOGONAL_CYCLE;
+    const assignments: CardDirection[] = [];
+
+    for (let i = 0; i < count; i++)
+    {
+        assignments.push(cycle[i % cycle.length]!);
     }
 
     return shuffle(assignments);

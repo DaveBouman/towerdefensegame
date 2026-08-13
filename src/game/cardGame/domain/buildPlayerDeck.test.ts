@@ -57,7 +57,7 @@ describe('buildPlayerDeck', () =>
         }
     });
 
-    it('splits orthogonal arrows evenly across the deck', () =>
+    it('biases orthogonal arrows toward right and keeps left scarce', () =>
     {
         const deck = buildPlayerDeck(GAME_RULES.deckSize);
         const orthogonalCards = deck.filter((card) =>
@@ -76,9 +76,16 @@ describe('buildPlayerDeck', () =>
             orthogonalCards.reduce((count, card) =>
                 count + (card.arrow === direction ? 1 : 0), 0);
 
-        const counts = ORTHOGONAL_DIRECTIONS.map(countDirection);
+        const right = countDirection('right');
+        const left = countDirection('left');
+        const up = countDirection('up');
+        const down = countDirection('down');
 
-        expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
-        expect(counts.reduce((sum, count) => sum + count, 0)).toBe(18);
+        expect(right + up + down + left).toBe(18);
+        expect(right).toBeGreaterThan(up);
+        expect(right).toBeGreaterThan(down);
+        expect(left).toBeLessThanOrEqual(up);
+        expect(left).toBeLessThanOrEqual(down);
+        expect(left).toBeLessThan(right);
     });
 });

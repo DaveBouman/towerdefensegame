@@ -2,7 +2,7 @@ import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistr
 import {
     arrowPoolLabel,
     formatDirectionLabel,
-    getDirectionsForPool,
+    getForwardDirectionsForPool,
     type CardDirection,
 } from '../../game/cardGame/domain/cardDirections';
 import { CardChip } from './CardChip';
@@ -23,7 +23,7 @@ export const CardDirectionPicker = ({
 }: CardDirectionPickerProps) =>
 {
     const definition = getCardDefinitionOrThrow(definitionId);
-    const directions = getDirectionsForPool(definition.arrowPool);
+    const directions = getForwardDirectionsForPool(definition.arrowPool);
 
     return (
         <div className="card-direction-picker">
@@ -55,4 +55,3 @@ export const CardDirectionPicker = ({
     );
 };
 
-import { cardNeedsDirectionPick } from '../../game/run/runDeck';
