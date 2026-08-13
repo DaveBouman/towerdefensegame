@@ -169,6 +169,7 @@ it waits for `START_BATTLE`, builds a battle, and emits `BATTLE_WON` / `BATTLE_L
 | Enemy AI | `src/game/cardGame/combat/enemyTurn.ts` | Intent, attack/shield, hazard placement |
 | Passives | `src/game/cardGame/enemyPassives/` | Per-enemy counter-play |
 | Config | `src/game/cardGame/config/` | `gameRules.json`, `cards.json`, `enemies.json` |
+| Player copy | `src/game/copy/strings.ts` | All entity labels (`card.*`, `enemy.*`, `bodyMod.*`, `node.*`, `shop.*`, `passive.*`, `trait.*`, `intent.*`). JSON `label` fields are fallbacks. Swap `EN` when adding locales. |
 | Board UI | `src/game/board/` | Grid, hand, piles, health, armor views |
 | React HUD | `src/ui/components/GameHud.tsx` | Attack, reroll controls |
 | Map / end UI | `src/ui/components/RunMapOverlay.tsx`, `RunEndOverlay.tsx` | Node picking, run results |
@@ -191,6 +192,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | Rule | Value | Config |
 |------|-------|--------|
 | Player HP | 80 | `gameRules.json` |
+| Enemy HP | JSON median ±10% per fight (`enemyHealthVariance`) | `gameRules.json`, `rollEnemyMaxHealth` |
 | Deck / hand | 20 / 8 | `gameRules.json` |
 | Energy (attacks) per turn | 3 | `gameRules.json` (`energyPerTurn`) |
 | Enemy damage ramp per extra attack | +4 | `gameRules.json` (`enemyDamageRampPerAttack`) |
@@ -355,6 +357,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-13 | **Enemy HP variance.** `enemies.json` `maxHealth` is a median. Each fight (and mid-battle spawn) rolls integrity ±10% via the seeded RNG (`enemyHealthVariance`). Bestiary shows the range. |
+| 2026-08-13 | **Copy catalog.** Player-facing labels live in `src/game/copy/strings.ts` — cards, enemies, body mods, map nodes, shop services, archetypes, passives, traits, and intents. JSON `label` fields are fallbacks; catalog wins. Swap `EN` when adding locales. |
 | 2026-08-13 | **Rad retheme.** The Poison card and status chip are now **Rad** (radioactive fumes). Miasma, Neurotoxin, Black Ichor, Venom Latch, and the Toxin lane keep their names. Internal id stays `poison`. |
 | 2026-08-13 | **No adjacent Ripperdocs.** Map generation breaks shop→shop route edges by converting the destination Ripperdoc into a street fight or signal, so you cannot travel from one Ripperdoc straight into another. |
 | 2026-08-13 | **Null Strip boss intent.** New `nullifyLane` passive / `nullify-lane` turn step: telegraphs one board column or row. Cards can still be placed there, but deal no damage, grant no armor, and fire no step effects (routing continues). Active strip highlighted on the board. Wired onto the **Warden**. |

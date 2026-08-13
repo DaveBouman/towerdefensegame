@@ -1,3 +1,4 @@
+import { cardLabel, intentLabel, passiveLabel } from '../../../copy/strings';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../../config/cardRegistry';
 import { describeBattleModifier } from '../../combat/battleModifiers';
 import type { EnemyTurnStep } from '../../domain/types';
@@ -19,7 +20,7 @@ export const resolveEnemyIntentTooltip = (
     {
         case 'attack':
             return {
-                title: 'Attack',
+                title: cardLabel('attack'),
                 lines: [
                     upcoming
                         ? `Will deal ${step.amount ?? 0} damage to you after your turn.`
@@ -30,7 +31,7 @@ export const resolveEnemyIntentTooltip = (
             };
         case 'shield':
             return {
-                title: 'Shield',
+                title: intentLabel('shield'),
                 lines: [
                     upcoming
                         ? `Will gain ${step.amount ?? 0} shield for the next player turn.`
@@ -40,7 +41,7 @@ export const resolveEnemyIntentTooltip = (
             };
         case 'place-hazard':
             return {
-                title: 'Trap',
+                title: cardLabel('hazard'),
                 lines: [
                     upcoming
                         ? 'Will place a trap on a random empty tile.'
@@ -55,7 +56,7 @@ export const resolveEnemyIntentTooltip = (
             const siphonPower = getCardDefinitionOrThrow(GAME_RULES.siphon.definitionId).power;
 
             return {
-                title: 'Leech Node',
+                title: cardLabel('siphon'),
                 lines: [
                     upcoming
                         ? 'Will place a leech node on a random empty tile.'
@@ -67,7 +68,7 @@ export const resolveEnemyIntentTooltip = (
         }
         case 'dampen-field':
             return {
-                title: 'Dead Zone',
+                title: passiveLabel('dampenTiles'),
                 lines: [
                     upcoming
                         ? 'Will weaken half the tiles (checkerboard) on your next turn.'
@@ -83,7 +84,7 @@ export const resolveEnemyIntentTooltip = (
                 : step.amount ?? '?';
 
             return {
-                title: 'Column Lock',
+                title: intentLabel('lock-column'),
                 lines: [
                     upcoming
                         ? `Will lock board column ${columnLabel} — you cannot place or move cards there.`
@@ -101,7 +102,7 @@ export const resolveEnemyIntentTooltip = (
                 : (step.column !== undefined ? step.column + 1 : step.amount ?? '?');
 
             return {
-                title: 'Null Strip',
+                title: passiveLabel('nullifyLane'),
                 lines: [
                     upcoming
                         ? `Will nullify board ${axis} ${indexLabel}.`
@@ -114,7 +115,7 @@ export const resolveEnemyIntentTooltip = (
         }
         case 'redirect-hand':
             return {
-                title: 'Signal Twist',
+                title: passiveLabel('handRedirect'),
                 lines: [
                     upcoming
                         ? 'Will scramble the arrows on cards in your hand for the rest of this energy round.'
@@ -130,7 +131,7 @@ export const resolveEnemyIntentTooltip = (
             const label = describeBattleModifier(stat, delta);
 
             return {
-                title: 'Battle modifier',
+                title: intentLabel('battle-mod'),
                 lines: [
                     upcoming
                         ? `Will apply ${label} until your energy refills.`
@@ -141,7 +142,7 @@ export const resolveEnemyIntentTooltip = (
         }
         case 'heal-ally':
             return {
-                title: 'Ally heal',
+                title: intentLabel('ally-heal'),
                 lines: [
                     upcoming
                         ? `Will heal an ally for ${step.amount ?? 0} HP.`
@@ -151,7 +152,7 @@ export const resolveEnemyIntentTooltip = (
             };
         case 'shield-ally':
             return {
-                title: 'Ally shield',
+                title: intentLabel('ally-shield'),
                 lines: [
                     upcoming
                         ? `Will grant an ally +${step.amount ?? 0} shield.`

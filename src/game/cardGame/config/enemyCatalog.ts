@@ -1,3 +1,4 @@
+import { copy, enemyLabel } from '../../copy/strings';
 import { GAME_RULES } from './cardRegistry';
 import enemiesData from './enemies.json';
 import { normalizeEnemyPassives } from '../enemyPassives/defaults';
@@ -9,6 +10,7 @@ import type { CombatTraitInput } from '../combat/combatTraits/types';
 export interface CardGameEnemyDefinition {
     id: string;
     label: string;
+    /** Median fight integrity. Actual max HP rolls ±`enemyHealthVariance`. */
     maxHealth: number;
     attackDamage: number;
     shieldGain: number;
@@ -30,7 +32,12 @@ export interface LoadedCardGameEnemyDefinition extends Omit<CardGameEnemyDefinit
 
 const loadEnemy = (enemy: CardGameEnemyDefinition): LoadedCardGameEnemyDefinition => ({
     ...enemy,
-    passives: normalizeEnemyPassives(enemy.passives),
+    label: enemyLabel(enemy.id, enemy.label),
+    passives: normalizeEnemyPassives(enemy.passives).map((passive) =>
+        passive.id === 'phaseShift'
+            ? { ...passive, label: copy(`enemy.${enemy.id}.phase`, passive.label) }
+            : passive,
+    ),
     combatTraits: normalizeCombatTraits(enemy.combatTraits),
 });
 

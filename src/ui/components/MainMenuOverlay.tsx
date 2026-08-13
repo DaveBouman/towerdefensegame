@@ -15,6 +15,7 @@ import {
     quitGame,
     setGameFullscreen,
 } from '../../game/desktop/desktopBridge';
+import { poisonStatusName } from '../../game/copy/strings';
 import { GAME_ALPHA_NOTICE, GAME_BUILD_LABEL, GAME_TAGLINE, GAME_TITLE, GAME_VERSION } from '../../game/meta/gameMeta';
 import { getCollectionProgress } from '../../game/run/cardCollection';
 import { getBestiaryProgress } from '../../game/run/enemyBestiary';
@@ -638,7 +639,7 @@ export const MainMenuOverlay = ({
                             <ol className="main-menu__manual">
                                 <li>Place cards on the 5×5 grid so their arrows form a chain.</li>
                                 <li>Click a column-0 tile to set chain start, then press Attack.</li>
-                                <li>Starter seeds teach combos: Fire alternation, Rad→Defends, Rupture bleed, Bulwark fortify, Surge overload.</li>
+                                <li>Starter seeds teach combos: Fire alternation, {poisonStatusName()}→Defends, Rupture bleed, Bulwark fortify, Surge overload.</li>
                                 <li>Echo repeats the previous card; Reroute steers mid-chain.</li>
                                 <li>Attack and defense cards off the chain still grant small bonuses.</li>
                                 <li>Each Attack spends energy; when empty, the board clears for a new round.</li>

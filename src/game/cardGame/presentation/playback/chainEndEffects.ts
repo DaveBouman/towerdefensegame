@@ -1,3 +1,4 @@
+import { poisonStatusNameUpper } from '../../../copy/strings';
 import { GAME_RULES } from '../../config/cardRegistry';
 import type { ChainAbilityEffect } from '../../abilities/types';
 import { isOnStepChainAbility } from '../../abilities/chainAbilityRegistry';
@@ -300,7 +301,7 @@ function formatAbilityEffectLabel (
 
     if (effect.poisonStacks > 0)
     {
-        return `RAD +${session.scalePoisonStacks(effect.poisonStacks)}`;
+        return `${poisonStatusNameUpper()} +${session.scalePoisonStacks(effect.poisonStacks)}`;
     }
 
     if (effect.playerDamage > 0)

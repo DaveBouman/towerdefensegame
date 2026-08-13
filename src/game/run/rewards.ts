@@ -1,3 +1,4 @@
+import { archetypeLabel, poisonStatusNameLower } from '../copy/strings';
 import { pickWeighted } from '../random/rng';
 import { getCardDefinitionOrThrow, type CardTier } from '../cardGame/config/cardRegistry';
 import { getCardRewardWeight, scoreDeckArchetypes } from './deckArchetypes';
@@ -290,7 +291,7 @@ export const rollCardReward = (
 const CARD_BLURBS: Record<string, string> = {
     attack: 'Deals damage to the enemy along the chain.',
     defend: 'Grants armor that soaks the next enemy hits.',
-    poison: 'Vents rad fumes — later defends stack rad that ticks each turn.',
+    poison: `Vents ${poisonStatusNameLower()} fumes — later defends stack ${poisonStatusNameLower()} that ticks each turn.`,
     fire: 'Ignites alternation — bonus damage on alternating steps.',
     joker: 'Wild link — choose its direction mid-chain.',
     rupture: 'Bleed — more damage the more attacks you chain.',
@@ -299,13 +300,13 @@ const CARD_BLURBS: Record<string, string> = {
     'corner-strike': 'Hooks around the corner to a forward-diagonal tile.',
     'corner-defense': 'Defend card that turns the corner to the next tile.',
     shiv: 'Diagonal bleed starter — rewards attack-heavy routes from the corners.',
-    miasma: 'Diagonal rad trail — angles your toxin through the grid.',
+    miasma: `Diagonal ${poisonStatusNameLower()} trail — angles your toxin through the grid.`,
     cinder: 'Diagonal fire — starts alternation chains from off-axis tiles.',
     lacerate: 'Lunge + bleed — skip a tile and stack attack bonuses.',
     scorch: 'Corner fire — hooks around a bend while igniting alternation.',
     bramble: 'Corner fortify — bends the chain while stacking defend bonuses.',
-    neurotoxin: 'Stronger rad trail — denser stacks on subsequent defends.',
-    'black-ichor': 'Rare diagonal toxin — heavy rad payload from off-axis routes.',
+    neurotoxin: `Stronger ${poisonStatusNameLower()} trail — denser stacks on subsequent defends.`,
+    'black-ichor': `Rare diagonal toxin — heavy ${poisonStatusNameLower()} payload from off-axis routes.`,
     serration: 'Bleed engine — fat attack that scales with long attack chains.',
     exsanguinate: 'Rare lunge bleed — skip a tile and tear open big bleed payoffs.',
     kindling: 'Hotter fire starter — stronger alternation fuel.',
@@ -349,10 +350,10 @@ export const describeCardReward = (definitionId: string): CardRewardDisplay =>
 };
 
 const ARCHETYPE_LABELS: Record<string, string> = {
-    blade: 'Blade',
-    toxin: 'Toxin',
-    heat: 'Heat',
-    bulwark: 'Bulwark',
+    blade: archetypeLabel('blade'),
+    toxin: archetypeLabel('toxin'),
+    heat: archetypeLabel('heat'),
+    bulwark: archetypeLabel('bulwark'),
 };
 
 /** Player-facing synergy hint for a reward card given the current deck. */

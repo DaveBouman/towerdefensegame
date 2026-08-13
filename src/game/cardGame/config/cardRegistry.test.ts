@@ -1,4 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
+import { cardLabel } from '../../copy/strings';
 import {
     CARD_DEFINITIONS,
     GAME_RULES,
@@ -31,6 +32,9 @@ describe('cardRegistry', () =>
         expect(getCardDefinition('phase-bulwark')?.wrapEdges).toBe(true);
         expect(getCardDefinition('phase-bulwark')?.behaviorId).toBe('defend');
         expect(getCardDefinition('poison')?.chainAbilityIds).toEqual([ 'poison-trail' ]);
+        expect(getCardDefinition('poison')?.label).toBe(cardLabel('poison'));
+        expect(getCardDefinition(upgradedCardId('poison'))?.label).toBe(cardLabel('poison-plus'));
+        expect(getCardDefinition('attack')?.label).toBe(cardLabel('attack'));
         expect(getCardDefinition('black-ichor')?.behaviorId).toBe('poison');
     });
 

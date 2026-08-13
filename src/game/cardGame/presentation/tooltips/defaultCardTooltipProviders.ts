@@ -1,3 +1,4 @@
+import { cardLabel, poisonStatusName, poisonStatusNameLower } from '../../../copy/strings';
 import { GAME_RULES, getChainStepDistance } from '../../config/cardRegistry';
 import { describeBattleModifier, describeBattleModifierDuration } from '../../combat/battleModifiers';
 import { ARROW_GLYPH } from '../../../cards/cardArrows';
@@ -52,8 +53,8 @@ const defendLines = ({ definition }: CardTooltipContext): string[] =>
 
 const radTrailLines = (ctx: CardTooltipContext, extras: string[] = []): string[] =>
     [
-        `Defend cards after this lose armor and add ${ctx.definition.power} rad stack(s) each to the enemy.`,
-        'Rad fumes damage the enemy at the start of each of its turns, then weaken by 1.',
+        `Defend cards after this lose armor and add ${ctx.definition.power} ${poisonStatusNameLower()} stack(s) each to the enemy.`,
+        `${poisonStatusName()} fumes damage the enemy at the start of each of its turns, then weaken by 1.`,
         ...extras,
     ];
 
@@ -167,7 +168,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         const continueGlyph = ARROW_GLYPH[continueArrow];
 
         return {
-            title: 'Loop',
+            title: cardLabel('loop-reset'),
             lines: [
                 'Two exits — the chain uses each once per attack.',
                 `First visit: follow ↺${loopGlyph} (loop arrow). Jump that way and re-activate every card you already passed before this Loop.`,
@@ -179,7 +180,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
     provider('poison', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: radTrailLines(ctx, [
-            'Stops on defends that follow an attack; Fire and Rad between do not cancel the trail.',
+            `Stops on defends that follow an attack; Fire and ${poisonStatusName()} between do not cancel the trail.`,
         ]),
     })),
     provider('rupture', (ctx) => ({
@@ -209,7 +210,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         lines: [
             `Deals ${ctx.definition.power} damage when activated in the chain.`,
             `+${GAME_RULES.chainAbilities.fireAlternation.bonusDamagePerAlternatingStep} bonus damage per alternating attack/defend step after this (needs 2+).`,
-            'Runs in parallel with Rad — both trails stay active until their own rule ends.',
+            `Runs in parallel with ${poisonStatusName()} — both trails stay active until their own rule ends.`,
         ],
     })),
     provider('hazard', (ctx) => ({
@@ -237,9 +238,9 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             ],
     })),
     provider('boost', () => ({
-        title: 'Boost',
+        title: cardLabel('boost'),
         lines: [
-            `Multiplies the next card's effect by ×${GAME_RULES.fieldBoost.nextStepMultiplier} (attack, defend, fire, rad, skills, battle mods).`,
+            `Multiplies the next card's effect by ×${GAME_RULES.fieldBoost.nextStepMultiplier} (attack, defend, fire, ${poisonStatusNameLower()}, skills, battle mods).`,
             'Boosts stack multiplicatively: Boost → Boost → Attack = ×4.',
             'Reroutes pass the boost stack through to the following card.',
             'Field card — spawns on a random empty tile after the enemy turn.',

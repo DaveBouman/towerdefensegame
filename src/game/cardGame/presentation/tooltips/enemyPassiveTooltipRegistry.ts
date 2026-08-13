@@ -1,3 +1,4 @@
+import { passiveLabel, poisonStatusNameLower } from '../../../copy/strings';
 import type { EnemyPassiveConfig } from '../../enemyPassives/types';
 import { getCardGameEnemyDefinition } from '../../config/enemyCatalog';
 
@@ -18,14 +19,14 @@ export const resolveEnemyPassiveTooltip = (
     {
         case 'thorns':
             return {
-                title: 'Thorns',
+                title: passiveLabel('thorns'),
                 lines: [
                     `Whenever you hit with an Attack card, take ${passive.reflectDamage} damage (blockable).`,
                 ],
             };
         case 'enrage':
             return {
-                title: 'Enrage',
+                title: passiveLabel('enrage'),
                 lines: [
                     'Traps still explode at the end of your turn if left undisarmed.',
                     `Each undisarmed trap adds +${passive.attackBonusPerTrap} attack on the enemy's next turn.`,
@@ -36,7 +37,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'lastStand':
             return {
-                title: 'Last Stand',
+                title: passiveLabel('lastStand'),
                 lines: [
                     `Activates at ${percent(passive.healthRatio)} HP or below.`,
                     passive.forceAttack
@@ -46,21 +47,21 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'smoke':
             return {
-                title: 'Smoke',
+                title: passiveLabel('smoke'),
                 lines: [
-                    `The first ${passive.suppressedPoisonCards} rad card(s) in your chain each attack deal no rad trail damage.`,
+                    `The first ${passive.suppressedPoisonCards} ${poisonStatusNameLower()} card(s) in your chain each attack deal no ${poisonStatusNameLower()} trail damage.`,
                 ],
             };
         case 'wetBlanket':
             return {
-                title: 'Wet Blanket',
+                title: passiveLabel('wetBlanket'),
                 lines: [
                     `Fire alternation bonus is ×${passive.fireAlternationMultiplier} while the enemy has shield.`,
                 ],
             };
         case 'silenceTile':
             return {
-                title: 'Silence Tile',
+                title: passiveLabel('silenceTile'),
                 lines: [
                     `Places ${passive.tilesPerTurn} muted tile(s) after each enemy turn.`,
                     'You cannot place or move cards onto muted tiles.',
@@ -68,21 +69,21 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'loopHunter':
             return {
-                title: 'Loop Hunter',
+                title: passiveLabel('loopHunter'),
                 lines: [
                     `Deals ${passive.damage} damage to you if your chain includes a Loop card.`,
                 ],
             };
         case 'jammer':
             return {
-                title: 'Jammer',
+                title: passiveLabel('jammer'),
                 lines: [
                     `If your chain has ${passive.minChainLength}+ cards, the enemy gains ${passive.shieldGain} shield after your turn.`,
                 ],
             };
         case 'escalate':
             return {
-                title: 'Escalate',
+                title: passiveLabel('escalate'),
                 lines: [
                     `After every turn, the enemy places +${passive.trapsPerRamp} more trap(s) on its next turn.`,
                     `Ramps up to a maximum of ${passive.maxTraps} traps per turn.`,
@@ -90,7 +91,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'dampenTiles':
             return {
-                title: 'Dead Zone',
+                title: passiveLabel('dampenTiles'),
                 lines: [
                     `Every ${passive.everyTurns} turn(s), the enemy casts a field that weakens ${passive.parity} tiles (checkerboard).`,
                     `Cards on weakened tiles deal ${percent(passive.multiplier)} of their damage and armor for ${passive.duration} turn(s).`,
@@ -99,7 +100,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'curseHand':
             return {
-                title: 'Curse Hand',
+                title: passiveLabel('curseHand'),
                 lines: [
                     `After each enemy turn, adds ${passive.count} ${passive.cardId} card(s) to your hand.`,
                     'Curse cards clog your hand and may hurt you if held at end of turn.',
@@ -107,7 +108,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'pressureColumn':
             return {
-                title: 'Column Pressure',
+                title: passiveLabel('pressureColumn'),
                 lines: [
                     'After each of its turns, locks one board column.',
                     'You cannot place or move cards onto the locked column.',
@@ -119,7 +120,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'nullifyLane':
             return {
-                title: 'Null Strip',
+                title: passiveLabel('nullifyLane'),
                 lines: [
                     'After each of its turns, nullifies one board column or row.',
                     'Cards can still be placed on the strip, but deal no damage, grant no armor, and fire no step effects.',
@@ -136,7 +137,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'spawnMinion':
             return {
-                title: 'Spawn',
+                title: passiveLabel('spawnMinion'),
                 lines: [
                     `Deploys a ${enemyLabel(passive.minionId)} when under the living-minion cap (${passive.maxLivingMinions}).`,
                     `Cadence: every ${passive.everyTurns} of this host's turns.`,
@@ -147,7 +148,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'shatterOnDeath':
             return {
-                title: 'Shatter',
+                title: passiveLabel('shatterOnDeath'),
                 lines: [
                     'When killed, this chassis breaks into separate hostiles.',
                     `Parts: ${passive.parts.map(enemyLabel).join(', ')}.`,
@@ -156,7 +157,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'credLeech':
             return {
-                title: 'Cred Leech',
+                title: passiveLabel('credLeech'),
                 lines: [
                     `Steals ${passive.amountPerTurn} cred(s) from your run wallet after each of its turns.`,
                     'Kill it fast or arrive at the Ripperdoc broke.',
@@ -164,7 +165,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'rerollTax':
             return {
-                title: 'Reroll Tax',
+                title: passiveLabel('rerollTax'),
                 lines: [
                     `Each hand reroll adds +${passive.attackBonus} attack on its next turn.`,
                     passive.extraTraps > 0
@@ -174,7 +175,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'cardThief':
             return {
-                title: 'Card Thief',
+                title: passiveLabel('cardThief'),
                 lines: [
                     'Steals a random card from your draw pile on its first turn.',
                     `Escapes after ${passive.fleeAfterTurns} turns — stolen cards are lost if it gets away.`,
@@ -183,7 +184,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'skillJam':
             return {
-                title: 'Skill Jam',
+                title: passiveLabel('skillJam'),
                 lines: [
                     `The first ${passive.suppressedSkillCards} skill card(s) in each chain have their abilities negated.`,
                     'Attacks and defends still resolve normally.',
@@ -191,7 +192,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'linkRage':
             return {
-                title: 'Link Rage',
+                title: passiveLabel('linkRage'),
                 lines: [
                     `When its partner dies, gains +${passive.attackBonus} attack on the next turn.`,
                     passive.extraTraps > 0
@@ -201,7 +202,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'bodyguard':
             return {
-                title: 'Bodyguard',
+                title: passiveLabel('bodyguard'),
                 lines: [
                     `Redirects the first hit of each attack aimed at ${enemyLabel(passive.protectDefinitionId)}.`,
                     'Break the runner or focus the glass cannon through the guard.',
@@ -209,14 +210,14 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'stutterClock':
             return {
-                title: 'Stutter Clock',
+                title: passiveLabel('stutterClock'),
                 lines: [
                     `Every ${passive.everyGlobalTurns} enemy phase(s), its combat step executes twice (telegraphed).`,
                 ],
             };
         case 'phantomIntent':
             return {
-                title: 'Phantom Intent',
+                title: passiveLabel('phantomIntent'),
                 lines: [
                     'Telegraphs both attack and shield — only one is real each turn.',
                     'Watch which step actually fires.',
@@ -232,7 +233,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'handRedirect':
             return {
-                title: 'Signal Twist',
+                title: passiveLabel('handRedirect'),
                 lines: [
                     `Every ${passive.everyTurns} turn(s), scrambles the arrows on cards in your hand.`,
                     'Lasts for the rest of that energy round — arrows restore when energy refills.',
@@ -241,7 +242,7 @@ export const resolveEnemyPassiveTooltip = (
             };
         case 'siphonNode':
             return {
-                title: 'Leech Nodes',
+                title: passiveLabel('siphonNode'),
                 lines: [
                     `Places ${passive.nodesPerTurn} leech node(s) after each turn.`,
                     'Route through a node to shut it off. Leave it off-chain and the enemy drinks its power as integrity.',

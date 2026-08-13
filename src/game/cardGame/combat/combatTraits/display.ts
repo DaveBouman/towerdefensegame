@@ -1,3 +1,4 @@
+import { traitLabel } from '../../../copy/strings';
 import type { CombatTraitConfig } from './types';
 import { COMBAT_TRAIT_TEXTURE_KEY } from '../../../../ui/icons/combatTraitIcons';
 
@@ -14,14 +15,14 @@ export const resolveCombatTraitTooltip = (
     {
         case 'damageCap':
             return {
-                title: 'Damage Cap',
+                title: traitLabel('damageCap'),
                 lines: [
                     `Each card hit deals at most ${trait.maxPerCard} damage.`,
                 ],
             };
         case 'hitWard':
             return {
-                title: 'Hit Ward',
+                title: traitLabel('hitWard'),
                 lines: [
                     `The first ${trait.hitsBlocked} card hit(s) deal no damage.`,
                 ],

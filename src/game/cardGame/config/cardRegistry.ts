@@ -1,3 +1,4 @@
+import { cardLabel } from '../../copy/strings';
 import cardsData from './cards.json';
 import gameRulesData from './gameRules.json';
 
@@ -97,6 +98,8 @@ export interface GameRules {
     handSize: number;
     energyPerTurn: number;
     enemyDamageRampPerAttack: number;
+    /** Fight HP rolls this fraction above/below the enemy's median maxHealth. */
+    enemyHealthVariance: number;
     /** Hand rerolls shared across all fights on the current floor. */
     rerollsPerFloor: number;
     player: { maxHealth: number };
@@ -132,6 +135,7 @@ const materializeDefinitions = (rawCards: readonly CardDefinitionJson[]): CardDe
         const base: CardDefinition = {
             ...rest,
             tier,
+            label: cardLabel(rest.id, rest.label),
         };
 
         if (!noUpgrade)

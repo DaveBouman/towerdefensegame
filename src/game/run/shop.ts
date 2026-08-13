@@ -1,3 +1,4 @@
+import { shopLabel } from '../copy/strings';
 import { pickRandom } from '../random/rng';
 import { getBodyModDefinition, rollBodyModReward } from './bodyMods';
 import { listUpgradableCardsInDeck } from './cardUpgrades';
@@ -56,7 +57,7 @@ export const rollShopOffers = (
             id: 'heal',
             kind: 'heal',
             price: SHOP_PRICES.heal,
-            label: 'Integrity Patch',
+            label: shopLabel('heal'),
             blurb: `Restore ${SHOP_HEAL_AMOUNT} Integrity (capped at max).`,
             healAmount: SHOP_HEAL_AMOUNT,
         },
@@ -64,14 +65,14 @@ export const rollShopOffers = (
             id: 'remove-card',
             kind: 'remove-card',
             price: SHOP_PRICES.removeCard,
-            label: 'Deck Excision',
+            label: shopLabel('remove-card'),
             blurb: 'Permanently remove one card from your run deck.',
         },
         {
             id: 'reroute-card',
             kind: 'reroute-card',
             price: SHOP_PRICES.rerouteCard,
-            label: 'Signal Reroute',
+            label: shopLabel('reroute-card'),
             blurb: 'Change the chain direction on one card in your deck.',
         },
     ];
@@ -82,7 +83,7 @@ export const rollShopOffers = (
             id: 'upgrade-card',
             kind: 'upgrade-card',
             price: SHOP_PRICES.upgradeCard,
-            label: 'Chrome Grind',
+            label: shopLabel('upgrade-card'),
             blurb: 'Upgrade one card in your deck (permanent for this run).',
         });
     }

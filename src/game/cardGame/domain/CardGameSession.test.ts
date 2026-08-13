@@ -10,7 +10,6 @@ vi.mock('../events/CardGameEventBus', () => ({
 
 import { GAME_RULES } from '../config/cardRegistry';
 import { BODY_MOD_IDS } from '../../run/bodyMods';
-import { getDefaultCardGameEnemy } from '../config/enemyCatalog';
 import { CardGameSession } from './CardGameSession';
 import { createCardInstance, resetCardInstanceCounter } from './createCardInstance';
 import { getInBoundsDirections } from './cardDirections';
@@ -198,7 +197,7 @@ describe('CardGameSession enemy turn', () =>
         const result = session.dealAttackDamage(20, undefined, undefined, 'attack');
 
         expect(result.healthDamage + result.shieldAbsorbed).toBe(5);
-        expect(session.getEnemy().health).toBe(38 - 5);
+        expect(session.getEnemy().health).toBe(session.getEnemy().maxHealth - 5);
     });
 
     it('blocks the first three card hits for enemies with hitWard', () =>
@@ -214,7 +213,7 @@ describe('CardGameSession enemy turn', () =>
             expect(result.damageBlocked).toBe(true);
             expect(result.healthDamage).toBe(0);
             expect(result.shieldAbsorbed).toBe(0);
-            expect(session.getEnemy().health).toBe(48);
+            expect(session.getEnemy().health).toBe(session.getEnemy().maxHealth);
         }
 
         const fourth = session.dealAttackDamage(10, undefined, undefined, 'attack');
@@ -655,7 +654,7 @@ describe('CardGameSession enemy turn', () =>
         expect(result.shieldAbsorbed).toBe(5);
         expect(result.healthDamage).toBe(3);
         expect(result.enemy.shield).toBe(0);
-        expect(result.enemy.health).toBe(getDefaultCardGameEnemy().maxHealth - 3);
+        expect(result.enemy.health).toBe(session.getEnemy().maxHealth - 3);
     });
 
     it('keeps enemy shield until the next enemy turn begins', () =>

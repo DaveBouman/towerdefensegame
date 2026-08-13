@@ -1,3 +1,4 @@
+import { bodyModLabel, poisonStatusName } from '../copy/strings';
 import { pickRandom } from '../random/rng';
 import type { CombatTraitInput } from '../cardGame/combat/combatTraits/types';
 
@@ -96,92 +97,92 @@ export const getMarkFiveProgress = (runAttackCount: number): IntervalStrikeProgr
 export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
     {
         id: BODY_MOD_IDS.chromeHeart,
-        label: 'Chrome Heart',
+        label: bodyModLabel(BODY_MOD_IDS.chromeHeart),
         blurb: 'Synthetic myocardium grafted behind the ribcage — runs hot, keeps you upright.',
         effect: '+10 max integrity for the rest of the run.',
     },
     {
         id: BODY_MOD_IDS.overclockCell,
-        label: 'Overclock Cell',
+        label: bodyModLabel(BODY_MOD_IDS.overclockCell),
         blurb: 'Neural capacitor wired into your combat reflex loop.',
         effect: '+1 energy each round.',
     },
     {
         id: BODY_MOD_IDS.credSiphon,
-        label: 'Cred Siphon',
+        label: bodyModLabel(BODY_MOD_IDS.credSiphon),
         blurb: 'Firmware skims loose eddies from every downed target.',
         effect: '+8 creds after each victory.',
     },
     {
         id: BODY_MOD_IDS.markFive,
-        label: 'Mark V',
+        label: bodyModLabel(BODY_MOD_IDS.markFive),
         blurb: 'Aggressive strike firmware — shorter fuse, harder swing.',
         effect: 'Every 5th attack deals double damage.',
     },
     {
         id: BODY_MOD_IDS.markSeven,
-        label: 'Mark VII',
+        label: bodyModLabel(BODY_MOD_IDS.markSeven),
         blurb: 'Neural strike firmware overclocks every seventh combat swing.',
         effect: 'Every 7th attack deals double damage.',
     },
     {
         id: BODY_MOD_IDS.portsideGyro,
-        label: 'Portside Gyro',
+        label: bodyModLabel(BODY_MOD_IDS.portsideGyro),
         blurb: 'Left-vector stabilizers bleed lateral momentum into the payload.',
         effect: 'Left-routing cards deal 30% more damage.',
     },
     {
         id: BODY_MOD_IDS.reactivePlating,
-        label: 'Reactive Plating',
+        label: bodyModLabel(BODY_MOD_IDS.reactivePlating),
         blurb: 'Subdermal impact mesh hardens on first contact, then vents.',
         effect: 'First 2 card hits each fight deal no damage to you.',
         combatTraits: [ { id: 'hitWard', hitsBlocked: 2 } ],
     },
     {
         id: BODY_MOD_IDS.venomLatch,
-        label: 'Venom Latch',
+        label: bodyModLabel(BODY_MOD_IDS.venomLatch),
         blurb: 'Toxin reservoirs clamp onto every poison payload before release.',
-        effect: 'Rad stacks you apply are doubled.',
+        effect: `${poisonStatusName()} stacks you apply are doubled.`,
     },
     {
         id: BODY_MOD_IDS.razorFeed,
-        label: 'Razor Feed',
+        label: bodyModLabel(BODY_MOD_IDS.razorFeed),
         blurb: 'Mono-edge injectors push every cut harder through chrome and meat.',
         effect: 'Your damage dealt +2.',
     },
     {
         id: BODY_MOD_IDS.carapaceWeave,
-        label: 'Carapace Weave',
+        label: bodyModLabel(BODY_MOD_IDS.carapaceWeave),
         blurb: 'Layered plating multiplies every shield projection.',
         effect: 'Armor you gain is 50% stronger.',
     },
     {
         id: BODY_MOD_IDS.pyreLink,
-        label: 'Pyre Link',
+        label: bodyModLabel(BODY_MOD_IDS.pyreLink),
         blurb: 'Ignition bus amplifies fire-alternation detonations.',
         effect: 'Fire alternation damage ×1.5.',
     },
     {
         id: BODY_MOD_IDS.hemorrhageCoil,
-        label: 'Hemorrhage Coil',
+        label: bodyModLabel(BODY_MOD_IDS.hemorrhageCoil),
         blurb: 'Bleed firmware overclocks rupture payloads mid-chain.',
         effect: 'Bleed ability damage ×1.5.',
     },
     {
         id: BODY_MOD_IDS.gatekeeperSeal,
-        label: 'Gatekeeper Seal',
+        label: bodyModLabel(BODY_MOD_IDS.gatekeeperSeal),
         blurb: 'Warden core shard — still warm from the final gate.',
         effect: '+15 max integrity and +1 energy each round for the rest of the run.',
     },
     {
         id: BODY_MOD_IDS.latchArray,
-        label: 'Latch Array',
+        label: bodyModLabel(BODY_MOD_IDS.latchArray),
         blurb: 'Grid clamps pin your opening play so the wipe cannot pull it loose.',
         effect: 'After the board wipes, your first Attack, Defend, and Skill placed this round stay on the grid.',
     },
     {
         id: BODY_MOD_IDS.capacitorBank,
-        label: 'Capacitor Bank',
+        label: bodyModLabel(BODY_MOD_IDS.capacitorBank),
         blurb: 'Defend steps bleed kinetic charge into a combat capacitor — discharged on the next swing.',
         effect: 'Every 3rd Defend in a chain stores charge; your next Attack in that chain deals +50% damage.',
     },

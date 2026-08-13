@@ -1,3 +1,4 @@
+import { nodeKindLabel } from '../copy/strings';
 import { random } from '../random/rng';
 
 /**
@@ -17,32 +18,32 @@ export interface NodeKindInfo {
 
 export const NODE_KIND_INFO: Record<RunMapNodeKind, NodeKindInfo> = {
     enemy: {
-        label: 'Street Op',
+        label: nodeKindLabel('enemy'),
         tooltip: 'Routine chrome on the grid. Flatline them to jack a card into your deck.',
         isBattle: true,
     },
     'semi-boss': {
-        label: 'Lieutenant',
+        label: nodeKindLabel('semi-boss'),
         tooltip: 'A district lieutenant. Tougher than street ops — flatline them for a card reward.',
         isBattle: true,
     },
     boss: {
-        label: 'Warden',
+        label: nodeKindLabel('boss'),
         tooltip: 'The run\u2019s final warden. Take them down to clear the district.',
         isBattle: true,
     },
     shop: {
-        label: 'Ripperdoc',
+        label: nodeKindLabel('shop'),
         tooltip: 'Spend creds on cards and body mods. (Coming soon)',
         isBattle: false,
     },
     event: {
-        label: 'Signal',
+        label: nodeKindLabel('event'),
         tooltip: 'An unknown signal on the grid. Jack in for a random encounter — repeat pings may draw hostiles.',
         isBattle: false,
     },
     rest: {
-        label: 'Safehouse',
+        label: nodeKindLabel('rest'),
         tooltip: 'A quiet stasis pod before the Warden. Rest to recover integrity or grind one card upgrade.',
         isBattle: false,
     },

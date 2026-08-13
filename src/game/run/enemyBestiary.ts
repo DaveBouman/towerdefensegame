@@ -1,3 +1,5 @@
+import { poisonStatusNameLower } from '../copy/strings';
+import { getEnemyHealthRange } from '../cardGame/domain/enemyCombatants';
 import {
     CARD_GAME_ENEMY_DEFINITIONS,
     getCardGameEnemyDefinition,
@@ -67,9 +69,9 @@ const ENEMY_ROLE: Record<string, BestiaryRole> = {
 
 const ENEMY_SUMMARY: Record<string, string> = {
     basic: 'Baseline street fighter. Learn chain routing before the counters arrive.',
-    thornward: 'Punishes Attack-heavy chains. Cap per hit — favor armor, rad, and fewer swings.',
+    thornward: `Punishes Attack-heavy chains. Cap per hit — favor armor, ${poisonStatusNameLower()}, and fewer swings.`,
     saboteur: 'Trap snowball + Burden curses. Disarm traps and clear hand clog fast.',
-    smokebinder: 'Smothers rad openers and casts Dead Zone on a checkerboard. Route around weak tiles.',
+    smokebinder: `Smothers ${poisonStatusNameLower()} openers and casts Dead Zone on a checkerboard. Route around weak tiles.`,
     warden: 'Final gate. Hit Ward, long-chain Jammer, and Wet Blanket while shielded.',
     'field-medic': 'Low threat alone — keeps allies alive. Focus the Medic or burst through heals.',
     gridlock: 'Locks a telegraphed column each turn. Never the start column — plan around the squeeze.',
@@ -211,10 +213,17 @@ export const unlockEnemies = (definitionIds: readonly string[]): number =>
     return added;
 };
 
+const formatEnemyIntegrity = (median: number): string =>
+{
+    const { min, max } = getEnemyHealthRange(median);
+
+    return min === max ? String(median) : `${min}–${max}`;
+};
+
 const buildDossierLines = (definition: LoadedCardGameEnemyDefinition): string[] =>
 {
     const lines: string[] = [
-        `Integrity ${definition.maxHealth} · Atk ${definition.attackDamage} · Shield ${definition.shieldGain}`,
+        `Integrity ${formatEnemyIntegrity(definition.maxHealth)} · Atk ${definition.attackDamage} · Shield ${definition.shieldGain}`,
         `Attack bias ${Math.round(definition.attackChance * 100)}% · Traps/turn ${definition.hazardsPerTurn}`,
     ];
 

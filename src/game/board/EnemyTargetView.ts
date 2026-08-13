@@ -1,3 +1,4 @@
+import { poisonStatusName, poisonStatusNameUpper } from '../copy/strings';
 import { ENEMY_PASSIVE_TEXTURE_KEY } from '../../ui/icons/enemyPassiveIcons';
 import { drawCornerBrackets, drawEnemySilhouette } from '../config/cyberpunkUiGraphics';
 import { CYBER } from '../config/cyberpunkTheme';
@@ -300,7 +301,7 @@ export class EnemyTargetView
         const poisonBg = scene.add.rectangle(0, 0, 108, POISON_BADGE_HEIGHT, 0x0a2a16, 0.92);
         poisonBg.setStrokeStyle(2, 0x58d68d, 0.95);
 
-        const poisonLabel = scene.add.text(-46, 0, 'Rad', {
+        const poisonLabel = scene.add.text(-46, 0, poisonStatusName(), {
             ...uiTextStyle(14, '#b8f5c8', { bold: true }),
         }).setOrigin(0, 0.5);
 
@@ -858,7 +859,7 @@ export class EnemyTargetView
             this.setPoison(this.displayedPoison + stacksAdded);
         }
 
-        this.showFloatingNumber(`+${stacksAdded} RAD`, '#8fe3a0');
+        this.showFloatingNumber(`+${stacksAdded} ${poisonStatusNameUpper()}`, '#8fe3a0');
     }
 
     showPoisonTick (damage: number): void
@@ -868,7 +869,7 @@ export class EnemyTargetView
             return;
         }
 
-        this.showFloatingNumber(`-${damage} RAD`, '#8fe3a0');
+        this.showFloatingNumber(`-${damage} ${poisonStatusNameUpper()}`, '#8fe3a0');
     }
 
     playHitFlash (): void
