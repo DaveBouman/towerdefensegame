@@ -13,7 +13,7 @@ branching **run map** (roguelite-style path of battles).
 
 - Player drags cards from hand onto a grid; arrows define activation order.
 - Player sets chain start (click a column-0 tile) and clicks **Attack**.
-- Chain resolves step-by-step (attack, defend, fire, poison, Reroute, hazard, siphon, boost).
+- Chain resolves step-by-step (attack, defend, fire, rad, Reroute, hazard, siphon, boost).
 - Enemy acts with telegraphed intent (attack/shield + hazard traps / leech nodes).
 - Win: all enemy HP ≤ 0. Lose: player HP ≤ 0.
 - Multi-enemy fights: click an enemy to set your attack target before attacking; pick a new target mid-chain if the current one dies. When **all** enemies are dead, the chain stops (remaining cards do not activate).
@@ -116,7 +116,7 @@ RunReward =
   - add new `RunReward` kinds without touching existing handling.
 - Card choices come from `REWARD_CARD_POOL` / `ELITE_REWARD_CARD_POOL` via `rollCardReward(choiceCount, pool, { deck, floor })`.
   Offers are **weighted by deck archetypes** (`deckArchetypes.ts`) and **card tier vs floor** (later floors favor uncommon/rare).
-  Starter deck is a **synergy-seeded Runner kit** (routing core + one seed each of fire/poison/bleed/fortify/overload). Deeper specialty cards still arrive through rewards/shop/events. Character-specific starters are planned later.
+  Starter deck is a **synergy-seeded Runner kit** (routing core + one seed each of fire/rad/bleed/fortify/overload). Deeper specialty cards still arrive through rewards/shop/events. Character-specific starters are planned later.
 - Cards have **tiers** (1 common → 3 rare) and **upgrades** (`attack` → `attack-plus`). Ripperdoc **Chrome Grind** upgrades one deck card.
 
 When adding body mods: give body mods a modifier step that adjusts the `RunReward`
@@ -163,7 +163,7 @@ it waits for `START_BATTLE`, builds a battle, and emits `BATTLE_WON` / `BATTLE_L
 | Deck / hand | `src/game/cardGame/domain/DeckHand.ts` | Draw pile, hand, discard, rerolls |
 | Board edits | `src/game/cardGame/domain/BoardEditController.ts` | Place / remove / move / swap while combat is idle |
 | Field effects | `src/game/cardGame/domain/FieldEffects.ts` | Dampen field, silenced/bomb slots, hazard/boost placement |
-| Combat | `src/game/cardGame/domain/CombatResolver.ts` | Attack damage, player damage, shields, poison |
+| Combat | `src/game/cardGame/domain/CombatResolver.ts` | Attack damage, player damage, shields, rad |
 | Enemy phase | `src/game/cardGame/domain/EnemyPhaseController.ts` | Enemy turn queue, phase prep, telegraph ramp |
 | Combat | `src/game/cardGame/combat/AttackPipeline.ts` | Chain resolution, type streaks, off-chain bonus |
 | Enemy AI | `src/game/cardGame/combat/enemyTurn.ts` | Intent, attack/shield, hazard placement |
@@ -209,18 +209,18 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | System | Files | Player decision |
 |--------|-------|-----------------|
 | Chain routing | `AttackPipeline.ts`, `cardDirections.ts` | Arrow pools, leap (2-tile), corner-turn (`cornerTurn` — hooks to a forward-diagonal, `getCornerNextSlot`), edge-wrap (`wrapEdges` — **Phase Relay** / **Phase Bulwark** continue on the opposite board edge). Loop-reset exists in code but is **disabled** (not in starter deck, rewards, or puzzles). |
-| Poison trail | `poisonTrailAbility.ts` | Converts subsequent defends to **poison stacks** on the enemy |
-| Poison stacks (status) | `CardGameSession.tickPoison` | Enemy takes `stacks` damage at the start of each of its turns (ignores shield), then stacks decay by 1 |
+| Rad trail | `poisonTrailAbility.ts` | Converts subsequent defends to **rad stacks** on the enemy (radioactive fumes) |
+| Rad stacks (status) | `CardGameSession.tickPoison` | Enemy takes `stacks` damage at the start of each of its turns (ignores shield), then stacks decay by 1 |
 | Fire alternation | `fireAlternationAbility.ts` | +3 damage per alternating attack/defend after fire |
 | Bleed (Rupture / Shiv / Lacerate) | `bleedAbility.ts` | +2 damage per attack in the chain beyond 2 (rewards attack-heavy chains) |
 | Fortify (Bulwark / Bramble) | `fortifyAbility.ts` | +2 armor per defend in the chain beyond 2 (rewards defend-heavy chains) |
 | Overload (Surge) | `overloadAbility.ts` | When Surge activates: +3 damage per other skill already in the chain, ×2 if a Reroute already fired; shows `OVERLOAD N` on the card + enemy hit |
-| Combo starters | `cards.json` — Shiv, Miasma, Cinder, Lacerate, Scorch, Bramble | Diagonal/corner/lunge variants that pair routing with bleed, poison trail, fire alternation, or fortify |
+| Combo starters | `cards.json` — Shiv, Miasma, Cinder, Lacerate, Scorch, Bramble | Diagonal/corner/lunge variants that pair routing with bleed, rad trail, fire alternation, or fortify |
 | Battle modifiers | `battleModifiers.ts`, `battle-mod` behavior, `battle-mod` enemy intent | ±10% to enemy attack, damage taken, shield gained, or damage dealt — player cards (Glitch/Hardwire/Patch/Overclock) and enemy intents. **All modifiers last until energy refills.** Field **Boost** multiplies the next battle-mod delta. Active chips sit **below** the player/enemy panels (`BattleModifierStatusView`): enemy-attack under enemies, other stats under the player. Each stat has a distinct color; % text is green (buff) or red (debuff). |
 | Echo | `echo` behavior, `echoReplay.ts` | Re-activates the previous chain card (damage, armor, battle modifiers) then activates itself |
 | Hazards/traps | `hazardBehavior.ts`, `AttackPipeline.applyBombConversion`, `FieldEffects.resolveHazardsAfterAttack` | Skip → slot explodes (4 dmg) + scorches tile; **route a card into it (or start the chain on it and continue)** → the trap converts to that card's type and joins the chain. **All resolved traps are removed from the board after the attack.** Enemies only place traps in the **last 3 columns**. |
 | **Curse cards** | `cards.json` (`unplayable`, `nonRerollable`, `handEndPenalty`), `CardGameSession.resolveHandEndPenalties` | Bad cards that clog resources — **Burden** (place to clear hand; **cannot be rerolled**; route through it safely or take **double hand penalty** if left off-chain on attack; 5 dmg if held in hand at end of turn). **Fuse** (weak attack, 8 dmg if not placed by end of turn). Penalties resolve after **each attack**. **Saboteur** adds Burdens via `curseHand` |
-| Shield layer | Both sides | Absorbs before HP (poison bypasses shield) |
+| Shield layer | Both sides | Absorbs before HP (rad bypasses shield) |
 | Enemy passives | `enemyPassives/` | See enemy roster below |
 | Combat traits | `combat/combatTraits/` | Defensive abilities (Damage Cap, Hit Ward) with icons below the enemy name; also grantable via `combatTraits` on enemies or body mods |
 
@@ -232,7 +232,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | `thornward` | **Thorns** — take 1 damage per Attack hit (blockable); **Damage Cap** trait — each card hit deals at most 5 damage |
 | `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile, **Curse Hand** (adds Burden to hand each turn) — trap pressure snowballs. On the run map, saboteur nodes always connect to an adjacent route up or down on the next column. |
 | `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps), **Null Strip** (telegraphed: nullifies one column or row — cards still place, but deal no damage/armor/effects); **Hit Ward** trait — first 3 card hits deal no damage |
-| `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (dormant while loop-reset is out of content), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
+| `smokebinder` | Smoke (blocks rad stacks), Loop Hunter (dormant while loop-reset is out of content), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
 | `field-medic` | Low personal threat — **ally support** in multi-enemy fights: heals weakest ally, can shield the most shielded ally (`allyActions` in `enemies.json`). Can appear as a duo partner in mid-run Street Ops. |
 | `gridlock` | **Column Pressure** — after each turn, locks one board column (telegraphed); you cannot place/move onto that column. Never locks the chain-start column. |
 | `broodframe` | **Spawn** — 80 HP host that opens with a **Wire Drone** (20 HP). Respawns a drone every 2 host turns, or under 50% HP if none live. Focus the drone or burn the frame. |
@@ -266,7 +266,7 @@ remain as a fallback if a portrait fails to load.
 
 1. **Telegraphed threats** — player sees intent and has 1–2 turns to adapt.
 2. **Tradeoffs, not correct answers** — long chain vs board coverage, spend rerolls now vs save.
-3. **Enemy counters habits** — Jammer vs long chains, Smokebinder vs poison, Thornward vs all-in attack.
+3. **Enemy counters habits** — Jammer vs long chains, Smokebinder vs rad, Thornward vs all-in attack.
 4. **Recoverable mistakes** — high stakes, but one bad turn should not auto-lose.
 
 ### Recommended roadmap
@@ -342,9 +342,9 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | Add/edit cards | `src/game/cardGame/config/cards.json`, `cardRegistry.ts` |
 | Add/edit enemies | `src/game/cardGame/config/enemies.json`, `enemyCatalog.ts`, `enemyPassives/`; in-fight look: `presentation/enemyIdentity.ts` + `public/assets/enemies/` |
 | Chain behavior | `src/game/cardGame/combat/AttackPipeline.ts` |
-| New card ability | `src/game/cardGame/effects/` (behaviors), `abilities/` (chain abilities: poison/fire/bleed/fortify/overload) + register in `chainAbilityRegistry.ts` |
+| New card ability | `src/game/cardGame/effects/` (behaviors), `abilities/` (chain abilities: rad/fire/bleed/fortify/overload) + register in `chainAbilityRegistry.ts` |
 | Bomb / trap conversion | `AttackPipeline.applyBombConversion` (runs first in `resolveChainSteps`) |
-| Enemy poison status | `CardGameSession.tickPoison`/`applyPoisonStacks` (via `abilityPoisonStacks`), display in `EnemyTargetView.setPoison` |
+| Enemy rad status | `CardGameSession.tickPoison`/`applyPoisonStacks` (via `abilityPoisonStacks`), display in `EnemyTargetView.setPoison` |
 | Enemy turn logic | `src/game/cardGame/combat/enemyTurn.ts` |
 | HUD buttons | `src/ui/components/GameHud.tsx`, `src/game/events/gameEvents.ts` |
 | Tooltips | `src/game/cardGame/presentation/tooltips/` |
@@ -355,6 +355,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-13 | **Rad retheme.** The Poison card and status chip are now **Rad** (radioactive fumes). Miasma, Neurotoxin, Black Ichor, Venom Latch, and the Toxin lane keep their names. Internal id stays `poison`. |
 | 2026-08-13 | **No adjacent Ripperdocs.** Map generation breaks shop→shop route edges by converting the destination Ripperdoc into a street fight or signal, so you cannot travel from one Ripperdoc straight into another. |
 | 2026-08-13 | **Null Strip boss intent.** New `nullifyLane` passive / `nullify-lane` turn step: telegraphs one board column or row. Cards can still be placed there, but deal no damage, grant no armor, and fire no step effects (routing continues). Active strip highlighted on the board. Wired onto the **Warden**. |
 | 2026-08-13 | **Unified card inspectors.** Draw pile, graveyard, and run-deck popups use the same card-index layout (grid tiles, hover dossier, detail panel) as unlocked cards in the collection. |

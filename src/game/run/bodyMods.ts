@@ -141,7 +141,7 @@ export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
         id: BODY_MOD_IDS.venomLatch,
         label: 'Venom Latch',
         blurb: 'Toxin reservoirs clamp onto every poison payload before release.',
-        effect: 'Poison stacks you apply are doubled.',
+        effect: 'Rad stacks you apply are doubled.',
     },
     {
         id: BODY_MOD_IDS.razorFeed,

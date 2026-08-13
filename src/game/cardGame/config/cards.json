@@ -101,7 +101,7 @@
     },
     {
       "id": "poison",
-      "label": "Poison",
+      "label": "Rad",
       "power": 1,
       "behaviorId": "poison",
       "visualId": "poison",

@@ -48,7 +48,7 @@ export const resolveEnemyPassiveTooltip = (
             return {
                 title: 'Smoke',
                 lines: [
-                    `The first ${passive.suppressedPoisonCards} poison card(s) in your chain each attack deal no poison trail damage.`,
+                    `The first ${passive.suppressedPoisonCards} rad card(s) in your chain each attack deal no rad trail damage.`,
                 ],
             };
         case 'wetBlanket':

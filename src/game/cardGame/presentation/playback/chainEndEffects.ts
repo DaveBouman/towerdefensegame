@@ -300,7 +300,7 @@ function formatAbilityEffectLabel (
 
     if (effect.poisonStacks > 0)
     {
-        return `POISON +${session.scalePoisonStacks(effect.poisonStacks)}`;
+        return `RAD +${session.scalePoisonStacks(effect.poisonStacks)}`;
     }
 
     if (effect.playerDamage > 0)

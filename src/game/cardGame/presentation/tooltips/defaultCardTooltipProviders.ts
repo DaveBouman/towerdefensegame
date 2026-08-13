@@ -50,6 +50,13 @@ const defendLines = ({ definition }: CardTooltipContext): string[] =>
     return lines;
 };
 
+const radTrailLines = (ctx: CardTooltipContext, extras: string[] = []): string[] =>
+    [
+        `Defend cards after this lose armor and add ${ctx.definition.power} rad stack(s) each to the enemy.`,
+        'Rad fumes damage the enemy at the start of each of its turns, then weaken by 1.',
+        ...extras,
+    ];
+
 const provider = (id: string, getTooltip: (ctx: CardTooltipContext) => CardTooltipContent): CardTooltipProvider =>
     ({ id, getTooltip });
 
@@ -171,11 +178,9 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
     }),
     provider('poison', (ctx) => ({
         title: titleFromDefinition(ctx),
-        lines: [
-            `Defend cards after this lose armor and add ${ctx.definition.power} poison stack(s) each to the enemy.`,
-            'Poison damages the enemy at the start of each of its turns, then weakens by 1.',
-            'Stops on defends that follow an attack; Fire and Poison between do not cancel the trail.',
-        ],
+        lines: radTrailLines(ctx, [
+            'Stops on defends that follow an attack; Fire and Rad between do not cancel the trail.',
+        ]),
     })),
     provider('rupture', (ctx) => ({
         title: titleFromDefinition(ctx),
@@ -204,7 +209,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         lines: [
             `Deals ${ctx.definition.power} damage when activated in the chain.`,
             `+${GAME_RULES.chainAbilities.fireAlternation.bonusDamagePerAlternatingStep} bonus damage per alternating attack/defend step after this (needs 2+).`,
-            'Runs in parallel with Poison — both trails stay active until their own rule ends.',
+            'Runs in parallel with Rad — both trails stay active until their own rule ends.',
         ],
     })),
     provider('hazard', (ctx) => ({
@@ -234,7 +239,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
     provider('boost', () => ({
         title: 'Boost',
         lines: [
-            `Multiplies the next card's effect by ×${GAME_RULES.fieldBoost.nextStepMultiplier} (attack, defend, fire, poison, skills, battle mods).`,
+            `Multiplies the next card's effect by ×${GAME_RULES.fieldBoost.nextStepMultiplier} (attack, defend, fire, rad, skills, battle mods).`,
             'Boosts stack multiplicatively: Boost → Boost → Attack = ×4.',
             'Reroutes pass the boost stack through to the following card.',
             'Field card — spawns on a random empty tile after the enemy turn.',
@@ -290,11 +295,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
     })),
     provider('miasma', (ctx) => ({
         title: titleFromDefinition(ctx),
-        lines: [
-            `Defend cards after this lose armor and add ${ctx.definition.power} poison stack(s) each to the enemy.`,
-            'Poison damages the enemy at the start of each of its turns, then weakens by 1.',
-            'Uses diagonal arrows.',
-        ],
+        lines: radTrailLines(ctx, [ 'Uses diagonal arrows.' ]),
     })),
     provider('cinder', (ctx) => ({
         title: titleFromDefinition(ctx),

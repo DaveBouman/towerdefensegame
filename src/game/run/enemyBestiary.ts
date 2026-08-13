@@ -67,9 +67,9 @@ const ENEMY_ROLE: Record<string, BestiaryRole> = {
 
 const ENEMY_SUMMARY: Record<string, string> = {
     basic: 'Baseline street fighter. Learn chain routing before the counters arrive.',
-    thornward: 'Punishes Attack-heavy chains. Cap per hit — favor armor, poison, and fewer swings.',
+    thornward: 'Punishes Attack-heavy chains. Cap per hit — favor armor, rad, and fewer swings.',
     saboteur: 'Trap snowball + Burden curses. Disarm traps and clear hand clog fast.',
-    smokebinder: 'Smothers poison openers and casts Dead Zone on a checkerboard. Route around weak tiles.',
+    smokebinder: 'Smothers rad openers and casts Dead Zone on a checkerboard. Route around weak tiles.',
     warden: 'Final gate. Hit Ward, long-chain Jammer, and Wet Blanket while shielded.',
     'field-medic': 'Low threat alone — keeps allies alive. Focus the Medic or burst through heals.',
     gridlock: 'Locks a telegraphed column each turn. Never the start column — plan around the squeeze.',

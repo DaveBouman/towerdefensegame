@@ -692,7 +692,7 @@ export class CombatResolver
         return scaled;
     }
 
-    /** Poison stacks after Venom Latch (and any future toxin chrome). */
+    /** Rad stacks after Venom Latch (and any future toxin chrome). */
     scalePoisonStacks (stacks: number): number
     {
         if (stacks <= 0)

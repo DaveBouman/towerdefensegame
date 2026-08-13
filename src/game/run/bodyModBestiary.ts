@@ -48,7 +48,7 @@ const BODY_MOD_SUMMARY: Record<string, string> = {
     'cred-siphon': 'Passive cred drip after every victory.',
     'mark-seven': 'Burst windows every seventh attack across the whole run.',
     'reactive-plating': 'Opening hits bounce off — great vs multi-hit enemies.',
-    'venom-latch': 'Doubles poison stacks — toxin builds hit harder.',
+    'venom-latch': 'Doubles rad stacks — toxin builds hit harder.',
     'razor-feed': 'Flat +2 on all your damage — simple and always on.',
     'carapace-weave': '50% stronger armor — defend chains and fortify scale up.',
     'pyre-link': 'Fire alternation payoff — heat decks spike harder.',

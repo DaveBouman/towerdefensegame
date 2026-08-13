@@ -30,7 +30,7 @@ export interface EnemyState {
     health: number;
     maxHealth: number;
     shield: number;
-    /** Active poison stacks — damage the enemy at the start of each of its turns. */
+    /** Active rad stacks — damage the enemy at the start of each of its turns. */
     poison?: number;
 }
 
@@ -202,7 +202,7 @@ export interface AttackSequence {
     abilityEnemyDamage: number;
     abilityPlayerDamage: number;
     abilityArmorGain: number;
-    /** Poison stacks to apply to the enemy after the chain resolves. */
+    /** Rad stacks to apply to the enemy after the chain resolves. */
     abilityPoisonStacks: number;
     disarmResults: DisarmResult[];
     stackMultipliers: Partial<Record<string, number>>;

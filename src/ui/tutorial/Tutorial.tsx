@@ -49,7 +49,7 @@ export const TutorialIntroOverlay = ({ onDismiss }: { onDismiss: () => void }) =
             <h1 className="tutorial-overlay__title">Chain the grid</h1>
             <p className="tutorial-overlay__body">
                 Place cards so their arrows form a path. Your starter already seeds light
-                synergies — Fire, Poison, Rupture, Bulwark, Surge — so chains can combo.
+                synergies — Fire, Rad, Rupture, Bulwark, Surge — so chains can combo.
                 Click a column-0 tile to set chain start, then Attack.
             </p>
             <p className="tutorial-overlay__body">
@@ -70,7 +70,7 @@ export const TutorialCoachStrip = ({ onDismiss }: { onDismiss: () => void }) => 
         <ol className="tutorial-coach__steps">
             <li>Drag cards from your hand onto the board.</li>
             <li>Click a column-0 tile to set where the chain starts.</li>
-            <li>Try a synergy: Fire then Attack/Defend, or Poison then Defends.</li>
+            <li>Try a synergy: Fire then Attack/Defend, or Rad then Defends.</li>
             <li>Click Attack — the enemy responds after each strike.</li>
         </ol>
         <button
