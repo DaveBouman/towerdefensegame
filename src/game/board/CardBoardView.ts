@@ -988,39 +988,42 @@ export class CardBoardView
     private updateChainStartSelection (): void
     {
         const { tileSize } = GRID_CONFIG;
+        const showPickHints = this.chainStartPickable && this.chainStartHandlers?.canSelect();
 
         for (const indicator of this.chainStartIndicators)
         {
             const selected = indicator.slot.row === this.chainStartSlot.row
                 && indicator.slot.col === this.chainStartSlot.col;
-            const showPickHints = this.chainStartPickable && this.chainStartHandlers?.canSelect();
 
-            indicator.ring.setAlpha(selected ? 1 : showPickHints ? 0.72 : 0.45);
-            indicator.brackets.setAlpha(selected ? 1 : showPickHints ? 0.82 : 0.55);
+            if (!selected)
+            {
+                indicator.ring.setVisible(false);
+                indicator.brackets.setVisible(false);
+                indicator.badge.setVisible(false);
+                indicator.badge.setAlpha(0);
+                continue;
+            }
+
+            indicator.ring.setVisible(true);
+            indicator.brackets.setVisible(true);
+            indicator.ring.setAlpha(1);
+            indicator.brackets.setAlpha(1);
             this.redrawChainStartBrackets(
                 indicator.brackets,
                 indicator.slot,
                 tileSize,
-                selected || showPickHints,
+                true,
             );
 
-            if (selected)
-            {
-                indicator.badge.setText(CHAIN_START_BADGE);
-                indicator.badge.setVisible(true);
-                indicator.badge.setAlpha(1);
-                indicator.badge.setColor('#fcee0a');
-            }
-            else
-            {
-                indicator.badge.setVisible(false);
-                indicator.badge.setAlpha(0);
-            }
+            indicator.badge.setText(CHAIN_START_BADGE);
+            indicator.badge.setVisible(true);
+            indicator.badge.setAlpha(1);
+            indicator.badge.setColor('#fcee0a');
 
             indicator.ring.setStrokeStyle(
                 2,
-                selected ? CHAIN_START_SELECTED : CHAIN_START_IDLE,
-                selected ? 0.95 : showPickHints ? 0.72 : 0.5,
+                CHAIN_START_SELECTED,
+                showPickHints ? 0.95 : 0.65,
             );
         }
 
@@ -1030,52 +1033,19 @@ export class CardBoardView
 
     private refreshChainStartPickableVisuals (): void
     {
-        const pickable = this.chainStartPickable && (this.chainStartHandlers?.canSelect() ?? false);
-
-        this.chainStartColumnGlow?.setVisible(pickable);
-        this.chainStartColumnGlow?.setAlpha(pickable ? 0.1 : 0);
+        this.chainStartColumnGlow?.setVisible(false);
+        this.chainStartColumnGlow?.setAlpha(0);
 
         this.chainStartIdleTween?.stop();
         this.chainStartIdleTween = undefined;
 
-        if (!pickable)
+        const selected = this.getSelectedChainStartIndicator();
+
+        if (selected)
         {
-            for (const indicator of this.chainStartIndicators)
-            {
-                indicator.ring.setScale(1);
-                this.scene.tweens.killTweensOf(indicator.ring);
-            }
-
-            return;
+            selected.ring.setScale(1);
+            this.scene.tweens.killTweensOf(selected.ring);
         }
-
-        const pulseTargets = this.chainStartIndicators
-            .filter((indicator) =>
-                indicator.slot.row !== this.chainStartSlot.row
-                || indicator.slot.col !== this.chainStartSlot.col,
-            )
-            .map((indicator) => indicator.ring);
-
-        if (pulseTargets.length === 0)
-        {
-            return;
-        }
-
-        for (const ring of pulseTargets)
-        {
-            ring.setScale(1);
-        }
-
-        this.chainStartIdleTween = this.scene.tweens.add({
-            targets: pulseTargets,
-            alpha: { from: 0.55, to: 0.95 },
-            scaleX: { from: 0.98, to: 1.03 },
-            scaleY: { from: 0.98, to: 1.03 },
-            duration: 900,
-            ease: 'Sine.easeInOut',
-            yoyo: true,
-            repeat: -1,
-        });
     }
 
     private bringChainStartToFront (): void

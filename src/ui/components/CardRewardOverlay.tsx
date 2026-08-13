@@ -7,6 +7,7 @@ import type { RunDeckCard } from '../../game/run/runDeck';
 import { groupRunDeckEntries } from '../../game/run/runDeck';
 import { CardChip } from './CardChip';
 import { ModalShell } from './CyberPanel';
+import { RunDeckViewPopup } from './RunDeckViewPopup';
 import { DirectionArrowIcon } from './DirectionArrowIcon';
 import { getDirectionsForPool, arrowPoolLabel } from '../../game/cardGame/domain/cardDirections';
 
@@ -57,6 +58,7 @@ export const CardRewardOverlay = ({
     const [ directionQueue, setDirectionQueue ] = useState<string[]>([]);
     const [ directionIndex, setDirectionIndex ] = useState(0);
     const [ resolvedCards, setResolvedCards ] = useState<RunDeckCard[]>([]);
+    const [ deckPopupOpen, setDeckPopupOpen ] = useState(false);
     const cards = useMemo(() => options.map(describeCardReward), [ options ]);
     const deckEntries = useMemo(() => groupRunDeckEntries(deck), [ deck ]);
 
@@ -68,6 +70,7 @@ export const CardRewardOverlay = ({
         setDirectionQueue([]);
         setDirectionIndex(0);
         setResolvedCards([]);
+        setDeckPopupOpen(false);
 
         if (cards.length === 0)
         {
@@ -203,28 +206,13 @@ export const CardRewardOverlay = ({
                         )}
 
                         {deckEntries.length > 0 && (
-                            <section className="card-reward__deck" aria-label="Current deck">
-                                <h2 className="card-reward__deck-title">
-                                    Your deck ({deck.length})
-                                </h2>
-                                <div className="card-reward__deck-strip">
-                                    {deckEntries.map((entry) => (
-                                        <div
-                                            key={`${entry.definitionId}-${entry.arrow ?? 'any'}-${entry.loopArrow ?? ''}`}
-                                            className="card-reward__deck-item"
-                                        >
-                                            <CardChip
-                                                definitionId={entry.definitionId}
-                                                label={entry.label}
-                                                arrow={entry.arrow}
-                                                loopArrow={entry.loopArrow}
-                                                countBadge={entry.count}
-                                                size="pile"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
+                            <button
+                                type="button"
+                                className="card-reward__deck-toggle"
+                                onClick={() => setDeckPopupOpen(true)}
+                            >
+                                View your deck ({deck.length})
+                            </button>
                         )}
 
                         <div className="card-reward__choices">
@@ -289,6 +277,12 @@ export const CardRewardOverlay = ({
                     </>
                 )}
             </div>
+            {deckPopupOpen && (
+                <RunDeckViewPopup
+                    deck={deck}
+                    onClose={() => setDeckPopupOpen(false)}
+                />
+            )}
 
             <div className="card-reward__actions">
                 {step === 'choose' ? (
