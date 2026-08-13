@@ -1,11 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
+import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistry';
+import {
+    arrowPoolLabel,
+    formatDirectionLabel,
+    getDirectionsForPool,
+    type CardDirection,
+} from '../../game/cardGame/domain/cardDirections';
 import { describeCardReward } from '../../game/run/rewards';
+import type { RunDeckCard } from '../../game/run/runDeck';
+import { groupRunDeckEntries } from '../../game/run/runDeck';
 import { CardChip } from './CardChip';
 import { ModalShell } from './CyberPanel';
+import { DirectionArrowIcon } from './DirectionArrowIcon';
 
 interface CardRewardOverlayProps {
     /** Card definition ids offered as choices. */
     options: string[];
+    /** Current run deck — shown so picks can fit the build. */
+    deck: readonly RunDeckCard[];
     /** How many cards the player may keep. */
     pickCount: number;
     /** Whether the player may reroll the offered choices. */
@@ -17,13 +29,19 @@ interface CardRewardOverlayProps {
     subtitle?: string;
     rules?: readonly string[];
     synergyHints?: Record<string, string>;
-    onConfirm: (definitionIds: string[]) => void;
+    onConfirm: (cards: RunDeckCard[]) => void;
     onSkip?: () => void;
     onReroll?: () => void;
 }
 
+type RewardStep = 'choose' | 'direction';
+
+const needsDirectionPick = (definitionId: string): boolean =>
+    getCardDefinitionOrThrow(definitionId).arrowPool !== 'joker';
+
 export const CardRewardOverlay = ({
     options,
+    deck,
     pickCount,
     rerollable,
     allowEmptyPick = true,
@@ -39,12 +57,21 @@ export const CardRewardOverlay = ({
 {
     const [ selected, setSelected ] = useState<string[]>([]);
     const [ revealedCount, setRevealedCount ] = useState(0);
+    const [ step, setStep ] = useState<RewardStep>('choose');
+    const [ directionQueue, setDirectionQueue ] = useState<string[]>([]);
+    const [ directionIndex, setDirectionIndex ] = useState(0);
+    const [ resolvedCards, setResolvedCards ] = useState<RunDeckCard[]>([]);
     const cards = useMemo(() => options.map(describeCardReward), [ options ]);
+    const deckEntries = useMemo(() => groupRunDeckEntries(deck), [ deck ]);
 
     useEffect(() =>
     {
         setSelected([]);
         setRevealedCount(0);
+        setStep('choose');
+        setDirectionQueue([]);
+        setDirectionIndex(0);
+        setResolvedCards([]);
 
         if (cards.length === 0)
         {
@@ -82,13 +109,83 @@ export const CardRewardOverlay = ({
         });
     };
 
-    const canConfirm = allowEmptyPick
+    const canConfirmChoose = allowEmptyPick
         ? selected.length <= pickCount
         : selected.length === Math.min(pickCount, cards.length);
 
     const confirmLabel = selected.length > 0
         ? `Take ${selected.length === 1 ? cards.find((card) => card.definitionId === selected[0])?.label ?? 'card' : `(${selected.length})`}`
         : 'Take nothing';
+
+    const finishWithCards = (picked: RunDeckCard[]): void =>
+    {
+        onConfirm(picked);
+    };
+
+    const beginDirectionStep = (): void =>
+    {
+        const jokers = selected.filter((id) => !needsDirectionPick(id));
+        const queued = selected.filter((id) => needsDirectionPick(id));
+
+        setResolvedCards(jokers.map((definitionId) => ({ definitionId })));
+
+        if (queued.length === 0)
+        {
+            finishWithCards(jokers.map((definitionId) => ({ definitionId })));
+            return;
+        }
+
+        setDirectionQueue(queued);
+        setDirectionIndex(0);
+        setStep('direction');
+    };
+
+    const handleChooseConfirm = (): void =>
+    {
+        if (selected.length === 0)
+        {
+            finishWithCards([]);
+            return;
+        }
+
+        beginDirectionStep();
+    };
+
+    const currentDirectionId = directionQueue[directionIndex];
+    const currentDefinition = currentDirectionId
+        ? getCardDefinitionOrThrow(currentDirectionId)
+        : null;
+    const currentDirections = currentDefinition
+        ? getDirectionsForPool(currentDefinition.arrowPool)
+        : [];
+
+    const pickDirection = (arrow: CardDirection): void =>
+    {
+        if (!currentDirectionId)
+        {
+            return;
+        }
+
+        const nextResolved = [ ...resolvedCards, { definitionId: currentDirectionId, arrow } ];
+        const nextIndex = directionIndex + 1;
+
+        if (nextIndex >= directionQueue.length)
+        {
+            finishWithCards(nextResolved);
+            return;
+        }
+
+        setResolvedCards(nextResolved);
+        setDirectionIndex(nextIndex);
+    };
+
+    const backToChoose = (): void =>
+    {
+        setStep('choose');
+        setDirectionQueue([]);
+        setDirectionIndex(0);
+        setResolvedCards([]);
+    };
 
     return (
         <ModalShell
@@ -98,69 +195,161 @@ export const CardRewardOverlay = ({
         >
             <div className="card-reward__scroll">
                 <p className="card-reward__eyebrow">{eyebrow}</p>
-                <h1 className="card-reward__title">{resolvedTitle}</h1>
-                {subtitle && <p className="card-reward__subtitle">{subtitle}</p>}
 
-                {rules && rules.length > 0 && (
-                    <ul className="card-reward__rules">
-                        {rules.map((rule) => (
-                            <li key={rule}>{rule}</li>
-                        ))}
-                    </ul>
+                {step === 'choose' ? (
+                    <>
+                        <h1 className="card-reward__title">{resolvedTitle}</h1>
+                        {subtitle && <p className="card-reward__subtitle">{subtitle}</p>}
+
+                        {rules && rules.length > 0 && (
+                            <ul className="card-reward__rules">
+                                {rules.map((rule) => (
+                                    <li key={rule}>{rule}</li>
+                                ))}
+                            </ul>
+                        )}
+
+                        {deckEntries.length > 0 && (
+                            <section className="card-reward__deck" aria-label="Current deck">
+                                <h2 className="card-reward__deck-title">
+                                    Your deck ({deck.length})
+                                </h2>
+                                <div className="card-reward__deck-strip">
+                                    {deckEntries.map((entry) => (
+                                        <div
+                                            key={`${entry.definitionId}-${entry.arrow ?? 'any'}-${entry.loopArrow ?? ''}`}
+                                            className="card-reward__deck-item"
+                                        >
+                                            <CardChip
+                                                definitionId={entry.definitionId}
+                                                label={entry.label}
+                                                arrow={entry.arrow}
+                                                loopArrow={entry.loopArrow}
+                                                countBadge={entry.count}
+                                                size="pile"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        <div className="card-reward__choices">
+                            {cards.map((card, index) =>
+                            {
+                                const definition = getCardDefinitionOrThrow(card.definitionId);
+                                const poolDirections = getDirectionsForPool(definition.arrowPool);
+                                const isSelected = selected.includes(card.definitionId);
+                                const isRevealed = index < revealedCount;
+
+                                return (
+                                    <button
+                                        key={`${card.definitionId}-${index}`}
+                                        type="button"
+                                        className={`card-reward__choice${isSelected ? ' card-reward__choice--selected' : ''}${isRevealed ? ' card-reward__choice--revealed' : ''}`}
+                                        onClick={() => toggle(card.definitionId)}
+                                    >
+                                        <CardChip
+                                            definitionId={card.definitionId}
+                                            label={card.label}
+                                            power={card.power}
+                                            size="hand"
+                                        />
+                                        <span className="card-reward__pool">
+                                            {arrowPoolLabel(definition.arrowPool)}
+                                        </span>
+                                        {poolDirections.length > 0 && (
+                                            <span className="card-reward__pool-arrows" aria-hidden="true">
+                                                {poolDirections.map((direction) => (
+                                                    <DirectionArrowIcon
+                                                        key={direction}
+                                                        direction={direction}
+                                                        className="card-reward__pool-arrow"
+                                                    />
+                                                ))}
+                                            </span>
+                                        )}
+                                        <span className={`card-reward__tier card-reward__tier--${card.tier}`}>
+                                            {card.tier === 1 ? 'Common' : card.tier === 2 ? 'Uncommon' : 'Rare'}
+                                        </span>
+                                        <span className="card-reward__blurb">{card.blurb}</span>
+                                        {synergyHints?.[card.definitionId] && (
+                                            <span className="card-reward__synergy">{synergyHints[card.definitionId]}</span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <h1 className="card-reward__title">Choose chain direction</h1>
+                        <p className="card-reward__subtitle">
+                            {currentDefinition?.label ?? 'Card'}
+                            {' · '}
+                            {directionIndex + 1} / {directionQueue.length}
+                        </p>
+                        {currentDefinition && (
+                            <>
+                                <div className="card-reward__direction-preview">
+                                    <CardChip
+                                        definitionId={currentDefinition.id}
+                                        label={currentDefinition.label}
+                                        size="hand"
+                                    />
+                                </div>
+                                <p className="card-reward__direction-hint">
+                                    {arrowPoolLabel(currentDefinition.arrowPool)}
+                                </p>
+                                <div className="card-reward__direction-grid">
+                                    {currentDirections.map((direction) => (
+                                        <button
+                                            key={direction}
+                                            type="button"
+                                            className="card-reward__direction-btn"
+                                            onClick={() => pickDirection(direction)}
+                                        >
+                                            <DirectionArrowIcon direction={direction} />
+                                            <span>{formatDirectionLabel(direction)}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </>
                 )}
-
-                <div className="card-reward__choices">
-                    {cards.map((card, index) =>
-                    {
-                        const isSelected = selected.includes(card.definitionId);
-                        const isRevealed = index < revealedCount;
-
-                        return (
-                            <button
-                                key={`${card.definitionId}-${index}`}
-                                type="button"
-                                className={`card-reward__choice${isSelected ? ' card-reward__choice--selected' : ''}${isRevealed ? ' card-reward__choice--revealed' : ''}`}
-                                onClick={() => toggle(card.definitionId)}
-                            >
-                                <CardChip
-                                    definitionId={card.definitionId}
-                                    label={card.label}
-                                    power={card.power}
-                                    size="hand"
-                                />
-                                <span className={`card-reward__tier card-reward__tier--${card.tier}`}>
-                                    {card.tier === 1 ? 'Common' : card.tier === 2 ? 'Uncommon' : 'Rare'}
-                                </span>
-                                <span className="card-reward__blurb">{card.blurb}</span>
-                                {synergyHints?.[card.definitionId] && (
-                                    <span className="card-reward__synergy">{synergyHints[card.definitionId]}</span>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
             </div>
 
             <div className="card-reward__actions">
-                    {rerollable && onReroll && (
-                        <button type="button" className="card-reward__reroll" onClick={onReroll}>
-                            Reroll
+                {step === 'choose' ? (
+                    <>
+                        {rerollable && onReroll && (
+                            <button type="button" className="card-reward__reroll" onClick={onReroll}>
+                                Reroll
+                            </button>
+                        )}
+                        {onSkip && !allowEmptyPick && (
+                            <button type="button" className="card-reward__skip" onClick={onSkip}>
+                                Skip
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            className="card-reward__confirm"
+                            disabled={!canConfirmChoose}
+                            onClick={handleChooseConfirm}
+                        >
+                            {confirmLabel}
                         </button>
-                    )}
-                    {onSkip && !allowEmptyPick && (
-                        <button type="button" className="card-reward__skip" onClick={onSkip}>
-                            Skip
+                    </>
+                ) : (
+                    <>
+                        <button type="button" className="card-reward__reroll" onClick={backToChoose}>
+                            Back
                         </button>
-                    )}
-                    <button
-                        type="button"
-                        className="card-reward__confirm"
-                        disabled={!canConfirm}
-                        onClick={() => onConfirm(selected)}
-                    >
-                        {confirmLabel}
-                    </button>
-                </div>
+                    </>
+                )}
+            </div>
         </ModalShell>
     );
 };

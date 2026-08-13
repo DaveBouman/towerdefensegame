@@ -339,6 +339,7 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-13 | **Tactical card rewards.** Run deck stores per-card chain direction (`runDeck.ts`). Card reward screen shows your deck (icons + arrows), each offer’s arrow pool, and a direction pick step (left/right/up/down or diagonal) before the card is added. Starting deck gets balanced arrows; shop/event cards still roll direction at first draw unless chosen later. |
 | 2026-08-13 | **Chain pacing tune.** Chain steps slowed for readability (`activationStepMs` 620): gentler late-chain acceleration, slightly longer gaps between cards, 300ms minimum per step. Big-moment holds on kills/chunky hits unchanged. |
 | 2026-08-13 | **Run controller split.** `App.tsx` slimmed to shell + `RunPhaseScreens`; run state/handlers in `useRunController.ts`, Phaser bridge in `useBattleBridge.ts`, reward helpers in `rewardHelpers.ts`. |
 | 2026-08-13 | **UI shell refactor.** `ModalShell` in `CyberPanel.tsx` dedupes backdrop + panel chrome across reward, shop, rest, run-end, and visit overlays. `ArchiveOverlay` + `useArchiveFilter` share filter/selection UX for card index, bestiary, and body mod archives. |

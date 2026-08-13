@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistry';
 import { listUpgradableCardsInDeck } from '../../game/run/cardUpgrades';
+import type { RunDeckCard } from '../../game/run/runDeck';
 import { getRestHealAmount, REST_HEAL_FRACTION } from '../../game/run/restSite';
 import { NodeKindIcon } from './NodeKindIcon';
 import { ModalShell } from './CyberPanel';
 
 interface RestOverlayProps {
-    deck: readonly string[];
+    deck: readonly RunDeckCard[];
     playerHealth: number;
     maxHealth: number;
     onRest: (healAmount: number) => void;
@@ -20,19 +21,19 @@ interface DeckEntry {
     count: number;
 }
 
-const buildUpgradeEntries = (deck: readonly string[]): DeckEntry[] =>
+const buildUpgradeEntries = (deck: readonly RunDeckCard[]): DeckEntry[] =>
 {
     const ids = listUpgradableCardsInDeck(deck);
     const counts = new Map<string, number>();
 
-    for (const id of deck)
+    for (const card of deck)
     {
-        if (!ids.includes(id))
+        if (!ids.includes(card.definitionId))
         {
             continue;
         }
 
-        counts.set(id, (counts.get(id) ?? 0) + 1);
+        counts.set(card.definitionId, (counts.get(card.definitionId) ?? 0) + 1);
     }
 
     return [ ...counts.entries() ]

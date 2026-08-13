@@ -105,7 +105,7 @@ export const randomOrthogonalPair = (
     };
 };
 
-const directionsForPool = (pool: ArrowPool): readonly CardDirection[] =>
+export const getDirectionsForPool = (pool: ArrowPool): readonly CardDirection[] =>
 {
     if (pool === 'joker')
     {
@@ -114,6 +114,22 @@ const directionsForPool = (pool: ArrowPool): readonly CardDirection[] =>
 
     return pool === 'diagonal' ? DIAGONAL_DIRECTIONS : ORTHOGONAL_DIRECTIONS;
 };
+
+export const arrowPoolLabel = (pool: ArrowPool): string =>
+{
+    switch (pool)
+    {
+        case 'orthogonal':
+            return 'Left, right, up, or down';
+        case 'diagonal':
+            return 'Diagonal';
+        case 'joker':
+            return 'Any direction in battle';
+    }
+};
+
+export const formatDirectionLabel = (direction: CardDirection): string =>
+    direction.split('-').map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join('-');
 
 /** Evenly distributes directions for a pool, then shuffles the assignments. */
 export const buildBalancedDirectionsForPool = (
@@ -127,7 +143,7 @@ export const buildBalancedDirectionsForPool = (
         return [];
     }
 
-    const directions = directionsForPool(pool);
+    const directions = getDirectionsForPool(pool);
     const assignments: CardDirection[] = [];
 
     for (let i = 0; i < count; i++)

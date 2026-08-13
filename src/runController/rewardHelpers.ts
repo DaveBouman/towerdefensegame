@@ -1,5 +1,7 @@
 import { seedScope } from '../game/random/rng';
 import { rollBattleBodyModReward, type BodyModRewardPool } from '../game/run/bodyMods';
+import type { RunDeckCard } from '../game/run/runDeck';
+import { removeFirstCardByDefinitionId } from '../game/run/runDeck';
 import {
     flattenRunReward,
     rollCardReward,
@@ -79,26 +81,19 @@ export const buildRewardSteps = (
 };
 
 export const applyBattleRunDeltas = (
-    deck: string[],
+    deck: readonly RunDeckCard[],
     gold: number,
     deltas: { goldStolen?: number; stolenCardIds?: readonly string[] },
     victoryGoldBonus = 0,
-): { deck: string[]; gold: number } =>
+): { deck: RunDeckCard[]; gold: number } =>
 {
-    let nextDeck = deck;
+    let nextDeck = [ ...deck ];
 
     if (deltas.stolenCardIds && deltas.stolenCardIds.length > 0)
     {
-        nextDeck = [ ...deck ];
-
         for (const cardId of deltas.stolenCardIds)
         {
-            const index = nextDeck.indexOf(cardId);
-
-            if (index >= 0)
-            {
-                nextDeck.splice(index, 1);
-            }
+            nextDeck = removeFirstCardByDefinitionId(nextDeck, cardId);
         }
     }
 

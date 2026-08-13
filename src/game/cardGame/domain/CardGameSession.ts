@@ -1,4 +1,5 @@
 import { BODY_MOD_IDS } from '../../run/bodyMods';
+import type { RunDeckCard } from '../../run/runDeck';
 import { getBattleEnergyBonus, getRunMaxHealth } from '../../run/runResources';
 import { collectRunModifierBattleModifiers } from '../../run/runModifiers';
 import { GRID_CONFIG } from '../../config/gridConfig';
@@ -123,7 +124,7 @@ export class CardGameSession
     constructor (
         enemyIds: string | readonly string[] = GAME_RULES.defaultEnemyId,
         startHealth?: number,
-        deckDefinitionIds?: readonly string[],
+        runDeck?: readonly RunDeckCard[],
         bodyMods: readonly string[] = [],
         puzzleMode: PuzzleModeConfig | null = null,
         runAttackCount = 0,
@@ -157,7 +158,7 @@ export class CardGameSession
         this.board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
         this.fieldEffects = new FieldEffects(this.board);
         this.deckHand = new DeckHand(
-            deckDefinitionIds,
+            runDeck,
             puzzleMode ? 0 : (rerollsRemaining ?? GAME_RULES.rerollsPerFloor),
         );
         this.combat = new CombatResolver({

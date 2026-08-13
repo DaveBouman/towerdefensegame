@@ -1,6 +1,7 @@
 import { pickRandom } from '../random/rng';
 import { getBodyModDefinition, rollBodyModReward } from './bodyMods';
 import { listUpgradableCardsInDeck } from './cardUpgrades';
+import { fromDefinitionIds } from './runDeck';
 import { describeCardReward, rollCardReward } from './rewards';
 
 export type ShopOfferKind = 'card' | 'body-mod' | 'heal' | 'remove-card' | 'upgrade-card';
@@ -67,7 +68,7 @@ export const rollShopOffers = (
         },
     ];
 
-    if (listUpgradableCardsInDeck(deckDefinitionIds).length > 0)
+    if (listUpgradableCardsInDeck(fromDefinitionIds(deckDefinitionIds)).length > 0)
     {
         offers.splice(1, 0, {
             id: 'upgrade-card',

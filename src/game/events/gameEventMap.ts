@@ -61,7 +61,7 @@ export interface GameEventMap {
         enemyId?: string;
         enemyIds?: string[];
         startHealth: number;
-        deck: string[];
+        deck: import('../run/runDeck').RunDeckCard[];
         seed: number;
         bodyMods: string[];
         runAttackCount: number;

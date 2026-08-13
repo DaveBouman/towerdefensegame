@@ -2,13 +2,15 @@ import { useMemo, useState } from 'react';
 import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistry';
 import { listUpgradableCardsInDeck } from '../../game/run/cardUpgrades';
 import type { ShopOffer } from '../../game/run/shop';
+import type { RunDeckCard } from '../../game/run/runDeck';
+import { toDefinitionIds } from '../../game/run/runDeck';
 import { NodeKindIcon } from './NodeKindIcon';
 import { ModalShell } from './CyberPanel';
 
 interface ShopOverlayProps {
     offers: ShopOffer[];
     gold: number;
-    deck: readonly string[];
+    deck: readonly RunDeckCard[];
     playerHealth: number;
     maxHealth: number;
     onBuyCard: (offer: ShopOffer) => void;
@@ -25,19 +27,19 @@ interface DeckEntry {
     count: number;
 }
 
-const buildDeckEntries = (deck: readonly string[], ids: readonly string[]): DeckEntry[] =>
+const buildDeckEntries = (deck: readonly RunDeckCard[], ids: readonly string[]): DeckEntry[] =>
 {
     const allowed = new Set(ids);
     const counts = new Map<string, number>();
 
-    for (const id of deck)
+    for (const card of deck)
     {
-        if (!allowed.has(id))
+        if (!allowed.has(card.definitionId))
         {
             continue;
         }
 
-        counts.set(id, (counts.get(id) ?? 0) + 1);
+        counts.set(card.definitionId, (counts.get(card.definitionId) ?? 0) + 1);
     }
 
     return [ ...counts.entries() ]
@@ -70,7 +72,7 @@ export const ShopOverlay = ({
     const [ activeOffer, setActiveOffer ] = useState<ShopOffer | null>(null);
     const [ purchasedIds, setPurchasedIds ] = useState<string[]>([]);
     const removeEntries = useMemo(
-        () => buildDeckEntries(deck, [ ...new Set(deck) ]),
+        () => buildDeckEntries(deck, [ ...new Set(toDefinitionIds(deck)) ]),
         [ deck ],
     );
     const upgradeEntries = useMemo(

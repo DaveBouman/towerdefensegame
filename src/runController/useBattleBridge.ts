@@ -3,6 +3,8 @@ import { EventBus } from '../game/EventBus';
 import { GAME_EVENTS } from '../game/events/gameEvents';
 import { GAME_RULES } from '../game/cardGame/config/cardRegistry';
 import type { RerollState } from '../game/cardGame/domain/types';
+import type { RunDeckCard } from '../game/run/runDeck';
+import { mergeDeckAfterEvent, toDefinitionIds } from '../game/run/runDeck';
 import { applyRunEventEffects } from '../game/run/runEvents';
 import { unlockCards } from '../game/run/cardCollection';
 import { unlockBodyMods } from '../game/run/bodyModBestiary';
@@ -30,7 +32,7 @@ interface PendingBattleStart {
     enemyId?: string;
     enemyIds?: string[];
     startHealth: number;
-    deck: string[];
+    deck: RunDeckCard[];
     seed: number;
     bodyMods: string[];
     runAttackCount: number;
@@ -54,7 +56,7 @@ export interface BattleBridgeRefs {
     bodyMods: RefObject<string[]>;
     playerHealth: RefObject<number>;
     gold: RefObject<number>;
-    deck: RefObject<string[]>;
+    deck: RefObject<RunDeckCard[]>;
     path: RefObject<string[]>;
     phase: RefObject<RunPhase>;
     currentFloor: RefObject<number>;
@@ -74,7 +76,7 @@ export interface BattleBridgeActions {
     setCombatRecap: (value: { damageDealt: number; armorGained: number; damageTaken: number } | null) => void;
     setPlayerHealth: (value: number) => void;
     setGold: (value: number) => void;
-    setDeck: (value: string[]) => void;
+    setDeck: (value: RunDeckCard[]) => void;
     setBodyMods: (value: string[]) => void;
     setPath: (updater: (prev: string[]) => string[]) => void;
     setRunToast: (value: string | null | ((prev: string | null) => string | null)) => void;
@@ -165,7 +167,7 @@ export const useBattleBridge = (
             if (stolenCardIds && stolenCardIds.length > 0)
             {
                 actions.setDeck(applied.deck);
-                unlockCards(applied.deck);
+                unlockCards(toDefinitionIds(applied.deck));
                 actions.setRunToast(`Card stolen: ${stolenCardIds.join(', ')}`);
             }
 
@@ -204,7 +206,7 @@ export const useBattleBridge = (
                     refs.seed.current,
                     node.id,
                     node.reward,
-                    refs.deck.current,
+                    toDefinitionIds(refs.deck.current),
                     refs.currentFloor.current,
                     refs.bodyMods.current,
                 );
@@ -255,7 +257,7 @@ export const useBattleBridge = (
                 if (stolenCardIds && stolenCardIds.length > 0)
                 {
                     actions.setDeck(applied.deck);
-                    unlockCards(applied.deck);
+                    unlockCards(toDefinitionIds(applied.deck));
                 }
             }
 
@@ -297,13 +299,13 @@ export const useBattleBridge = (
                 playerHealth: refs.playerHealth.current,
                 maxHealth: getRunMaxHealth(refs.bodyMods.current),
                 gold: refs.gold.current,
-                deck: [ ...refs.deck.current ],
+                deck: toDefinitionIds(refs.deck.current),
                 bodyMods: [ ...refs.bodyMods.current ],
             });
 
             actions.setPlayerHealth(applied.playerHealth);
             actions.setGold(applied.gold);
-            actions.setDeck(applied.deck);
+            actions.setDeck(mergeDeckAfterEvent(refs.deck.current, applied.deck));
             unlockCards(applied.deck);
             actions.setBodyMods(applied.bodyMods);
             unlockBodyMods(applied.bodyMods);
@@ -322,7 +324,7 @@ export const useBattleBridge = (
                 actions.setPendingPuzzleReward({
                     puzzleId,
                     nodeId: node.id,
-                    options: rollPuzzleCardReward(refs.deck.current, refs.currentFloor.current),
+                    options: rollPuzzleCardReward(toDefinitionIds(refs.deck.current), refs.currentFloor.current),
                     damageDealt,
                     damageTarget,
                     messages: applied.messages,

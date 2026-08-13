@@ -75,9 +75,20 @@ describe('card upgrades', () =>
 {
     it('upgrades the first matching deck copy', () =>
     {
-        const next = upgradeFirstCardInDeck([ 'attack', 'defend', 'attack' ], 'attack');
+        const next = upgradeFirstCardInDeck(
+            [
+                { definitionId: 'attack' },
+                { definitionId: 'defend' },
+                { definitionId: 'attack' },
+            ],
+            'attack',
+        );
 
-        expect(next).toEqual([ 'attack-plus', 'defend', 'attack' ]);
+        expect(next).toEqual([
+            { definitionId: 'attack-plus' },
+            { definitionId: 'defend' },
+            { definitionId: 'attack' },
+        ]);
         expect(getCardDefinitionOrThrow('attack-plus').label).toBe('Attack+');
     });
 });

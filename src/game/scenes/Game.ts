@@ -205,7 +205,7 @@ export class Game extends Scene
             enemyId?: string;
             enemyIds?: readonly string[];
             startHealth: number;
-            deck: string[];
+            deck: import('../run/runDeck').RunDeckCard[];
             seed: number;
             bodyMods: string[];
             runAttackCount: number;
@@ -290,7 +290,7 @@ export class Game extends Scene
     private startBattle (
         enemyIds: string | readonly string[],
         startHealth: number,
-        deck: string[],
+        deck: import('../run/runDeck').RunDeckCard[],
         seed: number,
         bodyMods: string[],
         puzzleMode: PuzzleModeConfig | null = null,

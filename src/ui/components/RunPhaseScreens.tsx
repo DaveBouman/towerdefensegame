@@ -186,6 +186,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
             {phase === 'reward' && currentRewardStep?.kind === 'card' && (
                 <CardRewardOverlay
                     options={currentRewardStep.options}
+                    deck={deck}
                     pickCount={currentRewardStep.reward.pickCount}
                     rerollable={currentRewardStep.reward.rerollable}
                     rules={BATTLE_REWARD_RULES}
@@ -216,6 +217,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                     title="Choose a card reward"
                     subtitle={`Dealt ${pendingPuzzleReward.damageDealt} / ${pendingPuzzleReward.damageTarget} damage.`}
                     rules={PUZZLE_TRIAL_RULES}
+                    deck={deck}
                     options={pendingPuzzleReward.options}
                     pickCount={1}
                     rerollable={false}

@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EventBus } from '../game/EventBus';
 import { GAME_EVENTS } from '../game/events/gameEvents';
 import { GAME_RULES } from '../game/cardGame/config/cardRegistry';
-import { getDefaultDeckDefinitionIds } from '../game/cardGame/domain/buildPlayerDeck';
+import { buildDefaultRunDeck } from '../game/cardGame/domain/buildPlayerDeck';
+import type { RunDeckCard } from '../game/run/runDeck';
+import { mergeDeckAfterEvent, removeFirstCardByDefinitionId, toDefinitionIds } from '../game/run/runDeck';
 import {
     createRandomSeed,
     deriveSeed,
@@ -58,7 +60,7 @@ export const useRunController = () =>
     const [ map, setMap ] = useState<RunMap>(() => buildMapForSeed(seed));
     const [ path, setPath ] = useState<string[]>([]);
     const [ playerHealth, setPlayerHealth ] = useState(MAX_HEALTH);
-    const [ deck, setDeck ] = useState<string[]>(() => getDefaultDeckDefinitionIds());
+    const [ deck, setDeck ] = useState<RunDeckCard[]>(() => buildDefaultRunDeck());
     const [ gold, setGold ] = useState(0);
     const [ bodyMods, setBodyMods ] = useState<string[]>([]);
     const [ runAttackCount, setRunAttackCount ] = useState(0);
@@ -102,7 +104,7 @@ export const useRunController = () =>
         enemyId?: string;
         enemyIds?: string[];
         startHealth: number;
-        deck: string[];
+        deck: RunDeckCard[];
         seed: number;
         bodyMods: string[];
         runAttackCount: number;
@@ -381,7 +383,7 @@ export const useRunController = () =>
                     setVisit({
                         node,
                         eventId: null,
-                        shopOffers: rollShopOffers(bodyMods, deck, currentFloor),
+                        shopOffers: rollShopOffers(bodyMods, toDefinitionIds(deck), currentFloor),
                     });
                 }
                 else if (node.kind === 'rest')
@@ -426,7 +428,7 @@ export const useRunController = () =>
         }
 
         setGold((prev) => prev - offer.price);
-        setDeck((prev) => [ ...prev, offer.cardId! ]);
+        setDeck((prev) => [ ...prev, { definitionId: offer.cardId! } ]);
         unlockCards([ offer.cardId! ]);
         emitRunSfx('shop-buy', { volume: 0.95 });
     }, [ gold ]);
@@ -466,28 +468,10 @@ export const useRunController = () =>
             return;
         }
 
-        const index = deck.indexOf(definitionId);
-
-        if (index < 0)
-        {
-            return;
-        }
-
         setGold((prev) => prev - offer.price);
-        setDeck((prev) =>
-        {
-            const next = [ ...prev ];
-            const removeAt = next.indexOf(definitionId);
-
-            if (removeAt >= 0)
-            {
-                next.splice(removeAt, 1);
-            }
-
-            return next;
-        });
+        setDeck((prev) => removeFirstCardByDefinitionId(prev, definitionId));
         emitRunSfx('shop-buy', { volume: 0.95 });
-    }, [ gold, deck ]);
+    }, [ gold ]);
 
     const buyShopUpgrade = useCallback((offer: ShopOffer, definitionId: string): void =>
     {
@@ -587,19 +571,19 @@ export const useRunController = () =>
     {
         setPlayerHealth(result.playerHealth);
         setGold(result.gold);
-        setDeck(result.deck);
+        setDeck((prev) => mergeDeckAfterEvent(prev, result.deck));
         unlockCards(result.deck);
         setBodyMods(result.bodyMods);
         unlockBodyMods(result.bodyMods);
         finishVisit();
     }, [ finishVisit ]);
 
-    const finishPuzzleReward = useCallback((chosen: string[]): void =>
+    const finishPuzzleReward = useCallback((chosen: RunDeckCard[]): void =>
     {
         if (chosen.length > 0)
         {
             setDeck((prev) => [ ...prev, ...chosen ]);
-            unlockCards(chosen);
+            unlockCards(toDefinitionIds(chosen));
         }
 
         const node = eventVisitRef.current?.node;
@@ -676,12 +660,12 @@ export const useRunController = () =>
         }
     }, [ completeWardenVictory ]);
 
-    const finishReward = useCallback((chosen: string[]): void =>
+    const finishReward = useCallback((chosen: RunDeckCard[]): void =>
     {
         if (chosen.length > 0)
         {
             setDeck((prev) => [ ...prev, ...chosen ]);
-            unlockCards(chosen);
+            unlockCards(toDefinitionIds(chosen));
         }
 
         advanceRewardFlow(chosen.length, false);
@@ -724,7 +708,7 @@ export const useRunController = () =>
                     prev.nodeId,
                     step.reward,
                     rerollIndex,
-                    deckRef.current,
+                    toDefinitionIds(deckRef.current),
                     currentFloorRef.current,
                 ),
             };
@@ -743,7 +727,7 @@ export const useRunController = () =>
         setMap(buildMapForSeed(nextSeed));
         setPath([]);
         setPlayerHealth(MAX_HEALTH);
-        setDeck(getDefaultDeckDefinitionIds());
+        setDeck(buildDefaultRunDeck());
         setGold(0);
         setBodyMods([]);
         setRunAttackCount(0);
@@ -806,7 +790,7 @@ export const useRunController = () =>
     );
 
     const currentRewardStep = pendingRewardFlow?.steps[pendingRewardFlow.stepIndex];
-    const deckArchetypeScores = useMemo(() => scoreDeckArchetypes(deck), [ deck ]);
+    const deckArchetypeScores = useMemo(() => scoreDeckArchetypes(toDefinitionIds(deck)), [ deck ]);
     const rewardSynergyHints = useMemo(() =>
     {
         if (!currentRewardStep || currentRewardStep.kind !== 'card')
@@ -818,7 +802,7 @@ export const useRunController = () =>
 
         for (const optionId of currentRewardStep.options)
         {
-            const hint = getCardSynergyHint(optionId, deck);
+            const hint = getCardSynergyHint(optionId, toDefinitionIds(deck));
 
             if (hint)
             {

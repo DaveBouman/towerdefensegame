@@ -1,4 +1,5 @@
 import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
+import type { RunDeckCard } from '../../run/runDeck';
 import type { ArrowPool, CardDirection } from './cardDirections';
 import { buildBalancedDirectionsForPool, DIAGONAL_DIRECTIONS, ORTHOGONAL_DIRECTIONS } from './cardDirections';
 import { createCardInstance } from './createCardInstance';
@@ -36,9 +37,41 @@ export const getDefaultDeckDefinitionIds = (): string[] =>
     DECK_COMPOSITION.flatMap(({ definitionId, count }) =>
         Array.from({ length: count }, () => definitionId));
 
+/** Starting run deck with balanced arrows per pool (same distribution as `buildPlayerDeck`). */
+export const buildDefaultRunDeck = (): RunDeckCard[] =>
+{
+    const arrowQueues = buildBalancedArrowQueues();
+    const cards: RunDeckCard[] = [];
+
+    for (const entry of DECK_COMPOSITION)
+    {
+        const definition = getCardDefinitionOrThrow(entry.definitionId);
+
+        for (let i = 0; i < entry.count; i++)
+        {
+            if (definition.arrowPool === 'joker')
+            {
+                cards.push({ definitionId: entry.definitionId });
+                continue;
+            }
+
+            const arrow = takeBalancedArrow(arrowQueues, definition.arrowPool);
+
+            cards.push({ definitionId: entry.definitionId, arrow });
+        }
+    }
+
+    return cards;
+};
+
 /** Builds a shuffled deck of card instances from a list of definition ids. */
 export const buildDeckFromDefinitionIds = (definitionIds: readonly string[]): CardInstance[] =>
     shuffleInPlace(definitionIds.map((id) => createCardInstance(id)));
+
+/** Builds a shuffled battle deck from run deck entries, preserving chosen arrows. */
+export const buildDeckFromRunCards = (cards: readonly RunDeckCard[]): CardInstance[] =>
+    shuffleInPlace(cards.map(({ definitionId, arrow, loopArrow }) =>
+        createCardInstance(definitionId, arrow, 'player', loopArrow)));
 
 const buildBalancedArrowQueues = (): Map<ArrowPool, CardDirection[]> =>
 {

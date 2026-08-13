@@ -2,14 +2,16 @@ import {
     canUpgradeCard,
     getCardDefinitionOrThrow,
 } from '../cardGame/config/cardRegistry';
+import type { RunDeckCard } from './runDeck';
+import { toDefinitionIds } from './runDeck';
 
 /** Definition ids in the deck that still have an unused upgrade. */
-export const listUpgradableCardsInDeck = (deck: readonly string[]): string[] =>
+export const listUpgradableCardsInDeck = (deck: readonly RunDeckCard[]): string[] =>
 {
     const seen = new Set<string>();
     const result: string[] = [];
 
-    for (const definitionId of deck)
+    for (const definitionId of toDefinitionIds(deck))
     {
         if (seen.has(definitionId) || !canUpgradeCard(definitionId))
         {
@@ -29,9 +31,9 @@ export const listUpgradableCardsInDeck = (deck: readonly string[]): string[] =>
  * Returns null if the card is missing or already upgraded.
  */
 export const upgradeFirstCardInDeck = (
-    deck: readonly string[],
+    deck: readonly RunDeckCard[],
     definitionId: string,
-): string[] | null =>
+): RunDeckCard[] | null =>
 {
     const definition = getCardDefinitionOrThrow(definitionId);
     const upgradedId = definition.upgradesTo;
@@ -41,7 +43,7 @@ export const upgradeFirstCardInDeck = (
         return null;
     }
 
-    const index = deck.indexOf(definitionId);
+    const index = deck.findIndex((card) => card.definitionId === definitionId);
 
     if (index < 0)
     {
@@ -49,8 +51,12 @@ export const upgradeFirstCardInDeck = (
     }
 
     const next = [ ...deck ];
+    const card = next[index]!;
 
-    next[index] = upgradedId;
+    next[index] = {
+        ...card,
+        definitionId: upgradedId,
+    };
 
     return next;
 };

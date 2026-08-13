@@ -25,6 +25,8 @@ import { seedScope } from '../../game/random/rng';
 import { getRunPuzzle, rollPuzzleId } from '../../game/run/runPuzzles';
 import { PUZZLE_TRIAL_RULES } from '../../game/run/rewards';
 import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistry';
+import type { RunDeckCard } from '../../game/run/runDeck';
+import { mergeDeckAfterEvent, toDefinitionIds } from '../../game/run/runDeck';
 import { EventIcon } from './EventIcon';
 
 type EventPhase = 'choices' | 'wheel' | 'matcher' | 'puzzle-brief' | 'result';
@@ -52,7 +54,7 @@ interface RunEventOverlayProps {
     playerHealth: number;
     maxHealth: number;
     gold: number;
-    deck: string[];
+    deck: RunDeckCard[];
     bodyMods: string[];
     onFinish: (result: AppliedEventResult) => void;
     onStartPuzzle: (puzzleId: string) => void;
@@ -137,18 +139,18 @@ export const RunEventOverlay = ({
         playerHealth: snapshot.playerHealth,
         maxHealth,
         gold: snapshot.gold,
-        deck: snapshot.deck,
+        deck: toDefinitionIds(snapshot.deck),
         bodyMods: snapshot.bodyMods,
     });
 
     const showResult = (result: AppliedEventResult): void =>
     {
-        setSnapshot({
+        setSnapshot((prev) => ({
             playerHealth: result.playerHealth,
             gold: result.gold,
-            deck: result.deck,
+            deck: mergeDeckAfterEvent(prev.deck, result.deck),
             bodyMods: result.bodyMods,
-        });
+        }));
         setMessages(result.messages);
         setPhase('result');
     };

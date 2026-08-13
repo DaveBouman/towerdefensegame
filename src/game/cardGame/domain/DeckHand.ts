@@ -1,10 +1,11 @@
 import { GAME_RULES, getCardDefinitionOrThrow, isCardNonRerollable } from '../config/cardRegistry';
-import { buildDeckFromDefinitionIds, buildPlayerDeck, shuffleInPlace } from './buildPlayerDeck';
+import { buildDeckFromRunCards, buildPlayerDeck } from './buildPlayerDeck';
 import { createCardInstance } from './createCardInstance';
+import type { RunDeckCard } from '../../run/runDeck';
 import type { CardInstance } from './types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
-import { randomInt } from '../../random/rng';
+import { randomInt, shuffleInPlace } from '../../random/rng';
 
 export class DeckHand
 {
@@ -15,13 +16,13 @@ export class DeckHand
     private readonly maxRerollsPerFloor: number;
 
     constructor (
-        deckDefinitionIds?: readonly string[],
+        runDeck?: readonly RunDeckCard[],
         rerollsRemaining = GAME_RULES.rerollsPerFloor,
     )
     {
         this.deck.push(
-            ...(deckDefinitionIds && deckDefinitionIds.length > 0
-                ? buildDeckFromDefinitionIds(deckDefinitionIds)
+            ...(runDeck && runDeck.length > 0
+                ? buildDeckFromRunCards(runDeck)
                 : buildPlayerDeck()),
         );
         this.rerollsRemaining = rerollsRemaining;
