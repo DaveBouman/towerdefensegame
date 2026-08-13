@@ -121,6 +121,14 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             'Only this card wraps — normal cards still stop at the grid edge.',
         ],
     })),
+    provider('phase-bulwark', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Grants ${ctx.definition.power} armor when activated in the chain.`,
+            'Phase wrap: when this card\'s arrow would exit the board, the chain continues from the opposite edge (top↔bottom, left↔right).',
+            'Only this card wraps — normal cards still stop at the grid edge.',
+        ],
+    })),
     provider('defend-special', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: defendLines(ctx),

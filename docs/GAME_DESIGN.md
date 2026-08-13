@@ -206,7 +206,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 
 | System | Files | Player decision |
 |--------|-------|-----------------|
-| Chain routing | `AttackPipeline.ts`, `cardDirections.ts` | Arrow pools, leap (2-tile), corner-turn (`cornerTurn` — hooks to a forward-diagonal, `getCornerNextSlot`), edge-wrap (`wrapEdges` — **Phase Relay** continues on the opposite board edge). Loop-reset exists in code but is **disabled** (not in starter deck, rewards, or puzzles). |
+| Chain routing | `AttackPipeline.ts`, `cardDirections.ts` | Arrow pools, leap (2-tile), corner-turn (`cornerTurn` — hooks to a forward-diagonal, `getCornerNextSlot`), edge-wrap (`wrapEdges` — **Phase Relay** / **Phase Bulwark** continue on the opposite board edge). Loop-reset exists in code but is **disabled** (not in starter deck, rewards, or puzzles). |
 | Poison trail | `poisonTrailAbility.ts` | Converts subsequent defends to **poison stacks** on the enemy |
 | Poison stacks (status) | `CardGameSession.tickPoison` | Enemy takes `stacks` damage at the start of each of its turns (ignores shield), then stacks decay by 1 |
 | Fire alternation | `fireAlternationAbility.ts` | +3 damage per alternating attack/defend after fire |
@@ -353,8 +353,9 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-13 | **Phase Bulwark.** Defend counterpart to Phase Relay — grants armor and wraps the chain to the opposite board edge. In reward/elite pools. |
 | 2026-08-13 | **Capacitor Bank + Phase Relay.** **Capacitor Bank** body mod: every 3rd Defend in a chain stores charge; the next Attack in that chain deals +50% (Echo replays do not extra-count defends). New **Phase Relay** card (`wrapEdges`): when its arrow exits the board, the chain continues from the opposite edge (top↔bottom, left↔right). In reward/elite pools. |
-| 2026-08-13 | **Chain start discoverability.** START column glows while editable; every left-column tile shows row letters (A–E) with pulse, selected tile shows **START** badge; column header reads START; HUD hint shows current row and how to move it. |
+| 2026-08-13 | **Chain start discoverability.** START column glows while editable; unselected tiles pulse; selected tile shows **START** badge; column header reads START; HUD hint shows current row and how to move it. Row letter axis labels removed from the combat board. |
 | 2026-08-13 | **Mark V + Portside Gyro body mods.** **Mark V** doubles damage every 5th run attack (Mark VII stays at 7th). **Portside Gyro** gives left-routing card hits +30% damage. Body mod panel shows proc counters for both interval mods. Design backlog added for harder routing mods. |
 | 2026-08-13 | **Direction picks everywhere + shop reroute.** All new cards (rewards, shop, events) prompt for chain direction. Ripperdoc adds **Signal Reroute** (40 creds) to change one card’s arrow; **Deck Excision** removes a card. Shop/remove/reroute pick specific copies with visible arrows. |
 | 2026-08-13 | **Chain pacing tune.** Chain steps slowed for readability (`activationStepMs` 620): gentler late-chain acceleration, slightly longer gaps between cards, 300ms minimum per step. Big-moment holds on kills/chunky hits unchanged. |

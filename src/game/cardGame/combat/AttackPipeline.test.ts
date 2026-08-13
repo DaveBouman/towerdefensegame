@@ -203,6 +203,22 @@ describe('AttackPipeline', () =>
         expect(chain[1]?.slot).toEqual({ row: 2, col: 0 });
     });
 
+    it('wraps a phase-bulwark off the top edge and grants armor', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('phase-bulwark', 'up'));
+        board.placeCard({ row: 4, col: 1 }, createCardInstance('attack', 'right'));
+
+        const chain = planActivationChain(board, { row: 0, col: 1 });
+        const resolved = resolveChainSteps(chain);
+
+        expect(chain.map((step) => step.definitionId)).toEqual([ 'phase-bulwark', 'attack' ]);
+        expect(chain[1]?.slot).toEqual({ row: 4, col: 1 });
+        expect(resolved[0]?.armor).toBeGreaterThan(0);
+        expect(resolved[0]?.behaviorId).toBe('defend');
+    });
+
     it('stops a corner card when neither forward-diagonal tile has a card', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));

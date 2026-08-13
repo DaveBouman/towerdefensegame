@@ -10,7 +10,7 @@ import type { BoardModel } from '../cardGame/domain/BoardModel';
 import { isEnemyOwnedCard, isFieldOwnedCard } from '../cardGame/domain/cardOwnership';
 import type { CardDirection } from '../cardGame/domain/cardDirections';
 import type { CardInstance, SlotPosition } from '../cardGame/domain/types';
-import { boardColLabel, boardRowLabel } from './boardCoordinates';
+import { boardColLabel } from './boardCoordinates';
 import type { BoardLayout } from './boardLayout';
 import { JokerDirectionPicker } from './JokerDirectionPicker';
 
@@ -81,7 +81,6 @@ export class CardBoardView
     private chainStartIdleTween?: Phaser.Tweens.Tween;
     private chainStartTween?: Phaser.Tweens.Tween;
     private readonly colAxisLabels: Phaser.GameObjects.Text[] = [];
-    private readonly rowAxisLabels: Phaser.GameObjects.Text[] = [];
     private activeCoordinate: SlotPosition | null = null;
     private readonly jokerDirectionPicker = new JokerDirectionPicker();
 
@@ -246,7 +245,7 @@ export class CardBoardView
         this.updateChainStartSelection();
     }
 
-    /** Highlights the col number + row letter for the slot currently resolving in the chain. */
+    /** Highlights the column label for the slot currently resolving in the chain. */
     setActiveCoordinate (slot: SlotPosition | null): void
     {
         this.activeCoordinate = slot ? { ...slot } : null;
@@ -806,10 +805,8 @@ export class CardBoardView
     ): void
     {
         const axisY = -panelPad - 12;
-        const axisX = -panelPad - 16;
 
         this.colAxisLabels.length = 0;
-        this.rowAxisLabels.length = 0;
 
         for (let col = 0; col < cols; col++)
         {
@@ -827,20 +824,6 @@ export class CardBoardView
             this.colAxisLabels[col] = label;
         }
 
-        for (let row = 0; row < rows; row++)
-        {
-            const label = this.scene.add.text(
-                axisX,
-                row * tileSize + tileSize / 2,
-                boardRowLabel(row),
-                uiTextStyle(12, AXIS_IDLE, { bold: true, stroke: false }),
-            );
-            label.setOrigin(0.5, 0.5);
-            label.setAngle(-90);
-            this.container.add(label);
-            this.rowAxisLabels[row] = label;
-        }
-
         this.refreshAxisLegendStyles();
         this.bringAxisLegendToFront();
     }
@@ -849,8 +832,6 @@ export class CardBoardView
     {
         const startCol = GAME_RULES.activationStartColumn;
         const activeCol = this.activeCoordinate?.col ?? null;
-        const activeRow = this.activeCoordinate?.row ?? null;
-        const chainStartRow = this.chainStartPickable ? this.chainStartSlot.row : null;
 
         for (let col = 0; col < this.colAxisLabels.length; col++)
         {
@@ -866,22 +847,6 @@ export class CardBoardView
             label.setColor(active ? AXIS_ACTIVE : start ? AXIS_START : AXIS_IDLE);
             label.setScale(active ? 1.2 : start ? 1.08 : 1);
             label.setAlpha(active || start || activeCol === null ? 1 : 0.55);
-        }
-
-        for (let row = 0; row < this.rowAxisLabels.length; row++)
-        {
-            const label = this.rowAxisLabels[row];
-
-            if (!label)
-            {
-                continue;
-            }
-
-            const active = activeRow === row;
-            const chainStart = chainStartRow === row;
-            label.setColor(active ? AXIS_ACTIVE : chainStart ? AXIS_START : AXIS_IDLE);
-            label.setScale(active ? 1.2 : chainStart ? 1.08 : 1);
-            label.setAlpha(active || chainStart || activeRow === null ? 1 : 0.55);
         }
     }
 
@@ -1046,13 +1011,6 @@ export class CardBoardView
                 indicator.badge.setAlpha(1);
                 indicator.badge.setColor('#fcee0a');
             }
-            else if (showPickHints)
-            {
-                indicator.badge.setText(boardRowLabel(indicator.slot.row));
-                indicator.badge.setVisible(true);
-                indicator.badge.setAlpha(0.9);
-                indicator.badge.setColor('#7af0ff');
-            }
             else
             {
                 indicator.badge.setVisible(false);
@@ -1137,14 +1095,6 @@ export class CardBoardView
     private bringAxisLegendToFront (): void
     {
         for (const label of this.colAxisLabels)
-        {
-            if (label)
-            {
-                this.container.bringToTop(label);
-            }
-        }
-
-        for (const label of this.rowAxisLabels)
         {
             if (label)
             {

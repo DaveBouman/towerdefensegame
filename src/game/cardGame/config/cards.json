@@ -499,6 +499,20 @@
       }
     },
     {
+      "id": "phase-bulwark",
+      "label": "Phase Bulwark",
+      "power": 5,
+      "behaviorId": "defend",
+      "visualId": "defend",
+      "arrowPool": "orthogonal",
+      "wrapEdges": true,
+      "tier": 2,
+      "tooltipProviderId": "phase-bulwark",
+      "upgrade": {
+        "power": 7
+      }
+    },
+    {
       "id": "neurotoxin",
       "label": "Neurotoxin",
       "power": 3,
