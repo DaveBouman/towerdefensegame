@@ -473,7 +473,7 @@ export function runChainPlayback (
         const pacedMs = Math.round(
             getChainStepMs(resolvedStep.behaviorId, stepMs) * getChainPaceMultiplier(stepIndex),
         );
-        const stepDurationMs = Math.max(220, pacedMs);
+        const stepDurationMs = Math.max(300, pacedMs);
 
         const proceedAfterStep = (): void =>
         {

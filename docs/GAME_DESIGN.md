@@ -339,6 +339,7 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
+| 2026-08-13 | **Chain pacing tune.** Chain steps slowed for readability (`activationStepMs` 620): gentler late-chain acceleration, slightly longer gaps between cards, 300ms minimum per step. Big-moment holds on kills/chunky hits unchanged. |
 | 2026-08-13 | **Run controller split.** `App.tsx` slimmed to shell + `RunPhaseScreens`; run state/handlers in `useRunController.ts`, Phaser bridge in `useBattleBridge.ts`, reward helpers in `rewardHelpers.ts`. |
 | 2026-08-13 | **UI shell refactor.** `ModalShell` in `CyberPanel.tsx` dedupes backdrop + panel chrome across reward, shop, rest, run-end, and visit overlays. `ArchiveOverlay` + `useArchiveFilter` share filter/selection UX for card index, bestiary, and body mod archives. |
 | 2026-08-13 | **Body mod index.** Main-menu **Body mods** archive (`bodyModBestiary.ts`, `BodyModBestiaryOverlay`) logs body mods when installed in a run (localStorage). Mirrors enemy bestiary UX. |

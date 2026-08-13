@@ -1,6 +1,6 @@
 {
-  "activationStepMs": 480,
-  "enemyTurnMs": 640,
+  "activationStepMs": 620,
+  "enemyTurnMs": 720,
   "deckSize": 20,
   "handSize": 8,
   "energyPerTurn": 3,

@@ -87,13 +87,13 @@ export const getChainStepMs = (behaviorId: string, baseMs: number): number =>
     }
 };
 
-/** Later chain steps snap faster so long routes feel like they accelerate. */
+/** Later chain steps snap a bit faster — gentle acceleration, not a blur. */
 export const getChainPaceMultiplier = (stepIndex: number): number =>
-    Math.max(0.46, 1 - Math.max(0, stepIndex) * 0.08);
+    Math.max(0.62, 1 - Math.max(0, stepIndex) * 0.05);
 
-/** Tiny gap between cards — not another full step wait. */
+/** Short gap between cards — not another full step wait. */
 export const getChainGapMs = (baseMs: number): number =>
-    Math.min(40, Math.max(0, Math.round(baseMs * 0.08)));
+    Math.min(72, Math.max(24, Math.round(baseMs * 0.12)));
 
 export interface ChainMomentInput {
     killed?: boolean;

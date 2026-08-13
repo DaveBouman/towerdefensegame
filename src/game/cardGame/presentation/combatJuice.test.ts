@@ -25,12 +25,14 @@ describe('combatJuice', () =>
         expect(getChainStepMs('defend', 800)).toBeGreaterThan(800);
     });
 
-    it('accelerates later chain steps and holds on big moments', () =>
+    it('accelerates later chain steps gently and holds on big moments', () =>
     {
         expect(getChainPaceMultiplier(0)).toBe(1);
         expect(getChainPaceMultiplier(5)).toBeLessThan(getChainPaceMultiplier(1));
-        expect(getChainPaceMultiplier(20)).toBe(0.46);
-        expect(getChainGapMs(480)).toBeLessThanOrEqual(40);
+        expect(getChainPaceMultiplier(5)).toBeGreaterThan(0.62);
+        expect(getChainPaceMultiplier(20)).toBe(0.62);
+        expect(getChainGapMs(620)).toBeLessThanOrEqual(72);
+        expect(getChainGapMs(620)).toBeGreaterThanOrEqual(24);
         expect(getBigMomentHoldMs({ killed: true })).toBeGreaterThan(
             getBigMomentHoldMs({ damage: 12 }),
         );

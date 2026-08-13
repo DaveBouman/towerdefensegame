@@ -96,6 +96,7 @@ export const CardRewardOverlay = ({
             rootClassName="card-reward"
             panelClassName="card-reward__panel"
         >
+            <div className="card-reward__scroll">
                 <p className="card-reward__eyebrow">{eyebrow}</p>
                 <h1 className="card-reward__title">{resolvedTitle}</h1>
                 {subtitle && <p className="card-reward__subtitle">{subtitle}</p>}
@@ -138,8 +139,9 @@ export const CardRewardOverlay = ({
                         );
                     })}
                 </div>
+            </div>
 
-                <div className="card-reward__actions">
+            <div className="card-reward__actions">
                     {rerollable && onReroll && (
                         <button type="button" className="card-reward__reroll" onClick={onReroll}>
                             Reroll
