@@ -9,7 +9,9 @@ import { CardChip } from './CardChip';
 import { ModalShell } from './CyberPanel';
 import { RunDeckViewPopup } from './RunDeckViewPopup';
 import { DirectionArrowIcon } from './DirectionArrowIcon';
+import { createCardInstance } from '../../game/cardGame/domain/createCardInstance';
 import { arrowPoolLabel, getForwardDirectionsForPool } from '../../game/cardGame/domain/cardDirections';
+import { resolveCardTooltip } from '../../game/cardGame/presentation/tooltips/cardTooltipRegistry';
 
 interface CardRewardOverlayProps {
     /** Card definition ids offered as choices. */
@@ -59,8 +61,20 @@ export const CardRewardOverlay = ({
     const [ directionIndex, setDirectionIndex ] = useState(0);
     const [ resolvedCards, setResolvedCards ] = useState<RunDeckCard[]>([]);
     const [ deckPopupOpen, setDeckPopupOpen ] = useState(false);
+    const [ inspectedId, setInspectedId ] = useState<string | null>(null);
     const cards = useMemo(() => options.map(describeCardReward), [ options ]);
     const deckEntries = useMemo(() => groupRunDeckEntries(deck), [ deck ]);
+    const tooltips = useMemo(() =>
+    {
+        const map = new Map<string, ReturnType<typeof resolveCardTooltip>>();
+
+        for (const card of cards)
+        {
+            map.set(card.definitionId, resolveCardTooltip(createCardInstance(card.definitionId)));
+        }
+
+        return map;
+    }, [ cards ]);
 
     useEffect(() =>
     {
@@ -71,6 +85,7 @@ export const CardRewardOverlay = ({
         setDirectionIndex(0);
         setResolvedCards([]);
         setDeckPopupOpen(false);
+        setInspectedId(null);
 
         if (cards.length === 0)
         {
@@ -90,6 +105,7 @@ export const CardRewardOverlay = ({
 
     const toggle = (definitionId: string): void =>
     {
+        setInspectedId(definitionId);
         setSelected((prev) =>
         {
             if (prev.includes(definitionId))
@@ -183,7 +199,13 @@ export const CardRewardOverlay = ({
         setResolvedCards([]);
     };
 
+    const inspectedTooltip = inspectedId ? tooltips.get(inspectedId) ?? null : null;
+    const inspectedCard = inspectedId
+        ? cards.find((card) => card.definitionId === inspectedId) ?? null
+        : null;
+
     return (
+        <>
         <ModalShell
             variant="cyan"
             rootClassName="card-reward"
@@ -222,12 +244,14 @@ export const CardRewardOverlay = ({
                                 const poolDirections = getForwardDirectionsForPool(definition.arrowPool);
                                 const isSelected = selected.includes(card.definitionId);
                                 const isRevealed = index < revealedCount;
+                                const tooltip = tooltips.get(card.definitionId);
+                                const summary = tooltip?.lines[0] ?? card.blurb;
 
                                 return (
                                     <button
                                         key={`${card.definitionId}-${index}`}
                                         type="button"
-                                        className={`card-reward__choice${isSelected ? ' card-reward__choice--selected' : ''}${isRevealed ? ' card-reward__choice--revealed' : ''}`}
+                                        className={`card-reward__choice${isSelected ? ' card-reward__choice--selected' : ''}${isRevealed ? ' card-reward__choice--revealed' : ''}${inspectedId === card.definitionId ? ' card-reward__choice--inspected' : ''}`}
                                         onClick={() => toggle(card.definitionId)}
                                     >
                                         <CardChip
@@ -253,13 +277,26 @@ export const CardRewardOverlay = ({
                                         <span className={`card-reward__tier card-reward__tier--${card.tier}`}>
                                             {card.tier === 1 ? 'Common' : card.tier === 2 ? 'Uncommon' : 'Rare'}
                                         </span>
-                                        <span className="card-reward__blurb">{card.blurb}</span>
+                                        <span className="card-reward__blurb">{summary}</span>
                                         {synergyHints?.[card.definitionId] && (
                                             <span className="card-reward__synergy">{synergyHints[card.definitionId]}</span>
                                         )}
                                     </button>
                                 );
                             })}
+                        </div>
+
+                        <div className="card-reward__inspect" role="status">
+                            {inspectedTooltip && inspectedCard ? (
+                                <>
+                                    <strong>{inspectedTooltip.title}</strong>
+                                    {inspectedTooltip.lines.map((line, lineIndex) => (
+                                        <span key={lineIndex}>{line}</span>
+                                    ))}
+                                </>
+                            ) : (
+                                <span>Select a card to read what it does.</span>
+                            )}
                         </div>
                     </>
                 ) : currentDefinition && (
@@ -277,13 +314,6 @@ export const CardRewardOverlay = ({
                     </>
                 )}
             </div>
-            {deckPopupOpen && (
-                <RunDeckViewPopup
-                    deck={deck}
-                    onClose={() => setDeckPopupOpen(false)}
-                />
-            )}
-
             <div className="card-reward__actions">
                 {step === 'choose' ? (
                     <>
@@ -315,5 +345,12 @@ export const CardRewardOverlay = ({
                 )}
             </div>
         </ModalShell>
+        {deckPopupOpen && (
+            <RunDeckViewPopup
+                deck={deck}
+                onClose={() => setDeckPopupOpen(false)}
+            />
+        )}
+        </>
     );
 };

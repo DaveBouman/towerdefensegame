@@ -353,7 +353,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
-| 2026-08-13 | **Right-biased starter arrows.** Starting deck no longer splits arrows evenly — about half point **right**, with left scarce (2 of 18). Direction pickers list right first. |
+| 2026-08-13 | **Unified card inspectors.** Draw pile, graveyard, and run-deck popups use the same card-index layout (grid tiles, hover dossier, detail panel) as unlocked cards in the collection. |
+| 2026-08-13 | **Reward dossier + deck inspector.** Card rewards show full tooltip text in a detail panel (Switchback and similar no longer fall back to just the name). View-your-deck uses the in-fight pile inspector chrome, with a bestiary-style dossier when you select a card. |
 | 2026-08-13 | **Phase Bulwark.** Defend counterpart to Phase Relay — grants armor and wraps the chain to the opposite board edge. In reward/elite pools. |
 | 2026-08-13 | **Capacitor Bank + Phase Relay.** **Capacitor Bank** body mod: every 3rd Defend in a chain stores charge; the next Attack in that chain deals +50% (Echo replays do not extra-count defends). New **Phase Relay** card (`wrapEdges`): when its arrow exits the board, the chain continues from the opposite edge (top↔bottom, left↔right). In reward/elite pools. |
 | 2026-08-13 | **Chain start discoverability.** Selected START tile shows **START** badge and border; other column-0 tiles stay clickable but unmarked (HUD hint explains how to move). Column glow and multi-tile pulse removed. |

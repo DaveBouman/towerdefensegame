@@ -2589,6 +2589,63 @@ html, body, #root {
     background: rgba(16, 36, 56, 1);
 }
 
+.card-inspect__subtitle {
+    margin: -4px 0 10px;
+    font-size: calc(13px * var(--text-scale));
+    line-height: 1.45;
+    color: #9aaccc;
+    text-align: left;
+}
+
+.card-inspect__empty {
+    flex: 1 1 auto;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 0 12px;
+    padding: 24px 12px;
+    border-radius: 8px;
+    border: 1px dashed rgba(0, 232, 255, 0.18);
+    color: #8aa0c8;
+    font-size: calc(14px * var(--text-scale));
+    text-align: center;
+}
+
+.card-inspect--graveyard .card-inspect__subtitle,
+.card-inspect--graveyard .card-inspect__empty {
+    color: #c8a0bc;
+}
+
+.card-inspect--graveyard .card-inspect__empty {
+    border-color: rgba(255, 45, 149, 0.22);
+}
+
+.card-inspect--graveyard .card-collection__item:hover,
+.card-inspect--graveyard .card-collection__item--selected {
+    border-color: rgba(255, 45, 149, 0.45);
+}
+
+.card-inspect--graveyard .card-collection__detail {
+    border-color: rgba(255, 45, 149, 0.22);
+}
+
+.card-inspect--graveyard .card-collection__close {
+    border-color: rgba(255, 45, 149, 0.4);
+}
+
+.card-inspect--graveyard .card-collection__close:hover {
+    border-color: rgba(255, 45, 149, 0.75);
+}
+
+.card-collection.card-inspect {
+    z-index: 170;
+}
+
+.card-collection.card-inspect .card-collection__panel {
+    max-height: min(88vh, 820px);
+}
+
 /* ---------------------------------------------------------------------------
    Enemy bestiary (reuses card-collection chrome)
    --------------------------------------------------------------------------- */
@@ -2852,6 +2909,32 @@ html, body, #root {
 
 .card-reward__tier--3 {
     color: #f0a030;
+}
+
+.card-reward__choice--inspected {
+    border-color: rgba(122, 240, 255, 0.7);
+}
+
+.card-reward__inspect {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 72px;
+    margin: 14px 0 4px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 232, 255, 0.22);
+    background: rgba(4, 10, 18, 0.85);
+    font-size: calc(14px * var(--text-scale));
+    line-height: 1.45;
+    color: #e2ecfa;
+    text-align: left;
+}
+
+.card-reward__inspect strong {
+    color: #f2fbff;
+    font-size: calc(16px * var(--text-scale));
+    letter-spacing: 0.03em;
 }
 
 .card-reward__blurb {
@@ -3205,6 +3288,40 @@ html, body, #root {
     background:
         linear-gradient(180deg, rgba(12, 20, 34, 0.95) 0%, rgba(8, 12, 22, 0.98) 100%);
     transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+button.pile-view__card {
+    font-family: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+.pile-view__card--selected {
+    border-color: rgba(0, 232, 255, 0.75);
+    box-shadow: 0 0 0 1px rgba(0, 232, 255, 0.35), 0 0 18px rgba(0, 232, 255, 0.22);
+}
+
+.pile-view__detail {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 72px;
+    margin: 12px 0 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(0, 232, 255, 0.22);
+    background: rgba(4, 10, 18, 0.85);
+    font-size: calc(14px * var(--text-scale));
+    line-height: 1.45;
+    color: #e2ecfa;
+    text-align: left;
+}
+
+.pile-view__detail strong {
+    color: #f2fbff;
+    font-size: calc(16px * var(--text-scale));
+    letter-spacing: 0.03em;
 }
 
 .pile-view__card:hover {
@@ -3999,76 +4116,6 @@ html, body, #root {
     border-color: rgba(122, 240, 255, 0.65);
     background: rgba(12, 28, 48, 0.9);
     color: #e8f8ff;
-}
-
-.run-deck-popup {
-    position: fixed;
-    inset: 0;
-    z-index: 165;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: max(12px, env(safe-area-inset-top, 0px)) 16px max(12px, env(safe-area-inset-bottom, 0px));
-    font-family: var(--font-ui);
-}
-
-.run-deck-popup__panel {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    max-width: 560px;
-    max-height: min(78vh, 640px);
-    max-height: min(78dvh, 640px);
-    padding: 20px 22px 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    text-align: center;
-}
-
-.run-deck-popup__title {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #9b8fd8;
-}
-
-.run-deck-popup__strip {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
-    overflow-y: auto;
-    max-height: min(52vh, 420px);
-    max-height: min(52dvh, 420px);
-    padding: 4px 2px;
-}
-
-.run-deck-popup__item {
-    flex: 0 0 auto;
-}
-
-.run-deck-popup__close {
-    align-self: center;
-    margin-top: 4px;
-    padding: 10px 20px;
-    border: 1px solid rgba(122, 240, 255, 0.45);
-    border-radius: 4px;
-    background: rgba(8, 24, 38, 0.82);
-    color: #e8f8ff;
-    font-family: var(--font-ui);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    cursor: pointer;
-}
-
-.run-deck-popup__close:hover {
-    border-color: #7af0ff;
-    background: rgba(12, 32, 52, 0.95);
 }
 
 .card-reward__pool {

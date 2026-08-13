@@ -320,6 +320,7 @@ const CARD_BLURBS: Record<string, string> = {
     patch: 'Damage taken -10% from enemy attacks and reflect damage.',
     overclock: 'Damage dealt +10% from your attack steps and bonuses.',
     echo: 'Re-activates the previous chain card — repeats its damage, armor, and modifiers.',
+    switchback: 'Deals double damage, then jumps your lock to the next living enemy.',
     salvage: 'Deals 4 damage. Exhausted after use this fight. Heals 7 HP if its damage kills an enemy.',
     courier: 'Discards 2 hand cards to the graveyard when played. Single use per run.',
 };
