@@ -36,6 +36,18 @@ describe('enemyIntentTooltipRegistry', () =>
         expect(tooltip.lines.some((line) => line.includes('checkerboard'))).toBe(true);
     });
 
+    it('describes Null Strip for a telegraphed column', () =>
+    {
+        const tooltip = resolveEnemyIntentTooltip(
+            { kind: 'nullify-lane', axis: 'column', column: 2, amount: 3 },
+            'upcoming',
+        );
+
+        expect(tooltip.title).toBe('Null Strip');
+        expect(tooltip.lines.some((line) => line.includes('column 3'))).toBe(true);
+        expect(tooltip.lines.some((line) => line.includes('no damage'))).toBe(true);
+    });
+
     it('describes Signal Twist hand redirect', () =>
     {
         const tooltip = resolveEnemyIntentTooltip({ kind: 'redirect-hand' }, 'upcoming');

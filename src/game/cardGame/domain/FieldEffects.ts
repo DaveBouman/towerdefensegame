@@ -3,10 +3,13 @@ import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import type { AttackSequence } from './types';
 import { getUnchainedHazardSlots } from '../combat/AttackPipeline';
 import {
+    applyLaneNullify,
     applyTileDampening,
     isDampenedTile,
+    isNullifiedSlot,
     placeSilenceTiles,
     type DampenField,
+    type NullifyLane,
 } from '../enemyPassives/applyEnemyPassives';
 import { getEnemyPassive } from '../enemyPassives/defaults';
 import type { EnemyPassiveConfig } from '../enemyPassives/types';
@@ -23,6 +26,7 @@ export class FieldEffects
     private readonly silencedSlots = new Set<string>();
     private readonly bombDisabledSlots = new Set<string>();
     private lockedColumn: number | null = null;
+    private nullifyLane: NullifyLane | null = null;
 
     constructor (private readonly board: BoardModel) {}
 
@@ -87,9 +91,46 @@ export class FieldEffects
         return column;
     }
 
+    getNullifyLane (): NullifyLane | null
+    {
+        return this.nullifyLane ? { ...this.nullifyLane } : null;
+    }
+
+    isSlotNullified (slot: SlotPosition): boolean
+    {
+        return this.nullifyLane !== null && isNullifiedSlot(slot, this.nullifyLane);
+    }
+
+    getNullifiedSlots (): SlotPosition[]
+    {
+        if (!this.nullifyLane)
+        {
+            return [];
+        }
+
+        const lane = this.nullifyLane;
+
+        return this.board.slotsInOrder().filter((slot) => isNullifiedSlot(slot, lane));
+    }
+
+    /** Nullifies a board column or row (replaces any previous strip). */
+    setNullifyLane (lane: NullifyLane): NullifyLane
+    {
+        this.nullifyLane = { ...lane };
+
+        return this.nullifyLane;
+    }
+
     applyDampeningToSequence (sequence: AttackSequence): AttackSequence
     {
-        return this.dampenField ? applyTileDampening(sequence, this.dampenField) : sequence;
+        let next = this.dampenField ? applyTileDampening(sequence, this.dampenField) : sequence;
+
+        if (this.nullifyLane)
+        {
+            next = applyLaneNullify(next, this.nullifyLane);
+        }
+
+        return next;
     }
 
     activateDampenField (passives: readonly EnemyPassiveConfig[]): DampenField | null

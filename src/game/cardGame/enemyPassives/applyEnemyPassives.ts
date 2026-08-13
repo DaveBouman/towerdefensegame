@@ -133,6 +133,7 @@ export const planEnemyTurnWithPassives = ({
     const escalate = getEnemyPassive(passives, 'escalate');
     const dampen = getEnemyPassive(passives, 'dampenTiles');
     const pressure = getEnemyPassive(passives, 'pressureColumn');
+    const nullifyLane = getEnemyPassive(passives, 'nullifyLane');
     const handRedirect = getEnemyPassive(passives, 'handRedirect');
     const siphonNode = getEnemyPassive(passives, 'siphonNode');
     const phaseShift = getEnemyPassive(passives, 'phaseShift');
@@ -197,6 +198,44 @@ export const planEnemyTurnWithPassives = ({
             const column = startCol + randomInt(maxCol - startCol + 1);
 
             steps.push({ kind: 'lock-column', column, amount: column + 1 });
+        }
+    }
+
+    // Null Strip: zero out one column or row (cards still placeable).
+    if (nullifyLane)
+    {
+        const pickColumn = nullifyLane.axes === 'column'
+            || (nullifyLane.axes === 'any' && random() < 0.5);
+
+        if (pickColumn)
+        {
+            const startCol = nullifyLane.avoidStartColumn
+                ? (GAME_RULES.activationStartColumn ?? 0) + 1
+                : 0;
+            const maxCol = GRID_CONFIG.cols - 1;
+
+            if (startCol <= maxCol)
+            {
+                const column = startCol + randomInt(maxCol - startCol + 1);
+
+                steps.push({
+                    kind: 'nullify-lane',
+                    axis: 'column',
+                    column,
+                    amount: column + 1,
+                });
+            }
+        }
+        else
+        {
+            const row = randomInt(GRID_CONFIG.rows);
+
+            steps.push({
+                kind: 'nullify-lane',
+                axis: 'row',
+                row,
+                amount: row + 1,
+            });
         }
     }
 
@@ -276,6 +315,82 @@ export const applyTileDampening = (
     const totalDamage = steps.reduce((sum, step) => sum + step.damage, 0);
 
     return { ...sequence, chain, steps, totalDamage };
+};
+
+export type NullifyLane = {
+    axis: 'column' | 'row';
+    index: number;
+};
+
+export const isNullifiedSlot = (
+    slot: SlotPosition,
+    lane: NullifyLane,
+): boolean =>
+    lane.axis === 'column' ? slot.col === lane.index : slot.row === lane.index;
+
+/** Zeros damage, armor, and ability payloads from cards on a nullified column/row. */
+export const applyLaneNullify = (
+    sequence: AttackSequence,
+    lane: NullifyLane,
+): AttackSequence =>
+{
+    let abilityEnemyDamage = sequence.abilityEnemyDamage;
+    let abilityPlayerDamage = sequence.abilityPlayerDamage;
+    let abilityArmorGain = sequence.abilityArmorGain;
+    let abilityPoisonStacks = sequence.abilityPoisonStacks;
+
+    const nullifiedIndexes = new Set<number>();
+    const chain = sequence.chain.map((step, index) =>
+    {
+        if (!isNullifiedSlot(step.slot, lane))
+        {
+            return step;
+        }
+
+        nullifiedIndexes.add(index);
+
+        if (step.damage === 0 && step.armor === 0)
+        {
+            return step;
+        }
+
+        return { ...step, damage: 0, armor: 0 };
+    });
+
+    const steps = chain.filter((step) => step.damage > 0).map(toAttackStep);
+    const totalDamage = steps.reduce((sum, step) => sum + step.damage, 0);
+    const chainAbilityEffects = sequence.chainAbilityEffects.map((effect) =>
+    {
+        if (!nullifiedIndexes.has(effect.stepIndex))
+        {
+            return effect;
+        }
+
+        abilityEnemyDamage -= effect.enemyDamage;
+        abilityPlayerDamage -= effect.playerDamage;
+        abilityArmorGain -= effect.armorGain;
+        abilityPoisonStacks -= effect.poisonStacks;
+
+        return {
+            ...effect,
+            enemyDamage: 0,
+            playerDamage: 0,
+            armorGain: 0,
+            poisonStacks: 0,
+        };
+    });
+
+    return {
+        ...sequence,
+        chain,
+        steps,
+        totalDamage,
+        chainAbilityEffects,
+        abilityEnemyDamage: Math.max(0, abilityEnemyDamage),
+        abilityPlayerDamage: Math.max(0, abilityPlayerDamage),
+        abilityArmorGain: Math.max(0, abilityArmorGain),
+        abilityPoisonStacks: Math.max(0, abilityPoisonStacks),
+    };
 };
 
 export const applyEnemyPassivesToSequence = (

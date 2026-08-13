@@ -76,6 +76,7 @@ export type EnemyTurnKind =
     | 'place-siphon'
     | 'dampen-field'
     | 'lock-column'
+    | 'nullify-lane'
     | 'redirect-hand'
     | 'battle-mod'
     | 'heal-ally'
@@ -88,8 +89,12 @@ export interface EnemyTurnStep {
     modifierDelta?: number;
     /** Ally support target (multi-enemy fights). */
     targetInstanceId?: string;
-    /** Board column index for `lock-column` (0-based). */
+    /** Board column index for `lock-column` / `nullify-lane` (0-based). */
     column?: number;
+    /** Board row index for `nullify-lane` (0-based). */
+    row?: number;
+    /** Axis for `nullify-lane`. */
+    axis?: 'column' | 'row';
     /** Phantom intent decoy — telegraphed but not executed. */
     decoy?: boolean;
 }

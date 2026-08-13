@@ -38,6 +38,10 @@ const INTENT_STYLE: Record<EnemyTurnKind, {
         upcoming: { tint: 0x00c8e0, text: '#7af0ff' },
         executing: { tint: 0x00a8bf, text: '#5ad8ef' },
     },
+    'nullify-lane': {
+        upcoming: { tint: 0xb57aff, text: '#d4a5ff' },
+        executing: { tint: 0x8a4dff, text: '#c090ff' },
+    },
     'redirect-hand': {
         upcoming: { tint: 0xd4a5ff, text: '#e6c8ff' },
         executing: { tint: 0xb57aff, text: '#d4a5ff' },

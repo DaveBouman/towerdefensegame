@@ -7,6 +7,7 @@ import { getDefaultCardGameEnemy } from '../config/enemyCatalog';
 import { normalizeEnemyPassives } from './defaults';
 import {
     applyEnemyPassivesToSequence,
+    applyLaneNullify,
     applyTileDampening,
     computeThornsReflectDamage,
     planEnemyTurnWithPassives,
@@ -147,6 +148,39 @@ describe('enemy passives', () =>
         expect(lock?.amount).toBe((lock?.column ?? 0) + 1);
     });
 
+    it('telegraphs a Null Strip for nullifyLane enemies', () =>
+    {
+        const enemy = {
+            ...getDefaultCardGameEnemy(),
+            attackChance: 1,
+            passives: normalizeEnemyPassives([ 'nullifyLane' ]),
+        };
+
+        const action = planEnemyTurnWithPassives({
+            enemy,
+            enemyState: { health: 40, maxHealth: 40, shield: 0 },
+            enrageStacks: 0,
+            turnsTaken: 0,
+        });
+        const strip = action.steps.find((step) => step.kind === 'nullify-lane');
+
+        expect(strip).toBeDefined();
+        expect(strip?.axis === 'column' || strip?.axis === 'row').toBe(true);
+
+        if (strip?.axis === 'column')
+        {
+            expect(strip.column).toBeGreaterThanOrEqual(1);
+            expect(strip.column).toBeLessThan(GRID_CONFIG.cols);
+            expect(strip.amount).toBe((strip.column ?? 0) + 1);
+        }
+        else
+        {
+            expect(strip?.row).toBeGreaterThanOrEqual(0);
+            expect(strip?.row).toBeLessThan(GRID_CONFIG.rows);
+            expect(strip?.amount).toBe((strip?.row ?? 0) + 1);
+        }
+    });
+
     it('telegraphs Signal Twist for handRedirect enemies', () =>
     {
         const enemy = {
@@ -236,6 +270,54 @@ describe('enemy passives', () =>
         expect(adjusted.chain[0]!.damage).toBe(5);
         expect(adjusted.chain[1]!.armor).toBe(8);
         expect(adjusted.chain[2]!.armor).toBe(4);
+    });
+
+    it('zeros damage and armor on a nullified column', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+        const chain = [
+            {
+                slot: { row: 0, col: 2 },
+                card: createCardInstance('attack', 'right'),
+                definitionId: 'attack',
+                behaviorId: 'attack',
+                visualId: 'attack',
+                arrow: 'right' as const,
+                exitArrow: 'right' as const,
+                damage: 10,
+                armor: 0,
+            },
+            {
+                slot: { row: 1, col: 3 },
+                card: createCardInstance('defend', 'right'),
+                definitionId: 'defend',
+                behaviorId: 'defend',
+                visualId: 'defend',
+                arrow: 'right' as const,
+                exitArrow: 'right' as const,
+                damage: 0,
+                armor: 8,
+            },
+            {
+                slot: { row: 2, col: 2 },
+                card: createCardInstance('attack', 'up'),
+                definitionId: 'attack',
+                behaviorId: 'attack',
+                visualId: 'attack',
+                arrow: 'up' as const,
+                exitArrow: 'up' as const,
+                damage: 7,
+                armor: 0,
+            },
+        ];
+        const raw = buildAttackSequence(chain, board);
+        const adjusted = applyLaneNullify(raw, { axis: 'column', index: 2 });
+
+        expect(raw.totalDamage).toBe(17);
+        expect(adjusted.totalDamage).toBe(0);
+        expect(adjusted.chain[0]!.damage).toBe(0);
+        expect(adjusted.chain[1]!.armor).toBe(8);
+        expect(adjusted.chain[2]!.damage).toBe(0);
     });
 
     it('suppresses the first poison trail from smoke', () =>

@@ -20,6 +20,7 @@ describe('enemyPassiveTooltipRegistry', () =>
             'dampenTiles',
             'curseHand',
             'pressureColumn',
+            'nullifyLane',
             'spawnMinion',
             'shatterOnDeath',
             'credLeech',

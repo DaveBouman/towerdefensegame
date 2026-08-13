@@ -157,6 +157,29 @@ export function playEnemyTurnStep (
         return;
     }
 
+    if (step.kind === 'nullify-lane')
+    {
+        enemyView?.playEnemyAttackPulse();
+
+        scene.time.delayedCall(turnMs, () =>
+        {
+            const axis = step.axis ?? 'column';
+            const index = axis === 'row'
+                ? (step.row ?? Math.max(0, (step.amount ?? 1) - 1))
+                : (step.column ?? Math.max(0, (step.amount ?? 1) - 1));
+
+            session.nullifyBoardLane({ axis, index });
+            boardView.setNullifiedSlots(session.getNullifiedSlots());
+            enemyView?.showIntentLabel(
+                axis === 'row' ? `Null row ${index + 1}` : `Null col ${index + 1}`,
+            );
+            playSfx('enemy-move', { volume: 0.8 });
+            onComplete();
+        });
+
+        return;
+    }
+
     if (step.kind === 'redirect-hand')
     {
         enemyView?.playEnemyAttackPulse();

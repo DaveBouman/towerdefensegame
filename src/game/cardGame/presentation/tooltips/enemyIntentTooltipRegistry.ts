@@ -93,6 +93,25 @@ export const resolveEnemyIntentTooltip = (
                 ],
             };
         }
+        case 'nullify-lane':
+        {
+            const axis = step.axis === 'row' ? 'row' : 'column';
+            const indexLabel = axis === 'row'
+                ? (step.row !== undefined ? step.row + 1 : step.amount ?? '?')
+                : (step.column !== undefined ? step.column + 1 : step.amount ?? '?');
+
+            return {
+                title: 'Null Strip',
+                lines: [
+                    upcoming
+                        ? `Will nullify board ${axis} ${indexLabel}.`
+                        : `Nullifies board ${axis} ${indexLabel}.`,
+                    'You can still place cards there, but they deal no damage, grant no armor, and fire no step effects.',
+                    'Routing still continues through the strip — only the payloads are dead.',
+                    'The previous strip is replaced each time.',
+                ],
+            };
+        }
         case 'redirect-hand':
             return {
                 title: 'Signal Twist',

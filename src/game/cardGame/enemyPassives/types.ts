@@ -11,6 +11,7 @@ export type EnemyPassiveId =
     | 'dampenTiles'
     | 'curseHand'
     | 'pressureColumn'
+    | 'nullifyLane'
     | 'spawnMinion'
     | 'shatterOnDeath'
     | 'credLeech'
@@ -114,6 +115,18 @@ export interface PressureColumnPassiveConfig {
     /**
      * When true, never locks the chain-start column (col 0) so attacks remain possible.
      */
+    avoidStartColumn: boolean;
+}
+
+/**
+ * Nullifies one board column or row — cards can still be placed there, but they
+ * deal no damage, grant no armor, and fire no step effects while the strip is active.
+ */
+export interface NullifyLanePassiveConfig {
+    id: 'nullifyLane';
+    /** Which axes the enemy may pick from. */
+    axes: 'column' | 'row' | 'any';
+    /** When true, never nullifies the chain-start column. */
     avoidStartColumn: boolean;
 }
 
@@ -222,6 +235,7 @@ export type EnemyPassiveConfig =
     | DampenTilesPassiveConfig
     | CurseHandPassiveConfig
     | PressureColumnPassiveConfig
+    | NullifyLanePassiveConfig
     | SpawnMinionPassiveConfig
     | ShatterOnDeathPassiveConfig
     | CredLeechPassiveConfig

@@ -45,6 +45,19 @@ export const describeEnemyStep = (
         };
     }
 
+    if (step.kind === 'nullify-lane')
+    {
+        const axis = step.axis === 'row' ? 'row' : 'col';
+        const index = step.axis === 'row'
+            ? (step.row !== undefined ? step.row + 1 : step.amount ?? '?')
+            : (step.column !== undefined ? step.column + 1 : step.amount ?? '?');
+
+        return {
+            title: `Null ${axis} ${index}`,
+            color: '#b7a9ff',
+        };
+    }
+
     if (step.kind === 'redirect-hand')
     {
         return {
@@ -114,6 +127,7 @@ export const describeEnemyPassives = (
         dampenTiles: 'Dead Zone',
         curseHand: 'Curse Hand',
         pressureColumn: 'Column Pressure',
+        nullifyLane: 'Null Strip',
         spawnMinion: 'Spawn',
         shatterOnDeath: 'Shatter',
         credLeech: 'Cred Leech',

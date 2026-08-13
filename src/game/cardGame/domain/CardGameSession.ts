@@ -1078,6 +1078,27 @@ export class CardGameSession
         return this.fieldEffects.lockColumn(column);
     }
 
+    /** Nullifies a board column or row from a `nullify-lane` turn step. */
+    nullifyBoardLane (lane: { axis: 'column' | 'row'; index: number }): { axis: 'column' | 'row'; index: number }
+    {
+        return this.fieldEffects.setNullifyLane(lane);
+    }
+
+    isSlotNullified (slot: SlotPosition): boolean
+    {
+        return this.fieldEffects.isSlotNullified(slot);
+    }
+
+    getNullifiedSlots (): SlotPosition[]
+    {
+        return this.fieldEffects.getNullifiedSlots();
+    }
+
+    getNullifyLane (): { axis: 'column' | 'row'; index: number } | null
+    {
+        return this.fieldEffects.getNullifyLane();
+    }
+
     buildAttackSequence (
         chain: import('../domain/types').ActivationStep[],
         stepMs = GAME_RULES.activationStepMs,

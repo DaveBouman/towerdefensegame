@@ -218,7 +218,7 @@ export class CardGamePresenter
         playCardAbilitySfx(step.visualId, step.behaviorId);
         this.activeVisualSlot = { slot: { ...step.slot }, visualId: step.visualId };
 
-        if (step.behaviorId === 'battle-mod')
+        if (step.behaviorId === 'battle-mod' && !this.session.isSlotNullified(step.slot))
         {
             this.applyBattleModFromStep(step.definitionId, step.slot, boostMultiplier);
         }

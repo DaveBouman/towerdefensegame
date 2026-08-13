@@ -193,6 +193,11 @@ export function runChainPlayback (
 
     const grantStepArmor = (step: ActivationStep): void =>
     {
+        if (deps.session.isSlotNullified(step.slot))
+        {
+            return;
+        }
+
         const stepIndex = chain.indexOf(step);
 
         if (stepIndex < 0)
@@ -391,13 +396,15 @@ export function runChainPlayback (
 
         pulsePriorStep(prevStep, prevBoosted ? prevMultiplier : 1, replayMs);
 
-        if (prevResolved.behaviorId === 'battle-mod')
+        if (prevResolved.behaviorId === 'battle-mod' && !deps.session.isSlotNullified(prevStep.slot))
         {
             // Boost on Echo scales the replayed mod (Boost → Echo → Hardwire).
             applyBattleModFromStep(prevStep.definitionId, prevStep.slot, echoBoostMultiplier);
         }
 
-        if (prevResolved.damage > 0 && deps.session.getLivingCombatants().length > 0)
+        if (prevResolved.damage > 0
+            && !deps.session.isSlotNullified(prevStep.slot)
+            && deps.session.getLivingCombatants().length > 0)
         {
             const livingIds = deps.session.getLivingCombatants().map((combatant) => combatant.instanceId);
             const targetId = deps.session.ensureAttackTarget() ?? livingIds[0]!;
@@ -519,7 +526,9 @@ export function runChainPlayback (
 
         deps.activateStep(step, boosted ? boostMultiplier : 1);
 
-        if (resolvedStep.behaviorId === 'defend' && resolvedStep.armor > 0)
+        if (resolvedStep.behaviorId === 'defend'
+            && resolvedStep.armor > 0
+            && !deps.session.isSlotNullified(step.slot))
         {
             deps.session.registerCapacitorDefendStep();
         }
@@ -528,6 +537,12 @@ export function runChainPlayback (
 
         const playOnStepAbilitiesThen = (next: (abilityDetonation: boolean) => void): void =>
         {
+            if (deps.session.isSlotNullified(step.slot))
+            {
+                next(false);
+                return;
+            }
+
             const onStepEffects = resolveChainAbilities(resolvedChain, board).effects
                 .filter((effect: ChainAbilityEffect) =>
                     effect.stepIndex === stepIndex && isOnStepChainAbility(effect.abilityId));
@@ -586,7 +601,7 @@ export function runChainPlayback (
             });
         };
 
-        if (resolvedStep.damage > 0)
+        if (resolvedStep.damage > 0 && !deps.session.isSlotNullified(step.slot))
         {
             dealStepDamage(
                 resolvedStep.damage,

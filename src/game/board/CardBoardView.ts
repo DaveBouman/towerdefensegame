@@ -26,6 +26,8 @@ const SLOT_BOMB_DISABLED = CYBER.slotBombDisabled;
 const SLOT_BOMB_DISABLED_BORDER = CYBER.slotBombDisabledBorder;
 const SLOT_DAMPENED = CYBER.slotDampened;
 const SLOT_DAMPENED_BORDER = CYBER.slotDampenedBorder;
+const SLOT_NULLIFIED = CYBER.slotNullified;
+const SLOT_NULLIFIED_BORDER = CYBER.slotNullifiedBorder;
 const SLOT_INSET = 4;
 const AXIS_IDLE = '#8aa0bc';
 const AXIS_START = '#7af0ff';
@@ -65,6 +67,7 @@ export class CardBoardView
     private readonly silencedOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
     private readonly bombDisabledOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
     private readonly dampenedOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
+    private readonly nullifiedOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
     private readonly cardContainers: (Phaser.GameObjects.Container | null)[][] = [];
     private highlightedSlot: SlotPosition | null = null;
     private highlightMode: BoardHighlightMode = null;
@@ -134,6 +137,7 @@ export class CardBoardView
             this.silencedOverlays[row] = [];
             this.bombDisabledOverlays[row] = [];
             this.dampenedOverlays[row] = [];
+            this.nullifiedOverlays[row] = [];
             this.cardContainers[row] = [];
 
             for (let col = 0; col < cols; col++)
@@ -150,6 +154,7 @@ export class CardBoardView
                 this.silencedOverlays[row][col] = null;
                 this.bombDisabledOverlays[row][col] = null;
                 this.dampenedOverlays[row][col] = null;
+                this.nullifiedOverlays[row][col] = null;
                 this.cardContainers[row][col] = null;
 
                 const card = board.getCardAt({ row, col });
@@ -558,6 +563,17 @@ export class CardBoardView
             this.dampenedOverlays,
             SLOT_DAMPENED,
             SLOT_DAMPENED_BORDER,
+        );
+    }
+
+    /** Marks tiles on an active Null Strip (cards placeable, payloads dead). */
+    setNullifiedSlots (slots: readonly SlotPosition[]): void
+    {
+        this.setSlotOverlays(
+            slots,
+            this.nullifiedOverlays,
+            SLOT_NULLIFIED,
+            SLOT_NULLIFIED_BORDER,
         );
     }
 

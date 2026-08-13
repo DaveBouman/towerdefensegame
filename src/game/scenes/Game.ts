@@ -708,6 +708,7 @@ export class Game extends Scene
             this.session.getBombDisabledSlots(),
         );
         this.boardView.setDampenedSlots(this.session.getDampenedSlots());
+        this.boardView.setNullifiedSlots(this.session.getNullifiedSlots());
     }
 
     private openPileView (kind: 'deck' | 'graveyard'): void

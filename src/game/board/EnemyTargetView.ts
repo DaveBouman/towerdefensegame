@@ -50,6 +50,7 @@ const PASSIVE_ROW_COLORS: Record<EnemyPassiveConfig['id'], number> = {
     dampenTiles: 0x9b8cff,
     curseHand: 0xc97b9b,
     pressureColumn: 0x00c8e0,
+    nullifyLane: 0xb57aff,
     spawnMinion: 0x7af0ff,
     shatterOnDeath: 0xff6b9a,
     credLeech: 0xf1c40f,
@@ -354,7 +355,8 @@ export class EnemyTargetView
         this.passiveIconsContainer = undefined;
 
         // Event-style abilities are surfaced via the turn intent, not the passive row.
-        const passives = allPassives.filter((passive) => passive.id !== 'dampenTiles');
+        const passives = allPassives.filter((passive) =>
+            passive.id !== 'dampenTiles' && passive.id !== 'nullifyLane');
 
         this.passives = [ ...passives ];
         this.passiveCount = passives.length;

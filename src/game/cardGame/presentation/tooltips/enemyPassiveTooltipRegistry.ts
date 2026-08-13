@@ -117,6 +117,23 @@ export const resolveEnemyPassiveTooltip = (
                     'The lock is telegraphed in the enemy intent.',
                 ],
             };
+        case 'nullifyLane':
+            return {
+                title: 'Null Strip',
+                lines: [
+                    'After each of its turns, nullifies one board column or row.',
+                    'Cards can still be placed on the strip, but deal no damage, grant no armor, and fire no step effects.',
+                    passive.axes === 'column'
+                        ? 'Only columns are targeted.'
+                        : passive.axes === 'row'
+                            ? 'Only rows are targeted.'
+                            : 'May target a column or a row.',
+                    passive.avoidStartColumn
+                        ? 'Never nullifies the chain-start column.'
+                        : 'The chain-start column may be nullified.',
+                    'The strip is telegraphed in the enemy intent.',
+                ],
+            };
         case 'spawnMinion':
             return {
                 title: 'Spawn',

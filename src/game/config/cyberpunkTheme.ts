@@ -21,6 +21,8 @@ export const CYBER = {
     slotBombDisabledBorder: 0xff6b35,
     slotDampened: 0x141028,
     slotDampenedBorder: 0x7d6cff,
+    slotNullified: 0x100818,
+    slotNullifiedBorder: 0xb57aff,
     player: 0x00e8ff,
     playerBarBg: 0x0a1820,
     playerBarFill: 0x00c4dc,

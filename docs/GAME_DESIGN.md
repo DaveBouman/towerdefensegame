@@ -229,7 +229,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | `basic` | Raider — baseline (HP ~40, atk 13, 65% attack), no passives |
 | `thornward` | **Thorns** — take 1 damage per Attack hit (blockable); **Damage Cap** trait — each card hit deals at most 5 damage |
 | `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile, **Curse Hand** (adds Burden to hand each turn) — trap pressure snowballs. On the run map, saboteur nodes always connect to an adjacent route up or down on the next column. |
-| `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps); **Hit Ward** trait — first 3 card hits deal no damage |
+| `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps), **Null Strip** (telegraphed: nullifies one column or row — cards still place, but deal no damage/armor/effects); **Hit Ward** trait — first 3 card hits deal no damage |
 | `smokebinder` | Smoke (blocks poison stacks), Loop Hunter (dormant while loop-reset is out of content), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
 | `field-medic` | Low personal threat — **ally support** in multi-enemy fights: heals weakest ally, can shield the most shielded ally (`allyActions` in `enemies.json`). Can appear as a duo partner in mid-run Street Ops. |
 | `gridlock` | **Column Pressure** — after each turn, locks one board column (telegraphed); you cannot place/move onto that column. Never locks the chain-start column. |
@@ -353,6 +353,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-13 | **Null Strip boss intent.** New `nullifyLane` passive / `nullify-lane` turn step: telegraphs one board column or row. Cards can still be placed there, but deal no damage, grant no armor, and fire no step effects (routing continues). Active strip highlighted on the board. Wired onto the **Warden**. |
 | 2026-08-13 | **Unified card inspectors.** Draw pile, graveyard, and run-deck popups use the same card-index layout (grid tiles, hover dossier, detail panel) as unlocked cards in the collection. |
 | 2026-08-13 | **Reward dossier + deck inspector.** Card rewards show full tooltip text in a detail panel (Switchback and similar no longer fall back to just the name). View-your-deck uses the in-fight pile inspector chrome, with a bestiary-style dossier when you select a card. |
 | 2026-08-13 | **Phase Bulwark.** Defend counterpart to Phase Relay — grants armor and wraps the chain to the opposite board edge. In reward/elite pools. |

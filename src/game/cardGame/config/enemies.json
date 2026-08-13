@@ -58,7 +58,8 @@
       "passives": [
         "wetBlanket",
         "jammer",
-        "lastStand"
+        "lastStand",
+        "nullifyLane"
       ],
       "combatTraits": [
         { "id": "hitWard", "hitsBlocked": 3 }
