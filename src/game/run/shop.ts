@@ -4,7 +4,7 @@ import { listUpgradableCardsInDeck } from './cardUpgrades';
 import { fromDefinitionIds } from './runDeck';
 import { describeCardReward, rollCardReward } from './rewards';
 
-export type ShopOfferKind = 'card' | 'body-mod' | 'heal' | 'remove-card' | 'upgrade-card';
+export type ShopOfferKind = 'card' | 'body-mod' | 'heal' | 'remove-card' | 'reroute-card' | 'upgrade-card';
 
 export interface ShopOffer {
     id: string;
@@ -25,6 +25,7 @@ export const SHOP_PRICES = {
     bodyMod: 80,
     heal: 35,
     removeCard: 50,
+    rerouteCard: 40,
     upgradeCard: 60,
 } as const;
 
@@ -65,6 +66,13 @@ export const rollShopOffers = (
             price: SHOP_PRICES.removeCard,
             label: 'Deck Excision',
             blurb: 'Permanently remove one card from your run deck.',
+        },
+        {
+            id: 'reroute-card',
+            kind: 'reroute-card',
+            price: SHOP_PRICES.rerouteCard,
+            label: 'Signal Reroute',
+            blurb: 'Change the chain direction on one card in your deck.',
         },
     ];
 

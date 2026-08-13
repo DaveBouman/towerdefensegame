@@ -1,4 +1,5 @@
-import { BODY_MOD_IDS, isSeventhStrikeAttack } from '../../run/bodyMods';
+import { BODY_MOD_IDS, isFifthStrikeAttack, isSeventhStrikeAttack, PORTSIDE_GYRO_DAMAGE_MULTIPLIER } from '../../run/bodyMods';
+import type { CardDirection } from './cardDirections';
 import {
     getCardDefinitionOrThrow,
     getCardHealOnKill,
@@ -134,6 +135,12 @@ export class CombatResolver
             {
                 this.doubleDamageThisAttack = true;
             }
+
+            if (this.ctx.bodyMods.includes(BODY_MOD_IDS.markFive)
+                && isFifthStrikeAttack(this.runAttackCount))
+            {
+                this.doubleDamageThisAttack = true;
+            }
         }
 
         return true;
@@ -187,6 +194,7 @@ export class CombatResolver
         targetInstanceId?: string,
         sourceDefinitionId?: string,
         sourceBehaviorId?: string,
+        sourceArrow?: CardDirection,
     ): DamageResult
     {
         if (this.ctx.getLivingCombatants().length === 0)
@@ -207,7 +215,7 @@ export class CombatResolver
         this.bodyguardRedirectUsedThisAttack = redirect.redirectUsed;
         const resolvedTargetId = redirect.targetInstanceId;
         const combatant = this.ctx.getCombatantOrThrow(resolvedTargetId);
-        const scaledDamage = this.scalePlayerDamageDealt(damage);
+        const scaledDamage = this.scalePlayerDamageDealt(damage, sourceArrow);
 
         if (scaledDamage <= 0)
         {
@@ -610,7 +618,7 @@ export class CombatResolver
         return aggregateBattleModifiers(this.ctx.battleModifiers);
     }
 
-    private scalePlayerDamageDealt (damage: number): number
+    private scalePlayerDamageDealt (damage: number, sourceArrow?: CardDirection): number
     {
         let scaled = applyPlayerBuffModifier(damage, this.getModifierTotals().playerDamageDealt);
 
@@ -622,6 +630,13 @@ export class CombatResolver
         if (this.ctx.bodyMods.includes(BODY_MOD_IDS.razorFeed))
         {
             scaled += 2;
+        }
+
+        if (sourceArrow === 'left'
+            && this.ctx.bodyMods.includes(BODY_MOD_IDS.portsideGyro)
+            && scaled > 0)
+        {
+            scaled = Math.ceil(scaled * PORTSIDE_GYRO_DAMAGE_MULTIPLIER);
         }
 
         return scaled;

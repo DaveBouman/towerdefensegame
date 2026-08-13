@@ -27,6 +27,12 @@ const DEFAULT_TURN_STATE: TurnState = {
     canEndTurn: false,
 };
 
+const DEFAULT_CHAIN_START_STATE = {
+    pickable: false,
+    row: 0,
+    rowLabel: 'A',
+};
+
 export const GameHud = () =>
 {
     const [ readiness, setReadiness ] = useState<AttackReadiness>({
@@ -35,6 +41,7 @@ export const GameHud = () =>
     });
     const [ rerollState, setRerollState ] = useState<RerollState>(DEFAULT_REROLL_STATE);
     const [ turnState, setTurnState ] = useState<TurnState>(DEFAULT_TURN_STATE);
+    const [ chainStart, setChainStart ] = useState(DEFAULT_CHAIN_START_STATE);
     const [ rejectMessage, setRejectMessage ] = useState<string | null>(null);
 
     useEffect(() =>
@@ -47,6 +54,11 @@ export const GameHud = () =>
         const onTurnState = (next: TurnState): void =>
         {
             setTurnState(next);
+        };
+
+        const onChainStart = (next: typeof DEFAULT_CHAIN_START_STATE): void =>
+        {
+            setChainStart(next);
         };
 
         const onRejected = ({ reason }: { reason: AttackReadiness['reason'] }): void =>
@@ -65,6 +77,7 @@ export const GameHud = () =>
         };
 
         EventBus.on(GAME_EVENTS.CARD_ATTACK_READY, onReady);
+        EventBus.on(GAME_EVENTS.CHAIN_START_STATE, onChainStart);
         EventBus.on(GAME_EVENTS.ATTACK_REJECTED, onRejected);
         EventBus.on(GAME_EVENTS.REROLL_STATE, onRerollState);
         EventBus.on(GAME_EVENTS.TURN_STATE, onTurnState);
@@ -72,6 +85,7 @@ export const GameHud = () =>
         return () =>
         {
             EventBus.off(GAME_EVENTS.CARD_ATTACK_READY, onReady);
+            EventBus.off(GAME_EVENTS.CHAIN_START_STATE, onChainStart);
             EventBus.off(GAME_EVENTS.ATTACK_REJECTED, onRejected);
             EventBus.off(GAME_EVENTS.REROLL_STATE, onRerollState);
             EventBus.off(GAME_EVENTS.TURN_STATE, onTurnState);
@@ -91,6 +105,9 @@ export const GameHud = () =>
     }, [ rejectMessage ]);
 
     const needsTarget = readiness.reason === 'no-target';
+    const showChainStartHint = chainStart.pickable
+        && !rerollState.rerollModeActive
+        && turnState.energy > 0;
 
     return (
         <aside className="game-hud">
@@ -115,6 +132,12 @@ export const GameHud = () =>
                     {turnState.energy}/{turnState.maxEnergy}
                 </span>
             </div>
+            {showChainStartHint && (
+                <p className="game-hud__chain-start-hint" role="status">
+                    Chain starts on row <strong>{chainStart.rowLabel}</strong>
+                    {' '}— click any highlighted <strong>START</strong> column tile to move it
+                </p>
+            )}
             <p className="game-hud__deploy-hint">
                 {rerollState.rerollModeActive
                     ? 'Click hand cards to select, then confirm reroll.'

@@ -3,8 +3,16 @@ import { EventBus } from '../game/EventBus';
 import { GAME_EVENTS } from '../game/events/gameEvents';
 import { GAME_RULES } from '../game/cardGame/config/cardRegistry';
 import { buildDefaultRunDeck } from '../game/cardGame/domain/buildPlayerDeck';
-import type { RunDeckCard } from '../game/run/runDeck';
-import { mergeDeckAfterEvent, removeFirstCardByDefinitionId, toDefinitionIds } from '../game/run/runDeck';
+import {
+    applyDirectionPicksToDeck,
+    findNewDefinitionIdsNeedingDirection,
+    mergeDeckAfterEvent,
+    removeMatchingDeckEntry,
+    setMatchingDeckEntryArrow,
+    toDefinitionIds,
+    type RunDeckCard,
+    type RunDeckEntry,
+} from '../game/run/runDeck';
 import {
     createRandomSeed,
     deriveSeed,
@@ -21,7 +29,7 @@ import { unlockCards, ensureStarterCollectionUnlocks } from '../game/run/cardCol
 import { unlockBodyMods } from '../game/run/bodyModBestiary';
 import { unlockEnemies } from '../game/run/enemyBestiary';
 import { getBodyModDefinitionOrThrow } from '../game/run/bodyMods';
-import { upgradeFirstCardInDeck } from '../game/run/cardUpgrades';
+import { upgradeFirstCardInDeck, upgradeMatchingDeckEntry } from '../game/run/cardUpgrades';
 import { readRunAscensionLevel, recordAscensionClear } from '../game/run/ascension';
 import { getFloorBriefing } from '../game/run/floorBriefings';
 import { createEmptyRunStats, type RunStats } from '../game/run/runStats';
@@ -46,6 +54,7 @@ import {
 import { useBattleBridge } from './useBattleBridge';
 import type {
     CombatRecapLine,
+    PendingCardDirectionFlow,
     PendingPuzzleReward,
     PendingRewardFlow,
     PuzzleResultState,
@@ -83,6 +92,7 @@ export const useRunController = () =>
     const [ visit, setVisit ] = useState<VisitState | null>(null);
     const [ puzzleResult, setPuzzleResult ] = useState<PuzzleResultState | null>(null);
     const [ pendingPuzzleReward, setPendingPuzzleReward ] = useState<PendingPuzzleReward | null>(null);
+    const [ pendingCardDirectionFlow, setPendingCardDirectionFlow ] = useState<PendingCardDirectionFlow | null>(null);
     const [ pauseMenuOpen, setPauseMenuOpen ] = useState(false);
     const tutorial = useTutorial();
 
@@ -420,16 +430,16 @@ export const useRunController = () =>
         }, 380);
     }, [ deck, seed, bodyMods, signalsVisited, enterNodeFloor, currentFloor, startBattleForNode ]);
 
-    const buyShopCard = useCallback((offer: ShopOffer): void =>
+    const confirmShopCardPurchase = useCallback((offer: ShopOffer, card: RunDeckCard): void =>
     {
-        if (!offer.cardId || gold < offer.price)
+        if (gold < offer.price)
         {
             return;
         }
 
         setGold((prev) => prev - offer.price);
-        setDeck((prev) => [ ...prev, { definitionId: offer.cardId! } ]);
-        unlockCards([ offer.cardId! ]);
+        setDeck((prev) => [ ...prev, card ]);
+        unlockCards([ card.definitionId ]);
         emitRunSfx('shop-buy', { volume: 0.95 });
     }, [ gold ]);
 
@@ -461,7 +471,7 @@ export const useRunController = () =>
         emitRunSfx('heal', { volume: 0.85 });
     }, [ gold, runMaxHealth ]);
 
-    const buyShopRemove = useCallback((offer: ShopOffer, definitionId: string): void =>
+    const buyShopRemove = useCallback((offer: ShopOffer, entry: RunDeckEntry): void =>
     {
         if (gold < offer.price)
         {
@@ -469,18 +479,34 @@ export const useRunController = () =>
         }
 
         setGold((prev) => prev - offer.price);
-        setDeck((prev) => removeFirstCardByDefinitionId(prev, definitionId));
+        setDeck((prev) => removeMatchingDeckEntry(prev, entry));
         emitRunSfx('shop-buy', { volume: 0.95 });
     }, [ gold ]);
 
-    const buyShopUpgrade = useCallback((offer: ShopOffer, definitionId: string): void =>
+    const buyShopReroute = useCallback((
+        offer: ShopOffer,
+        entry: RunDeckEntry,
+        arrow: import('../game/cardGame/domain/cardDirections').CardDirection,
+    ): void =>
     {
         if (gold < offer.price)
         {
             return;
         }
 
-        const nextDeck = upgradeFirstCardInDeck(deck, definitionId);
+        setGold((prev) => prev - offer.price);
+        setDeck((prev) => setMatchingDeckEntryArrow(prev, entry, arrow));
+        emitRunSfx('shop-buy', { volume: 0.95 });
+    }, [ gold ]);
+
+    const buyShopUpgrade = useCallback((offer: ShopOffer, entry: RunDeckEntry): void =>
+    {
+        if (gold < offer.price)
+        {
+            return;
+        }
+
+        const nextDeck = upgradeMatchingDeckEntry(deck, entry);
 
         if (!nextDeck)
         {
@@ -571,12 +597,43 @@ export const useRunController = () =>
     {
         setPlayerHealth(result.playerHealth);
         setGold(result.gold);
-        setDeck((prev) => mergeDeckAfterEvent(prev, result.deck));
+        const merged = mergeDeckAfterEvent(deckRef.current, result.deck);
         unlockCards(result.deck);
         setBodyMods(result.bodyMods);
         unlockBodyMods(result.bodyMods);
+
+        const needingDirection = findNewDefinitionIdsNeedingDirection(deckRef.current, merged);
+
+        if (needingDirection.length > 0)
+        {
+            setDeck(merged);
+            setPendingCardDirectionFlow({
+                definitionIds: needingDirection,
+                mergedDeck: merged,
+                onApplied: finishVisit,
+            });
+            return;
+        }
+
+        setDeck(merged);
         finishVisit();
     }, [ finishVisit ]);
+
+    const completePendingCardDirections = useCallback((picks: RunDeckCard[]): void =>
+    {
+        setPendingCardDirectionFlow((flow) =>
+        {
+            if (!flow?.mergedDeck)
+            {
+                return null;
+            }
+
+            setDeck(applyDirectionPicksToDeck(flow.mergedDeck, picks));
+            flow.onApplied();
+
+            return null;
+        });
+    }, []);
 
     const finishPuzzleReward = useCallback((chosen: RunDeckCard[]): void =>
     {
@@ -744,6 +801,7 @@ export const useRunController = () =>
         setVisit(null);
         setPuzzleResult(null);
         setPendingPuzzleReward(null);
+        setPendingCardDirectionFlow(null);
         eventVisitRef.current = null;
         setDepartingNodeId(null);
         setFloorBanner(null);
@@ -863,6 +921,8 @@ export const useRunController = () =>
         finishBodyModReward,
         rerollReward,
         pendingPuzzleReward,
+        pendingCardDirectionFlow,
+        completePendingCardDirections,
         finishPuzzleReward,
         visit,
         finishEvent,
@@ -870,10 +930,11 @@ export const useRunController = () =>
         restHeal,
         restUpgrade,
         finishVisit,
-        buyShopCard,
+        confirmShopCardPurchase,
         buyShopBodyMod,
         buyShopHeal,
         buyShopRemove,
+        buyShopReroute,
         buyShopUpgrade,
         puzzleResult,
         finishPuzzleResult,

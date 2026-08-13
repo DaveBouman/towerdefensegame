@@ -298,6 +298,21 @@ remain as a fallback if a portrait fails to load.
 - [ ] Ascension modifiers (+enemy HP, −rerolls, faster enemy turns)
 - [ ] Electron packaging + Steamworks (see `docs/electron-steam.md`)
 
+### Body mod design backlog (hard but high-impact)
+
+Ideas that reward routing mastery but need careful implementation:
+
+| Concept | Hook | Why it's hard |
+|---------|------|----------------|
+| **Backwash Node** | Cards whose chain exits off-board still fire once at 50% | Off-board steps are currently dead ends; needs a synthetic “ghost” activation without breaking routing UI |
+| **Lattice Memory** | Echo copies the *previous step's exit arrow*, not just its effect | Echo replay today is effect-only; arrow inheritance touches `AttackPipeline` + joker/reroute edge cases |
+| **Scorched Trace** | Fire detonations mark tiles; the next card crossing that tile gets +1 type streak | Requires per-tile run state through board wipes and enemy field edits |
+| **Phase Debt** | Once per floor, skip the enemy turn — next fight enemies start +25% HP | Cross-fight debuff storage + telegraph so it feels fair, not punitive |
+| **Capacitor Bank** | Every 3rd Defend in a chain stores charge; next Attack in the same chain gains +50% | Per-chain counters that survive Echo/replay without double-counting |
+| **Starboard Drag** | Right-routing cards deal −15% damage but grant +1 cred on kill | Directional tradeoff paired with **Portside Gyro** — needs kill-credit wiring in `CombatResolver` |
+
+Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`mark-five`, `mark-seven`, `portside-gyro`).
+
 ### Anti-patterns (do not reintroduce)
 
 - ~~Tower defense / wave spawning~~ — removed; not part of this game
@@ -316,7 +331,7 @@ remain as a fallback if a portrait fails to load.
 | Shop / event node behavior | `ShopOverlay.tsx`, `shop.ts`, `RunEventOverlay.tsx`, `runEvents.ts`, `runPuzzles.ts`, `PuzzleHud.tsx`, `PuzzleResultOverlay.tsx`; `App.tsx` `visit`/`puzzle` phases |
 | Rewards / reward pool / body-mod hooks | `src/game/run/rewards.ts` (`rewardForNodeKind`, tier×floor weights, deck-weighted `rollCardReward`), `deckArchetypes.ts` |
 | Card tiers / upgrades | `cards.json` (`tier`, `upgrade`); materialize `*-plus` in `cardRegistry.ts`; shop via `cardUpgrades.ts` |
-| Body mods (stats + playstyle) | `src/game/run/bodyMods.ts` — Venom Latch / Razor Feed / Carapace Weave / Pyre Link / Hemorrhage Coil change combat; **Latch Array** keeps first Attack/Defend/Skill after wipe; chrome-heart etc. are economy/stats |
+| Body mods (stats + playstyle) | `src/game/run/bodyMods.ts` — Mark V/VII (interval double damage), **Portside Gyro** (left arrows +30% damage), Venom Latch / Razor Feed / etc.; combat hooks in `CombatResolver.ts` |
 | Persistent run deck | `getDefaultDeckDefinitionIds` / `buildDeckFromDefinitionIds` in `buildPlayerDeck.ts` (neutral starter; specialties from rewards) |
 | Map / run visuals | `src/ui/components/MainMenuOverlay.tsx`, `RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`, `ShopOverlay.tsx`; `.main-menu*` / `.run-map*` / `.run-end*` / `.card-reward*` / `.shop-overlay*` in `public/style.css` |
 | First-run teaching | `src/ui/tutorial/Tutorial.tsx` |
@@ -339,7 +354,9 @@ remain as a fallback if a portrait fails to load.
 
 | Date | Change |
 |------|--------|
-| 2026-08-13 | **Tactical card rewards.** Run deck stores per-card chain direction (`runDeck.ts`). Card reward screen shows your deck (icons + arrows), each offer’s arrow pool, and a direction pick step (left/right/up/down or diagonal) before the card is added. Starting deck gets balanced arrows; shop/event cards still roll direction at first draw unless chosen later. |
+| 2026-08-13 | **Chain start discoverability.** START column glows while editable; every left-column tile shows row letters (A–E) with pulse, selected tile shows **START** badge; column header reads START; HUD hint shows current row and how to move it. |
+| 2026-08-13 | **Mark V + Portside Gyro body mods.** **Mark V** doubles damage every 5th run attack (Mark VII stays at 7th). **Portside Gyro** gives left-routing card hits +30% damage. Body mod panel shows proc counters for both interval mods. Design backlog added for harder routing mods. |
+| 2026-08-13 | **Direction picks everywhere + shop reroute.** All new cards (rewards, shop, events) prompt for chain direction. Ripperdoc adds **Signal Reroute** (40 creds) to change one card’s arrow; **Deck Excision** removes a card. Shop/remove/reroute pick specific copies with visible arrows. |
 | 2026-08-13 | **Chain pacing tune.** Chain steps slowed for readability (`activationStepMs` 620): gentler late-chain acceleration, slightly longer gaps between cards, 300ms minimum per step. Big-moment holds on kills/chunky hits unchanged. |
 | 2026-08-13 | **Run controller split.** `App.tsx` slimmed to shell + `RunPhaseScreens`; run state/handlers in `useRunController.ts`, Phaser bridge in `useBattleBridge.ts`, reward helpers in `rewardHelpers.ts`. |
 | 2026-08-13 | **UI shell refactor.** `ModalShell` in `CyberPanel.tsx` dedupes backdrop + panel chrome across reward, shop, rest, run-end, and visit overlays. `ArchiveOverlay` + `useArchiveFilter` share filter/selection UX for card index, bestiary, and body mod archives. |

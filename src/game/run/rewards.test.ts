@@ -104,6 +104,7 @@ describe('shop', () =>
         expect(offers.some((offer) => offer.kind === 'body-mod')).toBe(true);
         expect(offers.some((offer) => offer.kind === 'heal' && offer.healAmount === SHOP_HEAL_AMOUNT)).toBe(true);
         expect(offers.some((offer) => offer.kind === 'remove-card' && offer.price === SHOP_PRICES.removeCard)).toBe(true);
+        expect(offers.some((offer) => offer.kind === 'reroute-card' && offer.price === SHOP_PRICES.rerouteCard)).toBe(true);
         expect(offers.some((offer) => offer.kind === 'upgrade-card' && offer.price === SHOP_PRICES.upgradeCard)).toBe(true);
     });
 

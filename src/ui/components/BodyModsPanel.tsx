@@ -1,7 +1,8 @@
 import {
     BODY_MOD_IDS,
+    INTERVAL_STRIKE_BODY_MOD_INTERVALS,
+    getIntervalStrikeProgress,
     getBodyModDefinitionOrThrow,
-    getMarkSevenProgress,
 } from '../../game/run/bodyMods';
 
 interface BodyModsPanelProps {
@@ -32,16 +33,16 @@ export const BodyModsPanel = ({
                 {bodyMods.map((modId) =>
                 {
                     const definition = getBodyModDefinitionOrThrow(modId);
-                    const isMarkSeven = modId === BODY_MOD_IDS.markSeven;
-                    const markSevenProgress = isMarkSeven
-                        ? getMarkSevenProgress(runAttackCount)
+                    const interval = INTERVAL_STRIKE_BODY_MOD_INTERVALS[modId];
+                    const intervalProgress = interval !== undefined
+                        ? getIntervalStrikeProgress(runAttackCount, interval)
                         : null;
 
                     return (
                         <li
                             key={modId}
                             className={
-                                markSevenProgress?.nextAttackIsProc
+                                intervalProgress?.nextAttackIsProc
                                     ? 'body-mods-panel__item body-mods-panel__item--ready'
                                     : 'body-mods-panel__item'
                             }
@@ -49,17 +50,17 @@ export const BodyModsPanel = ({
                         >
                             <div className="body-mods-panel__header">
                                 <span className="body-mods-panel__label">{definition.label}</span>
-                                {markSevenProgress && (
+                                {intervalProgress && (
                                     <span
                                         className="body-mods-panel__counter"
                                         title="Run attacks toward the next double-damage swing"
                                     >
-                                        {markSevenProgress.attacksInCycle}/{markSevenProgress.interval}
+                                        {intervalProgress.attacksInCycle}/{intervalProgress.interval}
                                     </span>
                                 )}
                             </div>
                             <p className="body-mods-panel__effect">{definition.effect}</p>
-                            {markSevenProgress?.nextAttackIsProc && (
+                            {intervalProgress?.nextAttackIsProc && (
                                 <p className="body-mods-panel__ready">Next attack deals double damage</p>
                             )}
                         </li>

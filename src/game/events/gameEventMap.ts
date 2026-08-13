@@ -57,6 +57,7 @@ export interface GameEventMap {
     'reroll-confirm': void;
     'reroll-cancel': void;
     'reroll-state': RerollState;
+    'chain-start-state': { pickable: boolean; row: number; rowLabel: string };
     'start-battle': {
         enemyId?: string;
         enemyIds?: string[];

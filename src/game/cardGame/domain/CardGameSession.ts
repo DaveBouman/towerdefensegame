@@ -1382,6 +1382,7 @@ export class CardGameSession
         targetInstanceId?: string,
         sourceDefinitionId?: string,
         sourceBehaviorId?: string,
+        sourceArrow?: import('./cardDirections').CardDirection,
     ): DamageResult
     {
         return this.combat.dealAttackDamage(
@@ -1389,6 +1390,7 @@ export class CardGameSession
             targetInstanceId,
             sourceDefinitionId,
             sourceBehaviorId,
+            sourceArrow,
         );
     }
 

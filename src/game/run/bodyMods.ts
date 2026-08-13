@@ -16,7 +16,9 @@ export const BODY_MOD_IDS = {
     chromeHeart: 'chrome-heart',
     overclockCell: 'overclock-cell',
     credSiphon: 'cred-siphon',
+    markFive: 'mark-five',
     markSeven: 'mark-seven',
+    portsideGyro: 'portside-gyro',
     reactivePlating: 'reactive-plating',
     venomLatch: 'venom-latch',
     razorFeed: 'razor-feed',
@@ -30,28 +32,59 @@ export const BODY_MOD_IDS = {
 /** Attacks that trigger Mark VII's double-damage proc (7th, 14th, …). */
 export const SEVENTH_STRIKE_INTERVAL = 7;
 
-export const isSeventhStrikeAttack = (attackNumber: number): boolean =>
-    attackNumber > 0 && attackNumber % SEVENTH_STRIKE_INTERVAL === 0;
+/** Attacks that trigger Mark V's double-damage proc (5th, 10th, …). */
+export const FIFTH_STRIKE_INTERVAL = 5;
 
-export interface MarkSevenProgress {
-    /** Attacks completed in the current 7-attack cycle (0–6). */
+/** Left-routing card hits deal +30% damage with Portside Gyro installed. */
+export const PORTSIDE_GYRO_DAMAGE_MULTIPLIER = 1.3;
+
+/** Run-wide attack intervals for proc body mods (shown in the body mod panel). */
+export const INTERVAL_STRIKE_BODY_MOD_INTERVALS: Readonly<Record<string, number>> = {
+    [BODY_MOD_IDS.markFive]: FIFTH_STRIKE_INTERVAL,
+    [BODY_MOD_IDS.markSeven]: SEVENTH_STRIKE_INTERVAL,
+};
+
+export const isIntervalStrikeAttack = (attackNumber: number, interval: number): boolean =>
+    attackNumber > 0 && interval > 0 && attackNumber % interval === 0;
+
+export const isSeventhStrikeAttack = (attackNumber: number): boolean =>
+    isIntervalStrikeAttack(attackNumber, SEVENTH_STRIKE_INTERVAL);
+
+export const isFifthStrikeAttack = (attackNumber: number): boolean =>
+    isIntervalStrikeAttack(attackNumber, FIFTH_STRIKE_INTERVAL);
+
+export interface IntervalStrikeProgress {
+    /** Attacks completed in the current cycle (0 … interval−1). */
     attacksInCycle: number;
     interval: number;
     /** True when the next attack will trigger double damage. */
     nextAttackIsProc: boolean;
 }
 
-/** Progress toward the next Mark VII proc for run-wide attack counters. */
-export const getMarkSevenProgress = (runAttackCount: number): MarkSevenProgress =>
+/** Progress toward the next interval proc for run-wide attack counters. */
+export const getIntervalStrikeProgress = (
+    runAttackCount: number,
+    interval: number,
+): IntervalStrikeProgress =>
 {
-    const attacksInCycle = runAttackCount % SEVENTH_STRIKE_INTERVAL;
+    const attacksInCycle = runAttackCount % interval;
 
     return {
         attacksInCycle,
-        interval: SEVENTH_STRIKE_INTERVAL,
-        nextAttackIsProc: attacksInCycle === SEVENTH_STRIKE_INTERVAL - 1,
+        interval,
+        nextAttackIsProc: attacksInCycle === interval - 1,
     };
 };
+
+/** @deprecated Prefer `getIntervalStrikeProgress(count, SEVENTH_STRIKE_INTERVAL)`. */
+export type MarkSevenProgress = IntervalStrikeProgress;
+
+/** Progress toward the next Mark VII proc for run-wide attack counters. */
+export const getMarkSevenProgress = (runAttackCount: number): IntervalStrikeProgress =>
+    getIntervalStrikeProgress(runAttackCount, SEVENTH_STRIKE_INTERVAL);
+
+export const getMarkFiveProgress = (runAttackCount: number): IntervalStrikeProgress =>
+    getIntervalStrikeProgress(runAttackCount, FIFTH_STRIKE_INTERVAL);
 
 export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
     {
@@ -73,10 +106,22 @@ export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
         effect: '+8 creds after each victory.',
     },
     {
+        id: BODY_MOD_IDS.markFive,
+        label: 'Mark V',
+        blurb: 'Aggressive strike firmware — shorter fuse, harder swing.',
+        effect: 'Every 5th attack deals double damage.',
+    },
+    {
         id: BODY_MOD_IDS.markSeven,
         label: 'Mark VII',
         blurb: 'Neural strike firmware overclocks every seventh combat swing.',
         effect: 'Every 7th attack deals double damage.',
+    },
+    {
+        id: BODY_MOD_IDS.portsideGyro,
+        label: 'Portside Gyro',
+        blurb: 'Left-vector stabilizers bleed lateral momentum into the payload.',
+        effect: 'Left-routing cards deal 30% more damage.',
     },
     {
         id: BODY_MOD_IDS.reactivePlating,
@@ -148,7 +193,9 @@ export const getBodyModDefinitionOrThrow = (id: string): BodyModDefinition =>
 
 /** Body mods offered after lieutenant victories. */
 export const LIEUTENANT_RELIC_POOL: readonly string[] = [
+    BODY_MOD_IDS.markFive,
     BODY_MOD_IDS.markSeven,
+    BODY_MOD_IDS.portsideGyro,
     BODY_MOD_IDS.reactivePlating,
     BODY_MOD_IDS.venomLatch,
     BODY_MOD_IDS.razorFeed,

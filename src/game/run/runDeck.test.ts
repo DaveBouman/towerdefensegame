@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
     fromDefinitionIds,
+    findNewDefinitionIdsNeedingDirection,
     groupRunDeckEntries,
     mergeDeckAfterEvent,
-    removeFirstCardByDefinitionId,
+    removeMatchingDeckEntry,
     toDefinitionIds,
 } from './runDeck';
 
@@ -44,13 +45,26 @@ describe('runDeck', () =>
         expect(entries.find((entry) => entry.arrow === 'right')?.count).toBe(1);
     });
 
-    it('removeFirstCardByDefinitionId removes one copy', () =>
+    it('removeMatchingDeckEntry removes one grouped copy', () =>
     {
-        const next = removeFirstCardByDefinitionId(
-            [ { definitionId: 'attack' }, { definitionId: 'attack' } ],
-            'attack',
-        );
+        const deck = [
+            { definitionId: 'attack', arrow: 'left' as const },
+            { definitionId: 'attack', arrow: 'left' as const },
+        ];
+        const next = removeMatchingDeckEntry(deck, {
+            definitionId: 'attack',
+            label: 'Attack',
+            count: 2,
+            arrow: 'left',
+        });
 
-        expect(next).toEqual([ { definitionId: 'attack' } ]);
+        expect(next).toHaveLength(1);
+    });
+
+    it('findNewDefinitionIdsNeedingDirection detects event gains', () =>
+    {
+        const before = [ { definitionId: 'attack', arrow: 'left' as const } ];
+        const after = [ ...before, { definitionId: 'fire' } ];
+        expect(findNewDefinitionIdsNeedingDirection(before, after)).toEqual([ 'fire' ]);
     });
 });

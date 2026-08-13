@@ -178,6 +178,25 @@ html, body, #root {
     animation: target-prompt-pulse 1.4s ease-in-out infinite;
 }
 
+.game-hud__chain-start-hint {
+    color: #b8e8ff;
+    font-size: 14px;
+    font-weight: 500;
+    max-width: 320px;
+    text-align: center;
+    line-height: 1.5;
+    padding: 6px 12px;
+    border: 1px solid rgba(122, 240, 255, 0.45);
+    border-radius: 4px;
+    background: rgba(8, 24, 38, 0.82);
+    box-shadow: 0 0 14px rgba(122, 240, 255, 0.12);
+}
+
+.game-hud__chain-start-hint strong {
+    color: #fcee0a;
+    font-weight: 700;
+}
+
 .game-hud__reject-message {
     color: #f0e4b8;
     font-size: 15px;
@@ -4058,6 +4077,79 @@ html, body, #root {
 .card-reward__direction-btn .direction-arrow-icon {
     width: 28px;
     height: 28px;
+}
+
+.card-direction-picker__preview {
+    display: flex;
+    justify-content: center;
+    margin: 12px 0 8px;
+}
+
+.card-direction-picker__progress,
+.card-direction-picker__hint {
+    margin: 0 0 14px;
+    color: #a8c4ff;
+    font-size: 13px;
+}
+
+.card-direction-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+    gap: 10px;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 0 4px 8px;
+}
+
+.card-direction-picker__btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(120, 180, 255, 0.35);
+    background: rgba(16, 20, 44, 0.85);
+    color: #dce8ff;
+    cursor: pointer;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.card-direction-picker__btn:hover {
+    border-color: rgba(140, 220, 255, 0.75);
+    box-shadow: 0 0 16px rgba(80, 180, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.card-direction-picker__btn .direction-arrow-icon {
+    width: 28px;
+    height: 28px;
+}
+
+.shop-overlay__deck-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin: 1rem 0;
+    max-height: 14rem;
+    overflow-y: auto;
+}
+
+.shop-overlay__deck-pick {
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.shop-overlay__deck-pick:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 14px rgba(255, 200, 80, 0.25);
 }
 
 .body-mod-reward__choices {

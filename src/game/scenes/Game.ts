@@ -3,6 +3,7 @@ import { BattlefieldBackgroundView } from '../board/BattlefieldBackgroundView';
 import { MapBackgroundView } from '../board/MapBackgroundView';
 import { ArmorView } from '../board/ArmorView';
 import { CardBoardView } from '../board/CardBoardView';
+import { boardRowLabel } from '../board/boardCoordinates';
 import { CardHandView } from '../board/CardHandView';
 import { CardPileView } from '../board/CardPileView';
 import { EnemySquadView } from '../board/EnemySquadView';
@@ -1075,6 +1076,18 @@ export class Game extends Scene
         {
             this.enemySquad?.showAllIntents(this.session);
         }
+
+        const chainStartPickable = this.session.canEditBoard()
+            && !this.rerollModeActive
+            && !this.session.isBusy();
+        const chainStart = this.session.getChainStartSlot();
+
+        this.boardView?.setChainStartPickable(chainStartPickable);
+        EventBus.emit(GAME_EVENTS.CHAIN_START_STATE, {
+            pickable: chainStartPickable,
+            row: chainStart.row,
+            rowLabel: boardRowLabel(chainStart.row),
+        });
 
         EventBus.emit(GAME_EVENTS.CARD_ATTACK_READY, this.session.getAttackReadiness());
         this.emitTurnState();

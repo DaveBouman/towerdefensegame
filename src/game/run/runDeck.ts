@@ -74,6 +74,109 @@ export const groupRunDeckEntries = (deck: readonly RunDeckCard[]): RunDeckEntry[
         .sort((a, b) => a.label.localeCompare(b.label));
 };
 
+export const cardNeedsDirectionPick = (definitionId: string): boolean =>
+    getCardDefinitionOrThrow(definitionId).arrowPool !== 'joker';
+
+export const matchesDeckEntry = (card: RunDeckCard, entry: RunDeckEntry): boolean =>
+    card.definitionId === entry.definitionId
+    && card.arrow === entry.arrow
+    && card.loopArrow === entry.loopArrow;
+
+export const removeMatchingDeckEntry = (
+    deck: readonly RunDeckCard[],
+    entry: RunDeckEntry,
+): RunDeckCard[] =>
+{
+    const next = [ ...deck ];
+    const index = next.findIndex((card) => matchesDeckEntry(card, entry));
+
+    if (index >= 0)
+    {
+        next.splice(index, 1);
+    }
+
+    return next;
+};
+
+export const setMatchingDeckEntryArrow = (
+    deck: readonly RunDeckCard[],
+    entry: RunDeckEntry,
+    arrow: CardDirection,
+): RunDeckCard[] =>
+{
+    const next = [ ...deck ];
+    const index = next.findIndex((card) => matchesDeckEntry(card, entry));
+
+    if (index >= 0)
+    {
+        next[index] = { ...next[index]!, arrow };
+    }
+
+    return next;
+};
+
+const countNeedingDirection = (deck: readonly RunDeckCard[]): Map<string, number> =>
+{
+    const counts = new Map<string, number>();
+
+    for (const card of deck)
+    {
+        if (cardNeedsDirectionPick(card.definitionId) && !card.arrow)
+        {
+            counts.set(card.definitionId, (counts.get(card.definitionId) ?? 0) + 1);
+        }
+    }
+
+    return counts;
+};
+
+/** Newly gained cards (from events/shop) that still need a direction choice. */
+export const findNewDefinitionIdsNeedingDirection = (
+    before: readonly RunDeckCard[],
+    after: readonly RunDeckCard[],
+): string[] =>
+{
+    const beforeCounts = countNeedingDirection(before);
+    const afterCounts = countNeedingDirection(after);
+    const added: string[] = [];
+
+    for (const [ definitionId, count ] of afterCounts)
+    {
+        const previous = beforeCounts.get(definitionId) ?? 0;
+
+        for (let i = 0; i < count - previous; i++)
+        {
+            added.push(definitionId);
+        }
+    }
+
+    return added;
+};
+
+/** Applies direction picks to the first matching arrowless copies in deck order. */
+export const applyDirectionPicksToDeck = (
+    deck: readonly RunDeckCard[],
+    picks: readonly RunDeckCard[],
+): RunDeckCard[] =>
+{
+    const next = deck.map((card) => ({ ...card }));
+
+    for (const pick of picks)
+    {
+        const index = next.findIndex((card) =>
+            card.definitionId === pick.definitionId
+            && !card.arrow
+            && cardNeedsDirectionPick(card.definitionId));
+
+        if (index >= 0)
+        {
+            next[index] = { ...next[index]!, arrow: pick.arrow };
+        }
+    }
+
+    return next;
+};
+
 export const removeFirstCardByDefinitionId = (
     deck: readonly RunDeckCard[],
     definitionId: string,

@@ -4,6 +4,7 @@ import { PuzzleResultOverlay } from './PuzzleResultOverlay';
 import { RunMapOverlay } from './RunMapOverlay';
 import { RunEndOverlay } from './RunEndOverlay';
 import { CardRewardOverlay } from './CardRewardOverlay';
+import { PendingCardDirectionOverlay } from './PendingCardDirectionOverlay';
 import { BodyModRewardOverlay } from './BodyModRewardOverlay';
 import { CombatRecapStrip } from './CombatRecapStrip';
 import { FloorBriefingOverlay } from './FloorBriefingOverlay';
@@ -69,6 +70,8 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
         finishBodyModReward,
         rerollReward,
         pendingPuzzleReward,
+        pendingCardDirectionFlow,
+        completePendingCardDirections,
         finishPuzzleReward,
         visit,
         finishEvent,
@@ -76,10 +79,11 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
         restHeal,
         restUpgrade,
         finishVisit,
-        buyShopCard,
+        confirmShopCardPurchase,
         buyShopBodyMod,
         buyShopHeal,
         buyShopRemove,
+        buyShopReroute,
         buyShopUpgrade,
         puzzleResult,
         finishPuzzleResult,
@@ -248,6 +252,15 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                     onContinue={finishVisit}
                 />
             )}
+            {pendingCardDirectionFlow && (
+                <PendingCardDirectionOverlay
+                    definitionIds={pendingCardDirectionFlow.definitionIds}
+                    eyebrow="Signal routing"
+                    title="Choose chain direction"
+                    subtitle="New cards need a fixed route before the next fight."
+                    onComplete={completePendingCardDirections}
+                />
+            )}
             {phase === 'visit' && visit && !visit.eventId && visit.node.kind === 'shop' && visit.shopOffers && (
                 <ShopOverlay
                     offers={visit.shopOffers}
@@ -255,10 +268,11 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                     deck={deck}
                     playerHealth={playerHealth}
                     maxHealth={runMaxHealth}
-                    onBuyCard={buyShopCard}
+                    onConfirmCardPurchase={confirmShopCardPurchase}
                     onBuyBodyMod={buyShopBodyMod}
                     onBuyHeal={buyShopHeal}
                     onBuyRemove={buyShopRemove}
+                    onBuyReroute={buyShopReroute}
                     onBuyUpgrade={buyShopUpgrade}
                     onContinue={finishVisit}
                 />

@@ -43,6 +43,15 @@ export interface PuzzleResultState {
     messages: AppliedEventMessage[];
 }
 
+import type { RunDeckCard } from '../game/run/runDeck';
+
+export interface PendingCardDirectionFlow {
+    definitionIds: string[];
+    /** Deck snapshot before applying direction picks (events). */
+    mergedDeck?: RunDeckCard[];
+    onApplied: () => void;
+}
+
 export interface PendingPuzzleReward {
     puzzleId: string;
     nodeId: string;

@@ -30,7 +30,7 @@ describe('bodyModBestiary', () =>
         expect(ids).toContain(BODY_MOD_IDS.chromeHeart);
         expect(ids).toContain(BODY_MOD_IDS.gatekeeperSeal);
         expect(ids).toContain(BODY_MOD_IDS.latchArray);
-        expect(ids.length).toBe(12);
+        expect(ids.length).toBe(14);
     });
 
     it('unlocks newly collected body mods once', () =>

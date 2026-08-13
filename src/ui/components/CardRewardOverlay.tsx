@@ -1,17 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistry';
-import {
-    arrowPoolLabel,
-    formatDirectionLabel,
-    getDirectionsForPool,
-    type CardDirection,
-} from '../../game/cardGame/domain/cardDirections';
+import { cardNeedsDirectionPick } from '../../game/run/runDeck';
+import { CardDirectionPicker } from './CardDirectionPicker';
 import { describeCardReward } from '../../game/run/rewards';
 import type { RunDeckCard } from '../../game/run/runDeck';
 import { groupRunDeckEntries } from '../../game/run/runDeck';
 import { CardChip } from './CardChip';
 import { ModalShell } from './CyberPanel';
 import { DirectionArrowIcon } from './DirectionArrowIcon';
+import { getDirectionsForPool, arrowPoolLabel } from '../../game/cardGame/domain/cardDirections';
 
 interface CardRewardOverlayProps {
     /** Card definition ids offered as choices. */
@@ -36,8 +33,7 @@ interface CardRewardOverlayProps {
 
 type RewardStep = 'choose' | 'direction';
 
-const needsDirectionPick = (definitionId: string): boolean =>
-    getCardDefinitionOrThrow(definitionId).arrowPool !== 'joker';
+const needsDirectionPick = cardNeedsDirectionPick;
 
 export const CardRewardOverlay = ({
     options,
@@ -155,11 +151,8 @@ export const CardRewardOverlay = ({
     const currentDefinition = currentDirectionId
         ? getCardDefinitionOrThrow(currentDirectionId)
         : null;
-    const currentDirections = currentDefinition
-        ? getDirectionsForPool(currentDefinition.arrowPool)
-        : [];
 
-    const pickDirection = (arrow: CardDirection): void =>
+    const pickDirection = (arrow: import('../../game/cardGame/domain/cardDirections').CardDirection): void =>
     {
         if (!currentDirectionId)
         {
@@ -281,41 +274,18 @@ export const CardRewardOverlay = ({
                             })}
                         </div>
                     </>
-                ) : (
+                ) : currentDefinition && (
                     <>
                         <h1 className="card-reward__title">Choose chain direction</h1>
                         <p className="card-reward__subtitle">
-                            {currentDefinition?.label ?? 'Card'}
+                            {currentDefinition.label}
                             {' · '}
                             {directionIndex + 1} / {directionQueue.length}
                         </p>
-                        {currentDefinition && (
-                            <>
-                                <div className="card-reward__direction-preview">
-                                    <CardChip
-                                        definitionId={currentDefinition.id}
-                                        label={currentDefinition.label}
-                                        size="hand"
-                                    />
-                                </div>
-                                <p className="card-reward__direction-hint">
-                                    {arrowPoolLabel(currentDefinition.arrowPool)}
-                                </p>
-                                <div className="card-reward__direction-grid">
-                                    {currentDirections.map((direction) => (
-                                        <button
-                                            key={direction}
-                                            type="button"
-                                            className="card-reward__direction-btn"
-                                            onClick={() => pickDirection(direction)}
-                                        >
-                                            <DirectionArrowIcon direction={direction} />
-                                            <span>{formatDirectionLabel(direction)}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
-                        )}
+                        <CardDirectionPicker
+                            definitionId={currentDefinition.id}
+                            onPick={pickDirection}
+                        />
                     </>
                 )}
             </div>

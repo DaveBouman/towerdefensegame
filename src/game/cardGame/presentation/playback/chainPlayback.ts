@@ -288,6 +288,7 @@ export function runChainPlayback (
                 targetId,
                 sourceDefinitionId,
                 resolvedStep.behaviorId,
+                resolvedStep.arrow,
             );
 
             applyEnemyHitResult(deps, result, {
@@ -406,6 +407,7 @@ export function runChainPlayback (
                 targetId,
                 prevResolved.definitionId,
                 prevResolved.behaviorId,
+                prevResolved.card.arrow,
             );
             applyEnemyHitResult(deps, result, {
                 visualId: prevResolved.visualId,

@@ -8,6 +8,7 @@ export const GAME_EVENTS = {
     REROLL_CONFIRM: 'reroll-confirm',
     REROLL_CANCEL: 'reroll-cancel',
     REROLL_STATE: 'reroll-state',
+    CHAIN_START_STATE: 'chain-start-state',
     SCENE_READY: 'current-scene-ready',
     START_BATTLE: 'start-battle',
     START_PUZZLE: 'start-puzzle',

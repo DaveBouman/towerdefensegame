@@ -528,6 +528,47 @@ describe('CardGameSession enemy turn', () =>
         expect(result.shieldAbsorbed + result.healthDamage).toBe(10);
     });
 
+    it('doubles damage on every 5th run attack with Mark V', () =>
+    {
+        const session = new CardGameSession(
+            'basic',
+            undefined,
+            undefined,
+            [ BODY_MOD_IDS.markFive ],
+            null,
+            4,
+        );
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
+        session.beginAttack();
+
+        expect(session.isDoubleDamageThisAttack()).toBe(true);
+        expect(session.getRunAttackCount()).toBe(5);
+
+        const result = session.dealAttackDamage(10, undefined, undefined, 'attack');
+
+        expect(result.shieldAbsorbed + result.healthDamage).toBe(20);
+    });
+
+    it('boosts left-routing card damage with Portside Gyro', () =>
+    {
+        const session = new CardGameSession(
+            'basic',
+            undefined,
+            undefined,
+            [ BODY_MOD_IDS.portsideGyro ],
+        );
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
+        session.beginAttack();
+
+        const boosted = session.dealAttackDamage(10, undefined, undefined, 'attack', 'left');
+        const neutral = session.dealAttackDamage(10, undefined, undefined, 'attack', 'right');
+
+        expect(boosted.shieldAbsorbed + boosted.healthDamage).toBe(13);
+        expect(neutral.shieldAbsorbed + neutral.healthDamage).toBe(10);
+    });
+
     it('persists the run attack counter across battles', () =>
     {
         const firstBattle = new CardGameSession('basic', undefined, undefined, [], null, 0);

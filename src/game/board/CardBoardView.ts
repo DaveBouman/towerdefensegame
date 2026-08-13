@@ -76,6 +76,9 @@ export class CardBoardView
         col: GAME_RULES.activationStartColumn,
     };
     private readonly chainStartIndicators: ChainStartIndicator[] = [];
+    private chainStartPickable = false;
+    private chainStartColumnGlow?: Phaser.GameObjects.Rectangle;
+    private chainStartIdleTween?: Phaser.Tweens.Tween;
     private chainStartTween?: Phaser.Tweens.Tween;
     private readonly colAxisLabels: Phaser.GameObjects.Text[] = [];
     private readonly rowAxisLabels: Phaser.GameObjects.Text[] = [];
@@ -182,6 +185,21 @@ export class CardBoardView
     setChainStartSlot (slot: SlotPosition): void
     {
         this.chainStartSlot = { ...slot };
+        this.refreshAxisLegendStyles();
+        this.updateChainStartSelection();
+    }
+
+    /** When true, all start-column tiles show pick hints (between attacks). */
+    setChainStartPickable (pickable: boolean): void
+    {
+        if (this.chainStartPickable === pickable)
+        {
+            return;
+        }
+
+        this.chainStartPickable = pickable;
+        this.refreshAxisLegendStyles();
+        this.refreshChainStartPickableVisuals();
         this.updateChainStartSelection();
     }
 
@@ -776,6 +794,7 @@ export class CardBoardView
         this.cancelBoardDrag();
         this.hideJokerDirectionPicker();
         this.chainStartTween?.stop();
+        this.chainStartIdleTween?.stop();
         this.container.destroy();
     }
 
@@ -794,10 +813,13 @@ export class CardBoardView
 
         for (let col = 0; col < cols; col++)
         {
+            const labelText = col === GAME_RULES.activationStartColumn
+                ? 'START'
+                : boardColLabel(col);
             const label = this.scene.add.text(
                 col * tileSize + tileSize / 2,
                 axisY,
-                boardColLabel(col),
+                labelText,
                 uiTextStyle(11, AXIS_IDLE, { bold: true, stroke: false }),
             );
             label.setOrigin(0.5, 1);
@@ -828,6 +850,7 @@ export class CardBoardView
         const startCol = GAME_RULES.activationStartColumn;
         const activeCol = this.activeCoordinate?.col ?? null;
         const activeRow = this.activeCoordinate?.row ?? null;
+        const chainStartRow = this.chainStartPickable ? this.chainStartSlot.row : null;
 
         for (let col = 0; col < this.colAxisLabels.length; col++)
         {
@@ -841,7 +864,7 @@ export class CardBoardView
             const active = activeCol === col;
             const start = col === startCol;
             label.setColor(active ? AXIS_ACTIVE : start ? AXIS_START : AXIS_IDLE);
-            label.setScale(active ? 1.2 : 1);
+            label.setScale(active ? 1.2 : start ? 1.08 : 1);
             label.setAlpha(active || start || activeCol === null ? 1 : 0.55);
         }
 
@@ -855,9 +878,10 @@ export class CardBoardView
             }
 
             const active = activeRow === row;
-            label.setColor(active ? AXIS_ACTIVE : AXIS_IDLE);
-            label.setScale(active ? 1.2 : 1);
-            label.setAlpha(active || activeRow === null ? 1 : 0.55);
+            const chainStart = chainStartRow === row;
+            label.setColor(active ? AXIS_ACTIVE : chainStart ? AXIS_START : AXIS_IDLE);
+            label.setScale(active ? 1.2 : chainStart ? 1.08 : 1);
+            label.setAlpha(active || chainStart || activeRow === null ? 1 : 0.55);
         }
     }
 
@@ -884,6 +908,18 @@ export class CardBoardView
     {
         const { tileSize, rows } = GRID_CONFIG;
         const startCol = GAME_RULES.activationStartColumn;
+
+        this.chainStartColumnGlow = this.scene.add.rectangle(
+            startCol * tileSize + tileSize / 2,
+            (rows * tileSize) / 2,
+            tileSize + 6,
+            rows * tileSize + 4,
+            CHAIN_START_SELECTED,
+            0,
+        );
+        this.chainStartColumnGlow.setOrigin(0.5, 0.5);
+        this.chainStartColumnGlow.setVisible(false);
+        this.container.add(this.chainStartColumnGlow);
 
         for (let row = 0; row < rows; row++)
         {
@@ -992,24 +1028,96 @@ export class CardBoardView
         {
             const selected = indicator.slot.row === this.chainStartSlot.row
                 && indicator.slot.col === this.chainStartSlot.col;
+            const showPickHints = this.chainStartPickable && this.chainStartHandlers?.canSelect();
 
-            indicator.ring.setAlpha(selected ? 1 : 0.45);
-            indicator.brackets.setAlpha(selected ? 1 : 0.55);
+            indicator.ring.setAlpha(selected ? 1 : showPickHints ? 0.72 : 0.45);
+            indicator.brackets.setAlpha(selected ? 1 : showPickHints ? 0.82 : 0.55);
             this.redrawChainStartBrackets(
                 indicator.brackets,
                 indicator.slot,
                 tileSize,
-                selected,
+                selected || showPickHints,
             );
 
-            indicator.badge.setVisible(selected);
-            indicator.badge.setAlpha(selected ? 1 : 0);
-            indicator.badge.setColor(selected ? '#fcee0a' : '#7af0ff');
+            if (selected)
+            {
+                indicator.badge.setText(CHAIN_START_BADGE);
+                indicator.badge.setVisible(true);
+                indicator.badge.setAlpha(1);
+                indicator.badge.setColor('#fcee0a');
+            }
+            else if (showPickHints)
+            {
+                indicator.badge.setText(boardRowLabel(indicator.slot.row));
+                indicator.badge.setVisible(true);
+                indicator.badge.setAlpha(0.9);
+                indicator.badge.setColor('#7af0ff');
+            }
+            else
+            {
+                indicator.badge.setVisible(false);
+                indicator.badge.setAlpha(0);
+            }
 
-            indicator.ring.setStrokeStyle(2, selected ? CHAIN_START_SELECTED : CHAIN_START_IDLE, selected ? 0.9 : 0.5);
+            indicator.ring.setStrokeStyle(
+                2,
+                selected ? CHAIN_START_SELECTED : CHAIN_START_IDLE,
+                selected ? 0.95 : showPickHints ? 0.72 : 0.5,
+            );
         }
 
         this.bringChainStartToFront();
+        this.refreshChainStartPickableVisuals();
+    }
+
+    private refreshChainStartPickableVisuals (): void
+    {
+        const pickable = this.chainStartPickable && (this.chainStartHandlers?.canSelect() ?? false);
+
+        this.chainStartColumnGlow?.setVisible(pickable);
+        this.chainStartColumnGlow?.setAlpha(pickable ? 0.1 : 0);
+
+        this.chainStartIdleTween?.stop();
+        this.chainStartIdleTween = undefined;
+
+        if (!pickable)
+        {
+            for (const indicator of this.chainStartIndicators)
+            {
+                indicator.ring.setScale(1);
+                this.scene.tweens.killTweensOf(indicator.ring);
+            }
+
+            return;
+        }
+
+        const pulseTargets = this.chainStartIndicators
+            .filter((indicator) =>
+                indicator.slot.row !== this.chainStartSlot.row
+                || indicator.slot.col !== this.chainStartSlot.col,
+            )
+            .map((indicator) => indicator.ring);
+
+        if (pulseTargets.length === 0)
+        {
+            return;
+        }
+
+        for (const ring of pulseTargets)
+        {
+            ring.setScale(1);
+        }
+
+        this.chainStartIdleTween = this.scene.tweens.add({
+            targets: pulseTargets,
+            alpha: { from: 0.55, to: 0.95 },
+            scaleX: { from: 0.98, to: 1.03 },
+            scaleY: { from: 0.98, to: 1.03 },
+            duration: 900,
+            ease: 'Sine.easeInOut',
+            yoyo: true,
+            repeat: -1,
+        });
     }
 
     private bringChainStartToFront (): void
