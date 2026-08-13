@@ -233,6 +233,52 @@ export const getNextSlot = (
     return next;
 };
 
+/** Wraps out-of-bounds coordinates to the opposite board edge (toroidal routing). */
+export const wrapSlot = (
+    { row, col }: SlotPosition,
+    rows: number,
+    cols: number,
+): SlotPosition => ({
+    row: ((row % rows) + rows) % rows,
+    col: ((col % cols) + cols) % cols,
+});
+
+/** Next slot when the chain wraps around board edges instead of stopping. */
+export const getNextSlotWithWrap = (
+    slot: SlotPosition,
+    direction: CardDirection,
+    rows: number,
+    cols: number,
+): SlotPosition =>
+{
+    const offset = OFFSETS[direction];
+
+    return wrapSlot(
+        { row: slot.row + offset.row, col: slot.col + offset.col },
+        rows,
+        cols,
+    );
+};
+
+/** Slot reached after moving `distance` steps with edge wrap (skips intermediate tiles). */
+export const getSlotAtStepDistanceWithWrap = (
+    from: SlotPosition,
+    direction: CardDirection,
+    rows: number,
+    cols: number,
+    distance: number,
+): SlotPosition =>
+{
+    let slot = from;
+
+    for (let step = 0; step < distance; step++)
+    {
+        slot = getNextSlotWithWrap(slot, direction, rows, cols);
+    }
+
+    return slot;
+};
+
 /** Slot reached after moving `distance` steps in one direction (skips intermediate tiles). */
 export const getSlotAtStepDistance = (
     from: SlotPosition,

@@ -177,6 +177,32 @@ describe('AttackPipeline', () =>
         expect(chain[1]?.slot).toEqual({ row: 0, col: 1 });
     });
 
+    it('wraps a phase-relay off the top edge to the bottom row', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('phase-relay', 'up'));
+        board.placeCard({ row: 4, col: 1 }, createCardInstance('attack', 'right'));
+
+        const chain = planActivationChain(board, { row: 0, col: 1 });
+
+        expect(chain.map((step) => step.definitionId)).toEqual([ 'phase-relay', 'attack' ]);
+        expect(chain[1]?.slot).toEqual({ row: 4, col: 1 });
+    });
+
+    it('wraps a phase-relay off the right edge to the left column', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 2, col: 4 }, createCardInstance('phase-relay', 'right'));
+        board.placeCard({ row: 2, col: 0 }, createCardInstance('attack', 'right'));
+
+        const chain = planActivationChain(board, { row: 2, col: 4 });
+
+        expect(chain.map((step) => step.definitionId)).toEqual([ 'phase-relay', 'attack' ]);
+        expect(chain[1]?.slot).toEqual({ row: 2, col: 0 });
+    });
+
     it('stops a corner card when neither forward-diagonal tile has a card', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));

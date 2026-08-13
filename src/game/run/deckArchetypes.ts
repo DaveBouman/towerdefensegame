@@ -16,6 +16,7 @@ const CARD_ARCHETYPE_WEIGHTS: Record<string, Partial<Record<DeckArchetypeId, num
     exsanguinate: { blade: 1 },
     execution: { blade: 0.9 },
     switchback: { blade: 0.85 },
+    'phase-relay': { blade: 0.5, bulwark: 0.35 },
     salvage: { blade: 0.5 },
     poison: { toxin: 1 },
     miasma: { toxin: 1 },

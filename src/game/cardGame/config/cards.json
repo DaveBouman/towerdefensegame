@@ -485,6 +485,20 @@
       }
     },
     {
+      "id": "phase-relay",
+      "label": "Phase Relay",
+      "power": 4,
+      "behaviorId": "attack",
+      "visualId": "attack",
+      "arrowPool": "orthogonal",
+      "wrapEdges": true,
+      "tier": 2,
+      "tooltipProviderId": "phase-relay",
+      "upgrade": {
+        "power": 6
+      }
+    },
+    {
       "id": "neurotoxin",
       "label": "Neurotoxin",
       "power": 3,

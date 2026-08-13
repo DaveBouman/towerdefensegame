@@ -1,7 +1,7 @@
 import { GAME_RULES, getCardDefinitionOrThrow, getCardHandEndPenalty, getChainStepDistance, type CardDefinition } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
 import { isEnemyOwnedCard, isFieldOwnedCard, isPlayerOwnedCard } from '../domain/cardOwnership';
-import { cornerTargetDirections, getInBoundsDirectionsAtDistance, getNextSlot, getSlotAtStepDistance, slotKey } from '../domain/cardDirections';
+import { cornerTargetDirections, getInBoundsDirectionsAtDistance, getNextSlot, getSlotAtStepDistance, getSlotAtStepDistanceWithWrap, slotKey } from '../domain/cardDirections';
 import type {
     ActivationStep,
     AttackSequence,
@@ -114,6 +114,9 @@ export const isLoopResetDefinition = (definition: CardDefinition): boolean =>
 export const isCornerDefinition = (definition: CardDefinition): boolean =>
     definition.cornerTurn === true;
 
+export const isWrapDefinition = (definition: CardDefinition): boolean =>
+    definition.wrapEdges === true;
+
 const getLoopContinueArrow = (card: import('../domain/types').CardInstance): CardDirection =>
     card.arrow;
 
@@ -220,9 +223,12 @@ export const getNextChainSlot = (
     from: SlotPosition,
     direction: CardDirection,
     stepDistance = 1,
+    wrapEdges = false,
 ): SlotPosition | null =>
 {
-    const landing = getSlotAtStepDistance(from, direction, board.rows, board.cols, stepDistance);
+    const landing = wrapEdges
+        ? getSlotAtStepDistanceWithWrap(from, direction, board.rows, board.cols, stepDistance)
+        : getSlotAtStepDistance(from, direction, board.rows, board.cols, stepDistance);
 
     if (!landing || !board.getCardAt(landing))
     {
@@ -291,6 +297,7 @@ export const planActivationChain = (
                 current,
                 step.exitArrow,
                 getChainStepDistance(definition),
+                isWrapDefinition(definition),
             );
     }
 
@@ -581,6 +588,7 @@ export const getNextChainSlotFromStep = (
             step.slot,
             step.exitArrow,
             getChainStepDistance(definition),
+            isWrapDefinition(definition),
         );
 };
 

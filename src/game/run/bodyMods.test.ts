@@ -101,5 +101,6 @@ describe('interval strike body mod ids', () =>
     {
         expect(BODY_MOD_IDS.markFive).toBe('mark-five');
         expect(BODY_MOD_IDS.portsideGyro).toBe('portside-gyro');
+        expect(BODY_MOD_IDS.capacitorBank).toBe('capacitor-bank');
     });
 });

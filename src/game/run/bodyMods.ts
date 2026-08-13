@@ -27,6 +27,7 @@ export const BODY_MOD_IDS = {
     hemorrhageCoil: 'hemorrhage-coil',
     gatekeeperSeal: 'gatekeeper-seal',
     latchArray: 'latch-array',
+    capacitorBank: 'capacitor-bank',
 } as const;
 
 /** Attacks that trigger Mark VII's double-damage proc (7th, 14th, …). */
@@ -37,6 +38,12 @@ export const FIFTH_STRIKE_INTERVAL = 5;
 
 /** Left-routing card hits deal +30% damage with Portside Gyro installed. */
 export const PORTSIDE_GYRO_DAMAGE_MULTIPLIER = 1.3;
+
+/** Defends in one chain needed to store a Capacitor Bank charge. */
+export const CAPACITOR_BANK_DEFEND_INTERVAL = 3;
+
+/** Attack damage multiplier when Capacitor Bank discharges in-chain. */
+export const CAPACITOR_BANK_ATTACK_MULTIPLIER = 1.5;
 
 /** Run-wide attack intervals for proc body mods (shown in the body mod panel). */
 export const INTERVAL_STRIKE_BODY_MOD_INTERVALS: Readonly<Record<string, number>> = {
@@ -172,6 +179,12 @@ export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
         blurb: 'Grid clamps pin your opening play so the wipe cannot pull it loose.',
         effect: 'After the board wipes, your first Attack, Defend, and Skill placed this round stay on the grid.',
     },
+    {
+        id: BODY_MOD_IDS.capacitorBank,
+        label: 'Capacitor Bank',
+        blurb: 'Defend steps bleed kinetic charge into a combat capacitor — discharged on the next swing.',
+        effect: 'Every 3rd Defend in a chain stores charge; your next Attack in that chain deals +50% damage.',
+    },
 ];
 
 const bodyModMap = new Map(BODY_MOD_DEFINITIONS.map((mod) => [ mod.id, mod ]));
@@ -204,6 +217,7 @@ export const LIEUTENANT_RELIC_POOL: readonly string[] = [
     BODY_MOD_IDS.carapaceWeave,
     BODY_MOD_IDS.overclockCell,
     BODY_MOD_IDS.latchArray,
+    BODY_MOD_IDS.capacitorBank,
 ];
 
 export type BodyModRewardPool = 'standard' | 'lieutenant' | 'warden';

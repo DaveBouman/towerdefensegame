@@ -28,6 +28,8 @@ export interface CardDefinition {
      * arrow, then hooks 90° to a forward-diagonal tile (whichever side has a card).
      */
     cornerTurn?: boolean;
+    /** When true, the chain wraps to the opposite edge instead of stopping off-board. */
+    wrapEdges?: boolean;
     /** Chain abilities resolved after the full activation chain is known. */
     chainAbilityIds?: string[];
     /** Optional tooltip provider id — defaults to card id, then behavior id. */
@@ -82,6 +84,7 @@ interface CardDefinitionJson extends Omit<CardDefinition, 'tier' | 'upgradesTo' 
         | 'battleModifier'
         | 'exhaustOnPlay'
         | 'cornerTurn'
+        | 'wrapEdges'
         | 'chainAbilityIds'
         | 'collectible'
     >>;

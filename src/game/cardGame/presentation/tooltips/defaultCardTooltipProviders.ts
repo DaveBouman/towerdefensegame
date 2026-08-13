@@ -113,6 +113,14 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             'Turns the corner: steps one tile along the arrow, then continues to the next card around the bend.',
         ],
     })),
+    provider('phase-relay', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Deals ${ctx.definition.power} damage when activated in the chain.`,
+            'Phase wrap: when this card\'s arrow would exit the board, the chain continues from the opposite edge (top↔bottom, left↔right).',
+            'Only this card wraps — normal cards still stop at the grid edge.',
+        ],
+    })),
     provider('defend-special', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: defendLines(ctx),

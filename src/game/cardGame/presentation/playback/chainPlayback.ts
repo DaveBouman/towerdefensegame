@@ -518,6 +518,12 @@ export function runChainPlayback (
         const stepActivatedAt = deps.scene.time.now;
 
         deps.activateStep(step, boosted ? boostMultiplier : 1);
+
+        if (resolvedStep.behaviorId === 'defend' && resolvedStep.armor > 0)
+        {
+            deps.session.registerCapacitorDefendStep();
+        }
+
         grantStepArmor(step);
 
         const playOnStepAbilitiesThen = (next: (abilityDetonation: boolean) => void): void =>

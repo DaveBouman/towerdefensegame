@@ -569,6 +569,33 @@ describe('CardGameSession enemy turn', () =>
         expect(neutral.shieldAbsorbed + neutral.healthDamage).toBe(10);
     });
 
+    it('boosts the next attack in-chain after every 3rd defend with Capacitor Bank', () =>
+    {
+        const session = new CardGameSession(
+            'basic',
+            undefined,
+            undefined,
+            [ BODY_MOD_IDS.capacitorBank ],
+        );
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
+        session.beginAttack();
+
+        session.registerCapacitorDefendStep();
+        session.registerCapacitorDefendStep();
+        expect(session.isCapacitorChargeReady()).toBe(false);
+
+        session.registerCapacitorDefendStep();
+        expect(session.isCapacitorChargeReady()).toBe(true);
+
+        const boosted = session.dealAttackDamage(10, undefined, undefined, 'attack');
+        const neutral = session.dealAttackDamage(10, undefined, undefined, 'attack');
+
+        expect(boosted.shieldAbsorbed + boosted.healthDamage).toBe(15);
+        expect(neutral.shieldAbsorbed + neutral.healthDamage).toBe(10);
+        expect(session.isCapacitorChargeReady()).toBe(false);
+    });
+
     it('persists the run attack counter across battles', () =>
     {
         const firstBattle = new CardGameSession('basic', undefined, undefined, [], null, 0);

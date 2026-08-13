@@ -472,6 +472,16 @@ export class CardGameSession
         return this.combat.getScaledArmorGain(armor);
     }
 
+    registerCapacitorDefendStep (): void
+    {
+        this.combat.registerCapacitorDefendStep();
+    }
+
+    isCapacitorChargeReady (): boolean
+    {
+        return this.combat.isCapacitorChargeReady();
+    }
+
     scalePoisonStacks (stacks: number): number
     {
         return this.combat.scalePoisonStacks(stacks);

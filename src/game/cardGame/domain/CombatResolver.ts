@@ -1,4 +1,4 @@
-import { BODY_MOD_IDS, isFifthStrikeAttack, isSeventhStrikeAttack, PORTSIDE_GYRO_DAMAGE_MULTIPLIER } from '../../run/bodyMods';
+import { BODY_MOD_IDS, CAPACITOR_BANK_ATTACK_MULTIPLIER, isFifthStrikeAttack, isSeventhStrikeAttack, PORTSIDE_GYRO_DAMAGE_MULTIPLIER } from '../../run/bodyMods';
 import type { CardDirection } from './cardDirections';
 import {
     getCardDefinitionOrThrow,
@@ -71,6 +71,8 @@ export class CombatResolver
     private doubleDamageThisAttack = false;
     private bodyguardRedirectUsedThisAttack = false;
     private playerHitsBlockedRemaining?: number;
+    private chainDefendCount = 0;
+    private capacitorChargeReady = false;
 
     constructor (
         private readonly ctx: CombatContext,
@@ -110,6 +112,27 @@ export class CombatResolver
         return this.scalePlayerArmorGain(armor);
     }
 
+    /** Counts an in-chain defend step toward Capacitor Bank (not echo replays). */
+    registerCapacitorDefendStep (): void
+    {
+        if (!this.ctx.bodyMods.includes(BODY_MOD_IDS.capacitorBank))
+        {
+            return;
+        }
+
+        this.chainDefendCount += 1;
+
+        if (this.chainDefendCount % 3 === 0)
+        {
+            this.capacitorChargeReady = true;
+        }
+    }
+
+    isCapacitorChargeReady (): boolean
+    {
+        return this.capacitorChargeReady;
+    }
+
     beginAttack (chainLength: number): boolean
     {
         if (chainLength === 0)
@@ -125,6 +148,8 @@ export class CombatResolver
         this.doubleDamageThisAttack = false;
         this.bodyguardRedirectUsedThisAttack = false;
         this.playerDamageThisEnemyPhase = 0;
+        this.chainDefendCount = 0;
+        this.capacitorChargeReady = false;
 
         if (!this.ctx.puzzleMode)
         {
@@ -215,7 +240,7 @@ export class CombatResolver
         this.bodyguardRedirectUsedThisAttack = redirect.redirectUsed;
         const resolvedTargetId = redirect.targetInstanceId;
         const combatant = this.ctx.getCombatantOrThrow(resolvedTargetId);
-        const scaledDamage = this.scalePlayerDamageDealt(damage, sourceArrow);
+        const scaledDamage = this.scalePlayerDamageDealt(damage, sourceArrow, sourceBehaviorId);
 
         if (scaledDamage <= 0)
         {
@@ -618,7 +643,11 @@ export class CombatResolver
         return aggregateBattleModifiers(this.ctx.battleModifiers);
     }
 
-    private scalePlayerDamageDealt (damage: number, sourceArrow?: CardDirection): number
+    private scalePlayerDamageDealt (
+        damage: number,
+        sourceArrow?: CardDirection,
+        sourceBehaviorId?: string,
+    ): number
     {
         let scaled = applyPlayerBuffModifier(damage, this.getModifierTotals().playerDamageDealt);
 
@@ -637,6 +666,15 @@ export class CombatResolver
             && scaled > 0)
         {
             scaled = Math.ceil(scaled * PORTSIDE_GYRO_DAMAGE_MULTIPLIER);
+        }
+
+        if (this.capacitorChargeReady
+            && sourceBehaviorId === 'attack'
+            && scaled > 0
+            && this.ctx.bodyMods.includes(BODY_MOD_IDS.capacitorBank))
+        {
+            scaled = Math.ceil(scaled * CAPACITOR_BANK_ATTACK_MULTIPLIER);
+            this.capacitorChargeReady = false;
         }
 
         return scaled;

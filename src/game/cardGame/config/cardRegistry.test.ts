@@ -27,6 +27,7 @@ describe('cardRegistry', () =>
         expect(getCardDefinition('execution')?.tier).toBe(3);
         expect(canUpgradeCard('burden')).toBe(false);
         expect(getCardDefinition('corner-strike')?.cornerTurn).toBe(true);
+        expect(getCardDefinition('phase-relay')?.wrapEdges).toBe(true);
         expect(getCardDefinition('poison')?.chainAbilityIds).toEqual([ 'poison-trail' ]);
         expect(getCardDefinition('black-ichor')?.behaviorId).toBe('poison');
     });
