@@ -2069,6 +2069,41 @@ html, body, #root {
     gap: 10px;
 }
 
+.main-menu__actions--footer {
+    margin-top: 4px;
+}
+
+.main-menu__section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.main-menu__section + .main-menu__section {
+    margin-top: 14px;
+}
+
+.main-menu__section-label {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-align: left;
+    color: rgba(126, 200, 255, 0.72);
+}
+
+.main-menu__section-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.main-menu__tagline--screen {
+    margin-bottom: 18px;
+    text-align: left;
+}
+
 .main-menu__nav-back {
     align-self: flex-start;
     margin-bottom: 8px;

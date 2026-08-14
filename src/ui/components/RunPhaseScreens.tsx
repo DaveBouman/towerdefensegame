@@ -114,6 +114,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                 <MainMenuOverlay
                     mode="boot"
                     seed={seed}
+                    ascensionLevel={ascensionLevel}
                     onStart={startRunFromMenu}
                     onReplayTutorial={tutorial.replayTutorial}
                 />
@@ -122,6 +123,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                 <MainMenuOverlay
                     mode="pause"
                     seed={seed}
+                    ascensionLevel={ascensionLevel}
                     onStart={closePauseMenu}
                     onResume={closePauseMenu}
                     onNewRun={startNewRun}

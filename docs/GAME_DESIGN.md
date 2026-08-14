@@ -134,7 +134,7 @@ index.html → src/main.tsx → App.tsx (run shell)
   ├── runController/rewardHelpers.ts (reward rolls, map seeding)
   ├── PhaserGame.tsx → src/game/main.ts → scenes/Game.ts
   ├── RunPhaseScreens.tsx (phase → overlay JSX)
-  ├── MainMenuOverlay.tsx   (home / settings / how-to-play / credits / quit + card index + bestiary)
+  ├── MainMenuOverlay.tsx   (home / archives / settings / how-to-play / credits / confirm-new-run)
   ├── CardCollectionOverlay.tsx (unlocked / locked card archive)
   ├── BestiaryOverlay.tsx   (unlocked / locked enemy archive)
   ├── BodyModBestiaryOverlay.tsx (unlocked / locked body mod archive; uses ArchiveOverlay)
@@ -362,6 +362,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | 2026-08-13 | **Fight overclock.** After each enemy response, enemies gain +4 attack for the rest of the fight (`enemyStrengthPerTurn`). Chip shows current › next from the opening (+0›+4). First hit is baseline; a second energy round already sits at +12. |
 | 2026-08-13 | **Enemy HP variance.** `enemies.json` `maxHealth` is a median. Each fight (and mid-battle spawn) rolls integrity ±10% via the seeded RNG (`enemyHealthVariance`). Bestiary shows the range. |
 | 2026-08-13 | **Copy catalog.** Player-facing labels live in `src/game/copy/strings.ts` — cards, enemies, body mods, map nodes, shop services, archetypes, passives, traits, and intents. JSON `label` fields are fallbacks; catalog wins. Swap `EN` when adding locales. |
+| 2026-08-14 | **Overclock tooltip.** Enemy Overclock chip uses the shared DOM tooltip on hover (current › next bonus, per-response stack, intra-round ramp). |
+| 2026-08-14 | **Main menu layout.** Home groups actions into Run / Archives / Help / System. Card index, bestiary, and body mods live on an **Archives** sub-screen; opening an archive hides the menu panel so overlays sit cleanly on top. Seed + ascension tier show on **Start run** confirm. |
 | 2026-08-13 | **Rad retheme.** The Poison card and status chip are now **Rad** (radioactive fumes). Miasma, Neurotoxin, Black Ichor, Venom Latch, and the Toxin lane keep their names. Internal id stays `poison`. |
 | 2026-08-13 | **No adjacent Ripperdocs.** Map generation breaks shop→shop route edges by converting the destination Ripperdoc into a street fight or signal, so you cannot travel from one Ripperdoc straight into another. |
 | 2026-08-13 | **Null Strip boss intent.** New `nullifyLane` passive / `nullify-lane` turn step: telegraphs one board column or row. Cards can still be placed there, but deal no damage, grant no armor, and fire no step effects (routing continues). Active strip highlighted on the board. Wired onto the **Warden**. |

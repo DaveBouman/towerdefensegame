@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { emitRunSfx } from '../../game/audio/emitRunSfx';
 import {
     getAudioSettings,
@@ -21,6 +21,7 @@ import { getCollectionProgress } from '../../game/run/cardCollection';
 import { getBestiaryProgress } from '../../game/run/enemyBestiary';
 import { getBodyModBestiaryProgress } from '../../game/run/bodyModBestiary';
 import { createRandomSeed, normalizeSeed } from '../../game/random/rng';
+import { describeAscensionLevel, readRunAscensionLevel } from '../../game/run/ascension';
 import {
     TEXT_SCALE_SIZES,
     type TextScaleSize,
@@ -34,11 +35,12 @@ import { CyberPanelChrome } from './CyberPanel';
 import { BOARD_COL_LABELS, BOARD_ROW_LABELS } from '../../game/board/boardCoordinates';
 
 type MenuMode = 'boot' | 'pause';
-type MenuScreen = 'home' | 'settings' | 'how-to-play' | 'credits' | 'confirm-new-run';
+type MenuScreen = 'home' | 'archives' | 'settings' | 'how-to-play' | 'credits' | 'confirm-new-run';
 
 interface MainMenuOverlayProps {
     mode?: MenuMode;
     seed: string;
+    ascensionLevel?: number;
     onStart: (seed: string) => void;
     onResume?: () => void;
     onNewRun?: (seed: string) => void;
@@ -77,6 +79,23 @@ const VolumeRow = ({
     </label>
 );
 
+const MenuSection = ({
+    label,
+    children,
+}: {
+    label: string;
+    children: ReactNode;
+}) => (
+    <div className="main-menu__section">
+        <p className="main-menu__section-label">{label}</p>
+        <div className="main-menu__section-actions">{children}</div>
+    </div>
+);
+
+const ProgressBadge = ({ unlocked, total }: { unlocked: number; total: number }) => (
+    <span className="main-menu__collection-count">{unlocked}/{total}</span>
+);
+
 const BackButton = ({ onClick }: { onClick: () => void }) => (
     <button
         type="button"
@@ -94,6 +113,7 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
 export const MainMenuOverlay = ({
     mode = 'boot',
     seed,
+    ascensionLevel: ascensionLevelProp,
     onStart,
     onResume,
     onNewRun,
@@ -101,6 +121,7 @@ export const MainMenuOverlay = ({
 }: MainMenuOverlayProps) =>
 {
     const pause = mode === 'pause';
+    const ascensionLevel = ascensionLevelProp ?? readRunAscensionLevel();
     const [ screen, setScreen ] = useState<MenuScreen>('home');
     const [ draftSeed, setDraftSeed ] = useState(seed);
     const [ audio, setAudio ] = useState<AudioSettings>(getAudioSettings);
@@ -252,10 +273,148 @@ export const MainMenuOverlay = ({
         setDraftSeed(createRandomSeed());
     };
 
+    const archiveOpen = showCollection || showBestiary || showBodyModBestiary;
+    const openArchives = (): void => openScreen('archives');
+    const backFromSubscreen = (): void =>
+    {
+        if (screen === 'archives' && archiveOpen)
+        {
+            setShowCollection(false);
+            setShowBestiary(false);
+            setShowBodyModBestiary(false);
+            return;
+        }
+
+        openHome();
+    };
+
+    const renderQuitButton = (): ReactNode => (
+        <button
+            type="button"
+            className="main-menu__quit"
+            onClick={() =>
+            {
+                emitRunSfx('ui-click', { volume: 0.6, rate: 0.85 });
+                quitGame();
+            }}
+            title={desktop ? 'Quit to desktop' : 'Close window'}
+        >
+            Quit
+        </button>
+    );
+
+    const renderArchivesHub = (): ReactNode => (
+        <>
+            <BackButton onClick={backFromSubscreen} />
+            <p className="main-menu__eyebrow">Data vault</p>
+            <h2 className="main-menu__screen-title">Archives</h2>
+            <p className="main-menu__tagline main-menu__tagline--screen">
+                Unlocked entries persist across runs.
+            </p>
+            <div className="main-menu__actions">
+                <button
+                    type="button"
+                    className="main-menu__secondary"
+                    onClick={openCollection}
+                >
+                    Card index
+                    <ProgressBadge unlocked={progress.unlocked} total={progress.total} />
+                </button>
+                <button
+                    type="button"
+                    className="main-menu__secondary"
+                    onClick={openBestiary}
+                >
+                    Bestiary
+                    <ProgressBadge unlocked={bestiaryProgress.unlocked} total={bestiaryProgress.total} />
+                </button>
+                <button
+                    type="button"
+                    className="main-menu__secondary"
+                    onClick={openBodyModBestiary}
+                >
+                    Body mods
+                    <ProgressBadge unlocked={bodyModProgress.unlocked} total={bodyModProgress.total} />
+                </button>
+            </div>
+        </>
+    );
+
+    const renderHomeActions = (): ReactNode => (
+        <>
+            <MenuSection label="Run">
+                {pause ? (
+                    <>
+                        <button type="button" className="main-menu__start" onClick={resumeRun}>
+                            Resume
+                        </button>
+                        <button
+                            type="button"
+                            className="main-menu__secondary"
+                            onClick={openNewRunConfirm}
+                        >
+                            New run
+                        </button>
+                    </>
+                ) : (
+                    <button type="button" className="main-menu__start" onClick={openNewRunConfirm}>
+                        Start run
+                    </button>
+                )}
+            </MenuSection>
+
+            <MenuSection label="Archives">
+                <button
+                    type="button"
+                    className="main-menu__secondary"
+                    onClick={openArchives}
+                >
+                    Browse archives
+                    <ProgressBadge
+                        unlocked={progress.unlocked + bestiaryProgress.unlocked + bodyModProgress.unlocked}
+                        total={progress.total + bestiaryProgress.total + bodyModProgress.total}
+                    />
+                </button>
+            </MenuSection>
+
+            <MenuSection label="Help">
+                <button
+                    type="button"
+                    className="main-menu__secondary"
+                    onClick={() => openScreen('how-to-play')}
+                >
+                    How to play
+                </button>
+                <button
+                    type="button"
+                    className="main-menu__secondary"
+                    onClick={() => openScreen('credits')}
+                >
+                    Credits
+                </button>
+            </MenuSection>
+
+            <MenuSection label="System">
+                <button
+                    type="button"
+                    className="main-menu__secondary"
+                    onClick={() => openScreen('settings')}
+                >
+                    Settings
+                </button>
+            </MenuSection>
+
+            <div className="main-menu__actions main-menu__actions--footer">
+                {renderQuitButton()}
+            </div>
+        </>
+    );
+
     return (
         <>
             <div className={`main-menu${pause ? ' main-menu--pause' : ''}`}>
                 <div className="main-menu__glow" aria-hidden="true" />
+                {!archiveOpen && (
                 <div className="main-menu__panel cp-panel cp-panel--cyan">
                     <CyberPanelChrome variant="cyan" />
 
@@ -271,74 +430,7 @@ export const MainMenuOverlay = ({
                                 Link the grid, outlast the street, and cut down the Warden.
                             </p>
 
-                            <div className="main-menu__actions">
-                                <button type="button" className="main-menu__start" onClick={openNewRunConfirm}>
-                                    Start run
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={openCollection}
-                                >
-                                    Card index
-                                    <span className="main-menu__collection-count">
-                                        {progress.unlocked}/{progress.total}
-                                    </span>
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={openBestiary}
-                                >
-                                    Bestiary
-                                    <span className="main-menu__collection-count">
-                                        {bestiaryProgress.unlocked}/{bestiaryProgress.total}
-                                    </span>
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={openBodyModBestiary}
-                                >
-                                    Body mods
-                                    <span className="main-menu__collection-count">
-                                        {bodyModProgress.unlocked}/{bodyModProgress.total}
-                                    </span>
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={() => openScreen('settings')}
-                                >
-                                    Settings
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={() => openScreen('how-to-play')}
-                                >
-                                    How to play
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={() => openScreen('credits')}
-                                >
-                                    Credits
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__quit"
-                                    onClick={() =>
-                                    {
-                                        emitRunSfx('ui-click', { volume: 0.6, rate: 0.85 });
-                                        quitGame();
-                                    }}
-                                    title={desktop ? 'Quit to desktop' : 'Close window'}
-                                >
-                                    Quit
-                                </button>
-                            </div>
+                            <div className="main-menu__actions">{renderHomeActions()}</div>
                         </>
                     )}
 
@@ -350,83 +442,11 @@ export const MainMenuOverlay = ({
                                 Adjust settings, inspect archives, or abandon this run.
                             </p>
 
-                            <div className="main-menu__actions">
-                                <button type="button" className="main-menu__start" onClick={resumeRun}>
-                                    Resume
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={openNewRunConfirm}
-                                >
-                                    New run
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={openCollection}
-                                >
-                                    Card index
-                                    <span className="main-menu__collection-count">
-                                        {progress.unlocked}/{progress.total}
-                                    </span>
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={openBestiary}
-                                >
-                                    Bestiary
-                                    <span className="main-menu__collection-count">
-                                        {bestiaryProgress.unlocked}/{bestiaryProgress.total}
-                                    </span>
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={openBodyModBestiary}
-                                >
-                                    Body mods
-                                    <span className="main-menu__collection-count">
-                                        {bodyModProgress.unlocked}/{bodyModProgress.total}
-                                    </span>
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={() => openScreen('settings')}
-                                >
-                                    Settings
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={() => openScreen('how-to-play')}
-                                >
-                                    How to play
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={() => openScreen('credits')}
-                                >
-                                    Credits
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__quit"
-                                    onClick={() =>
-                                    {
-                                        emitRunSfx('ui-click', { volume: 0.6, rate: 0.85 });
-                                        quitGame();
-                                    }}
-                                    title={desktop ? 'Quit to desktop' : 'Close window'}
-                                >
-                                    Quit
-                                </button>
-                            </div>
+                            <div className="main-menu__actions">{renderHomeActions()}</div>
                         </>
                     )}
+
+                    {screen === 'archives' && renderArchivesHub()}
 
                     {screen === 'confirm-new-run' && (
                         <>
@@ -462,6 +482,15 @@ export const MainMenuOverlay = ({
                                     </button>
                                 </span>
                             </label>
+                            <div className="main-menu__field">
+                                <span className="main-menu__field-label">Ascension</span>
+                                <p className="main-menu__seed-readonly" aria-label="Ascension level">
+                                    {describeAscensionLevel(ascensionLevel)}
+                                </p>
+                                <p className="main-menu__hint main-menu__field-hint--muted">
+                                    Clear the Warden to unlock the next tier.
+                                </p>
+                            </div>
                             <div className="main-menu__actions">
                                 <button
                                     type="button"
@@ -678,6 +707,7 @@ export const MainMenuOverlay = ({
                         {desktop ? ' · desktop' : ' · web'}
                     </p>
                 </div>
+                )}
             </div>
 
             {showCollection && (

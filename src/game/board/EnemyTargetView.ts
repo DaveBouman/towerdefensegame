@@ -19,6 +19,8 @@ import {
 } from '../cardGame/presentation/combatJuice';
 import { attachEnemyPassiveTooltip } from '../cardGame/presentation/tooltips/EnemyPassiveTooltipController';
 import { attachEnemyIntentTooltip } from '../cardGame/presentation/tooltips/EnemyIntentTooltipController';
+import { attachDomTooltip } from '../cardGame/presentation/tooltips/GameTooltipController';
+import { resolveOverclockTooltip } from '../cardGame/presentation/tooltips/enemyStatusTooltipRegistry';
 import { playFloatingText, playHitFlash as playHitFlashTween } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import {
     COMBAT_TRAIT_ICON_GAP,
@@ -98,6 +100,7 @@ export class EnemyTargetView
     private readonly overclockBadge: Phaser.GameObjects.Container;
     private readonly overclockValueText: Phaser.GameObjects.Text;
     private displayedOverclock = 0;
+    private displayedNextOverclock = 0;
     private readonly enemyLabel: Phaser.GameObjects.Text;
     private readonly combatTraitRowView: CombatTraitRowView;
     private combatTraitCount = 0;
@@ -335,6 +338,19 @@ export class EnemyTargetView
             this.overclockValueText,
         ]);
         this.overclockBadge.setVisible(false);
+
+        const overclockHit = scene.add.rectangle(
+            0,
+            0,
+            OVERCLOCK_BADGE_WIDTH,
+            OVERCLOCK_BADGE_HEIGHT,
+            0x000000,
+            0,
+        );
+
+        this.overclockBadge.add(overclockHit);
+        attachDomTooltip(this.scene, overclockHit, () =>
+            resolveOverclockTooltip(this.displayedOverclock, this.displayedNextOverclock));
 
         container.add([
             this.threatRing,
@@ -877,13 +893,13 @@ export class EnemyTargetView
         }
 
         this.displayedOverclock = Math.max(0, bonus);
-        const next = Math.max(this.displayedOverclock, nextBonus);
+        this.displayedNextOverclock = Math.max(this.displayedOverclock, nextBonus);
         this.overclockValueText.setText(
-            next > this.displayedOverclock
-                ? `+${this.displayedOverclock}›+${next}`
+            this.displayedNextOverclock > this.displayedOverclock
+                ? `+${this.displayedOverclock}›+${this.displayedNextOverclock}`
                 : `+${this.displayedOverclock}`,
         );
-        this.overclockBadge.setVisible(this.displayedOverclock > 0 || next > 0);
+        this.overclockBadge.setVisible(this.displayedOverclock > 0 || this.displayedNextOverclock > 0);
         this.syncStatusRowLayout();
     }
 
