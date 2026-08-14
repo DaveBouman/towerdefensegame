@@ -21,6 +21,7 @@ export interface EnemyPhaseHost
     getEnemy (instanceId?: string): EnemyState;
     rampEnemyAction (action: EnemyTurnAction): EnemyTurnAction;
     applySilenceTilesFromPassives (): void;
+    tickEnemyOverclock (): void;
 }
 
 export class EnemyPhaseController
@@ -221,6 +222,7 @@ export class EnemyPhaseController
         this.enemyPhasePrepared = false;
         this.enemyTurnInProgress = false;
 
+        this.host.tickEnemyOverclock();
         this.host.applySilenceTilesFromPassives();
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ENEMY_TURN_COMPLETED, {

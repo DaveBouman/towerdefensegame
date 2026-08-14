@@ -36,7 +36,7 @@ const POISON_BADGE_HEIGHT = 28;
 const POISON_BADGE_GAP = 6;
 const OVERCLOCK_BADGE_HEIGHT = 28;
 const OVERCLOCK_BADGE_GAP = 6;
-const OVERCLOCK_BADGE_WIDTH = 128;
+const OVERCLOCK_BADGE_WIDTH = 148;
 const INTENT_ICON_SIZE = 28;
 const INTENT_AMOUNT_FONT_SIZE = 18;
 const INTENT_STACK_GAP = 3;
@@ -321,12 +321,12 @@ export class EnemyTargetView
         const overclockBg = scene.add.rectangle(0, 0, OVERCLOCK_BADGE_WIDTH, OVERCLOCK_BADGE_HEIGHT, 0x2a1208, 0.92);
         overclockBg.setStrokeStyle(2, 0xff6b35, 0.95);
 
-        const overclockLabel = scene.add.text(-56, 0, overclockStatusName(), {
-            ...uiTextStyle(13, '#ffb088', { bold: true }),
+        const overclockLabel = scene.add.text(-66, 0, overclockStatusName(), {
+            ...uiTextStyle(12, '#ffb088', { bold: true }),
         }).setOrigin(0, 0.5);
 
-        this.overclockValueText = scene.add.text(56, 0, '+0', {
-            ...uiTextStyle(18, '#ff9f43', { bold: true }),
+        this.overclockValueText = scene.add.text(66, 0, '+0›+4', {
+            ...uiTextStyle(15, '#ff9f43', { bold: true }),
         }).setOrigin(1, 0.5);
 
         this.overclockBadge = scene.add.container(enemySize / 2, 0, [
@@ -869,7 +869,7 @@ export class EnemyTargetView
         this.syncStatusRowLayout();
     }
 
-    setOverclock (bonus: number): void
+    setOverclock (bonus: number, nextBonus = bonus): void
     {
         if (!this.container.active || !this.overclockBadge.active)
         {
@@ -877,8 +877,13 @@ export class EnemyTargetView
         }
 
         this.displayedOverclock = Math.max(0, bonus);
-        this.overclockValueText.setText(`+${this.displayedOverclock}`);
-        this.overclockBadge.setVisible(this.displayedOverclock > 0);
+        const next = Math.max(this.displayedOverclock, nextBonus);
+        this.overclockValueText.setText(
+            next > this.displayedOverclock
+                ? `+${this.displayedOverclock}›+${next}`
+                : `+${this.displayedOverclock}`,
+        );
+        this.overclockBadge.setVisible(this.displayedOverclock > 0 || next > 0);
         this.syncStatusRowLayout();
     }
 
@@ -1207,7 +1212,7 @@ export class EnemyTargetView
             bottom += POISON_BADGE_GAP + POISON_BADGE_HEIGHT;
         }
 
-        if (this.displayedOverclock > 0)
+        if (this.overclockBadge.visible)
         {
             bottom += OVERCLOCK_BADGE_GAP + OVERCLOCK_BADGE_HEIGHT;
         }

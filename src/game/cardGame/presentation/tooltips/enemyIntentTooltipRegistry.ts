@@ -27,7 +27,7 @@ export const resolveEnemyIntentTooltip = (
                         : `Deals ${step.amount ?? 0} damage to you.`,
                     'Enemy shield absorbs damage first.',
                     'Each extra attack you make this round ramps this damage.',
-                    'Enemies overclock after each energy refill — finish the fight before they spike.',
+                    `Each response adds +${GAME_RULES.enemyStrengthPerTurn} Overclock. Attack again only if you can drop them.`,
                 ],
             };
         case 'shield':

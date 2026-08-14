@@ -102,8 +102,8 @@ export class CardGameSession
     private player: PlayerState;
     private energy: number;
     private readonly maxEnergy: number;
-    /** Completed energy rounds — each one adds fight-long enemy attack. */
-    private completedEnergyRounds = 0;
+    /** Enemy responses completed — each one adds fight-long attack. */
+    private overclockStacks = 0;
     /** Original arrows for cards scrambled by redirect-hand this energy round. */
     private readonly handRedirectOriginals = new Map<string, {
         arrow: CardDirection;
@@ -192,6 +192,7 @@ export class CardGameSession
             getPlayer: () => this.getPlayer(),
             getEnemy: (instanceId) => this.getEnemy(instanceId),
             rampEnemyAction: (action) => this.rampEnemyAction(action),
+            tickEnemyOverclock: () => this.tickEnemyOverclock(),
             applySilenceTilesFromPassives: () =>
             {
                 const passives = this.getLivingCombatants().flatMap((entry) => entry.definition.passives);
@@ -344,7 +345,7 @@ export class CardGameSession
         return Math.max(0, this.getAttacksThisRound() - 1) * perAttack;
     }
 
-    /** Fight-long attack bonus: +N after each completed energy round. */
+    /** Fight-long attack bonus: +N after each enemy response. */
     getEnemyOverclock (): number
     {
         if (this.puzzleMode)
@@ -352,14 +353,36 @@ export class CardGameSession
             return 0;
         }
 
-        const perRound = Math.max(0, GAME_RULES.enemyStrengthPerRound ?? 0);
+        const perTurn = Math.max(0, GAME_RULES.enemyStrengthPerTurn ?? 0);
 
-        return this.completedEnergyRounds * perRound;
+        return this.overclockStacks * perTurn;
     }
 
-    getCompletedEnergyRounds (): number
+    getEnemyOverclockPerTurn (): number
     {
-        return this.completedEnergyRounds;
+        if (this.puzzleMode)
+        {
+            return 0;
+        }
+
+        return Math.max(0, GAME_RULES.enemyStrengthPerTurn ?? 0);
+    }
+
+    /** Overclock the next Attack will lock in after the enemy responds. */
+    getNextEnemyOverclock (): number
+    {
+        return this.getEnemyOverclock() + this.getEnemyOverclockPerTurn();
+    }
+
+    /** Called once after all enemies finish responding to a player Attack. */
+    tickEnemyOverclock (): void
+    {
+        if (this.puzzleMode || this.isPlayerDefeated() || this.isEnemyDefeated())
+        {
+            return;
+        }
+
+        this.overclockStacks += 1;
     }
 
     /** Applies intra-round ramp and fight-long overclock to enemy attack steps. */
@@ -1559,7 +1582,6 @@ export class CardGameSession
         this.clearHandRedirect();
         this.renewHand();
         this.resetEnergy();
-        this.completedEnergyRounds += 1;
         this.clearBattleModifiers();
 
         if (this.pendingHandRedirect)

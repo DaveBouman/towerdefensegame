@@ -4,6 +4,17 @@ import { getCardGameEnemyDefinitionOrThrow, type LoadedCardGameEnemyDefinition }
 import { initializeEnemyHitMitigation } from '../combat/combatTraits/mitigation';
 import type { EnemyCombatant, EnemyState } from './types';
 
+/** JSON median plus the global integrity bonus, then any fight multiplier. */
+export const getEnemyMedianHealth = (
+    definition: Pick<LoadedCardGameEnemyDefinition, 'maxHealth'>,
+    healthMultiplier = 1,
+): number =>
+{
+    const bonus = Math.max(0, GAME_RULES.enemyHealthBonus ?? 0);
+
+    return Math.max(1, (definition.maxHealth + bonus) * healthMultiplier);
+};
+
 /** Inclusive integrity band around a median given the configured variance. */
 export const getEnemyHealthRange = (
     median: number,
@@ -42,7 +53,7 @@ export const createEnemyState = (
     healthMultiplier = 1,
 ): EnemyState =>
 {
-    const median = Math.max(1, definition.maxHealth * healthMultiplier);
+    const median = getEnemyMedianHealth(definition, healthMultiplier);
     const maxHealth = rollEnemyMaxHealth(median);
 
     return {

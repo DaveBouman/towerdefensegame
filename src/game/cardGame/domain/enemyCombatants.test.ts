@@ -5,6 +5,7 @@ import { reseed } from '../../random/rng';
 import {
     createEnemyCombatant,
     getEnemyHealthRange,
+    getEnemyMedianHealth,
     rollEnemyMaxHealth,
 } from './enemyCombatants';
 
@@ -41,8 +42,10 @@ describe('enemyCombatants health variance', () =>
 
     it('applies the roll when creating a combatant', () =>
     {
-        const median = getDefaultCardGameEnemy().maxHealth;
+        const median = getEnemyMedianHealth(getDefaultCardGameEnemy());
         const { min, max } = getEnemyHealthRange(median);
+
+        expect(median).toBe(getDefaultCardGameEnemy().maxHealth + GAME_RULES.enemyHealthBonus);
 
         reseed(7);
         const combatant = createEnemyCombatant('enemy-0', GAME_RULES.defaultEnemyId);

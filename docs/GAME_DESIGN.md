@@ -187,16 +187,16 @@ Deploy → Attack (chain resolve, costs 1 energy) → Enemy responds → refill 
 
 The player turn is **escalating**: each Attack resolves the current board without clearing it, so later attacks chain through more cards. **The enemy responds after every attack.** The hand refills to full after each enemy response while you still have energy. Once all energy is spent, the board clears and you draw a fresh hand for the next round. Each Attack spends one **energy** (`energyPerTurn`, default 3); energy refills after the final enemy response of the round. The Dead Zone (dampen) field ticks down when the board clears at round end.
 
-**Risk/reward:** the first attack of an energy round is baseline, but every *extra* attack before energy refills ramps the enemy's incoming attack damage by `enemyDamageRampPerAttack` (default 4). Spending all your energy before the refill means facing a harder-hitting enemy on those later attacks. After each energy refill, enemies also **Overclock** (`enemyStrengthPerRound`, default +2 attack) for the rest of the fight — stalling makes later rounds spike.
+**Risk/reward:** the first attack of an energy round is baseline, but every *extra* attack before energy refills ramps the enemy's incoming attack damage by `enemyDamageRampPerAttack` (default 4). Spending all your energy before the refill means facing a harder-hitting enemy on those later attacks. After each enemy response, they also **Overclock** (`enemyStrengthPerTurn`, default +4 attack) for the rest of the fight — the chip shows current › next so spending another Attack is a visible tax. A second energy round already sits at +12.
 
 | Rule | Value | Config |
 |------|-------|--------|
 | Player HP | 80 | `gameRules.json` |
-| Enemy HP | JSON median ±10% per fight (`enemyHealthVariance`) | `gameRules.json`, `rollEnemyMaxHealth` |
+| Enemy HP | JSON median +40, then ±10% per fight | `gameRules.json` (`enemyHealthBonus`, `enemyHealthVariance`) |
 | Deck / hand | 20 / 8 | `gameRules.json` |
 | Energy (attacks) per turn | 3 | `gameRules.json` (`energyPerTurn`) |
 | Enemy damage ramp per extra attack | +4 | `gameRules.json` (`enemyDamageRampPerAttack`) |
-| Enemy overclock per energy round | +2 attack | `gameRules.json` (`enemyStrengthPerRound`) |
+| Enemy overclock per enemy response | +4 attack | `gameRules.json` (`enemyStrengthPerTurn`) |
 | Rerolls per floor | 3 | `gameRules.json` (`rerollsPerFloor`) |
 | Chain start column | 0 | `gameRules.json` |
 | Max chain steps | 24 | `gameRules.json` |
@@ -358,7 +358,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
-| 2026-08-13 | **Fight overclock.** After each energy refill, enemies gain +2 attack for the rest of the fight (`enemyStrengthPerRound`). Shown as an Overclock chip. First round is baseline — finish before the clock stacks. |
+| 2026-08-13 | **Enemy +40 integrity.** Every enemy median gains `enemyHealthBonus` (40) before the ±10% fight roll, so a first-round ~40 damage burst does not close the fight before Overclock matters. |
+| 2026-08-13 | **Fight overclock.** After each enemy response, enemies gain +4 attack for the rest of the fight (`enemyStrengthPerTurn`). Chip shows current › next from the opening (+0›+4). First hit is baseline; a second energy round already sits at +12. |
 | 2026-08-13 | **Enemy HP variance.** `enemies.json` `maxHealth` is a median. Each fight (and mid-battle spawn) rolls integrity ±10% via the seeded RNG (`enemyHealthVariance`). Bestiary shows the range. |
 | 2026-08-13 | **Copy catalog.** Player-facing labels live in `src/game/copy/strings.ts` — cards, enemies, body mods, map nodes, shop services, archetypes, passives, traits, and intents. JSON `label` fields are fallbacks; catalog wins. Swap `EN` when adding locales. |
 | 2026-08-13 | **Rad retheme.** The Poison card and status chip are now **Rad** (radioactive fumes). Miasma, Neurotoxin, Black Ichor, Venom Latch, and the Toxin lane keep their names. Internal id stays `poison`. |

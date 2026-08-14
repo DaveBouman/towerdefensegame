@@ -1,5 +1,5 @@
 import { poisonStatusNameLower } from '../copy/strings';
-import { getEnemyHealthRange } from '../cardGame/domain/enemyCombatants';
+import { getEnemyHealthRange, getEnemyMedianHealth } from '../cardGame/domain/enemyCombatants';
 import {
     CARD_GAME_ENEMY_DEFINITIONS,
     getCardGameEnemyDefinition,
@@ -223,7 +223,7 @@ const formatEnemyIntegrity = (median: number): string =>
 const buildDossierLines = (definition: LoadedCardGameEnemyDefinition): string[] =>
 {
     const lines: string[] = [
-        `Integrity ${formatEnemyIntegrity(definition.maxHealth)} · Atk ${definition.attackDamage} · Shield ${definition.shieldGain}`,
+        `Integrity ${formatEnemyIntegrity(getEnemyMedianHealth(definition))} · Atk ${definition.attackDamage} · Shield ${definition.shieldGain}`,
         `Attack bias ${Math.round(definition.attackChance * 100)}% · Traps/turn ${definition.hazardsPerTurn}`,
     ];
 

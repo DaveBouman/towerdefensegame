@@ -400,6 +400,7 @@ export class Game extends Scene
                 this.emitAttackReadiness();
             },
         );
+        this.enemySquad.syncFromSession(this.session);
         this.battleModifierView = new BattleModifierStatusView(
             this,
             layout,

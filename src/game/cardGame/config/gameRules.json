@@ -5,8 +5,9 @@
   "handSize": 8,
   "energyPerTurn": 3,
   "enemyDamageRampPerAttack": 4,
-  "enemyStrengthPerRound": 2,
+  "enemyStrengthPerTurn": 4,
   "enemyHealthVariance": 0.1,
+  "enemyHealthBonus": 40,
   "rerollsPerFloor": 3,
   "player": {
     "maxHealth": 80
