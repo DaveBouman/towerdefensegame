@@ -181,7 +181,7 @@ const EN = {
     'settings.resolution.windowHint': 'Fixed sizes lock the window. Options above your monitor are hidden; Adaptive letterboxes on ultrawide.',
     'settings.resolution.fullscreenHint': 'Exit fullscreen to change window size.',
     'settings.cursor.label': 'Cursor color',
-    'settings.cursor.hint': 'Cyberpunk triangle cursor color for menus and combat.',
+    'settings.cursor.hint': 'Idle is an outlined triangle. Hovering clickable UI adds chrome corner brackets.',
 } as const;
 
 export type CopyKey = keyof typeof EN;

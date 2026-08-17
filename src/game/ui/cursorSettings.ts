@@ -13,6 +13,8 @@ export type GameCursorUrls = {
 
 const STORAGE_KEY = 'signal-chain-cursor-color';
 const CURSOR_SIZE = 32;
+const TIP_X = 5;
+const TIP_Y = 5;
 
 export const CURSOR_COLORS: readonly CursorColor[] = [ 'blue', 'purple', 'green' ];
 
@@ -99,9 +101,9 @@ const drawTriangle = (
 {
     context.clearRect(0, 0, CURSOR_SIZE, CURSOR_SIZE);
     context.beginPath();
-    context.moveTo(1, 1);
-    context.lineTo(1, 26);
-    context.lineTo(20, 18);
+    context.moveTo(TIP_X, TIP_Y);
+    context.lineTo(TIP_X, TIP_Y + 18);
+    context.lineTo(TIP_X + 14, TIP_Y + 12);
     context.closePath();
     context.fillStyle = fill;
     context.fill();
@@ -112,12 +114,36 @@ const drawTriangle = (
     }
 
     context.beginPath();
-    context.moveTo(4, 5);
-    context.lineTo(4, 22);
-    context.lineTo(16, 17);
+    context.moveTo(TIP_X + 3, TIP_Y + 4);
+    context.lineTo(TIP_X + 3, TIP_Y + 15);
+    context.lineTo(TIP_X + 11, TIP_Y + 11);
     context.closePath();
     context.fillStyle = inner;
     context.fill();
+};
+
+const drawCursorBrackets = (context: CanvasRenderingContext2D, color: string): void =>
+{
+    const thickness = 2;
+    const arm = 5;
+    const left = 1;
+    const top = 1;
+    const right = 24;
+    const bottom = 28;
+
+    context.fillStyle = color;
+
+    context.fillRect(left, top, arm, thickness);
+    context.fillRect(left, top, thickness, arm);
+
+    context.fillRect(right - arm, top, arm, thickness);
+    context.fillRect(right - thickness, top, thickness, arm);
+
+    context.fillRect(right - arm, bottom - thickness, arm, thickness);
+    context.fillRect(right - thickness, bottom - arm, thickness, arm);
+
+    context.fillRect(left, bottom - thickness, arm, thickness);
+    context.fillRect(left, bottom - arm, thickness, arm);
 };
 
 const fileCursorFallback = (color: CursorColor): GameCursorUrls =>
@@ -125,12 +151,12 @@ const fileCursorFallback = (color: CursorColor): GameCursorUrls =>
     const base = `./assets/ui/cursors/${color}`;
 
     return {
-        default: `url('${base}/default.svg') 1 1, auto`,
-        pointer: `url('${base}/default.svg') 1 1, auto`,
-        grab: `url('${base}/default.svg') 1 1, auto`,
-        grabbing: `url('${base}/grabbing.svg') 1 1, auto`,
+        default: `url('${base}/default.svg') 5 5, auto`,
+        pointer: `url('${base}/pointer.svg') 5 5, auto`,
+        grab: `url('${base}/pointer.svg') 5 5, auto`,
+        grabbing: `url('${base}/pointer.svg') 5 5, auto`,
         text: `url('${base}/text.svg') 12 12, text`,
-        notAllowed: `url('./assets/ui/cursors/not-allowed.svg') 1 1, not-allowed`,
+        notAllowed: `url('./assets/ui/cursors/not-allowed.svg') 5 5, not-allowed`,
     };
 };
 
@@ -147,10 +173,11 @@ export const buildCursorUrls = (color: CursorColor): GameCursorUrls =>
     const accent = ACCENT[color];
 
     drawTriangle(context, accent, INNER);
-    const triangle = toCursorValue(context, 1, 1, 'auto');
+    const idle = toCursorValue(context, TIP_X, TIP_Y, 'auto');
 
-    drawTriangle(context, accent, null);
-    const grabbing = toCursorValue(context, 1, 1, 'auto');
+    drawTriangle(context, accent, INNER);
+    drawCursorBrackets(context, accent);
+    const pointer = toCursorValue(context, TIP_X, TIP_Y, 'auto');
 
     context.clearRect(0, 0, CURSOR_SIZE, CURSOR_SIZE);
     context.strokeStyle = accent;
@@ -171,16 +198,16 @@ export const buildCursorUrls = (color: CursorColor): GameCursorUrls =>
     context.lineWidth = 2;
     context.lineCap = 'square';
     context.beginPath();
-    context.moveTo(6, 8);
-    context.lineTo(18, 20);
+    context.moveTo(TIP_X + 2, TIP_Y + 5);
+    context.lineTo(TIP_X + 12, TIP_Y + 14);
     context.stroke();
-    const notAllowed = toCursorValue(context, 1, 1, 'not-allowed');
+    const notAllowed = toCursorValue(context, TIP_X, TIP_Y, 'not-allowed');
 
     return {
-        default: triangle,
-        pointer: triangle,
-        grab: triangle,
-        grabbing,
+        default: idle,
+        pointer,
+        grab: pointer,
+        grabbing: pointer,
         text,
         notAllowed,
     };
