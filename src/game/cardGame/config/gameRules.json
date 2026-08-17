@@ -43,7 +43,7 @@
   "chainAbilities": {
     "poisonTrail": {
       "damagePerSubsequentCard": 1,
-      "damagePerStack": 1
+      "damagePerStack": 4
     },
     "fireAlternation": {
       "bonusDamagePerAlternatingStep": 3

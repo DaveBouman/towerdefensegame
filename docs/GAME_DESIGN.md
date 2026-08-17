@@ -217,7 +217,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 |--------|-------|-----------------|
 | Chain routing | `AttackPipeline.ts`, `cardDirections.ts` | Arrow pools, leap (2-tile), corner-turn (`cornerTurn` — hooks to a forward-diagonal, `getCornerNextSlot`), edge-wrap (`wrapEdges` — **Phase Relay** / **Phase Bulwark** continue on the opposite board edge). Loop-reset exists in code but is **disabled** (not in starter deck, rewards, or puzzles). |
 | Rad trail | `poisonTrailAbility.ts` | Converts subsequent defends to **rad stacks** on the enemy (radioactive fumes) |
-| Rad stacks (status) | `CardGameSession.tickPoison` | Enemy takes `stacks × 1` damage at the start of each of its turns (ignores shield), then stacks decay by 1 (`gameRules.chainAbilities.poisonTrail.damagePerStack`) |
+| Rad stacks (status) | `CardGameSession.tickPoison` | Enemy takes `stacks × 4` damage at the start of each of its turns (ignores shield), then stacks decay by 1 (`gameRules.chainAbilities.poisonTrail.damagePerStack`) |
 | Fire alternation | `fireAlternationAbility.ts` | +3 damage per alternating attack/defend after fire |
 | Bleed (Rupture / Shiv / Lacerate) | `bleedAbility.ts` | +2 damage per attack in the chain beyond 2 (rewards attack-heavy chains) |
 | Fortify (Bulwark / Bramble) | `fortifyAbility.ts` | +2 armor per defend in the chain beyond 2 (rewards defend-heavy chains) |
@@ -367,7 +367,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | Date | Change |
 |------|--------|
 | 2026-08-17 | **Chain-step pacing on cards.** `getChainStepMs` reads optional `chainStepMsMultiplier` on the card, then `gameRules.chainStepMsByBehavior`, then 1.0. New/modded cards no longer need a TS switch in combat juice. |
-| 2026-08-17 | **Rad tick 1.** Each rad stack deals 1 damage at the start of the enemy turn, then decays by 1. |
+| 2026-08-17 | **Rad tick 4.** Each rad stack deals 4 damage at the start of the enemy turn, then decays by 1. |
 | 2026-08-17 | **Hardwire / battle-mod icons.** Hardwire, Glitch, Patch, and Overclock now show kind icons (Hardwire uses the defend glyph). Reroute swaps its `?` for the chosen arrow when it resolves. |
 | 2026-08-17 | **Player Thorns card.** Reward card grants 1 thorn (2 upgraded) for the energy round. Enemy attacks that hit you reflect that damage at the attacker; Boost multiplies the grant; Echo replays it. HUD shows the pool under the runner. |
 | 2026-08-17 | **Clickable cursor brackets.** Hover/clickable corner ticks sit tighter on the pointer triangle. |
