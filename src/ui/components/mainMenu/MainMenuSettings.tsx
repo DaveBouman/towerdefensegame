@@ -7,7 +7,7 @@ import {
     setSfxMuted,
     setSfxVolume,
 } from '../../../game/audio/gameAudio';
-import { isDocumentFullscreen, setGameFullscreen } from '../../../game/desktop/desktopBridge';
+import { setGameFullscreen } from '../../../game/desktop/desktopBridge';
 import {
     isSteamBridgeAvailable,
     readSteamFacesEnabled,
@@ -148,10 +148,7 @@ export const MainMenuSettings = ({
                             onClick={() =>
                             {
                                 emitRunSfx('ui-click', { volume: 0.68 });
-                                void setGameFullscreen(!fullscreen).then(() =>
-                                {
-                                    onFullscreenChange(isDocumentFullscreen());
-                                });
+                                void setGameFullscreen(!fullscreen).then(onFullscreenChange);
                             }}
                         >
                             {fullscreen ? 'Fullscreen on' : 'Fullscreen off'}

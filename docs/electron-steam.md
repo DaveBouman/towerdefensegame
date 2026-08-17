@@ -1,6 +1,31 @@
 # Desktop release (Electron) and Steam
 
-This project is a web game (Vite + Phaser + React). Shipping on Steam is typically done by wrapping the production build in an Electron shell and integrating Steamworks from the **main process**.
+This project is a web game (Vite + Phaser + React). Shipping on Steam is done by wrapping the production build in the Electron shell under `electron/` and integrating Steamworks from the **main process**.
+
+## Quick start (desktop)
+
+```bash
+# Production build + launch Electron (loads dist/index.html)
+npm run electron:start
+
+# Dev: run Vite in one terminal, Electron in another
+npm run dev-nolog
+npm run electron:dev
+
+# Windows installer (after `npm run build`)
+npm run dist:win
+```
+
+Installers land in `release/`. Vite already uses `base: './'`, so relative asset paths work under `file://`.
+
+### Steam dev setup
+
+1. Copy `steam_appid.txt.example` → `steam_appid.txt` (480 = Spacewar test app, or your real App ID).
+2. Install optional native dep: `npm install steamworks.js` (also listed in `optionalDependencies`).
+3. Launch Steam client, then `npm run electron:start`.
+4. Settings → **Steam → Steam portraits** should enable your runner avatar when init succeeds.
+
+Friend avatars for enemies still need `ISteamFriends` support in steamworks.js ([upstream issue](https://github.com/ceifa/steamworks.js/issues/169)); until then enemies use Craftpix portraits.
 
 ## Build for production
 
@@ -8,7 +33,7 @@ This project is a web game (Vite + Phaser + React). Shipping on Steam is typical
 npm run build
 ```
 
-Serve the `dist/` output from a static file server, or load `dist/index.html` from Electron with a `file://` or custom protocol URL (adjust Vite `base` if assets break under `file://`).
+Serve the `dist/` output from a static file server, or load it from Electron via the registered `app://` protocol (see `electron/main.cjs`). The production build uses Vite `base: './'`; the custom protocol avoids `file://` quirks with Phaser audio loading.
 
 ## Main menu contracts (already in game)
 
@@ -25,25 +50,7 @@ The React main menu is Steam/desktop-ready:
 | **Credits** | Attribution |
 | **Quit** | Calls `window.signalChainDesktop.quit()` when present; otherwise `window.close()` |
 
-Inject this preload API from Electron (do **not** enable `nodeIntegration` in the renderer):
-
-```js
-// preload.cjs
-const { contextBridge, ipcRenderer } = require('electron');
-
-contextBridge.exposeInMainWorld('signalChainDesktop', {
-  quit: () => ipcRenderer.send('app:quit'),
-  setFullscreen: (enabled) => ipcRenderer.send('app:fullscreen', enabled),
-  getFullscreen: () => ipcRenderer.invoke('app:get-fullscreen'),
-  openExternal: (url) => ipcRenderer.send('app:open-external', url),
-  platform: process.platform,
-  steam: {
-    isAvailable: () => ipcRenderer.invoke('steam:available'),
-    getLocalPersona: () => ipcRenderer.invoke('steam:local-persona'),
-    getFriends: () => ipcRenderer.invoke('steam:friends'),
-  },
-});
-```
+Inject this preload API from Electron (do **not** enable `nodeIntegration` in the renderer). Implemented in `electron/preload.cjs` + `electron/main.cjs`:
 
 Game-side types live in `src/game/desktop/desktopBridge.ts`. Product title/version: `src/game/meta/gameMeta.ts`.
 
@@ -89,10 +96,10 @@ Settings → **Steam → Steam portraits** toggles this (on by default; stored i
 
 ## Suggested packaging order
 
-1. Electron shell that loads `dist/` and implements `signalChainDesktop`.
-2. Installer (e.g. electron-builder) for Windows first.
-3. Steam depot upload + overlay smoke test.
-4. Steamworks achievements / cloud (optional Phase 3).
+1. ~~Electron shell that loads `dist/` and implements `signalChainDesktop`.~~ **Done** — `electron/main.cjs`, `electron/preload.cjs`, npm scripts.
+2. ~~Installer (electron-builder) for Windows first.~~ **Done** — `npm run dist:win` (also mac/linux targets).
+3. Steam depot upload + overlay smoke test (manual — partner account + App ID).
+4. Steamworks friends IPC + achievements / cloud (optional Phase 3).
 
 ## Why Chrome in the browser can feel slower than Firefox
 

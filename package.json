@@ -21,11 +21,18 @@
     "vite",
     "typescript"
   ],
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "node log.js dev & vite --config vite/config.dev.mjs",
     "build": "node log.js build & vite build --config vite/config.prod.mjs",
     "dev-nolog": "vite --config vite/config.dev.mjs",
     "build-nolog": "vite build --config vite/config.prod.mjs",
+    "electron:start": "npm run build-nolog && electron .",
+    "electron:dev": "electron . --dev",
+    "electron:pack": "npm run build-nolog && electron-builder",
+    "dist:win": "npm run build-nolog && electron-builder --win",
+    "dist:mac": "npm run build-nolog && electron-builder --mac",
+    "dist:linux": "npm run build-nolog && electron-builder --linux",
     "test": "vitest run",
     "test:watch": "vitest",
     "generate-sfx": "node scripts/generate-sfx.mjs",
@@ -38,7 +45,12 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
+  "optionalDependencies": {
+    "steamworks.js": "^0.4.0"
+  },
   "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8",
     "@fontsource/orbitron": "^5.3.0",
     "@fontsource/rajdhani": "^5.3.0",
     "@fontsource/share-tech-mono": "^5.3.0",
@@ -56,5 +68,39 @@
     "typescript-eslint": "^8.26.1",
     "vite": "^6.3.1",
     "vitest": "^3.2.4"
+  },
+  "build": {
+    "appId": "com.signalchain.game",
+    "productName": "Signal Chain",
+    "copyright": "Copyright © Signal Chain",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.games"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }

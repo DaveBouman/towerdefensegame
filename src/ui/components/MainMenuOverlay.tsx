@@ -7,7 +7,8 @@ import {
 import type { AudioSettings } from '../../game/audio/audioSettings';
 import {
     isDesktopShell,
-    isDocumentFullscreen,
+    readGameFullscreen,
+    subscribeGameFullscreen,
 } from '../../game/desktop/desktopBridge';
 import { GAME_BUILD_LABEL, GAME_VERSION } from '../../game/meta/gameMeta';
 import { getCollectionProgress } from '../../game/run/cardCollection';
@@ -62,7 +63,7 @@ export const MainMenuOverlay = ({
     const [ progress, setProgress ] = useState(getCollectionProgress);
     const [ bestiaryProgress, setBestiaryProgress ] = useState(getBestiaryProgress);
     const [ bodyModProgress, setBodyModProgress ] = useState(getBodyModBestiaryProgress);
-    const [ fullscreen, setFullscreen ] = useState(isDocumentFullscreen);
+    const [ fullscreen, setFullscreen ] = useState(false);
     const [ textScale, setTextScaleState ] = useState<TextScaleSize>(readTextScale);
     const [ tutorialArmed, setTutorialArmed ] = useState(false);
     const desktop = isDesktopShell();
@@ -95,11 +96,9 @@ export const MainMenuOverlay = ({
 
     useEffect(() =>
     {
-        const onFullscreenChange = (): void => setFullscreen(isDocumentFullscreen());
+        void readGameFullscreen().then(setFullscreen);
 
-        document.addEventListener('fullscreenchange', onFullscreenChange);
-
-        return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+        return subscribeGameFullscreen(setFullscreen);
     }, []);
 
     useEffect(() =>

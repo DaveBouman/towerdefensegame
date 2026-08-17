@@ -305,7 +305,7 @@ remain as a fallback if a portrait fails to load.
 - [x] Steam-ready main menu shell (settings / how-to-play / credits / quit + `signalChainDesktop` bridge)
 - [ ] Daily/weekly seeded challenge
 - [ ] Ascension modifiers (+enemy HP, −rerolls, faster enemy turns)
-- [ ] Electron packaging + Steamworks (see `docs/electron-steam.md`) — game already consumes Steam personas when the shell provides them (`steamAvatars.ts`)
+- [x] Electron packaging + Steamworks shell (see `docs/electron-steam.md`) — `electron/main.cjs`, electron-builder installers, local Steam persona IPC; friend avatars pending steamworks.js friends API
 
 ### Body mod design backlog (hard but high-impact)
 
@@ -343,7 +343,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | Persistent run deck | `getDefaultDeckDefinitionIds` / `buildDeckFromDefinitionIds` in `buildPlayerDeck.ts` (neutral starter; specialties from rewards) |
 | Map / run visuals | `src/ui/components/MainMenuOverlay.tsx`, `RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`, `ShopOverlay.tsx`; `.main-menu*` / `.run-map*` / `.run-end*` / `.card-reward*` / `.shop-overlay*` in `public/style.css` |
 | Look / neon palette | Magenta + amber chrome, warm near-black, cyan as a data accent. Tokens: `public/cyberpunk-theme.css`, Phaser `src/game/config/cyberpunkTheme.ts`. Combat arena: `BattlefieldBackgroundView.ts`. Map: `MapBackgroundView.ts`. |
-| Steam avatars | `src/game/desktop/steamAvatars.ts` + `signalChainDesktop.steam`. Web: Craftpix. Packaged Steam: your face on the runner, friends on enemies. |
+| Steam avatars | `src/game/desktop/steamAvatars.ts` + `signalChainDesktop.steam`. Web: Craftpix. Packaged: runner avatar via `electron/steam.cjs`; enemies need friends IPC. |
+| Desktop shell | `electron/main.cjs`, `electron/preload.cjs`, `npm run electron:start`, `npm run dist:win` |
 | First-run teaching | `src/ui/tutorial/Tutorial.tsx` |
 | Floor helpers / per-floor rerolls | `runMap.ts` floors; `App.tsx` `floorRerollsRemaining`; `START_BATTLE.rerollsRemaining` |
 | Run flow (phases, carry-over HP, deck, rewards) | `src/App.tsx` |
@@ -364,6 +365,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-17 | **Electron desktop shell.** `electron/` loads `dist/`, exposes `signalChainDesktop` (quit, fullscreen, external links, Steam IPC). electron-builder scripts for Windows/macOS/Linux. Local runner avatar via steamworks.js; friend portraits still Craftpix until upstream friends API lands. |
 | 2026-08-13 | **Enemy +40 integrity.** Every enemy median gains `enemyHealthBonus` (40) before the ±10% fight roll, so a first-round ~40 damage burst does not close the fight before Overclock matters. |
 | 2026-08-13 | **Fight overclock.** After each enemy response, enemies gain +4 attack for the rest of the fight (`enemyStrengthPerTurn`). Chip shows current › next from the opening (+0›+4). First hit is baseline; a second energy round already sits at +12. |
 | 2026-08-13 | **Enemy HP variance.** `enemies.json` `maxHealth` is a median. Each fight (and mid-battle spawn) rolls integrity ±10% via the seeded RNG (`enemyHealthVariance`). Bestiary shows the range. |

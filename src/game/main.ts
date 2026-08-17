@@ -1,4 +1,5 @@
 import { Game as MainGame } from './scenes/Game';
+import { isDesktopShell } from './desktop/desktopBridge';
 import { AUTO, Game, Scale } from 'phaser';
 
 const readParentSize = (parent: HTMLElement | string): { width: number; height: number } =>
@@ -34,6 +35,12 @@ const config: Phaser.Types.Core.GameConfig = {
         roundPixels: false,
         powerPreference: 'high-performance',
     },
+    ...(isDesktopShell()
+        ? {
+            // HTML5 audio is more reliable than Web Audio under Electron packaging.
+            audio: { disableWebAudio: true },
+        }
+        : {}),
 };
 
 const StartGame = (parent: HTMLElement | string) =>

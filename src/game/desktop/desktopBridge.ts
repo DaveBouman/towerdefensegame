@@ -16,10 +16,13 @@ export interface SignalChainSteamApi {
     getFriends?: () => SteamPersona[] | Promise<SteamPersona[]>;
 }
 
+export type FullscreenChangeListener = (enabled: boolean) => void;
+
 export interface SignalChainDesktopApi {
     quit: () => void;
     setFullscreen?: (enabled: boolean) => void;
     getFullscreen?: () => boolean | Promise<boolean>;
+    onFullscreenChange?: (listener: FullscreenChangeListener) => (() => void);
     openExternal?: (url: string) => void;
     platform?: 'win32' | 'darwin' | 'linux' | string;
     steam?: SignalChainSteamApi;
@@ -60,14 +63,44 @@ export const quitGame = (): void =>
 export const isDocumentFullscreen = (): boolean =>
     Boolean(document.fullscreenElement);
 
-export const setGameFullscreen = async (enabled: boolean): Promise<void> =>
+/** Fullscreen state for menus — uses Electron window state when packaged. */
+export const readGameFullscreen = async (): Promise<boolean> =>
+{
+    const desktop = getDesktopApi();
+
+    if (desktop?.getFullscreen)
+    {
+        return Boolean(await desktop.getFullscreen());
+    }
+
+    return isDocumentFullscreen();
+};
+
+export const subscribeGameFullscreen = (listener: FullscreenChangeListener): (() => void) =>
+{
+    const desktop = getDesktopApi();
+
+    if (desktop?.onFullscreenChange)
+    {
+        return desktop.onFullscreenChange(listener);
+    }
+
+    const onChange = (): void => listener(isDocumentFullscreen());
+
+    document.addEventListener('fullscreenchange', onChange);
+
+    return () => document.removeEventListener('fullscreenchange', onChange);
+};
+
+export const setGameFullscreen = async (enabled: boolean): Promise<boolean> =>
 {
     const desktop = getDesktopApi();
 
     if (desktop?.setFullscreen)
     {
         desktop.setFullscreen(enabled);
-        return;
+
+        return readGameFullscreen();
     }
 
     try
@@ -75,10 +108,8 @@ export const setGameFullscreen = async (enabled: boolean): Promise<void> =>
         if (enabled && !document.fullscreenElement)
         {
             await document.documentElement.requestFullscreen();
-            return;
         }
-
-        if (!enabled && document.fullscreenElement)
+        else if (!enabled && document.fullscreenElement)
         {
             await document.exitFullscreen();
         }
@@ -87,4 +118,6 @@ export const setGameFullscreen = async (enabled: boolean): Promise<void> =>
     {
         /* Browser blocked fullscreen without a gesture / unsupported. */
     }
+
+    return isDocumentFullscreen();
 };
