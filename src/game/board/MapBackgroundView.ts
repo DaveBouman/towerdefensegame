@@ -29,7 +29,7 @@ export class MapBackgroundView
         this.mapBlips = scene.add.graphics();
         this.ambientGlow = scene.add.graphics();
         this.mapFrame = scene.add.graphics();
-        this.scanBand = scene.add.rectangle(0, 0, 4, 4, CYBER.cyan, 0.04);
+        this.scanBand = scene.add.rectangle(0, 0, 4, 4, CYBER.magenta, 0.05);
         this.scanBand.setOrigin(0.5, 0);
         this.scanBand.setBlendMode(BlendModes.ADD);
         this.packetLayer = scene.add.container(0, 0);
@@ -83,20 +83,20 @@ export class MapBackgroundView
     {
         this.base.clear();
 
-        this.base.fillStyle(0x070e18, 1);
+        this.base.fillStyle(0x0a0810, 1);
         this.base.fillRect(0, 0, width, height);
 
         // Path ahead glows slightly (left = past, right = route forward).
-        this.base.fillStyle(0x0e1828, 0.75);
+        this.base.fillStyle(0x140c14, 0.75);
         this.base.fillRect(0, 0, width * 0.45, height);
 
-        this.base.fillStyle(0x102030, 0.6);
+        this.base.fillStyle(0x12100c, 0.65);
         this.base.fillRect(width * 0.45, 0, width * 0.55, height);
 
-        this.base.fillStyle(CYBER.green, 0.035);
+        this.base.fillStyle(CYBER.gold, 0.04);
         this.base.fillEllipse(width * 0.72, height * 0.5, width * 0.55, height * 0.65);
 
-        this.base.fillStyle(0x1a3050, 0.05);
+        this.base.fillStyle(CYBER.magenta, 0.05);
         this.base.fillEllipse(width * 0.2, height * 0.55, width * 0.35, height * 0.5);
 
         this.drawVignette(this.base, width, height);
@@ -143,12 +143,12 @@ export class MapBackgroundView
                 );
                 const alpha = 0.04 + edgeFade * 0.07;
 
-                this.dotGrid.fillStyle(CYBER.cyan, alpha * 0.7);
+                this.dotGrid.fillStyle(CYBER.magenta, alpha * 0.75);
                 this.dotGrid.fillCircle(x, y, 1);
 
                 if (col % 4 === 0 && row % 4 === 0)
                 {
-                    this.dotGrid.fillStyle(CYBER.green, alpha * 0.55);
+                    this.dotGrid.fillStyle(CYBER.gold, alpha * 0.6);
                     this.dotGrid.fillCircle(x, y, 1.5);
                 }
             }
@@ -168,7 +168,7 @@ export class MapBackgroundView
             const x = pad(seed, 0.08, 0.92) * width;
             const y = pad(seed + 1, 0.18, 0.82) * height;
             const alpha = 0.05 + pseudo(seed + 2) * 0.08;
-            const color = pseudo(seed + 3) > 0.55 ? CYBER.green : 0x4a6a8a;
+            const color = pseudo(seed + 3) > 0.55 ? CYBER.gold : CYBER.magenta;
             const arm = 2 + pseudo(seed + 4) * 2;
 
             this.mapBlips.lineStyle(1, color, alpha);
@@ -191,10 +191,10 @@ export class MapBackgroundView
     {
         this.ambientGlow.clear();
 
-        this.ambientGlow.fillStyle(CYBER.green, 0.05);
+        this.ambientGlow.fillStyle(CYBER.gold, 0.055);
         this.ambientGlow.fillEllipse(width * 0.58, height * 0.5, width * 0.38, height * 0.28);
 
-        this.ambientGlow.fillStyle(CYBER.cyan, 0.03);
+        this.ambientGlow.fillStyle(CYBER.magenta, 0.04);
         this.ambientGlow.fillEllipse(width * 0.35, height * 0.48, width * 0.22, height * 0.18);
     }
 
@@ -214,7 +214,7 @@ export class MapBackgroundView
             const seed = i * 92821 + width;
             const y = top + pseudo(seed) * (bottom - top);
             const size = 1.5 + pseudo(seed + 1) * 2;
-            const color = pseudo(seed + 2) > 0.45 ? CYBER.cyan : CYBER.green;
+            const color = pseudo(seed + 2) > 0.45 ? CYBER.magenta : CYBER.gold;
             const dot = this.scene.add.circle(0, y, size, color, 0.35 + pseudo(seed + 3) * 0.3);
 
             dot.setBlendMode(BlendModes.ADD);
@@ -250,13 +250,13 @@ export class MapBackgroundView
         const frameW = width - insetX * 2;
         const frameH = height - insetY * 2;
 
-        drawCornerBrackets(this.mapFrame, insetX, insetY, frameW, frameH, CYBER.cyan, {
+        drawCornerBrackets(this.mapFrame, insetX, insetY, frameW, frameH, CYBER.magenta, {
             arm: Math.min(28, Math.round(Math.min(frameW, frameH) * 0.06)),
             lineWidth: 1,
-            alpha: 0.22,
+            alpha: 0.28,
         });
 
-        this.mapFrame.lineStyle(1, CYBER.cyan, 0.1);
+        this.mapFrame.lineStyle(1, CYBER.magenta, 0.12);
         this.mapFrame.strokeRect(insetX, insetY, frameW, frameH);
 
         const tickCount = 10;
@@ -267,7 +267,7 @@ export class MapBackgroundView
             const tx = insetX + frameW * t;
             const ty = insetY + frameH * t;
 
-            this.mapFrame.lineStyle(1, CYBER.cyan, 0.05);
+            this.mapFrame.lineStyle(1, CYBER.gold, 0.08);
             this.mapFrame.beginPath();
             this.mapFrame.moveTo(tx, insetY);
             this.mapFrame.lineTo(tx, insetY + 6);

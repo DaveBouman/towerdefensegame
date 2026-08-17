@@ -143,7 +143,8 @@ index.html → src/main.tsx → App.tsx (run shell)
   ├── BodyModBestiaryOverlay.tsx (unlocked / locked body mod archive; uses ArchiveOverlay)
   ├── ArchiveOverlay.tsx      (shared archive shell + filter UX)
   ├── CyberPanel.tsx          (CyberPanelChrome, ModalShell, CyberOverlay)
-  ├── desktopBridge.ts      (`window.signalChainDesktop` quit/fullscreen hooks for Electron)
+  ├── desktopBridge.ts      (`window.signalChainDesktop` quit/fullscreen/Steam persona hooks for Electron)
+  ├── steamAvatars.ts       (optional Steam faces: your portrait on the runner, friends on enemies)
   ├── GameHud.tsx           (battle phase)
   ├── Tutorial.tsx          (first-run intro / coach / tip)
   ├── RunMapOverlay.tsx     (map phase; node icons + tooltips + floor/rerolls)
@@ -304,7 +305,7 @@ remain as a fallback if a portrait fails to load.
 - [x] Steam-ready main menu shell (settings / how-to-play / credits / quit + `signalChainDesktop` bridge)
 - [ ] Daily/weekly seeded challenge
 - [ ] Ascension modifiers (+enemy HP, −rerolls, faster enemy turns)
-- [ ] Electron packaging + Steamworks (see `docs/electron-steam.md`)
+- [ ] Electron packaging + Steamworks (see `docs/electron-steam.md`) — game already consumes Steam personas when the shell provides them (`steamAvatars.ts`)
 
 ### Body mod design backlog (hard but high-impact)
 
@@ -341,6 +342,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | Body mods (stats + playstyle) | `src/game/run/bodyMods.ts` — Mark V/VII (interval double damage), **Portside Gyro** (left arrows +30% damage), **Capacitor Bank** (every 3rd in-chain Defend → next Attack +50%), Venom Latch / Razor Feed / etc.; combat hooks in `CombatResolver.ts` |
 | Persistent run deck | `getDefaultDeckDefinitionIds` / `buildDeckFromDefinitionIds` in `buildPlayerDeck.ts` (neutral starter; specialties from rewards) |
 | Map / run visuals | `src/ui/components/MainMenuOverlay.tsx`, `RunMapOverlay.tsx`, `RunEndOverlay.tsx`, `CardRewardOverlay.tsx`, `ShopOverlay.tsx`; `.main-menu*` / `.run-map*` / `.run-end*` / `.card-reward*` / `.shop-overlay*` in `public/style.css` |
+| Look / neon palette | Magenta + amber chrome, warm near-black, cyan as a data accent. Tokens: `public/cyberpunk-theme.css`, Phaser `src/game/config/cyberpunkTheme.ts`. Combat arena: `BattlefieldBackgroundView.ts`. Map: `MapBackgroundView.ts`. |
+| Steam avatars | `src/game/desktop/steamAvatars.ts` + `signalChainDesktop.steam`. Web: Craftpix. Packaged Steam: your face on the runner, friends on enemies. |
 | First-run teaching | `src/ui/tutorial/Tutorial.tsx` |
 | Floor helpers / per-floor rerolls | `runMap.ts` floors; `App.tsx` `floorRerollsRemaining`; `START_BATTLE.rerollsRemaining` |
 | Run flow (phases, carry-over HP, deck, rewards) | `src/App.tsx` |
@@ -365,6 +368,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | 2026-08-13 | **Fight overclock.** After each enemy response, enemies gain +4 attack for the rest of the fight (`enemyStrengthPerTurn`). Chip shows current › next from the opening (+0›+4). First hit is baseline; a second energy round already sits at +12. |
 | 2026-08-13 | **Enemy HP variance.** `enemies.json` `maxHealth` is a median. Each fight (and mid-battle spawn) rolls integrity ±10% via the seeded RNG (`enemyHealthVariance`). Bestiary shows the range. |
 | 2026-08-13 | **Copy catalog.** Player-facing labels live in `src/game/copy/strings.ts` — cards, enemies, body mods, map nodes, shop services, archetypes, passives, traits, and intents. JSON `label` fields are fallbacks; catalog wins. Swap `EN` when adding locales. |
+| 2026-08-17 | **Steam street faces.** Desktop shell can feed Steam personas through `signalChainDesktop.steam`. Runner uses your avatar; enemies use friends (Craftpix fallback). Settings toggle; visual-only. |
+| 2026-08-17 | **Night City palette.** UI and canvas shift off the ice-blue wash: warm near-black, magenta chrome, amber sodium, cyan only as a data accent. Combat arena and route-map backdrops match. |
 | 2026-08-17 | **Floor 1 is the whole board.** Lieutenant no longer triggers a Floor 2 banner. Extra floors stay future work (separate maps after Warden). Rerolls refill once after the lieutenant. Body mods sit in the map header; in-fight panel is compact so it no longer covers the runner HUD. |
 | 2026-08-17 | **Wipe ends the attack immediately.** When the last enemy dies mid-chain, leftover traps/curses/siphon and other end-of-chain beats are skipped — victory fires without bombs detonating. |
 | 2026-08-17 | **Session/scene depth peels.** `CardGameSession` delegates squad/targeting to `EnemySquadManager`, energy/round refresh to `EnergyRoundController`, and Signal Twist to `HandRedirectController`. `Game.ts` attack resolve, board/hand drops, and pile/HUD sync live in `battleAttackFlow.ts` / `battleInputHandlers.ts` / `battleUiSync.ts`. |

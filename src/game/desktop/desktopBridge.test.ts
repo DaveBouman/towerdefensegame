@@ -56,4 +56,20 @@ describe('desktopBridge', () =>
         await setGameFullscreen(true);
         expect(setFullscreen).toHaveBeenCalledWith(true);
     });
+
+    it('treats Steam as optional on the desktop API', () =>
+    {
+        window.signalChainDesktop = { quit: vi.fn() };
+        expect(window.signalChainDesktop.steam).toBeUndefined();
+
+        window.signalChainDesktop = {
+            quit: vi.fn(),
+            steam: {
+                isAvailable: () => true,
+                getLocalPersona: () => null,
+                getFriends: () => [],
+            },
+        };
+        expect(window.signalChainDesktop.steam?.isAvailable?.()).toBe(true);
+    });
 });

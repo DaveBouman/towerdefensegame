@@ -8,6 +8,7 @@ import type { EnemyState, EnemyTurnAction } from '../cardGame/domain/types';
 import { getEnemyPassive } from '../cardGame/enemyPassives/defaults';
 import type { EnemyPassiveConfig } from '../cardGame/enemyPassives/types';
 import { getEnemyIdentity, getEnemyPortraitTextureKey } from '../cardGame/presentation/enemyIdentity';
+import { getSteamFriendForEnemy, getSteamPersonaTextureKey } from '../desktop/steamAvatars';
 import {
     getEnemyIntentStepVisuals,
     type EnemyIntentStepVisual,
@@ -177,7 +178,13 @@ export class EnemyTargetView
             alpha: 0.9,
         });
 
-        const portraitKey = getEnemyPortraitTextureKey(definitionId);
+        const steamFace = getSteamFriendForEnemy(definitionId);
+        const steamKey = steamFace
+            ? getSteamPersonaTextureKey(steamFace.steamId)
+            : null;
+        const portraitKey = steamKey && scene.textures.exists(steamKey)
+            ? steamKey
+            : getEnemyPortraitTextureKey(definitionId);
         const portraitInset = 3;
         const portraitSize = enemySize - portraitInset * 2;
         let avatar: Phaser.GameObjects.GameObject;

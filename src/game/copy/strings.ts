@@ -170,6 +170,12 @@ const EN = {
     'intent.battle-mod': 'Battle modifier',
     'intent.ally-heal': 'Ally heal',
     'intent.ally-shield': 'Ally shield',
+
+    // Settings
+    'settings.steam.on': 'Steam portraits on',
+    'settings.steam.off': 'Steam portraits off',
+    'settings.steam.hint': 'Your Steam avatar is the runner; friends fill enemy frames. Applies next fight.',
+    'settings.steam.unavailable': 'Steam portraits are on by default and activate in the Steam desktop build.',
 } as const;
 
 export type CopyKey = keyof typeof EN;

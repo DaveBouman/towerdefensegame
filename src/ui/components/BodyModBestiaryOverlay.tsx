@@ -97,10 +97,19 @@ const renderBodyModDetail = (entry: BestiaryBodyModEntry | null) =>
         return (
             <>
                 <strong style={{ color: entry.labelColor }}>{entry.label}</strong>
-                <span>{entry.summary}</span>
-                <span>{entry.blurb}</span>
+                <span className="body-mod-bestiary__detail-line body-mod-bestiary__detail-line--summary">
+                    {entry.summary}
+                </span>
+                <span className="body-mod-bestiary__detail-line body-mod-bestiary__detail-line--blurb">
+                    {entry.blurb}
+                </span>
                 {entry.dossierLines.map((line) => (
-                    <span key={line}>{line}</span>
+                    <span
+                        key={line}
+                        className="body-mod-bestiary__detail-line body-mod-bestiary__detail-line--meta"
+                    >
+                        {line}
+                    </span>
                 ))}
             </>
         );
@@ -109,7 +118,9 @@ const renderBodyModDetail = (entry: BestiaryBodyModEntry | null) =>
     return (
         <>
             <strong>Unknown body mod</strong>
-            <span>Install this body mod during a run to log its dossier.</span>
+            <span className="body-mod-bestiary__detail-line">
+                Install this body mod during a run to log its dossier.
+            </span>
         </>
     );
 };

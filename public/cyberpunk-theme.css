@@ -3,29 +3,30 @@
     --font-ui: 'Rajdhani', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-mono: 'Share Tech Mono', ui-monospace, monospace;
 
-    --cp-bg-deep: #020408;
-    --cp-bg: #050a14;
-    --cp-surface: #0c1220;
-    --cp-panel: #0f1628;
-    --cp-panel-elevated: #141f30;
+    --cp-bg-deep: #06040a;
+    --cp-bg: #0c0812;
+    --cp-surface: #16101c;
+    --cp-panel: #1a1222;
+    --cp-panel-elevated: #24182c;
 
     --cp-cyan: #00e8ff;
     --cp-cyan-dim: #00a8bf;
     --cp-magenta: #ff2d95;
-    --cp-purple: #a855f7;
+    --cp-purple: #c44dff;
     --cp-yellow: #fcee0a;
     --cp-green: #00ff9d;
     --cp-red: #ff3b6b;
-    --cp-gold: #ffd447;
+    --cp-gold: #ff9a1a;
 
-    --cp-text: #d4f4ff;
-    --cp-text-muted: #7a9aab;
-    --cp-text-bright: #f0fdff;
+    --cp-text: #f3e6d8;
+    --cp-text-muted: #a89482;
+    --cp-text-bright: #fff6ea;
 
-    --cp-border: rgba(0, 232, 255, 0.28);
-    --cp-border-bright: rgba(0, 232, 255, 0.55);
-    --cp-glow-cyan: 0 0 20px rgba(0, 232, 255, 0.35);
-    --cp-glow-magenta: 0 0 24px rgba(255, 45, 149, 0.3);
+    --cp-border: rgba(255, 45, 149, 0.32);
+    --cp-border-bright: rgba(255, 154, 26, 0.55);
+    --cp-glow-cyan: 0 0 22px rgba(255, 45, 149, 0.4);
+    --cp-glow-magenta: 0 0 24px rgba(255, 45, 149, 0.38);
+    --cp-glow-gold: 0 0 18px rgba(255, 154, 26, 0.32);
 
     --ease-cyber: cubic-bezier(0.22, 1, 0.36, 1);
     --transition-fast: 0.18s var(--ease-cyber);
@@ -44,8 +45,9 @@ body {
 
 #app {
     background:
-        radial-gradient(ellipse 120% 80% at 50% -20%, rgba(0, 232, 255, 0.08) 0%, transparent 55%),
-        radial-gradient(ellipse 80% 60% at 100% 100%, rgba(255, 45, 149, 0.06) 0%, transparent 50%),
+        radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 45, 149, 0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 80% 60% at 100% 100%, rgba(255, 154, 26, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse 50% 40% at 0% 85%, rgba(0, 232, 255, 0.06) 0%, transparent 45%),
         linear-gradient(180deg, var(--cp-bg) 0%, var(--cp-bg-deep) 100%);
 }
 
@@ -59,8 +61,8 @@ body {
         0deg,
         transparent,
         transparent 2px,
-        rgba(0, 232, 255, 0.015) 2px,
-        rgba(0, 232, 255, 0.015) 4px
+        rgba(255, 45, 149, 0.02) 2px,
+        rgba(255, 45, 149, 0.02) 4px
     );
     opacity: 0.6;
 }
@@ -72,8 +74,8 @@ body {
     pointer-events: none;
     z-index: 1;
     background-image:
-        linear-gradient(rgba(0, 232, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 232, 255, 0.03) 1px, transparent 1px);
+        linear-gradient(rgba(255, 154, 26, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 45, 149, 0.04) 1px, transparent 1px);
     background-size: 48px 48px;
     mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 20%, transparent 75%);
 }
@@ -81,7 +83,7 @@ body {
 .card-tooltip {
     border-radius: 4px;
     border: 1px solid var(--cp-border-bright);
-    background: linear-gradient(180deg, rgba(15, 22, 40, 0.98) 0%, rgba(8, 12, 22, 0.98) 100%);
+    background: linear-gradient(180deg, rgba(28, 18, 32, 0.98) 0%, rgba(12, 8, 16, 0.98) 100%);
     color: var(--cp-text);
     font-family: var(--font-ui);
     font-size: calc(15px * var(--text-scale));
@@ -108,8 +110,8 @@ body {
     font-size: calc(14px * var(--text-scale));
     font-weight: 600;
     color: var(--cp-text-muted);
-    background: linear-gradient(180deg, rgba(5, 10, 20, 0.96) 0%, rgba(5, 10, 20, 0.5) 75%, transparent 100%);
-    border-bottom: 1px solid rgba(0, 232, 255, 0.12);
+    background: linear-gradient(180deg, rgba(12, 8, 16, 0.96) 0%, rgba(12, 8, 16, 0.5) 75%, transparent 100%);
+    border-bottom: 1px solid rgba(255, 45, 149, 0.12);
 }
 
 .game-hud__deploy-hint {
@@ -132,7 +134,7 @@ body {
 .game-hud__pile-button {
     border-radius: 4px;
     border: 1px solid var(--cp-border);
-    background: rgba(12, 18, 32, 0.9);
+    background: rgba(22, 14, 24, 0.9);
     color: var(--cp-text);
     font-family: var(--font-display);
     font-size: calc(12px * var(--text-scale));
@@ -166,8 +168,8 @@ body {
 
 .game-hud__energy-pip--full {
     border-color: var(--cp-cyan);
-    background: rgba(0, 232, 255, 0.85);
-    box-shadow: 0 0 10px rgba(0, 232, 255, 0.65);
+    background: rgba(255, 45, 149, 0.85);
+    box-shadow: 0 0 10px rgba(255, 45, 149, 0.65);
 }
 
 .game-hud__energy-count {
@@ -179,17 +181,17 @@ body {
     padding: 10px 22px;
     border: 1px solid var(--cp-cyan);
     border-radius: 4px;
-    background: linear-gradient(180deg, rgba(0, 232, 255, 0.22) 0%, rgba(0, 232, 255, 0.06) 100%);
+    background: linear-gradient(180deg, rgba(255, 45, 149, 0.22) 0%, rgba(255, 45, 149, 0.06) 100%);
     color: #d8fcff;
     font-family: var(--font-display);
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    box-shadow: 0 0 18px rgba(0, 232, 255, 0.25);
+    box-shadow: 0 0 18px rgba(255, 45, 149, 0.25);
 }
 
 .game-hud__start-wave:hover:not(:disabled) {
-    background: linear-gradient(180deg, rgba(0, 232, 255, 0.35) 0%, rgba(0, 232, 255, 0.12) 100%);
+    background: linear-gradient(180deg, rgba(255, 45, 149, 0.35) 0%, rgba(255, 45, 149, 0.12) 100%);
     border-color: #7af0ff;
     box-shadow: var(--cp-glow-cyan);
 }
@@ -225,7 +227,7 @@ body {
 }
 
 .game-hud__reroll-cancel {
-    border-color: rgba(0, 232, 255, 0.35);
+    border-color: rgba(255, 45, 149, 0.35);
     color: var(--cp-text-muted);
     font-family: var(--font-display);
     text-transform: uppercase;
@@ -237,17 +239,17 @@ body {
 }
 
 .run-map__header {
-    border-color: rgba(0, 232, 255, 0.24);
+    border-color: rgba(255, 45, 149, 0.24);
     background: rgba(10, 18, 32, 0.78);
     box-shadow:
-        0 0 24px rgba(0, 232, 255, 0.1),
-        inset 0 0 0 1px rgba(0, 232, 255, 0.08);
+        0 0 24px rgba(255, 45, 149, 0.1),
+        inset 0 0 0 1px rgba(255, 45, 149, 0.08);
 }
 
 .run-map__field {
-    border-color: rgba(0, 232, 255, 0.16);
+    border-color: rgba(255, 45, 149, 0.16);
     background: transparent;
-    box-shadow: inset 0 0 0 1px rgba(0, 232, 255, 0.05);
+    box-shadow: inset 0 0 0 1px rgba(255, 45, 149, 0.05);
 }
 
 /* Let the Phaser map backdrop show through — hide duplicate app chrome */
@@ -288,7 +290,7 @@ body {
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--cp-cyan);
-    text-shadow: 0 0 24px rgba(0, 232, 255, 0.45);
+    text-shadow: 0 0 24px rgba(255, 45, 149, 0.45);
 }
 
 .run-map__subtitle {
@@ -296,8 +298,8 @@ body {
 }
 
 .run-map__edge {
-    stroke: rgba(0, 232, 255, 0.42);
-    filter: drop-shadow(0 0 2px rgba(0, 232, 255, 0.4));
+    stroke: rgba(255, 45, 149, 0.42);
+    filter: drop-shadow(0 0 2px rgba(255, 45, 149, 0.4));
 }
 
 .run-map__edge--travelled {
@@ -310,16 +312,16 @@ body {
     stroke-dasharray: 6 6;
     stroke-dashoffset: 0;
     stroke-linecap: round;
-    filter: drop-shadow(0 0 10px rgba(0, 232, 255, 0.85));
+    filter: drop-shadow(0 0 10px rgba(255, 45, 149, 0.85));
     animation: run-map-flow 1.2s linear infinite;
 }
 
 .run-map__node-dot {
     background: #243058;
-    border: 2px solid rgba(0, 232, 255, 0.75);
+    border: 2px solid rgba(255, 45, 149, 0.75);
     box-shadow:
         0 0 0 4px rgba(2, 6, 14, 0.9),
-        0 0 20px rgba(0, 232, 255, 0.35);
+        0 0 20px rgba(255, 45, 149, 0.35);
     color: #e0ecff;
     transition: transform var(--transition-fast), box-shadow var(--transition-med), border-color var(--transition-med);
 }
@@ -331,14 +333,14 @@ body {
     text-transform: uppercase;
     color: #e8eeff;
     text-shadow:
-        0 0 12px rgba(0, 232, 255, 0.4),
+        0 0 12px rgba(255, 45, 149, 0.4),
         0 1px 3px rgba(0, 0, 0, 0.95);
 }
 
 .run-map__node--start .run-map__node-dot {
     background: var(--cp-cyan);
-    border-color: rgba(0, 232, 255, 0.8);
-    box-shadow: 0 0 18px rgba(0, 232, 255, 0.55);
+    border-color: rgba(255, 45, 149, 0.8);
+    box-shadow: 0 0 18px rgba(255, 45, 149, 0.55);
     color: var(--cp-bg-deep);
 }
 
@@ -349,7 +351,7 @@ body {
 }
 
 .run-map__node--current .run-map__node-dot {
-    background: rgba(0, 232, 255, 0.22);
+    background: rgba(255, 45, 149, 0.22);
     border-color: var(--cp-cyan);
     box-shadow:
         0 0 0 4px rgba(2, 8, 16, 0.85),
@@ -399,7 +401,7 @@ body {
 
 .run-map__tooltip {
     border-radius: 4px;
-    background: rgba(8, 12, 22, 0.98);
+    background: rgba(12, 8, 16, 0.98);
     border: 1px solid var(--cp-border);
     box-shadow: var(--cp-glow-cyan);
 }
@@ -411,11 +413,11 @@ body {
 
 .run-map__health-fill {
     background: linear-gradient(90deg, var(--cp-green) 0%, var(--cp-cyan) 100%);
-    box-shadow: 0 0 14px rgba(0, 232, 255, 0.5);
+    box-shadow: 0 0 14px rgba(255, 45, 149, 0.5);
 }
 
 .run-event {
-    background: radial-gradient(circle at center, rgba(5, 10, 20, 0.92) 0%, rgba(2, 4, 8, 0.98) 70%);
+    background: radial-gradient(circle at center, rgba(12, 8, 16, 0.92) 0%, rgba(2, 4, 8, 0.98) 70%);
     backdrop-filter: blur(6px);
 }
 
@@ -429,7 +431,7 @@ body {
 .body-mods-panel {
     border-radius: 4px;
     border: 1px solid var(--cp-border-bright);
-    background: linear-gradient(180deg, rgba(15, 22, 40, 0.98) 0%, rgba(8, 12, 22, 0.98) 100%);
+    background: linear-gradient(180deg, rgba(28, 18, 32, 0.98) 0%, rgba(12, 8, 16, 0.98) 100%);
     box-shadow: var(--cp-glow-cyan), 0 24px 64px rgba(0, 0, 0, 0.7);
     animation: cp-panel-in 0.28s var(--ease-cyber);
 }
@@ -444,7 +446,7 @@ body {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--cp-cyan);
-    text-shadow: 0 0 20px rgba(0, 232, 255, 0.35);
+    text-shadow: 0 0 20px rgba(255, 45, 149, 0.35);
 }
 
 .pile-view--graveyard .pile-view__title {
@@ -458,7 +460,7 @@ body {
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--cp-cyan);
-    text-shadow: 0 0 20px rgba(0, 232, 255, 0.35);
+    text-shadow: 0 0 20px rgba(255, 45, 149, 0.35);
 }
 
 .run-end__title {
@@ -477,7 +479,7 @@ body {
 .run-event__matcher-tile {
     border-radius: 4px;
     border: 1px solid var(--cp-border);
-    background: rgba(12, 18, 32, 0.85);
+    background: rgba(22, 14, 24, 0.85);
     transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
@@ -489,7 +491,7 @@ body {
 }
 
 .run-event__wheel-disc {
-    filter: drop-shadow(0 0 16px rgba(0, 232, 255, 0.25));
+    filter: drop-shadow(0 0 16px rgba(255, 45, 149, 0.25));
 }
 
 .run-event__wheel-pointer {
@@ -508,7 +510,7 @@ body {
 .puzzle-hud {
     border-radius: 4px;
     border: 1px solid var(--cp-border);
-    background: rgba(8, 12, 22, 0.94);
+    background: rgba(12, 8, 16, 0.94);
     box-shadow: var(--cp-glow-cyan);
 }
 
@@ -696,7 +698,7 @@ body {
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(circle at 50% 40%, rgba(0, 232, 255, 0.07) 0%, transparent 55%),
+        radial-gradient(circle at 50% 40%, rgba(255, 45, 149, 0.07) 0%, transparent 55%),
         rgba(2, 4, 8, 0.84);
     backdrop-filter: blur(8px);
 }
@@ -724,7 +726,7 @@ body {
     overflow: hidden;
     border-radius: 4px;
     border: 1px solid var(--cp-border-bright);
-    background: linear-gradient(180deg, rgba(15, 22, 40, 0.98) 0%, rgba(8, 12, 22, 0.98) 100%);
+    background: linear-gradient(180deg, rgba(28, 18, 32, 0.98) 0%, rgba(12, 8, 16, 0.98) 100%);
     box-shadow: var(--cp-glow-cyan), 0 24px 64px rgba(0, 0, 0, 0.7);
     animation: cp-panel-in 0.28s var(--ease-cyber);
 }
@@ -752,7 +754,7 @@ body {
     z-index: 2;
 }
 
-.cp-corner--cyan,
+.cp-corner--cyan { border-color: var(--cp-magenta); }
 .cp-corner--gold,
 .cp-corner--green { border-color: var(--cp-cyan); }
 .cp-corner--magenta { border-color: var(--cp-magenta); }
@@ -773,8 +775,8 @@ body {
         0deg,
         transparent,
         transparent 3px,
-        rgba(0, 232, 255, 0.025) 3px,
-        rgba(0, 232, 255, 0.025) 4px
+        rgba(255, 45, 149, 0.025) 3px,
+        rgba(255, 45, 149, 0.025) 4px
     );
 }
 
@@ -1016,7 +1018,7 @@ body {
 .battle-intro {
     font-family: var(--font-ui);
     background:
-        radial-gradient(circle at center, rgba(5, 10, 20, 0.72) 0%, rgba(2, 4, 8, 0.88) 70%);
+        radial-gradient(circle at center, rgba(12, 8, 16, 0.72) 0%, rgba(2, 4, 8, 0.88) 70%);
     backdrop-filter: blur(4px);
 }
 
@@ -1026,7 +1028,7 @@ body {
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--cp-cyan);
-    text-shadow: 0 0 24px rgba(0, 232, 255, 0.4);
+    text-shadow: 0 0 24px rgba(255, 45, 149, 0.4);
 }
 
 .battle-intro--semi-boss .battle-intro__title {
@@ -1063,7 +1065,7 @@ body {
     font-family: var(--font-mono);
     border-radius: 4px;
     border: 1px solid var(--cp-border);
-    background: rgba(8, 14, 24, 0.9);
+    background: rgba(14, 10, 18, 0.9);
     color: var(--cp-cyan);
 }
 
@@ -1071,7 +1073,7 @@ body {
 .body-mods-panel--persistent {
     border-radius: 4px;
     border: 1px solid var(--cp-border);
-    background: rgba(8, 12, 22, 0.92);
+    background: rgba(12, 8, 16, 0.92);
     box-shadow: var(--cp-glow-cyan);
 }
 
@@ -1096,7 +1098,7 @@ body {
 .game-menu-btn {
     border-radius: 4px;
     border: 1px solid var(--cp-border);
-    background: rgba(8, 14, 24, 0.92);
+    background: rgba(14, 10, 18, 0.92);
     color: var(--cp-cyan);
     box-shadow: var(--cp-glow-cyan);
 }
@@ -1105,7 +1107,7 @@ body {
 .game-menu-btn:hover,
 .game-menu-btn--open {
     border-color: var(--cp-border-bright);
-    box-shadow: 0 0 20px rgba(0, 232, 255, 0.4);
+    box-shadow: 0 0 20px rgba(255, 45, 149, 0.4);
     color: var(--cp-text-bright);
 }
 
@@ -1114,7 +1116,7 @@ body {
 .tutorial-coach {
     border-radius: 4px;
     border: 1px solid var(--cp-border-bright);
-    background: linear-gradient(180deg, rgba(15, 22, 40, 0.98) 0%, rgba(8, 12, 22, 0.98) 100%);
+    background: linear-gradient(180deg, rgba(28, 18, 32, 0.98) 0%, rgba(12, 8, 16, 0.98) 100%);
     box-shadow: var(--cp-glow-cyan);
 }
 

@@ -37,6 +37,11 @@ contextBridge.exposeInMainWorld('signalChainDesktop', {
   getFullscreen: () => ipcRenderer.invoke('app:get-fullscreen'),
   openExternal: (url) => ipcRenderer.send('app:open-external', url),
   platform: process.platform,
+  steam: {
+    isAvailable: () => ipcRenderer.invoke('steam:available'),
+    getLocalPersona: () => ipcRenderer.invoke('steam:local-persona'),
+    getFriends: () => ipcRenderer.invoke('steam:friends'),
+  },
 });
 ```
 
@@ -57,6 +62,30 @@ Game-side types live in `src/game/desktop/desktopBridge.ts`. Product title/versi
 - Achievements, cloud saves, and rich presence go through **Steamworks** (often `steamworks.js` / similar) in the **main process**, then optional IPC to the renderer.
 - Persist run meta (card collection, audio, tutorial flag) already uses `localStorage` — map that to Steam Cloud files when you package.
 - Steam documentation: [Steamworks](https://partner.steamgames.com/doc/home) (partner account required for full docs).
+
+### Street faces (avatars in combat)
+
+The web build cannot read Steam friends. Once the Electron shell talks to Steamworks in the **main process**, combat portraits light up:
+
+| Portrait | Source | Fallback |
+|----------|--------|----------|
+| Runner | Local Steam avatar + persona name | Diamond glyph / `RUNNER` |
+| Enemies | Friends' avatars (not you), picked per enemy id from the battle seed | Craftpix portraits |
+
+IPC payload for each persona:
+
+```ts
+{ steamId: string; personaName: string; avatarUrl: string }
+```
+
+`avatarUrl` may be a `data:image/png;base64,...` from `ISteamFriends.GetImageRGBA`, or a Steam CDN URL. Main-process sketch:
+
+1. `ISteamUser.GetSteamID` + `GetLargeFriendAvatar` / `GetPersonaName` for the local player.
+2. `ISteamFriends.GetFriendCount(k_EFriendFlagImmediate)` + `GetFriendByIndex` for friends.
+3. Convert image handles to PNG data URLs (avoids renderer CORS).
+4. If Steam is not running, return `isAvailable: false` — the game keeps Craftpix art.
+
+Settings → **Steam → Steam portraits** toggles this (on by default; stored in `localStorage`). Assignment is visual-only and does not touch the gameplay RNG.
 
 ## Suggested packaging order
 

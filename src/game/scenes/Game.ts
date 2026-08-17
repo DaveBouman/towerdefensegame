@@ -13,12 +13,14 @@ import { GAME_RULES, getCardDefinitionOrThrow } from '../cardGame/config/cardReg
 import type { SlotPosition } from '../cardGame/domain/types';
 import { preloadEnemyPassiveIcons } from '../cardGame/presentation/icons/preloadEnemyPassiveIcons';
 import { preloadEnemyPortraits } from '../cardGame/presentation/icons/preloadEnemyPortraits';
+import { preloadSteamPortraits } from '../cardGame/presentation/icons/preloadSteamPortraits';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../cardGame/events/cardGameEvents';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
 import { reseed } from '../random/rng';
+import { beginSteamFaceBattle } from '../desktop/steamAvatars';
 import { getRunPuzzle } from '../run/runPuzzles';
 import { getAscensionEnemyHealthMultiplier } from '../run/ascension';
 import { getRouteEnemyHealthMultiplier } from '../run/routeModifiers';
@@ -116,6 +118,7 @@ export class Game extends Scene
         void Promise.all([
             preloadEnemyPassiveIcons(this),
             preloadEnemyPortraits(this),
+            preloadSteamPortraits(this),
         ]).then(() =>
         {
             this.registerListeners();
@@ -371,6 +374,7 @@ export class Game extends Scene
 
         // Install this battle's deterministic RNG stream before any card is dealt.
         reseed(seed);
+        beginSteamFaceBattle(seed);
 
         if (!puzzleMode)
         {

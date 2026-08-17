@@ -29,7 +29,7 @@ const SLOT_DAMPENED_BORDER = CYBER.slotDampenedBorder;
 const SLOT_NULLIFIED = CYBER.slotNullified;
 const SLOT_NULLIFIED_BORDER = CYBER.slotNullifiedBorder;
 const SLOT_INSET = 4;
-const AXIS_IDLE = '#8aa0bc';
+const AXIS_IDLE = '#a89482';
 const AXIS_START = '#7af0ff';
 const AXIS_ACTIVE = '#fcee0a';
 /** Tap vs drag on a start-column card: below this, click sets chain start. */
@@ -109,8 +109,8 @@ export class CardBoardView
             -panelPad,
             panelW,
             panelH,
-            0x0a1018,
-            CYBER.cyan,
+            0x120c16,
+            CYBER.magenta,
             0.94,
             0.35,
         );

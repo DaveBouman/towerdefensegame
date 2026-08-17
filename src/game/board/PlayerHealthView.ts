@@ -10,6 +10,10 @@ import {
     CombatTraitRowView,
 } from './CombatTraitRowView';
 import type { BoardLayout } from './boardLayout';
+import {
+    getLocalSteamPersona,
+    getSteamPersonaTextureKey,
+} from '../desktop/steamAvatars';
 
 export class PlayerHealthView
 {
@@ -63,9 +67,28 @@ export class PlayerHealthView
             alpha: 0.95,
         });
 
-        const avatar = scene.add.graphics();
+        const steamPersona = getLocalSteamPersona();
+        const steamKey = steamPersona
+            ? getSteamPersonaTextureKey(steamPersona.steamId)
+            : null;
+        const useSteamPortrait = Boolean(steamKey && scene.textures.exists(steamKey));
+        let avatar: Phaser.GameObjects.GameObject;
 
-        drawAvatarDiamond(avatar, playerSize / 2, playerSize / 2 - 2, playerSize * 0.42, CYBER.player);
+        if (useSteamPortrait && steamKey)
+        {
+            const portraitInset = 3;
+            const portrait = scene.add.image(playerSize / 2, playerSize / 2, steamKey);
+
+            portrait.setDisplaySize(playerSize - portraitInset * 2, playerSize - portraitInset * 2);
+            avatar = portrait;
+        }
+        else
+        {
+            const diamond = scene.add.graphics();
+
+            drawAvatarDiamond(diamond, playerSize / 2, playerSize / 2 - 2, playerSize * 0.42, CYBER.player);
+            avatar = diamond;
+        }
 
         const barInset = 10;
         this.healthBarHeight = 12;
@@ -90,12 +113,20 @@ export class PlayerHealthView
             1,
         ).setOrigin(0, 0);
 
-        this.healthText = scene.add.text(playerSize / 2, playerSize / 2 - 2, '', {
-            ...uiDisplayTextStyle(20, '#ffffff', { bold: true }),
-        }).setOrigin(0.5);
+        this.healthText = scene.add.text(
+            playerSize / 2,
+            useSteamPortrait ? barY + this.healthBarHeight / 2 : playerSize / 2 - 2,
+            '',
+            {
+                ...uiDisplayTextStyle(useSteamPortrait ? 12 : 20, '#ffffff', { bold: true }),
+            },
+        ).setOrigin(0.5);
 
-        const label = scene.add.text(playerSize / 2, playerSize + 16, 'RUNNER', {
-            ...uiDisplayTextStyle(14, '#7af0ff', { bold: true }),
+        const runnerName = steamPersona?.personaName.trim()
+            ? steamPersona.personaName.trim().slice(0, 14).toUpperCase()
+            : 'RUNNER';
+        const label = scene.add.text(playerSize / 2, playerSize + 16, runnerName, {
+            ...uiDisplayTextStyle(14, '#ff7ab8', { bold: true }),
         }).setOrigin(0.5, 0);
 
         this.playerLabel = label;
@@ -111,8 +142,8 @@ export class PlayerHealthView
             this.glowRing,
             outline,
             body,
-            frame,
             avatar,
+            frame,
             healthBarBg,
             this.healthBarFill,
             this.healthText,

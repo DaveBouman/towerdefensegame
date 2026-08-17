@@ -3,12 +3,26 @@
  * The renderer never imports Electron; the packaged app injects `window.signalChainDesktop`.
  */
 
+/** Steam persona snapshot from the desktop shell (avatars as data URLs or CDN URLs). */
+export interface SteamPersona {
+    steamId: string;
+    personaName: string;
+    avatarUrl: string;
+}
+
+export interface SignalChainSteamApi {
+    isAvailable?: () => boolean | Promise<boolean>;
+    getLocalPersona?: () => SteamPersona | null | Promise<SteamPersona | null>;
+    getFriends?: () => SteamPersona[] | Promise<SteamPersona[]>;
+}
+
 export interface SignalChainDesktopApi {
     quit: () => void;
     setFullscreen?: (enabled: boolean) => void;
     getFullscreen?: () => boolean | Promise<boolean>;
     openExternal?: (url: string) => void;
     platform?: 'win32' | 'darwin' | 'linux' | string;
+    steam?: SignalChainSteamApi;
 }
 
 declare global {

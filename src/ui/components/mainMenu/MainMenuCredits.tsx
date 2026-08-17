@@ -19,7 +19,8 @@ export const MainMenuCredits = ({ onBack }: MainMenuCreditsProps) => (
             </p>
             <p>
                 Enemy portraits — Craftpix free cyberpunk avatar packs
-                (craftpix-net-108089, craftpix-net-969033).
+                (craftpix-net-108089, craftpix-net-969033). Steam Street faces
+                use your profile and friends when the desktop build is running.
             </p>
             <p className="main-menu__hint">
                 License: <a href="https://craftpix.net/file-licenses/" target="_blank" rel="noreferrer">craftpix.net/file-licenses</a>

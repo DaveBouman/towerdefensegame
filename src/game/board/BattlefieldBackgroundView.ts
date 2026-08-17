@@ -30,7 +30,7 @@ export class BattlefieldBackgroundView
         this.circuits = scene.add.graphics();
         this.frameOuter = scene.add.graphics();
         this.frameInner = scene.add.graphics();
-        this.scanBand = scene.add.rectangle(0, 0, 4, 4, CYBER.cyan, 0.035);
+        this.scanBand = scene.add.rectangle(0, 0, 4, 4, CYBER.magenta, 0.04);
         this.scanBand.setOrigin(0.5, 0.5);
         this.scanBand.setBlendMode(BlendModes.ADD);
 
@@ -83,13 +83,13 @@ export class BattlefieldBackgroundView
 
         const horizon = height * 0.42;
 
-        this.base.fillStyle(0x0a1424, 0.85);
+        this.base.fillStyle(0x140c14, 0.9);
         this.base.fillRect(0, horizon, width, height - horizon);
 
-        this.base.fillStyle(CYBER.magenta, 0.035);
+        this.base.fillStyle(CYBER.magenta, 0.06);
         this.base.fillEllipse(width * 0.18, height * 0.72, width * 0.55, height * 0.34);
 
-        this.base.fillStyle(CYBER.cyan, 0.03);
+        this.base.fillStyle(CYBER.gold, 0.045);
         this.base.fillEllipse(width * 0.82, height * 0.28, width * 0.42, height * 0.24);
 
         this.drawScanlines(this.base, width, height);
@@ -120,9 +120,9 @@ export class BattlefieldBackgroundView
             : height * 0.46;
         const radius = Math.max(layout?.gridWidth ?? width * 0.35, width * 0.22);
 
-        this.gridGlow.fillStyle(CYBER.cyan, 0.045);
+        this.gridGlow.fillStyle(CYBER.magenta, 0.055);
         this.gridGlow.fillCircle(centerX, centerY, radius * 0.95);
-        this.gridGlow.fillStyle(CYBER.magenta, 0.028);
+        this.gridGlow.fillStyle(CYBER.gold, 0.035);
         this.gridGlow.fillCircle(centerX, centerY, radius * 0.62);
     }
 
@@ -141,7 +141,7 @@ export class BattlefieldBackgroundView
         const rows = 10;
         const cols = 18;
 
-        this.floorGrid.lineStyle(1, CYBER.cyan, 0.08);
+        this.floorGrid.lineStyle(1, CYBER.magenta, 0.1);
 
         for (let row = 1; row <= rows; row++)
         {
@@ -173,7 +173,7 @@ export class BattlefieldBackgroundView
             const panelW = layout.gridWidth + pad * 2;
             const panelH = layout.gridHeight + pad * 2;
 
-            this.floorGrid.lineStyle(1, CYBER.cyan, 0.14);
+            this.floorGrid.lineStyle(1, CYBER.gold, 0.16);
             this.floorGrid.strokeRect(left, top, panelW, panelH);
         }
     }
@@ -190,7 +190,7 @@ export class BattlefieldBackgroundView
             const y = 24 + pseudo(seed) * height * 0.28;
             const startX = pseudo(seed + 1) * width * 0.35;
             const span = 80 + pseudo(seed + 2) * width * 0.45;
-            const color = i % 3 === 0 ? CYBER.magenta : CYBER.cyan;
+            const color = i % 3 === 0 ? CYBER.gold : (i % 3 === 1 ? CYBER.magenta : CYBER.cyan);
             const alpha = 0.08 + pseudo(seed + 3) * 0.12;
 
             this.circuits.lineStyle(1, color, alpha);
@@ -227,7 +227,7 @@ export class BattlefieldBackgroundView
             inset,
             width - inset * 2,
             height - inset * 2,
-            CYBER.cyan,
+            CYBER.magenta,
             { arm, alpha: 0.22, lineWidth: 1 },
         );
 
@@ -237,8 +237,8 @@ export class BattlefieldBackgroundView
             inset + 10,
             width - (inset + 10) * 2,
             height - (inset + 10) * 2,
-            CYBER.magenta,
-            { arm: Math.round(arm * 0.72), alpha: 0.12, lineWidth: 1 },
+            CYBER.gold,
+            { arm: Math.round(arm * 0.72), alpha: 0.16, lineWidth: 1 },
         );
     }
 

@@ -14,9 +14,9 @@ export const CARD_VISUALS: Record<string, CardVisualStyle> = {
         powerColor: '#ffffff',
     },
     defend: {
-        fill: 0x0a1a22,
-        border: 0x00e8ff,
-        labelColor: '#7af0ff',
+        fill: 0x1a1408,
+        border: 0xff9a1a,
+        labelColor: '#ffd4a0',
         powerColor: '#ffffff',
     },
     joker: {

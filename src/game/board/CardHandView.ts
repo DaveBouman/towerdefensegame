@@ -143,10 +143,10 @@ export class CardHandView
                 HAND_CARD_HEIGHT / 2,
                 HAND_CARD_WIDTH + 10,
                 HAND_CARD_HEIGHT + 10,
-                CYBER.cyan,
+                CYBER.gold,
                 0,
             );
-            hoverOutline.setStrokeStyle(2, CYBER.cyan, 0);
+            hoverOutline.setStrokeStyle(2, CYBER.gold, 0);
             hoverOutline.setVisible(false);
 
             const { container: graphic, hitArea } = buildCardGraphic(
@@ -188,7 +188,7 @@ export class CardHandView
                     }
 
                     hoverOutline.setVisible(true);
-                    hoverOutline.setStrokeStyle(2, CYBER.cyan, 0.9);
+                    hoverOutline.setStrokeStyle(2, CYBER.gold, 0.9);
                     slot.setY(y - 8);
                 });
                 hitArea.on('pointerout', () =>
@@ -232,14 +232,14 @@ export class CardHandView
         const dockX = -padX;
         const dockY = -padY + HAND_FAN_DROP;
 
-        drawNeonPanel(this.handDock, dockX, dockY, dockW, dockH, 0x0a1018, CYBER.cyan, 0.78, 0.38);
+        drawNeonPanel(this.handDock, dockX, dockY, dockW, dockH, 0x120c16, CYBER.magenta, 0.78, 0.38);
         drawCornerBrackets(
             this.handBrackets,
             dockX + 4,
             dockY + 4,
             dockW - 8,
             dockH - 8,
-            CYBER.cyan,
+            CYBER.gold,
             { arm: 10, alpha: 0.55 },
         );
     }
@@ -276,7 +276,7 @@ export class CardHandView
 
             if (outline)
             {
-                outline.setStrokeStyle(2, selected ? CYBER.magenta : CYBER.cyan, selected ? 1 : 0);
+                outline.setStrokeStyle(2, selected ? CYBER.magenta : CYBER.gold, selected ? 1 : 0);
                 outline.setVisible(selected);
             }
         });

@@ -17,6 +17,10 @@ export const FloorBriefingOverlay = ({
         variant="cyan"
         rootClassName="floor-briefing"
         panelClassName="floor-briefing__panel"
+        onBackdropClick={onDismiss}
+        role="dialog"
+        ariaModal
+        ariaLabel={`Floor ${floor} briefing`}
     >
         <p className="floor-briefing__eyebrow">Floor {floor} briefing</p>
         <h1 className="floor-briefing__title">{briefing.title}</h1>

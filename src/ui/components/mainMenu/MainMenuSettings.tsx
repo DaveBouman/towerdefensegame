@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { emitRunSfx } from '../../../game/audio/emitRunSfx';
 import type { AudioSettings } from '../../../game/audio/audioSettings';
 import {
@@ -8,10 +9,16 @@ import {
 } from '../../../game/audio/gameAudio';
 import { isDocumentFullscreen, setGameFullscreen } from '../../../game/desktop/desktopBridge';
 import {
+    isSteamBridgeAvailable,
+    readSteamFacesEnabled,
+    writeSteamFacesEnabled,
+} from '../../../game/desktop/steamAvatars';
+import {
     TEXT_SCALE_SIZES,
     type TextScaleSize,
     setTextScale,
 } from '../../../game/ui/textScale';
+import { t } from '../../../game/copy/strings';
 import { BackButton, VolumeRow } from './menuShared';
 
 interface MainMenuSettingsProps {
@@ -42,6 +49,9 @@ export const MainMenuSettings = ({
     onReplayTutorial,
 }: MainMenuSettingsProps) =>
 {
+    const steamReady = isSteamBridgeAvailable();
+    const [ steamFaces, setSteamFaces ] = useState(readSteamFacesEnabled);
+
     const chooseTextScale = (size: TextScaleSize): void =>
     {
         if (size === textScale)
@@ -146,6 +156,36 @@ export const MainMenuSettings = ({
                         >
                             {fullscreen ? 'Fullscreen on' : 'Fullscreen off'}
                         </button>
+                    </div>
+                </div>
+
+                <div className="main-menu__field">
+                    <span className="main-menu__field-label">Steam</span>
+                    <div className="main-menu__display-panel">
+                        <button
+                            type="button"
+                            className={`main-menu__toggle${steamFaces ? ' main-menu__toggle--on' : ''}`}
+                            aria-pressed={steamFaces}
+                            disabled={!steamReady}
+                            onClick={() =>
+                            {
+                                if (!steamReady)
+                                {
+                                    return;
+                                }
+
+                                emitRunSfx('ui-click', { volume: 0.68 });
+                                const next = !steamFaces;
+
+                                writeSteamFacesEnabled(next);
+                                setSteamFaces(next);
+                            }}
+                        >
+                            {steamFaces ? t('settings.steam.on') : t('settings.steam.off')}
+                        </button>
+                        <p className="main-menu__hint">
+                            {steamReady ? t('settings.steam.hint') : t('settings.steam.unavailable')}
+                        </p>
                     </div>
                 </div>
 

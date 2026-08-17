@@ -23,7 +23,7 @@ const readParentSize = (parent: HTMLElement | string): { width: number; height: 
 
 const config: Phaser.Types.Core.GameConfig = {
     type: AUTO,
-    backgroundColor: '#050a14',
+    backgroundColor: '#0c0812',
     scene: [ MainGame ],
     scale: {
         mode: Scale.RESIZE,
