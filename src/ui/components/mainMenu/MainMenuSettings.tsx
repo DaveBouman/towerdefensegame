@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { emitRunSfx } from '../../../game/audio/emitRunSfx';
 import type { AudioSettings } from '../../../game/audio/audioSettings';
 import {
@@ -7,7 +7,14 @@ import {
     setSfxMuted,
     setSfxVolume,
 } from '../../../game/audio/gameAudio';
-import { setGameFullscreen } from '../../../game/desktop/desktopBridge';
+import { isDesktopShell, setGameFullscreen } from '../../../game/desktop/desktopBridge';
+import {
+    DISPLAY_PRESETS,
+    applyDisplayPreset,
+    readActiveDisplayPreset,
+    type DisplayPreset,
+    type DisplayPresetId,
+} from '../../../game/desktop/displaySettings';
 import {
     isSteamBridgeAvailable,
     readSteamFacesEnabled,
@@ -49,8 +56,41 @@ export const MainMenuSettings = ({
     onReplayTutorial,
 }: MainMenuSettingsProps) =>
 {
+    const desktop = isDesktopShell();
     const steamReady = isSteamBridgeAvailable();
     const [ steamFaces, setSteamFaces ] = useState(readSteamFacesEnabled);
+    const [ displayPreset, setDisplayPreset ] = useState<DisplayPresetId>('1280x720');
+
+    useEffect(() =>
+    {
+        if (!desktop)
+        {
+            return;
+        }
+
+        void readActiveDisplayPreset().then(setDisplayPreset);
+    }, [ desktop ]);
+
+    const formatPresetLabel = (preset: DisplayPreset): string =>
+    {
+        if (preset.id === 'adaptive')
+        {
+            return t('settings.resolution.adaptive');
+        }
+
+        return `${preset.width} × ${preset.height}`;
+    };
+
+    const chooseDisplayPreset = (nextPreset: DisplayPresetId): void =>
+    {
+        if (nextPreset === displayPreset || fullscreen)
+        {
+            return;
+        }
+
+        emitRunSfx('ui-click', { volume: 0.64, rate: 1.02 });
+        void applyDisplayPreset(nextPreset).then(() => setDisplayPreset(nextPreset));
+    };
 
     const chooseTextScale = (size: TextScaleSize): void =>
     {
@@ -153,6 +193,32 @@ export const MainMenuSettings = ({
                         >
                             {fullscreen ? 'Fullscreen on' : 'Fullscreen off'}
                         </button>
+                        {desktop && (
+                            <>
+                                <span className="main-menu__sublabel">{t('settings.resolution.label')}</span>
+                                <select
+                                    className="main-menu__resolution-select"
+                                    aria-label={t('settings.resolution.label')}
+                                    value={displayPreset}
+                                    disabled={fullscreen}
+                                    onChange={(event) =>
+                                    {
+                                        chooseDisplayPreset(event.target.value as DisplayPresetId);
+                                    }}
+                                >
+                                    {DISPLAY_PRESETS.map((preset) => (
+                                        <option key={preset.id} value={preset.id}>
+                                            {formatPresetLabel(preset)}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="main-menu__hint">
+                                    {fullscreen
+                                        ? t('settings.resolution.fullscreenHint')
+                                        : t('settings.resolution.windowHint')}
+                                </p>
+                            </>
+                        )}
                     </div>
                 </div>
 

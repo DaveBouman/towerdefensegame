@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('signalChainDesktop', {
 
         return () => ipcRenderer.removeListener('app:fullscreen-changed', handler);
     },
+    setDisplayPreset: (presetId) => ipcRenderer.invoke('app:set-display-preset', presetId),
+    getDisplayPreset: () => ipcRenderer.invoke('app:get-display-preset'),
     openExternal: (url) => ipcRenderer.send('app:open-external', url),
     platform: process.platform,
     steam: {

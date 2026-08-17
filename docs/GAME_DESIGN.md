@@ -365,6 +365,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-17 | **Desktop resolution presets.** Settings → Window size: Adaptive (letterbox) or fixed 16:9 sizes (960×540 through 2560×1440). Electron only; persisted in `localStorage`. |
+| 2026-08-17 | **16:9 viewport frame.** Canvas and React UI share a centered 16:9 viewport; ultrawide/tall windows letterbox instead of stretching layout. Electron minimum stays 960×540. |
 | 2026-08-17 | **Electron desktop shell.** `electron/` loads `dist/`, exposes `signalChainDesktop` (quit, fullscreen, external links, Steam IPC). electron-builder scripts for Windows/macOS/Linux. Local runner avatar via steamworks.js; friend portraits still Craftpix until upstream friends API lands. |
 | 2026-08-13 | **Enemy +40 integrity.** Every enemy median gains `enemyHealthBonus` (40) before the ±10% fight roll, so a first-round ~40 damage burst does not close the fight before Overclock matters. |
 | 2026-08-13 | **Fight overclock.** After each enemy response, enemies gain +4 attack for the rest of the fight (`enemyStrengthPerTurn`). Chip shows current › next from the opening (+0›+4). First hit is baseline; a second energy round already sits at +12. |

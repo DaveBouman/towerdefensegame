@@ -3,7 +3,9 @@ import { RunPhaseScreens } from './ui/components/RunPhaseScreens';
 import { useRunController } from './runController/useRunController';
 import { useEffect } from 'react';
 import { ensureAudioUnlocked } from './game/audio/gameAudio';
+import { applyStoredDisplayPreset } from './game/desktop/displaySettings';
 import { isDesktopShell } from './game/desktop/desktopBridge';
+import { GAME_VIEWPORT_ID } from './game/ui/gameViewport';
 
 function App()
 {
@@ -15,6 +17,8 @@ function App()
         {
             return;
         }
+
+        void applyStoredDisplayPreset();
 
         const unlock = (): void =>
         {
@@ -41,8 +45,10 @@ function App()
                     : '',
             ].filter(Boolean).join(' ') || undefined}
         >
-            <PhaserGame />
-            <RunPhaseScreens {...controller} />
+            <div id={GAME_VIEWPORT_ID} className="game-viewport">
+                <PhaserGame />
+                <RunPhaseScreens {...controller} />
+            </div>
         </div>
     );
 }

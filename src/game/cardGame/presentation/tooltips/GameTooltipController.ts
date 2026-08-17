@@ -1,3 +1,5 @@
+import { getGameViewportElement, getGameViewportRect } from '../../../ui/gameViewport';
+
 const TOOLTIP_ID = 'game-tooltip';
 const OFFSET_X = 14;
 const OFFSET_Y = 16;
@@ -28,7 +30,10 @@ export class GameTooltipController
         this.bodyElement.className = 'card-tooltip__body';
 
         this.element.append(this.titleElement, this.bodyElement);
-        document.body.append(this.element);
+
+        const mount = getGameViewportElement() ?? document.body;
+
+        mount.append(this.element);
     }
 
     show (content: GameTooltipContent, clientX: number, clientY: number): void
@@ -81,22 +86,23 @@ export class GameTooltipController
     private position (clientX: number, clientY: number): void
     {
         const margin = 8;
+        const viewport = getGameViewportRect();
         const rect = this.element.getBoundingClientRect();
         let left = clientX + OFFSET_X;
         let top = clientY + OFFSET_Y;
 
-        if (left + rect.width > window.innerWidth - margin)
+        if (left + rect.width > viewport.right - margin)
         {
             left = clientX - rect.width - OFFSET_X;
         }
 
-        if (top + rect.height > window.innerHeight - margin)
+        if (top + rect.height > viewport.bottom - margin)
         {
             top = clientY - rect.height - OFFSET_Y;
         }
 
-        left = Math.max(margin, left);
-        top = Math.max(margin, top);
+        left = Math.max(viewport.left + margin, left);
+        top = Math.max(viewport.top + margin, top);
 
         this.element.style.left = `${left}px`;
         this.element.style.top = `${top}px`;

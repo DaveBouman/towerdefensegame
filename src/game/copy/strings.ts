@@ -176,6 +176,10 @@ const EN = {
     'settings.steam.off': 'Steam portraits off',
     'settings.steam.hint': 'Your Steam avatar is the runner; friends fill enemy frames. Applies next fight.',
     'settings.steam.unavailable': 'Steam portraits are on by default and activate in the Steam desktop build.',
+    'settings.resolution.label': 'Window size',
+    'settings.resolution.adaptive': 'Adaptive — fit monitor (letterbox)',
+    'settings.resolution.windowHint': 'Fixed sizes lock the window. Adaptive keeps 16:9 and letterboxes on ultrawide.',
+    'settings.resolution.fullscreenHint': 'Exit fullscreen to change window size.',
 } as const;
 
 export type CopyKey = keyof typeof EN;

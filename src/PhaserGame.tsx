@@ -1,5 +1,6 @@
 import { forwardRef, useLayoutEffect, useRef } from 'react';
 import { loadUIFont } from './game/config/uiTypography';
+import { GAME_VIEWPORT_ID } from './game/ui/gameViewport';
 import StartGame from './game/main';
 
 export interface IRefPhaserGame
@@ -17,6 +18,7 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame
 {
     const game = useRef<Phaser.Game | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
     useLayoutEffect(() =>
     {
@@ -36,6 +38,31 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame
 
             game.current = StartGame(containerRef.current);
 
+            const viewport = document.getElementById(GAME_VIEWPORT_ID);
+
+            if (viewport)
+            {
+                const resizeObserver = new ResizeObserver((entries) =>
+                {
+                    const entry = entries[0];
+
+                    if (!entry || !game.current)
+                    {
+                        return;
+                    }
+
+                    const { width, height } = entry.contentRect;
+
+                    game.current.scale.resize(
+                        Math.max(1, Math.round(width)),
+                        Math.max(1, Math.round(height)),
+                    );
+                });
+
+                resizeObserver.observe(viewport);
+                resizeObserverRef.current = resizeObserver;
+            }
+
             if (typeof ref === 'function')
             {
                 ref({ game: game.current, scene: null });
@@ -49,6 +76,8 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(function PhaserGame
         return () =>
         {
             cancelled = true;
+            resizeObserverRef.current?.disconnect();
+            resizeObserverRef.current = null;
             game.current?.destroy(true);
             game.current = null;
         };

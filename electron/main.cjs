@@ -2,6 +2,12 @@ const { app, BrowserWindow, ipcMain, Menu, net, protocol, shell } = require('ele
 const path = require('path');
 const { pathToFileURL } = require('url');
 const steam = require('./steam.cjs');
+const {
+    MIN_WINDOW_WIDTH,
+    MIN_WINDOW_HEIGHT,
+    DEFAULT_PRESET_ID,
+    PRESETS,
+} = require('./displayPresets.cjs');
 
 const DEV_URL = process.env.ELECTRON_DEV_URL ?? 'http://localhost:8080';
 const APP_SCHEME = 'app';
@@ -16,6 +22,36 @@ const appIndexUrl = () => `${APP_SCHEME}://${APP_HOST}/index.html`;
 
 /** @type {import('electron').BrowserWindow | null} */
 let mainWindow = null;
+/** @type {string} */
+let activeDisplayPreset = DEFAULT_PRESET_ID;
+
+const isValidPresetId = (presetId) => Object.hasOwn(PRESETS, presetId);
+
+const applyDisplayPreset = (window, presetId) =>
+{
+    if (!window || window.isDestroyed() || window.isFullScreen())
+    {
+        return;
+    }
+
+    const safePresetId = isValidPresetId(presetId) ? presetId : DEFAULT_PRESET_ID;
+
+    activeDisplayPreset = safePresetId;
+
+    const preset = PRESETS[safePresetId];
+
+    if (!preset)
+    {
+        window.setMinimumSize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT);
+        window.setMaximumSize(0, 0);
+        return;
+    }
+
+    window.setMinimumSize(preset.width, preset.height);
+    window.setMaximumSize(preset.width, preset.height);
+    window.setSize(preset.width, preset.height);
+    window.center();
+};
 
 protocol.registerSchemesAsPrivileged([
     {
@@ -73,8 +109,8 @@ const createWindow = () =>
     mainWindow = new BrowserWindow({
         width: 1280,
         height: 720,
-        minWidth: 960,
-        minHeight: 540,
+        minWidth: MIN_WINDOW_WIDTH,
+        minHeight: MIN_WINDOW_HEIGHT,
         backgroundColor: '#0c0812',
         autoHideMenuBar: true,
         show: false,
@@ -102,7 +138,11 @@ const createWindow = () =>
     }
 
     mainWindow.on('enter-full-screen', () => sendFullscreenState(mainWindow));
-    mainWindow.on('leave-full-screen', () => sendFullscreenState(mainWindow));
+    mainWindow.on('leave-full-screen', () =>
+    {
+        sendFullscreenState(mainWindow);
+        applyDisplayPreset(mainWindow, activeDisplayPreset);
+    });
 
     mainWindow.webContents.on('before-input-event', (_event, input) =>
     {
@@ -139,6 +179,22 @@ ipcMain.handle('app:get-fullscreen', () =>
     const window = BrowserWindow.getFocusedWindow() ?? mainWindow;
 
     return window ? window.isFullScreen() : false;
+});
+
+ipcMain.handle('app:get-display-preset', () => activeDisplayPreset);
+
+ipcMain.handle('app:set-display-preset', (_event, presetId) =>
+{
+    if (typeof presetId !== 'string' || !isValidPresetId(presetId))
+    {
+        return activeDisplayPreset;
+    }
+
+    const window = BrowserWindow.getFocusedWindow() ?? mainWindow;
+
+    applyDisplayPreset(window, presetId);
+
+    return activeDisplayPreset;
 });
 
 ipcMain.on('app:open-external', (_event, url) =>

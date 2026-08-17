@@ -98,8 +98,9 @@ Settings → **Steam → Steam portraits** toggles this (on by default; stored i
 
 1. ~~Electron shell that loads `dist/` and implements `signalChainDesktop`.~~ **Done** — `electron/main.cjs`, `electron/preload.cjs`, npm scripts.
 2. ~~Installer (electron-builder) for Windows first.~~ **Done** — `npm run dist:win` (also mac/linux targets).
-3. Steam depot upload + overlay smoke test (manual — partner account + App ID).
-4. Steamworks friends IPC + achievements / cloud (optional Phase 3).
+4. Settings → **Window size** for fixed 16:9 presets or Adaptive letterboxing (desktop only).
+5. Steam depot upload + overlay smoke test (manual — partner account + App ID).
+6. Steamworks friends IPC + achievements / cloud (optional Phase 3).
 
 ## Why Chrome in the browser can feel slower than Firefox
 

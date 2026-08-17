@@ -44,6 +44,10 @@ body {
 }
 
 #app {
+    background: #06040a;
+}
+
+.game-viewport {
     background:
         radial-gradient(ellipse 120% 80% at 50% -20%, rgba(255, 45, 149, 0.14) 0%, transparent 55%),
         radial-gradient(ellipse 80% 60% at 100% 100%, rgba(255, 154, 26, 0.1) 0%, transparent 50%),
@@ -51,7 +55,7 @@ body {
         linear-gradient(180deg, var(--cp-bg) 0%, var(--cp-bg-deep) 100%);
 }
 
-#app::before {
+.game-viewport::before {
     content: '';
     position: absolute;
     inset: 0;
@@ -67,7 +71,7 @@ body {
     opacity: 0.6;
 }
 
-#app::after {
+.game-viewport::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -253,12 +257,12 @@ body {
 }
 
 /* Let the Phaser map backdrop show through — hide duplicate app chrome */
-#app.app--phase-map {
+#app.app--phase-map .game-viewport {
     background: transparent;
 }
 
-#app.app--phase-map::before,
-#app.app--phase-map::after {
+#app.app--phase-map .game-viewport::before,
+#app.app--phase-map .game-viewport::after {
     opacity: 0;
 }
 
@@ -268,12 +272,12 @@ body {
     z-index: 0;
 }
 
-#app.app--phase-menu {
+#app.app--phase-menu .game-viewport {
     background: transparent;
 }
 
-#app.app--phase-menu::before,
-#app.app--phase-menu::after {
+#app.app--phase-menu .game-viewport::before,
+#app.app--phase-menu .game-viewport::after {
     opacity: 0;
 }
 

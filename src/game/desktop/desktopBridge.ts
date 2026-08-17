@@ -23,6 +23,8 @@ export interface SignalChainDesktopApi {
     setFullscreen?: (enabled: boolean) => void;
     getFullscreen?: () => boolean | Promise<boolean>;
     onFullscreenChange?: (listener: FullscreenChangeListener) => (() => void);
+    setDisplayPreset?: (presetId: string) => void | Promise<void>;
+    getDisplayPreset?: () => string | Promise<string>;
     openExternal?: (url: string) => void;
     platform?: 'win32' | 'darwin' | 'linux' | string;
     steam?: SignalChainSteamApi;
