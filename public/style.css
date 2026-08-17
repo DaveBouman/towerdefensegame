@@ -2738,6 +2738,68 @@ html, body, #root {
     font-weight: 700;
 }
 
+.main-menu__changelog-empty {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #8aa0bc;
+    text-align: center;
+}
+
+.main-menu__changelog {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    text-align: left;
+}
+
+.main-menu__changelog-entry {
+    margin: 0;
+    padding: 0 0 18px;
+    border-bottom: 1px solid rgba(255, 45, 149, 0.16);
+}
+
+.main-menu__changelog-entry:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.main-menu__changelog-date {
+    margin: 0 0 4px;
+    font-family: 'Share Tech Mono', ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #8aa0bc;
+}
+
+.main-menu__changelog-title {
+    margin: 0 0 8px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #e8fbff;
+}
+
+.main-menu__changelog-body {
+    margin: 0 0 8px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #b8c8e0;
+}
+
+.main-menu__changelog-body:last-child {
+    margin-bottom: 0;
+}
+
+.main-menu__changelog-body strong {
+    color: #fff6ea;
+    font-weight: 700;
+}
+
 .main-menu__credits {
     display: flex;
     flex-direction: column;

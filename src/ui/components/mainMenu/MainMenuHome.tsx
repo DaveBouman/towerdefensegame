@@ -12,6 +12,7 @@ interface MainMenuHomeProps {
     onNewRunConfirm: () => void;
     onOpenArchives: () => void;
     onOpenHowToPlay: () => void;
+    onOpenChangelog: () => void;
     onOpenCredits: () => void;
     onOpenSettings: () => void;
 }
@@ -25,6 +26,7 @@ export const MainMenuHome = ({
     onNewRunConfirm,
     onOpenArchives,
     onOpenHowToPlay,
+    onOpenChangelog,
     onOpenCredits,
     onOpenSettings,
 }: MainMenuHomeProps) =>
@@ -90,6 +92,13 @@ export const MainMenuHome = ({
                     onClick={onOpenHowToPlay}
                 >
                     How to play
+                </button>
+                <button
+                    type="button"
+                    className="main-menu__secondary"
+                    onClick={onOpenChangelog}
+                >
+                    What&apos;s new
                 </button>
                 <button
                     type="button"

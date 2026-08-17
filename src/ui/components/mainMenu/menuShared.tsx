@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { emitRunSfx } from '../../../game/audio/emitRunSfx';
 
 export type MenuMode = 'boot' | 'pause';
-export type MenuScreen = 'home' | 'archives' | 'settings' | 'how-to-play' | 'credits' | 'confirm-new-run';
+export type MenuScreen = 'home' | 'archives' | 'settings' | 'how-to-play' | 'credits' | 'changelog' | 'confirm-new-run';
 
 export type ProgressCount = { unlocked: number; total: number };
 

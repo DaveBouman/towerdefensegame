@@ -368,6 +368,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-17 | **Main menu changelog.** Help → **What's new** opens a scrollable patch feed (`src/game/meta/changelog.ts`, `MainMenuChangelog.tsx`). Entries are added manually when shipping — not synced from this dev log. |
 | 2026-08-17 | **Exhaust pile + Redline.** Exhaust cards stay on the grid as spent routing links until energy refills, then go to a dedicated Exhaust pile (not the graveyard). New rare **Redline**: 13 damage and 13 armor, exhausts. |
 | 2026-08-17 | **Chain-step pacing on cards.** `getChainStepMs` reads optional `chainStepMsMultiplier` on the card, then `gameRules.chainStepMsByBehavior`, then 1.0. New/modded cards no longer need a TS switch in combat juice. |
 | 2026-08-17 | **Rad tick 4.** Each rad stack deals 4 damage at the start of the enemy turn, then decays by 1. |

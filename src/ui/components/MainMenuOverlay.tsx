@@ -25,6 +25,7 @@ import { CardCollectionOverlay } from './CardCollectionOverlay';
 import { BodyModBestiaryOverlay } from './BodyModBestiaryOverlay';
 import { CyberPanelChrome } from './CyberPanel';
 import { MainMenuArchives } from './mainMenu/MainMenuArchives';
+import { MainMenuChangelog } from './mainMenu/MainMenuChangelog';
 import { MainMenuCredits } from './mainMenu/MainMenuCredits';
 import { MainMenuHome } from './mainMenu/MainMenuHome';
 import { MainMenuHowToPlay } from './mainMenu/MainMenuHowToPlay';
@@ -224,6 +225,7 @@ export const MainMenuOverlay = ({
                             onNewRunConfirm={openNewRunConfirm}
                             onOpenArchives={openArchives}
                             onOpenHowToPlay={() => openScreen('how-to-play')}
+                            onOpenChangelog={() => openScreen('changelog')}
                             onOpenCredits={() => openScreen('credits')}
                             onOpenSettings={() => openScreen('settings')}
                         />
@@ -276,6 +278,10 @@ export const MainMenuOverlay = ({
 
                     {screen === 'credits' && (
                         <MainMenuCredits onBack={openHome} />
+                    )}
+
+                    {screen === 'changelog' && (
+                        <MainMenuChangelog onBack={openHome} />
                     )}
 
                     <p className="main-menu__version">
