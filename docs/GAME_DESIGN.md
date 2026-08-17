@@ -365,6 +365,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-17 | **Early Access label.** Main menu badge and build string now say Early Access (was Alpha); notice copy updated in `gameMeta.ts`. Footer version line follows `GAME_BUILD_LABEL`. |
 | 2026-08-17 | **Off-chain card beats.** Unchained attacks, defends, curses, and traps each pulse their card glow at end-of-chain with per-card floating feedback (not one lump sum). |
 | 2026-08-17 | **Combat playback hardening.** Chain finalize, hit VFX, and ability beats no longer throw into a stuck state — enemy response and round end always advance even if juice fails. |
 | 2026-08-17 | **Element hit VFX.** Fire, poison, bleed, overload, and plain attacks each show distinct impact bursts plus card-to-enemy strike beams (zigzag lightning for Overload, embers for fire, etc.). Poison stack applies get a bubble burst. |

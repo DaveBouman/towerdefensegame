@@ -3,6 +3,6 @@
 export const GAME_TITLE = 'Signal Chain';
 export const GAME_TAGLINE = 'Card-chain gauntlet';
 export const GAME_VERSION = '1.1.0';
-export const GAME_BUILD_LABEL = 'Alpha';
-export const GAME_ALPHA_NOTICE =
-    'This is an early alpha. Systems, balance, content, and UI are all bound to change.';
+export const GAME_BUILD_LABEL = 'Early Access';
+export const GAME_EARLY_ACCESS_NOTICE =
+    'This is an Early Access title. Balance, content, and features are still evolving — feedback welcome.';

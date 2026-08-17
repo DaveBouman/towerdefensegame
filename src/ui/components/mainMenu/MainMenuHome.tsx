@@ -1,6 +1,6 @@
 import { emitRunSfx } from '../../../game/audio/emitRunSfx';
 import { isDesktopShell, quitGame } from '../../../game/desktop/desktopBridge';
-import { GAME_ALPHA_NOTICE, GAME_BUILD_LABEL, GAME_TAGLINE, GAME_TITLE } from '../../../game/meta/gameMeta';
+import { GAME_BUILD_LABEL, GAME_EARLY_ACCESS_NOTICE, GAME_TAGLINE, GAME_TITLE } from '../../../game/meta/gameMeta';
 import { MenuSection, ProgressBadge, type ProgressCount } from './menuShared';
 
 interface MainMenuHomeProps {
@@ -135,9 +135,9 @@ export const MainMenuHome = ({
         <>
             <p className="main-menu__eyebrow">{GAME_TAGLINE}</p>
             <h1 className="main-menu__brand">{GAME_TITLE}</h1>
-            <p className="main-menu__alpha" role="note">
-                <span className="main-menu__alpha-badge">{GAME_BUILD_LABEL}</span>
-                {GAME_ALPHA_NOTICE}
+            <p className="main-menu__early-access" role="note">
+                <span className="main-menu__early-access-badge">{GAME_BUILD_LABEL}</span>
+                {GAME_EARLY_ACCESS_NOTICE}
             </p>
             <p className="main-menu__tagline">
                 Link the grid, outlast the street, and cut down the Warden.

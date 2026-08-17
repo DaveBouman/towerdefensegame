@@ -40,6 +40,8 @@ Push through a branching run map filled with street fights, signal events, shops
 
 Gebruik dit blok als "trust section" onder de feature-lijst. Als je nog geen definitieve aantallen wilt claimen, gebruik dan liever brede formuleringen dan harde cijfers.
 
+**Release status:** Early Access — balance, content, and features are still evolving. Steam copy should set that expectation (main menu uses the same label via `gameMeta.ts`).
+
 Signal Chain includes:
 
 - Dozens of specialty cards to discover through rewards, shops, and events, fire, rad, bleed, overload, combo routing, and more

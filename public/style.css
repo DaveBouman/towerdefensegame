@@ -2165,7 +2165,7 @@ html, body, #root {
     color: #c4b4a4;
 }
 
-.main-menu__alpha {
+.main-menu__early-access {
     display: flex;
     align-items: flex-start;
     gap: 10px;
@@ -2180,7 +2180,7 @@ html, body, #root {
     color: #f0e0b0;
 }
 
-.main-menu__alpha-badge {
+.main-menu__early-access-badge {
     flex: 0 0 auto;
     padding: 2px 7px;
     border-radius: 4px;
