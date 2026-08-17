@@ -82,6 +82,7 @@ export const PileViewOverlay = () =>
     }, []);
 
     const isDeck = payload?.kind === 'deck';
+    const isExhaust = payload?.kind === 'exhaust';
     const groups = useMemo(
         () => (payload ? groupCards(payload.cards, payload.kind === 'deck') : []),
         [ payload ],
@@ -98,8 +99,8 @@ export const PileViewOverlay = () =>
     return (
         <CardInspectOverlay
             onClose={close}
-            ariaLabel={isDeck ? 'Draw pile' : 'Discard pile'}
-            eyebrow={isDeck ? 'Draw pile' : 'Discard pile'}
+            ariaLabel={isDeck ? 'Draw pile' : isExhaust ? 'Exhaust pile' : 'Discard pile'}
+            eyebrow={isDeck ? 'Draw pile' : isExhaust ? 'Exhaust pile' : 'Discard pile'}
             title={payload.title}
             countLabel={`${payload.cards.length} cards`}
             entries={entries}
@@ -107,9 +108,15 @@ export const PileViewOverlay = () =>
             detailHint="Select a card to inspect its dossier."
             subtitle={isDeck
                 ? 'Grouped alphabetically — draw order is hidden. Arrow shows chain direction.'
-                : 'Top of pile first (newest discard). Arrow shows chain direction.'}
-            variant={isDeck ? 'cyan' : 'magenta'}
-            rootClassName={isDeck ? 'card-inspect--deck' : 'card-inspect--graveyard'}
+                : isExhaust
+                    ? 'Destroyed this fight — newest on top. They return in the next battle.'
+                    : 'Top of pile first (newest discard). Arrow shows chain direction.'}
+            variant={isDeck ? 'cyan' : isExhaust ? 'gold' : 'magenta'}
+            rootClassName={isDeck
+                ? 'card-inspect--deck'
+                : isExhaust
+                    ? 'card-inspect--exhaust'
+                    : 'card-inspect--graveyard'}
         />
     );
 };

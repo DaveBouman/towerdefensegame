@@ -12,7 +12,7 @@ export const computeRowArmor = (board: BoardModel, row: number): number =>
         const slot = { row, col };
         const card = board.getCardAt(slot);
 
-        if (!card)
+        if (!card || card.spent)
         {
             continue;
         }

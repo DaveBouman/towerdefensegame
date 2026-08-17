@@ -22,6 +22,7 @@ export interface BattleAttackFlowDeps
     playerView?: PlayerHealthView;
     armorView?: ArmorView;
     graveyardView?: CardPileView;
+    exhaustView?: CardPileView;
     getRerollModeActive: () => boolean;
     cancelReroll: () => void;
     emitAttackReadiness: () => void;
@@ -246,6 +247,7 @@ export const resolveEnemyPhase = (deps: BattleAttackFlowDeps): void =>
         playerView: deps.playerView,
         armorView: deps.armorView,
         graveyardView: deps.graveyardView,
+        exhaustView: deps.exhaustView,
         presenter: deps.presenter,
         syncBoardFromSession: deps.syncBoardFromSession,
         syncPileViews: deps.syncPileViews,

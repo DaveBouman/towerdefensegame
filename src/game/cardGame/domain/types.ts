@@ -20,8 +20,13 @@ export interface CardInstance {
     /** After Reroute resolves, the chosen direction is shown instead of `?`. */
     jokerDirectionChosen?: boolean;
     owner?: CardOwner;
-    /** Set when a single-use card is played — destroyed for this battle, not sent to the graveyard. */
+    /** Set when a single-use card is played — destroyed for this battle, not reshuffled. */
     exhausted?: boolean;
+    /**
+     * Exhaust card has already fired this energy round.
+     * Stays on the grid as routing-only until the board clears into the exhaust pile.
+     */
+    spent?: boolean;
 }
 
 export type BoardCell = CardInstance | null;

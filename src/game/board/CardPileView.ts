@@ -21,7 +21,7 @@ export class CardPileView
     private readonly frame: Phaser.GameObjects.Graphics;
     private readonly frameHitArea: Phaser.GameObjects.Rectangle;
     private count = 0;
-    private readonly kind: 'deck' | 'graveyard';
+    private readonly kind: 'deck' | 'graveyard' | 'exhaust';
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -29,13 +29,21 @@ export class CardPileView
         x: number,
         y: number,
         label: string,
-        kind: 'deck' | 'graveyard',
+        kind: 'deck' | 'graveyard' | 'exhaust',
     )
     {
         this.kind = kind;
         const { pileWidth, pileHeight } = layout;
-        const fill = kind === 'deck' ? CYBER.deckFill : CYBER.graveFill;
-        const border = kind === 'deck' ? CYBER.deckBorder : CYBER.graveBorder;
+        const fill = kind === 'deck'
+            ? CYBER.deckFill
+            : kind === 'exhaust'
+                ? CYBER.exhaustFill
+                : CYBER.graveFill;
+        const border = kind === 'deck'
+            ? CYBER.deckBorder
+            : kind === 'exhaust'
+                ? CYBER.exhaustBorder
+                : CYBER.graveBorder;
         const frameW = pileWidth + 12;
         const frameH = pileHeight + 34;
         const cardOptions = {
@@ -107,7 +115,7 @@ export class CardPileView
             const { container: graphic } = buildCardBackGraphic(
                 scene,
                 cardOptions,
-                kind === 'deck' ? CYBER.cyan : CYBER.graveBorder,
+                kind === 'deck' ? CYBER.cyan : kind === 'exhaust' ? CYBER.purple : CYBER.graveBorder,
             );
 
             slot.add(graphic);
@@ -121,7 +129,7 @@ export class CardPileView
         }).setOrigin(0.5, 0);
 
         const title = scene.add.text(pileWidth / 2 + 6, pileHeight + 36, label, {
-            ...uiTextStyle(13, kind === 'deck' ? '#7af0ff' : '#ffd4b8', { bold: true }),
+            ...uiTextStyle(13, kind === 'deck' ? '#7af0ff' : kind === 'exhaust' ? '#d8b8ff' : '#ffd4b8', { bold: true }),
         }).setOrigin(0.5, 0);
 
         this.container.add([ frame, well, brackets, accent, this.stackContainer, this.countText, title ]);
@@ -241,7 +249,7 @@ export class CardPileView
             height: PILE_CARD_HEIGHT,
         };
         const visibleCards = Math.min(this.count, MAX_VISIBLE_STACK);
-        const showTopFace = this.kind === 'graveyard' && previewCard !== null;
+        const showTopFace = this.kind !== 'deck' && previewCard !== null;
 
         for (let i = 0; i < this.stackSlots.length; i++)
         {
@@ -269,7 +277,7 @@ export class CardPileView
                 const { container } = buildCardBackGraphic(
                     this.scene,
                     cardOptions,
-                    this.kind === 'deck' ? CYBER.cyan : CYBER.graveBorder,
+                    this.kind === 'deck' ? CYBER.cyan : this.kind === 'exhaust' ? CYBER.purple : CYBER.graveBorder,
                 );
 
                 slot.add(container);

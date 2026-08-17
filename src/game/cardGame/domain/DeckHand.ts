@@ -12,6 +12,7 @@ export class DeckHand
     private readonly hand: CardInstance[] = [];
     private readonly deck: CardInstance[] = [];
     private readonly discard: CardInstance[] = [];
+    private readonly exhausted: CardInstance[] = [];
     private rerollsRemaining: number;
     private readonly maxRerollsPerFloor: number;
 
@@ -54,11 +55,17 @@ export class DeckHand
         return this.discard.length;
     }
 
-    getPileCounts (): { deckSize: number; discardSize: number }
+    getExhaustSize (): number
+    {
+        return this.exhausted.length;
+    }
+
+    getPileCounts (): { deckSize: number; discardSize: number; exhaustSize: number }
     {
         return {
             deckSize: this.deck.length,
             discardSize: this.discard.length,
+            exhaustSize: this.exhausted.length,
         };
     }
 
@@ -115,6 +122,22 @@ export class DeckHand
     getDiscardTopCard (): CardInstance | undefined
     {
         return this.discard.length > 0 ? this.discard[this.discard.length - 1] : undefined;
+    }
+
+    getExhaustedDefinitionIds (): string[]
+    {
+        return this.exhausted.map((card) => card.definitionId);
+    }
+
+    /** Exhaust pile cards newest-last (top of pile is the last entry). */
+    getExhaustedCards (): readonly CardInstance[]
+    {
+        return this.exhausted;
+    }
+
+    getExhaustTopCard (): CardInstance | undefined
+    {
+        return this.exhausted.length > 0 ? this.exhausted[this.exhausted.length - 1] : undefined;
     }
 
     getRerollsRemaining (): number
@@ -255,11 +278,13 @@ export class DeckHand
 
             card.exhausted = true;
             removed.push(card);
+            this.exhausted.push(card);
         }
 
         if (removed.length > 0)
         {
             this.emitHandChanged();
+            this.emitPilesChanged();
         }
 
         return removed;
@@ -285,6 +310,23 @@ export class DeckHand
         }
 
         this.discard.push(...cards);
+        this.emitPilesChanged();
+    }
+
+    /** Battle-destroyed cards — skip the graveyard and never reshuffle this fight. */
+    exhaustToPile (cards: readonly CardInstance[]): void
+    {
+        if (cards.length === 0)
+        {
+            return;
+        }
+
+        for (const card of cards)
+        {
+            card.exhausted = true;
+            this.exhausted.push(card);
+        }
+
         this.emitPilesChanged();
     }
 

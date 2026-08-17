@@ -249,8 +249,9 @@ const CARD_BLURBS: Record<string, string> = {
     overclock: 'Damage dealt +10% from your attack steps and bonuses.',
     echo: 'Re-activates the previous chain card — repeats its damage, armor, modifiers, and thorns.',
     switchback: 'Deals double damage, then jumps your lock to the next living enemy.',
-    salvage: 'Deals 4 damage. Exhausted after use this fight. Heals 7 HP if its damage kills an enemy.',
-    courier: 'Discards 2 hand cards to the graveyard when played. Single use per run.',
+    salvage: 'Deals 4 damage. Single use this fight — stays on the grid until energy refills, then goes to Exhaust.',
+    courier: 'Discards 2 hand cards to the graveyard when played. Single use this fight.',
+    redline: 'Rare all-in — 13 damage and 13 armor, then stays as a dead link until energy refills.',
 };
 
 export interface CardRewardDisplay {

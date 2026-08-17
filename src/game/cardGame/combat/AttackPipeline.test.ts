@@ -802,4 +802,36 @@ describe('player thorns chain resolve', () =>
         expect(chain[0]?.thorns).toBe(1);
         expect(chain[0]?.behaviorId).toBe('thorns');
     });
+
+    it('spent exhaust cards keep routing but contribute nothing', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+        const salvage = createCardInstance('salvage', 'right');
+
+        salvage.exhausted = true;
+        salvage.spent = true;
+        board.placeCard({ row: 0, col: 0 }, salvage);
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('attack', 'right'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+
+        expect(chain).toHaveLength(2);
+        expect(chain[0]?.damage).toBe(0);
+        expect(chain[0]?.armor).toBe(0);
+        expect(chain[1]?.damage).toBeGreaterThan(0);
+    });
+
+    it('redline contributes both attack damage and armor', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('redline', 'right'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+
+        expect(chain).toHaveLength(1);
+        expect(chain[0]?.damage).toBe(13);
+        expect(chain[0]?.armor).toBe(13);
+        expect(chain[0]?.behaviorId).toBe('redline');
+    });
 });

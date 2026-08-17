@@ -261,7 +261,7 @@ export class CardGameSession
         return this.deckHand.getDiscardSize();
     }
 
-    getPileCounts (): { deckSize: number; discardSize: number }
+    getPileCounts (): { deckSize: number; discardSize: number; exhaustSize: number }
     {
         return this.deckHand.getPileCounts();
     }
@@ -300,6 +300,21 @@ export class CardGameSession
     getDiscardTopCard (): CardInstance | undefined
     {
         return this.deckHand.getDiscardTopCard();
+    }
+
+    getExhaustSize (): number
+    {
+        return this.deckHand.getExhaustSize();
+    }
+
+    getExhaustedCards (): readonly CardInstance[]
+    {
+        return this.deckHand.getExhaustedCards();
+    }
+
+    getExhaustTopCard (): CardInstance | undefined
+    {
+        return this.deckHand.getExhaustTopCard();
     }
 
     /** Single-use cards played this battle (for tests and debugging). */
@@ -1110,6 +1125,21 @@ export class CardGameSession
     completeAttack (sequence: AttackSequence): void
     {
         this.combat.completeAttack(sequence);
+        this.markOnBoardExhaustedSpent();
+    }
+
+    /** After the first attack, exhaust cards stay as dead routing links until the wipe. */
+    private markOnBoardExhaustedSpent (): void
+    {
+        for (const slot of this.board.slotsInOrder())
+        {
+            const card = this.board.getCardAt(slot);
+
+            if (card?.exhausted)
+            {
+                card.spent = true;
+            }
+        }
     }
 
     releaseAttackLock (): void
@@ -1234,6 +1264,7 @@ export class CardGameSession
     {
         const keepIds = this.getLatchKeepInstanceIds();
         const toDiscard: CardInstance[] = [];
+        const toExhaust: CardInstance[] = [];
 
         for (const slot of this.board.slotsInOrder())
         {
@@ -1249,15 +1280,23 @@ export class CardGameSession
                 continue;
             }
 
-            if (isPlayerOwnedCard(card) && !card.exhausted)
+            if (isPlayerOwnedCard(card))
             {
-                toDiscard.push(card);
+                if (card.exhausted)
+                {
+                    toExhaust.push(card);
+                }
+                else
+                {
+                    toDiscard.push(card);
+                }
             }
 
             this.board.removeCard(slot);
         }
 
         this.deckHand.discardToPile(toDiscard);
+        this.deckHand.exhaustToPile(toExhaust);
         this.reseedLatchFromBoard();
     }
 

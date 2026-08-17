@@ -227,7 +227,8 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | Battle modifiers | `battleModifiers.ts`, `battle-mod` behavior, `battle-mod` enemy intent | ±10% to enemy attack, damage taken, shield gained, or damage dealt — player cards (Glitch/Hardwire/Patch/Overclock) and enemy intents. **All modifiers last until energy refills.** Field **Boost** multiplies the next battle-mod delta. Active chips sit **below** the player/enemy panels (`BattleModifierStatusView`): enemy-attack under enemies, other stats under the player. Each stat has a distinct color; % text is green (buff) or red (debuff). |
 | Echo | `echo` behavior, `echoReplay.ts` | Re-activates the previous chain card (damage, armor, battle modifiers, thorns) then activates itself |
 | Hazards/traps | `hazardBehavior.ts`, `AttackPipeline.applyBombConversion`, `FieldEffects.resolveHazardsAfterAttack` | Skip → slot explodes (4 dmg) + scorches tile; **route a card into it (or start the chain on it and continue)** → the trap converts to that card's type and joins the chain. **All resolved traps are removed from the board after the attack.** Enemies only place traps in the **last 3 columns**. |
-| **Curse cards** | `cards.json` (`unplayable`, `nonRerollable`, `handEndPenalty`), `CardGameSession.resolveHandEndPenalties` | Bad cards that clog resources — **Burden** (place to clear hand; **cannot be rerolled**; route through it safely or take **double hand penalty** if left off-chain on attack; 5 dmg if held in hand at end of turn). **Fuse** (weak attack, 8 dmg if not placed by end of turn). Penalties resolve after **each attack**. **Saboteur** adds Burdens via `curseHand` |
+| Curse cards | `cards.json` (`unplayable`, `nonRerollable`, `handEndPenalty`), `CardGameSession.resolveHandEndPenalties` | Bad cards that clog resources — **Burden** (place to clear hand; **cannot be rerolled**; route through it safely or take **double hand penalty** if left off-chain on attack; 5 dmg if held in hand at end of turn). **Fuse** (weak attack, 8 dmg if not placed by end of turn). Penalties resolve after **each attack**. **Saboteur** adds Burdens via `curseHand` |
+| Exhaust | `exhaustOnPlay`, Exhaust pile | **Courier**, **Salvage**, **Execution**, **Redline**. After the card fires it stays on the grid as a dead routing link (no pickup, no extra effect) until energy refills; then it flies to the **Exhaust** pile (not the graveyard). Returns in the next fight. **Redline** deals 13 damage and grants 13 armor (16/16 upgraded). |
 | Shield layer | Both sides | Absorbs before HP (rad bypasses shield) |
 | Enemy passives | `enemyPassives/` | See enemy roster below |
 | Combat traits | `combat/combatTraits/` | Defensive abilities (Damage Cap, Hit Ward) with icons below the enemy name; also grantable via `combatTraits` on enemies or body mods |
@@ -351,6 +352,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | Run flow (phases, carry-over HP, deck, rewards) | `src/App.tsx` |
 | Change balance numbers | `src/game/cardGame/config/gameRules.json` |
 | Add/edit cards | `src/game/cardGame/config/cards.json`, `cardRegistry.ts`. Optional `chainStepMsMultiplier` on a card; behavior defaults in `gameRules.json` `chainStepMsByBehavior`. |
+| Exhaust pile | `DeckHand` exhaust list; Phaser `CardPileView` kind `exhaust`; inspector via `PILE_VIEW_OPEN` |
 | Add/edit enemies | `src/game/cardGame/config/enemies.json`, `enemyCatalog.ts`, `enemyPassives/`; in-fight look: `presentation/enemyIdentity.ts` + `public/assets/enemies/` |
 | Chain behavior | `src/game/cardGame/combat/AttackPipeline.ts` |
 | New card ability | `src/game/cardGame/effects/` (behaviors), `abilities/` (chain abilities: rad/fire/bleed/fortify/overload) + register in `chainAbilityRegistry.ts` |
@@ -366,6 +368,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-17 | **Exhaust pile + Redline.** Exhaust cards stay on the grid as spent routing links until energy refills, then go to a dedicated Exhaust pile (not the graveyard). New rare **Redline**: 13 damage and 13 armor, exhausts. |
 | 2026-08-17 | **Chain-step pacing on cards.** `getChainStepMs` reads optional `chainStepMsMultiplier` on the card, then `gameRules.chainStepMsByBehavior`, then 1.0. New/modded cards no longer need a TS switch in combat juice. |
 | 2026-08-17 | **Rad tick 4.** Each rad stack deals 4 damage at the start of the enemy turn, then decays by 1. |
 | 2026-08-17 | **Hardwire / battle-mod icons.** Hardwire, Glitch, Patch, and Overclock now show kind icons (Hardwire uses the defend glyph). Reroute swaps its `?` for the chosen arrow when it resolves. |

@@ -133,18 +133,19 @@ export const computeOffChainBonuses = (
 
         const card = board.getCardAt(slot);
 
-        if (!card || isEnemyOwnedCard(card) || isFieldOwnedCard(card))
+        if (!card || card.spent || isEnemyOwnedCard(card) || isFieldOwnedCard(card))
         {
             continue;
         }
 
         const definition = getCardDefinitionOrThrow(card.definitionId);
 
-        if (definition.behaviorId === 'attack')
+        if (definition.behaviorId === 'attack' || definition.behaviorId === 'redline')
         {
             damage += GAME_RULES.offChainBonus.attackDamage;
         }
-        else if (definition.behaviorId === 'defend')
+
+        if (definition.behaviorId === 'defend' || definition.behaviorId === 'redline')
         {
             armor += GAME_RULES.offChainBonus.defendArmor;
         }

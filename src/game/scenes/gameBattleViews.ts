@@ -24,6 +24,7 @@ export interface GameBattleViewBundle {
     armorView?: ArmorView;
     deckView?: CardPileView;
     graveyardView?: CardPileView;
+    exhaustView?: CardPileView;
     battlefieldBackground?: BattlefieldBackgroundView;
     lowHpVignette?: Phaser.GameObjects.Rectangle;
     phaseShiftHandler?: (payload: { label: string; message: string }) => void;
@@ -49,6 +50,7 @@ export const destroyBattleViews = (host: GameBattleViewBundle): void =>
     host.armorView?.destroy();
     host.deckView?.destroy();
     host.graveyardView?.destroy();
+    host.exhaustView?.destroy();
     destroyGameTooltipController();
     host.presenter = undefined;
     host.boardView = undefined;
@@ -59,6 +61,7 @@ export const destroyBattleViews = (host: GameBattleViewBundle): void =>
     host.armorView = undefined;
     host.deckView = undefined;
     host.graveyardView = undefined;
+    host.exhaustView = undefined;
     host.session = undefined;
     host.battlefieldBackground?.destroy();
     host.battlefieldBackground = undefined;

@@ -55,6 +55,7 @@ const EN = {
     'card.citadel': 'Citadel',
     'card.execution': 'Execution',
     'card.amp-core': 'Amp Core',
+    'card.redline': 'Redline',
 
     // Enemies
     'enemy.basic': 'Raider',

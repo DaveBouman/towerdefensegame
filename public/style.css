@@ -3100,6 +3100,32 @@ html, body, #root {
     border-color: rgba(255, 45, 149, 0.75);
 }
 
+.card-inspect--exhaust .card-inspect__subtitle,
+.card-inspect--exhaust .card-inspect__empty {
+    color: #c8b0e0;
+}
+
+.card-inspect--exhaust .card-inspect__empty {
+    border-color: rgba(196, 77, 255, 0.22);
+}
+
+.card-inspect--exhaust .card-collection__item:hover,
+.card-inspect--exhaust .card-collection__item--selected {
+    border-color: rgba(196, 77, 255, 0.45);
+}
+
+.card-inspect--exhaust .card-collection__detail {
+    border-color: rgba(196, 77, 255, 0.22);
+}
+
+.card-inspect--exhaust .card-collection__close {
+    border-color: rgba(196, 77, 255, 0.4);
+}
+
+.card-inspect--exhaust .card-collection__close:hover {
+    border-color: rgba(196, 77, 255, 0.75);
+}
+
 .card-collection.card-inspect {
     z-index: 170;
 }

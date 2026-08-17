@@ -20,5 +20,7 @@ describe('boardLayout', () =>
         expect(layout.deckX).toBeGreaterThanOrEqual(48);
         expect(layout.graveyardX).toBeGreaterThan(layout.handCenterX);
         expect(layout.graveyardX).toBeGreaterThan(layout.deckX);
+        expect(layout.exhaustX).toBe(layout.graveyardX);
+        expect(layout.exhaustY).toBeLessThan(layout.graveyardY);
     });
 });

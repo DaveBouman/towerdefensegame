@@ -24,6 +24,8 @@ const BASE_LAYOUT: BoardLayout = {
     deckY: 500,
     graveyardX: 1100,
     graveyardY: 500,
+    exhaustX: 1100,
+    exhaustY: 370,
     pileWidth: 64,
     pileHeight: 88,
 };

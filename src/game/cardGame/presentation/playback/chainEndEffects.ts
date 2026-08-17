@@ -192,7 +192,12 @@ function playOffChainBonusVisual (
 
         const behaviorId = getCardDefinitionOrThrow(card.definitionId).behaviorId;
 
-        return behaviorId === 'attack' || behaviorId === 'defend';
+        if (card.spent)
+        {
+            return false;
+        }
+
+        return behaviorId === 'attack' || behaviorId === 'defend' || behaviorId === 'redline';
     });
 
     runSequentialSlotVisuals(deps, actionableSlots, (slot, done) =>
@@ -226,7 +231,7 @@ function playOffChainCardVisual (
 
     try
     {
-        if (definition.behaviorId === 'attack')
+        if (definition.behaviorId === 'attack' || definition.behaviorId === 'redline')
         {
             const damage = GAME_RULES.offChainBonus.attackDamage;
 
@@ -249,7 +254,8 @@ function playOffChainCardVisual (
                 );
             }
         }
-        else if (definition.behaviorId === 'defend')
+
+        if (definition.behaviorId === 'defend' || definition.behaviorId === 'redline')
         {
             const rawArmor = GAME_RULES.offChainBonus.defendArmor;
 

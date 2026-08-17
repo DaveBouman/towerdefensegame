@@ -275,7 +275,6 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             'When played, discards up to 2 cards from the left of your hand into the graveyard.',
             'Includes curse cards (Burden).',
             'If your hand has fewer than 2 cards, discards as many as remain.',
-            'Single use this fight — destroyed instead of going to the graveyard.',
             'Neutral on the chain — no direct attack or defend effect.',
         ],
     })),
@@ -284,7 +283,12 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         lines: [
             `Deals ${ctx.definition.power} damage when activated in the chain.`,
             `Heal ${ctx.definition.healOnKill ?? 0} HP if this card's damage kills an enemy.`,
-            'Destroyed after use this fight — does not enter the graveyard.',
+        ],
+    })),
+    provider('redline', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Deals ${ctx.definition.power} damage and grants ${ctx.definition.power} armor when activated in the chain.`,
         ],
     })),
     provider('shiv', (ctx) => ({

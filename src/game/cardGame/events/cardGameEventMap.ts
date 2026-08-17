@@ -12,7 +12,7 @@ export interface CardGameEventMap {
     'card-game-card-placed': { slot: SlotPosition; card: CardInstance; replaced: boolean };
     'card-game-armor-changed': { armor: number };
     'card-game-hand-changed': { hand: CardInstance[] };
-    'card-game-piles-changed': { deckSize: number; discardSize: number };
+    'card-game-piles-changed': { deckSize: number; discardSize: number; exhaustSize: number };
     'card-game-rerolls-changed': { rerollsRemaining: number; maxRerollsPerFloor: number };
     'card-game-attack-started': { chainStart: SlotPosition };
     'card-game-attack-step': { step: AttackStep; stepIndex: number; sequence: AttackSequence };

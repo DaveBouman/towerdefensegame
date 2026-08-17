@@ -1,4 +1,4 @@
-import { getCardDefinitionOrThrow } from '../../config/cardRegistry';
+import { getCardDefinitionOrThrow, isCardExhaustOnPlay } from '../../config/cardRegistry';
 import type { CardInstance } from '../../domain/types';
 import { defaultCardTooltipProviders } from './defaultCardTooltipProviders';
 import type { CardTooltipContent, CardTooltipContext, CardTooltipOverride, CardTooltipProvider } from './types';
@@ -62,7 +62,17 @@ export const resolveCardTooltip = (card: CardInstance): CardTooltipContent =>
         definition.tooltipProviderId,
     );
     const provider = getCardTooltipProvider(providerId) ?? getCardTooltipProvider('default')!;
-    const content = provider.getTooltip(ctx);
+    const content = mergeOverride(provider.getTooltip(ctx), definition.tooltip);
+    const lines = [ ...content.lines ];
 
-    return mergeOverride(content, definition.tooltip);
+    if (isCardExhaustOnPlay(definition))
+    {
+        lines.push(
+            card.spent
+                ? 'Spent — routing only until energy refills, then this card goes to the Exhaust pile.'
+                : 'Single use this fight. After it fires, it stays on the grid as a dead link until energy refills, then goes to the Exhaust pile.',
+        );
+    }
+
+    return { title: content.title, lines };
 };

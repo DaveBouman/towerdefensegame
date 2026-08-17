@@ -682,10 +682,9 @@ export class CardBoardView
         this.bringChainStartToFront();
     }
 
-    /** Flies proxy cards to the graveyard, then resets empty slots. Latch pins stay. */
-    animateCardsToGraveyard (
-        targetX: number,
-        targetY: number,
+    /** Flies proxy cards to the graveyard or exhaust pile, then resets empty slots. Latch pins stay. */
+    animateCardsToPiles (
+        targets: { graveyard: { x: number; y: number }; exhaust: { x: number; y: number } },
         onComplete: () => void,
         keepInstanceIds: ReadonlySet<string> = new Set(),
     ): void
@@ -696,7 +695,7 @@ export class CardBoardView
 
         const { tileSize } = GRID_CONFIG;
         const cardSize = tileSize - SLOT_INSET * 2;
-        const proxies: Phaser.GameObjects.Container[] = [];
+        const flights: { proxy: Phaser.GameObjects.Container; x: number; y: number }[] = [];
 
         for (let row = 0; row < GRID_CONFIG.rows; row++)
         {
@@ -721,10 +720,11 @@ export class CardBoardView
                     height: cardSize,
                 });
                 const proxy = this.scene.add.container(matrix.tx, matrix.ty);
+                const dest = card.exhausted ? targets.exhaust : targets.graveyard;
 
                 proxy.setDepth(1500);
                 proxy.add(graphic);
-                proxies.push(proxy);
+                flights.push({ proxy, x: dest.x, y: dest.y });
 
                 this.scene.tweens.killTweensOf(wrapper);
                 wrapper.setScale(1);
@@ -740,7 +740,7 @@ export class CardBoardView
             }
         }
 
-        if (proxies.length === 0)
+        if (flights.length === 0)
         {
             onComplete();
             return;
@@ -757,7 +757,7 @@ export class CardBoardView
 
             completed = true;
 
-            for (const proxy of proxies)
+            for (const { proxy } of flights)
             {
                 this.scene.tweens.killTweensOf(proxy);
                 proxy.destroy();
@@ -766,13 +766,13 @@ export class CardBoardView
             onComplete();
         };
 
-        for (const proxy of proxies)
+        for (const flight of flights)
         {
             this.scene.tweens.add({
-                targets: proxy,
-                x: targetX,
-                y: targetY,
-                angle: proxy.angle + 180,
+                targets: flight.proxy,
+                x: flight.x,
+                y: flight.y,
+                angle: flight.proxy.angle + 180,
                 scaleX: 0.25,
                 scaleY: 0.25,
                 alpha: 0,
@@ -1160,6 +1160,11 @@ export class CardBoardView
         this.container.add(wrapper);
         this.container.bringToTop(wrapper);
 
+        if (card.spent)
+        {
+            wrapper.setAlpha(0.42);
+        }
+
         if (this.boardDragHandlers)
         {
             hitArea.on('pointerdown', (pointer: Phaser.Input.Pointer) =>
@@ -1179,6 +1184,11 @@ export class CardBoardView
                 if (col === startCol)
                 {
                     this.beginStartColumnPointer(currentSlot, currentCard, pointer, size);
+                    return;
+                }
+
+                if (currentCard.exhausted)
+                {
                     return;
                 }
 
@@ -1228,6 +1238,11 @@ export class CardBoardView
             const dy = movePointer.worldY - originY;
 
             if ((dx * dx) + (dy * dy) < CHAIN_START_TAP_SLOP_PX * CHAIN_START_TAP_SLOP_PX)
+            {
+                return;
+            }
+
+            if (card.exhausted)
             {
                 return;
             }

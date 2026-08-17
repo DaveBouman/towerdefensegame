@@ -10,6 +10,7 @@ import { siphonBehavior } from './siphonBehavior';
 import { jokerBehavior } from './jokerBehavior';
 import { loopResetBehavior } from './loopResetBehavior';
 import { poisonBehavior } from './poisonBehavior';
+import { redlineBehavior } from './redlineBehavior';
 import { thornsBehavior } from './thornsBehavior';
 import type { CardBehavior } from './types';
 
@@ -26,6 +27,7 @@ const behaviors = new Map<string, CardBehavior>([
     [ jokerBehavior.id, jokerBehavior ],
     [ loopResetBehavior.id, loopResetBehavior ],
     [ poisonBehavior.id, poisonBehavior ],
+    [ redlineBehavior.id, redlineBehavior ],
     [ thornsBehavior.id, thornsBehavior ],
 ]);
 

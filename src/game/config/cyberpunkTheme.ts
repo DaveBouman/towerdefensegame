@@ -46,6 +46,8 @@ export const CYBER = {
     deckBorder: 0x00e8ff,
     graveFill: 0x1a1018,
     graveBorder: 0xff6b35,
+    exhaustFill: 0x140c18,
+    exhaustBorder: 0xc44dff,
     cardBack: 0x120c16,
     cardBackBorder: 0x4a2840,
     cardInner: 0x0c0810,

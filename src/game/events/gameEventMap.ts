@@ -11,8 +11,10 @@ export interface PileCardEntry {
     loopArrow?: import('../cardGame/domain/cardDirections').CardDirection;
 }
 
+export type PileViewKind = 'deck' | 'graveyard' | 'exhaust';
+
 export interface PileViewPayload {
-    kind: 'deck' | 'graveyard';
+    kind: PileViewKind;
     title: string;
     cards: PileCardEntry[];
 }

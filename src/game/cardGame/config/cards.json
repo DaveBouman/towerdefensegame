@@ -660,6 +660,19 @@
       "upgrade": {
         "power": 7
       }
+    },
+    {
+      "id": "redline",
+      "label": "Redline",
+      "power": 13,
+      "behaviorId": "redline",
+      "visualId": "redline",
+      "arrowPool": "orthogonal",
+      "exhaustOnPlay": true,
+      "tier": 3,
+      "upgrade": {
+        "power": 16
+      }
     }
   ]
 }

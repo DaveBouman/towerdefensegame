@@ -90,6 +90,8 @@ export const tryBuildActivationStep = (
     const definition = getCardDefinitionOrThrow(card.definitionId);
     const isLoop = isLoopResetDefinition(definition);
     const isLoopPassThrough = isLoop && state.loopResetConsumed;
+    const isSpentPassThrough = card.spent === true;
+    const skipEffects = isLoopPassThrough || isSpentPassThrough;
     const key = slotKey(slot);
     const maxActivations = definition.maxChainActivations ?? 1;
     const activations = state.activationCounts.get(key) ?? 0;
@@ -107,11 +109,11 @@ export const tryBuildActivationStep = (
 
     const ctx = buildStepContext(board, slot, card);
     const behavior = getCardBehaviorOrThrow(ctx.definition.behaviorId);
-    const attack = isLoopPassThrough
+    const attack = skipEffects
         ? { includeInSequence: false, damage: 0 }
         : behavior.contributeToAttack(ctx);
-    const armor = isLoopPassThrough ? 0 : behavior.contributeArmor?.(ctx) ?? 0;
-    const thorns = isLoopPassThrough ? 0 : behavior.contributeThorns?.(ctx) ?? 0;
+    const armor = skipEffects ? 0 : behavior.contributeArmor?.(ctx) ?? 0;
+    const thorns = skipEffects ? 0 : behavior.contributeThorns?.(ctx) ?? 0;
 
     if (isLoop && !isLoopPassThrough)
     {

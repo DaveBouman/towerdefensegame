@@ -67,5 +67,10 @@ export const formatCardPowerLabel = (definition: CardDefinition): string =>
         return `${definition.power}!`;
     }
 
+    if (definition.behaviorId === 'redline')
+    {
+        return `${definition.power}/${definition.power}`;
+    }
+
     return String(definition.power);
 };

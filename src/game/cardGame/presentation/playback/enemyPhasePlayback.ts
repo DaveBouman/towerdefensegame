@@ -16,6 +16,7 @@ export interface EnemyPhaseResolveDeps
     playerView?: PlayerHealthView;
     armorView?: ArmorView;
     graveyardView?: CardPileView;
+    exhaustView?: CardPileView;
     presenter?: CardGamePresenter;
     syncBoardFromSession: () => void;
     syncPileViews: () => void;
@@ -76,17 +77,18 @@ export function resolveEnemyPhasePlayback (deps: EnemyPhaseResolveDeps): void
         }
 
         const graveyardTarget = deps.graveyardView?.getReceivePosition() ?? { x: 0, y: 0 };
+        const exhaustTarget = deps.exhaustView?.getReceivePosition() ?? graveyardTarget;
         const keepIds = session.getLatchKeepInstanceIds();
 
-        boardView.animateCardsToGraveyard(
-            graveyardTarget.x,
-            graveyardTarget.y,
+        boardView.animateCardsToPiles(
+            { graveyard: graveyardTarget, exhaust: exhaustTarget },
             () =>
             {
                 session.clearBoard();
                 session.tickDampenField();
                 deps.syncBoardFromSession();
                 deps.graveyardView?.pulse();
+                deps.exhaustView?.pulse();
                 deps.syncPileViews();
                 session.finishPlayerRound();
                 syncBoardAfterEnemyResponse(deps);

@@ -24,6 +24,8 @@ export interface BoardLayout {
     deckY: number;
     graveyardX: number;
     graveyardY: number;
+    exhaustX: number;
+    exhaustY: number;
     pileWidth: number;
     pileHeight: number;
 }
@@ -40,6 +42,7 @@ export interface BoardLayoutViews {
     armor: LayoutPositionable;
     deck: LayoutPositionable;
     graveyard: LayoutPositionable;
+    exhaust: LayoutPositionable;
 }
 
 /** Repositions scene containers after a canvas resize. */
@@ -60,6 +63,7 @@ export const applyBoardLayout = (layout: BoardLayout, views: BoardLayoutViews): 
     views.armor.setPosition(layout.armorX, layout.armorY);
     views.deck.setPosition(layout.deckX, layout.deckY);
     views.graveyard.setPosition(layout.graveyardX, layout.graveyardY);
+    views.exhaust.setPosition(layout.exhaustX, layout.exhaustY);
 };
 
 /** 5×5 grid centered on screen; player left, enemies right. */
@@ -93,6 +97,8 @@ export const computeBoardLayout = (
     const pileSideInset = Math.max(48, Math.round(canvasWidth * 0.05));
     const deckX = pileSideInset;
     const graveyardX = canvasWidth - pileFrameWidth - pileSideInset;
+    const exhaustX = graveyardX;
+    const exhaustY = Math.max(playableTop, pileY - pileFrameHeight - 10);
 
     return {
         canvasWidth,
@@ -116,6 +122,8 @@ export const computeBoardLayout = (
         deckY: pileY,
         graveyardX,
         graveyardY: pileY,
+        exhaustX,
+        exhaustY,
         pileWidth,
         pileHeight,
     };

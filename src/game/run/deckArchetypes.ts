@@ -15,6 +15,7 @@ const CARD_ARCHETYPE_WEIGHTS: Record<string, Partial<Record<DeckArchetypeId, num
     serration: { blade: 1 },
     exsanguinate: { blade: 1 },
     execution: { blade: 0.9 },
+    redline: { blade: 0.7, bulwark: 0.7 },
     switchback: { blade: 0.85 },
     'phase-relay': { blade: 0.5, bulwark: 0.35 },
     'phase-bulwark': { bulwark: 0.85 },

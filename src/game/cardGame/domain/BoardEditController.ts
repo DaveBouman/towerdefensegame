@@ -60,7 +60,7 @@ export class BoardEditController
 
         const existing = this.host.board.getCardAt(slot);
 
-        if (existing && (isEnemyOwnedCard(existing) || isFieldOwnedCard(existing)))
+        if (existing && (isEnemyOwnedCard(existing) || isFieldOwnedCard(existing) || existing.exhausted))
         {
             return false;
         }
@@ -102,18 +102,14 @@ export class BoardEditController
             return false;
         }
 
-        const card = this.host.board.removeCard(slot);
+        const card = this.host.board.getCardAt(slot);
 
-        if (!card || isEnemyOwnedCard(card) || isFieldOwnedCard(card))
+        if (!card || card.exhausted || isEnemyOwnedCard(card) || isFieldOwnedCard(card))
         {
-            if (card)
-            {
-                this.host.board.placeCard(slot, card);
-            }
-
             return false;
         }
 
+        this.host.board.removeCard(slot);
         this.host.deckHand.returnCardToHand(card);
 
         return true;
@@ -128,14 +124,14 @@ export class BoardEditController
 
         const card = this.host.board.getCardAt(from);
 
-        if (!card || isEnemyOwnedCard(card) || isFieldOwnedCard(card))
+        if (!card || card.exhausted || isEnemyOwnedCard(card) || isFieldOwnedCard(card))
         {
             return false;
         }
 
         const target = this.host.board.getCardAt(to);
 
-        if (target && (isEnemyOwnedCard(target) || isFieldOwnedCard(target)))
+        if (target && (isEnemyOwnedCard(target) || isFieldOwnedCard(target) || target.exhausted))
         {
             return false;
         }
@@ -158,8 +154,8 @@ export class BoardEditController
         const cardA = this.host.board.getCardAt(a);
         const cardB = this.host.board.getCardAt(b);
 
-        if (!cardA || isEnemyOwnedCard(cardA) || isFieldOwnedCard(cardA)
-            || (cardB && (isEnemyOwnedCard(cardB) || isFieldOwnedCard(cardB))))
+        if (!cardA || isEnemyOwnedCard(cardA) || isFieldOwnedCard(cardA) || cardA.exhausted
+            || (cardB && (isEnemyOwnedCard(cardB) || isFieldOwnedCard(cardB) || cardB.exhausted)))
         {
             return false;
         }

@@ -1048,6 +1048,7 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getPileCounts()).toEqual({
             deckSize: deckSize - 2,
             discardSize: discardSize + 2,
+            exhaustSize: 0,
         });
     });
 
@@ -1695,7 +1696,7 @@ describe('CardGameSession courier discard', () =>
         expect(session.getHand()).toHaveLength(0);
     });
 
-    it('marks courier as exhausted and omits it from the graveyard when the board clears', () =>
+    it('marks courier as exhausted and sends it to the exhaust pile when the board clears', () =>
     {
         const session = puzzleSession([
             { definitionId: 'courier', arrow: 'right' },
@@ -1710,22 +1711,22 @@ describe('CardGameSession courier discard', () =>
 
         expect(session.getDiscardDefinitionIds()).toEqual([ 'attack' ]);
         expect(session.getExhaustedDefinitionIds()).toEqual([ 'courier' ]);
+        expect(session.getExhaustedCards().map((card) => card.definitionId)).toEqual([ 'courier' ]);
     });
 
-    it('prevents an exhausted card from being played again from hand', () =>
+    it('locks exhausted cards on the board so the grid does not collapse', () =>
     {
         const session = puzzleSession([
             { definitionId: 'courier', arrow: 'right' },
         ]);
 
         session.placeCardFromHand(0, { row: 0, col: 0 });
-        session.removeCardFromBoard({ row: 0, col: 0 });
 
-        expect(session.getHand()).toHaveLength(1);
-        expect(session.placeCardFromHand(0, { row: 0, col: 1 })).toBe(false);
+        expect(session.removeCardFromBoard({ row: 0, col: 0 })).toBe(false);
+        expect(session.board.getCardAt({ row: 0, col: 0 })?.definitionId).toBe('courier');
     });
 
-    it('does not recycle exhausted cards from hand into the discard pile on renewHand', () =>
+    it('marks exhausted cards spent after they fire so later attacks only use them for routing', () =>
     {
         const session = puzzleSession([
             { definitionId: 'courier', arrow: 'right' },
@@ -1733,9 +1734,23 @@ describe('CardGameSession courier discard', () =>
         ]);
 
         session.placeCardFromHand(0, { row: 0, col: 0 });
-        session.removeCardFromBoard({ row: 0, col: 0 });
+        session.completeAttack(emptySequence());
+
+        expect(session.board.getCardAt({ row: 0, col: 0 })?.spent).toBe(true);
+        expect(session.board.getCardAt({ row: 0, col: 0 })?.exhausted).toBe(true);
+    });
+
+    it('does not recycle exhausted cards from the board into the discard pile on renewHand', () =>
+    {
+        const session = puzzleSession([
+            { definitionId: 'courier', arrow: 'right' },
+            { definitionId: 'attack', arrow: 'right' },
+        ]);
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
         session.renewHand();
 
+        expect(session.board.getCardAt({ row: 0, col: 0 })?.definitionId).toBe('courier');
         expect(session.getDiscardDefinitionIds()).not.toContain('courier');
         expect(session.getDeckDefinitionIds()).not.toContain('courier');
     });

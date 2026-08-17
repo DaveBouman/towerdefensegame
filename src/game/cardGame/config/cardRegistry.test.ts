@@ -37,6 +37,9 @@ describe('cardRegistry', () =>
         expect(getCardDefinition(upgradedCardId('poison'))?.label).toBe(cardLabel('poison-plus'));
         expect(getCardDefinition('attack')?.label).toBe(cardLabel('attack'));
         expect(getCardDefinition('black-ichor')?.behaviorId).toBe('poison');
+        expect(getCardDefinition('redline')?.power).toBe(13);
+        expect(getCardDefinition('redline')?.behaviorId).toBe('redline');
+        expect(getCardDefinition('redline')?.exhaustOnPlay).toBe(true);
     });
 
     it('loads game rules and deck settings', () =>

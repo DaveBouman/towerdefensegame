@@ -26,6 +26,7 @@ export interface BattleUiSyncDeps
     battleModifierView?: BattleModifierStatusView;
     deckView?: CardPileView;
     graveyardView?: CardPileView;
+    exhaustView?: CardPileView;
     layout?: BoardLayout;
     rerollModeActive: boolean;
 }
@@ -35,7 +36,8 @@ export interface BattlePileClickSyncDeps
     pileInspectionBlocked: boolean;
     deckView?: CardPileView;
     graveyardView?: CardPileView;
-    openPileView: (kind: 'deck' | 'graveyard') => void;
+    exhaustView?: CardPileView;
+    openPileView: (kind: 'deck' | 'graveyard' | 'exhaust') => void;
 }
 
 export const syncPileClickHandlers = (deps: BattlePileClickSyncDeps): void =>
@@ -44,12 +46,14 @@ export const syncPileClickHandlers = (deps: BattlePileClickSyncDeps): void =>
     {
         deps.deckView?.setClickHandler(null);
         deps.graveyardView?.setClickHandler(null);
+        deps.exhaustView?.setClickHandler(null);
 
         return;
     }
 
     deps.deckView?.setClickHandler(() => deps.openPileView('deck'));
     deps.graveyardView?.setClickHandler(() => deps.openPileView('graveyard'));
+    deps.exhaustView?.setClickHandler(() => deps.openPileView('exhaust'));
 };
 
 export const syncBattleModifierLayout = (
@@ -68,7 +72,7 @@ export const syncBattleModifierLayout = (
 };
 
 export const syncPileViews = (
-    deps: Pick<BattleUiSyncDeps, 'session' | 'deckView' | 'graveyardView'>,
+    deps: Pick<BattleUiSyncDeps, 'session' | 'deckView' | 'graveyardView' | 'exhaustView'>,
 ): void =>
 {
     if (!deps.session)
@@ -76,10 +80,11 @@ export const syncPileViews = (
         return;
     }
 
-    const { deckSize, discardSize } = deps.session.getPileCounts();
+    const { deckSize, discardSize, exhaustSize } = deps.session.getPileCounts();
 
     deps.deckView?.setStack(deckSize, deps.session.getDeckTopCard() ?? null);
     deps.graveyardView?.setStack(discardSize, deps.session.getDiscardTopCard() ?? null);
+    deps.exhaustView?.setStack(exhaustSize, deps.session.getExhaustTopCard() ?? null);
 };
 
 export const syncBoardFromSession = (
@@ -103,8 +108,8 @@ export const syncBoardFromSession = (
 };
 
 export const handlePilesChanged = (
-    deps: Pick<BattleUiSyncDeps, 'session' | 'deckView' | 'graveyardView'>,
-    { deckSize, discardSize }: { deckSize: number; discardSize: number },
+    deps: Pick<BattleUiSyncDeps, 'session' | 'deckView' | 'graveyardView' | 'exhaustView'>,
+    { deckSize, discardSize, exhaustSize }: { deckSize: number; discardSize: number; exhaustSize: number },
 ): void =>
 {
     if (!deps.session)
@@ -114,6 +119,7 @@ export const handlePilesChanged = (
 
     deps.deckView?.setStack(deckSize, deps.session.getDeckTopCard() ?? null);
     deps.graveyardView?.setStack(discardSize, deps.session.getDiscardTopCard() ?? null);
+    deps.exhaustView?.setStack(exhaustSize, deps.session.getExhaustTopCard() ?? null);
 };
 
 export const emitRerollState = (

@@ -82,6 +82,7 @@ export class Game extends Scene
     private armorView?: ArmorView;
     private deckView?: CardPileView;
     private graveyardView?: CardPileView;
+    private exhaustView?: CardPileView;
     private rerollModeActive = false;
     private layout?: BoardLayout;
     private battleActive = false;
@@ -199,6 +200,7 @@ export class Game extends Scene
             battleModifierView: this.battleModifierView,
             deckView: this.deckView,
             graveyardView: this.graveyardView,
+            exhaustView: this.exhaustView,
             layout: this.layout,
             rerollModeActive: this.rerollModeActive,
         };
@@ -215,6 +217,7 @@ export class Game extends Scene
             playerView: this.playerView,
             armorView: this.armorView,
             graveyardView: this.graveyardView,
+            exhaustView: this.exhaustView,
             getRerollModeActive: () => this.rerollModeActive,
             cancelReroll: () => this.onRerollCancel(),
             emitAttackReadiness: () => this.emitAttackReadiness(),
@@ -253,6 +256,7 @@ export class Game extends Scene
             pileInspectionBlocked: this.pileInspectionBlocked,
             deckView: this.deckView,
             graveyardView: this.graveyardView,
+            exhaustView: this.exhaustView,
             openPileView: (kind) => this.openPileView(kind),
         });
     }
@@ -487,6 +491,7 @@ export class Game extends Scene
         this.armorView = new ArmorView(this, layout, 0);
         this.deckView = new CardPileView(this, layout, layout.deckX, layout.deckY, 'Deck', 'deck');
         this.graveyardView = new CardPileView(this, layout, layout.graveyardX, layout.graveyardY, 'Graveyard', 'graveyard');
+        this.exhaustView = new CardPileView(this, layout, layout.exhaustX, layout.exhaustY, 'Exhaust', 'exhaust');
         this.syncPileClickHandlers();
         this.syncPileViews();
 
@@ -568,7 +573,8 @@ export class Game extends Scene
     private onResize = (gameSize: Phaser.Structs.Size): void =>
     {
         if (!this.layout || !this.boardView || !this.handView || !this.enemySquad
-            || !this.playerView || !this.armorView || !this.deckView || !this.graveyardView)
+            || !this.playerView || !this.armorView || !this.deckView || !this.graveyardView
+            || !this.exhaustView)
         {
             return;
         }
@@ -583,6 +589,7 @@ export class Game extends Scene
             armor: this.armorView.container,
             deck: this.deckView.container,
             graveyard: this.graveyardView.container,
+            exhaust: this.exhaustView.container,
         });
         this.enemySquad.applyLayout(this.layout);
         this.syncBattleModifierLayout();
@@ -603,6 +610,7 @@ export class Game extends Scene
             armorView: this.armorView,
             deckView: this.deckView,
             graveyardView: this.graveyardView,
+            exhaustView: this.exhaustView,
             battlefieldBackground: this.battlefieldBackground,
             lowHpVignette: this.lowHpVignette,
             phaseShiftHandler: this.phaseShiftHandler,
@@ -617,6 +625,7 @@ export class Game extends Scene
         this.armorView = undefined;
         this.deckView = undefined;
         this.graveyardView = undefined;
+        this.exhaustView = undefined;
         this.battlefieldBackground = undefined;
         this.lowHpVignette = undefined;
         this.phaseShiftHandler = undefined;
@@ -703,9 +712,11 @@ export class Game extends Scene
         this.endBattle();
     }
 
-    private onPilesChanged = ({ deckSize, discardSize }: { deckSize: number; discardSize: number }): void =>
+    private onPilesChanged = (
+        { deckSize, discardSize, exhaustSize }: { deckSize: number; discardSize: number; exhaustSize: number },
+    ): void =>
     {
-        handlePilesChanged(this.battleUiSyncDeps(), { deckSize, discardSize });
+        handlePilesChanged(this.battleUiSyncDeps(), { deckSize, discardSize, exhaustSize });
     };
 
     private onCombatantsChanged = ({
@@ -737,7 +748,7 @@ export class Game extends Scene
         syncBoardFromSession(this.battleUiSyncDeps());
     }
 
-    private openPileView (kind: 'deck' | 'graveyard'): void
+    private openPileView (kind: 'deck' | 'graveyard' | 'exhaust'): void
     {
         if (!this.session)
         {
@@ -746,10 +757,12 @@ export class Game extends Scene
 
         const source = kind === 'deck'
             ? this.session.getDeckCards()
-            : this.session.getDiscardCards();
+            : kind === 'exhaust'
+                ? this.session.getExhaustedCards()
+                : this.session.getDiscardCards();
 
-        // Graveyard: newest on top. Deck: order is scrambled in the overlay (alphabetical).
-        const ordered = kind === 'graveyard' ? [ ...source ].reverse() : [ ...source ];
+        // Graveyard / exhaust: newest on top. Deck: order is scrambled in the overlay (alphabetical).
+        const ordered = kind === 'deck' ? [ ...source ] : [ ...source ].reverse();
         const cards = ordered.map((card) =>
         {
             const definition = getCardDefinitionOrThrow(card.definitionId);
@@ -764,9 +777,15 @@ export class Game extends Scene
             };
         });
 
+        const titles = {
+            deck: 'Draw Pile',
+            graveyard: 'Discard Pile',
+            exhaust: 'Exhaust Pile',
+        } as const;
+
         EventBus.emit(GAME_EVENTS.PILE_VIEW_OPEN, {
             kind,
-            title: kind === 'deck' ? 'Draw Pile' : 'Discard Pile',
+            title: titles[kind],
             cards,
         });
     }

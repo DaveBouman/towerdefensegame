@@ -61,6 +61,7 @@ const CARD_BEHAVIOR_ICON_ALIASES: Record<string, CardBehaviorIconId> = {
     lacerate: 'attack',
     salvage: 'attack',
     switchback: 'attack',
+    redline: 'attack',
     miasma: 'poison',
     cinder: 'fire',
     scorch: 'fire',

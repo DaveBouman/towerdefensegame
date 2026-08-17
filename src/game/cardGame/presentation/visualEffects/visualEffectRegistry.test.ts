@@ -31,6 +31,7 @@ describe('visualEffectRegistry', () =>
             'overclock',
             'echo',
             'salvage',
+            'redline',
         ];
 
         for (const id of visualIds)
