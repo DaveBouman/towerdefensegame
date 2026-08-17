@@ -42,7 +42,7 @@ Gebruik dit blok als "trust section" onder de feature-lijst. Als je nog geen def
 
 Signal Chain includes:
 
-- Dozens of cards built around attacks, defense, fire, rad, bleed, overload, and combo routing
+- Dozens of specialty cards to discover through rewards, shops, and events, fire, rad, bleed, overload, combo routing, and more
 - A branching run map with battles, signal events, shops, and boss encounters
 - Body mods that act as run-defining upgrades
 - Multiple enemy types with telegraphed intents and counterplay
@@ -104,8 +104,8 @@ De duidelijkste unieke pitch van de game is:
 - De layout van een Steam-pagina zoals Slay the Spire kun je prima als inspiratie gebruiken.
 - Kopieer liever niet letterlijk slogans, teksten of te herkenbare marketingformuleringen.
 - Deze file is bedoeld als werkdocument dat later kan worden aangescherpt voor:
-  - short description
-  - full About This Game
-  - capsule text
-  - banner copy
-  - screenshot captions
+    - short description
+    - full About This Game
+    - capsule text
+    - banner copy
+    - screenshot captions
