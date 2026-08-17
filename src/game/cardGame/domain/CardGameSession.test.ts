@@ -1723,7 +1723,29 @@ describe('CardGameSession courier discard', () =>
         session.placeCardFromHand(0, { row: 0, col: 0 });
 
         expect(session.removeCardFromBoard({ row: 0, col: 0 })).toBe(false);
+        expect(session.moveCardOnBoard({ row: 0, col: 0 }, { row: 0, col: 1 })).toBe(false);
         expect(session.board.getCardAt({ row: 0, col: 0 })?.definitionId).toBe('courier');
+    });
+
+    it('replaces a spent exhaust card from hand and sends the covered card to exhaust', () =>
+    {
+        const session = puzzleSession([
+            { definitionId: 'salvage', arrow: 'right' },
+            { definitionId: 'attack', arrow: 'right' },
+        ]);
+
+        session.placeCardFromHand(0, { row: 0, col: 0 });
+        session.completeAttack(emptySequence());
+        session.releaseAttackLock();
+
+        expect(session.board.getCardAt({ row: 0, col: 0 })?.spent).toBe(true);
+        expect(session.getExhaustSize()).toBe(0);
+
+        expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
+
+        expect(session.board.getCardAt({ row: 0, col: 0 })?.definitionId).toBe('attack');
+        expect(session.getExhaustedCards().map((card) => card.definitionId)).toEqual([ 'salvage' ]);
+        expect(session.getExhaustSize()).toBe(1);
     });
 
     it('marks exhausted cards spent after they fire so later attacks only use them for routing', () =>

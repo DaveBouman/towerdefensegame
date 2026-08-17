@@ -60,7 +60,7 @@ export class BoardEditController
 
         const existing = this.host.board.getCardAt(slot);
 
-        if (existing && (isEnemyOwnedCard(existing) || isFieldOwnedCard(existing) || existing.exhausted))
+        if (existing && (isEnemyOwnedCard(existing) || isFieldOwnedCard(existing)))
         {
             return false;
         }
@@ -80,6 +80,19 @@ export class BoardEditController
             this.host.deckHand.removeHandCardAt(handIndex);
             this.markExhaustedIfNeeded(card, definition);
             CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card, replaced: false });
+            this.host.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
+
+            return true;
+        }
+
+        if (existing.exhausted)
+        {
+            this.host.board.removeCard(slot);
+            this.host.deckHand.exhaustToPile([ existing ]);
+            this.host.board.placeCard(slot, card);
+            this.host.deckHand.removeHandCardAt(handIndex);
+            this.markExhaustedIfNeeded(card, definition);
+            CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card, replaced: true });
             this.host.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
 
             return true;
