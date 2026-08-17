@@ -25,7 +25,6 @@ import { unlockBodyMods } from '../game/run/bodyModBestiary';
 import { unlockEnemies } from '../game/run/enemyBestiary';
 import { upgradeFirstCardInDeck } from '../game/run/cardUpgrades';
 import { readRunAscensionLevel, recordAscensionClear } from '../game/run/ascension';
-import { getFloorBriefing } from '../game/run/floorBriefings';
 import { createEmptyRunStats, type RunStats } from '../game/run/runStats';
 import { scoreDeckArchetypes } from '../game/run/deckArchetypes';
 import { getCardSynergyHint } from '../game/run/rewards';

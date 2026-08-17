@@ -12,9 +12,10 @@ import {
 
 describe('runMap', () =>
 {
-    it('maps columns onto three logical floors', () =>
+    it('maps columns onto three reward-depth bands on Floor 1', () =>
     {
         expect(FLOOR_COLUMN_RANGES).toHaveLength(RUN_CONFIG.floorCount);
+        expect(RUN_CONFIG.mapFloorCount).toBe(1);
         expect(getFloorForColumn(0)).toBe(1);
         expect(getFloorForColumn(3)).toBe(1);
         expect(getFloorForColumn(4)).toBe(2);

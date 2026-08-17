@@ -25,24 +25,25 @@ The game is a **run**: a left-to-right map of nodes connected by lines
 in difficulty toward a boss (`warden`) in the final column. Each run has **9 columns**
 between the opening fight and the boss (`RUN_CONFIG.middleColumns`).
 
-### Logical floors (scaffolding)
+### Floor 1 (this board)
 
-The current single map is split into **3 logical floors** (no separate maps yet):
+The shipped run is **one map: Floor 1**. Lieutenant is a mid-board boss, not a new floor. Extra floors will be **separate boards** (new minions, bosses, look) after the Warden — not in yet.
 
-| Floor | Columns | Notes |
-|-------|---------|--------|
-| 1 | `0–3` | Opens → semi-boss lieutenant |
-| 2 | `4–7` | Mid run |
+Hand rerolls (3) refill **once after you leave the lieutenant column**. Reward/shop card tiers still bias stronger in later columns (`getFloorForColumn` depth bands 1–3). HUD shows Floor **1**.
+
+| Depth band | Columns | Notes |
+|------------|---------|--------|
+| 1 | `0–3` | Opens → lieutenant |
+| 2 | `4–7` | Mid run (same board) |
 | 3 | `8–10` | Late → Warden |
 
-Helpers: `getFloorForColumn`, `getFloorColumnRange`, `RUN_CONFIG.floorCount` in `runMap.ts`. The map UI shows the current floor.
+Helpers: `getFloorForColumn`, `getFloorColumnRange`, `RUN_CONFIG.mapFloorCount` in `runMap.ts`.
 
-### Hand rerolls (per floor)
+### Hand rerolls
 
-- **`GAME_RULES.rerollsPerFloor` (3)** — shared across all fights on the current floor.
-- Owned by run state in `App` (`floorRerollsRemaining`); passed into each battle via `START_BATTLE.rerollsRemaining`.
+- **`GAME_RULES.rerollsPerFloor` (3)** — shared across fights on Floor 1; refill once after the lieutenant.
+- Owned by run state (`floorRerollsRemaining`); passed into each battle via `START_BATTLE.rerollsRemaining`.
 - Sessions/`DeckHand` do **not** reset to 3 each fight; spending syncs back through `REROLL_STATE`.
-- Entering the first node of a higher floor refills to max.
 
 ### Node kinds & economy
 
@@ -284,8 +285,8 @@ remain as a fallback if a portrait fails to load.
 - [x] **Node kinds** — enemy/boss/shop/event nodes with icons + hover tooltips (`nodeKinds.ts`, `NodeKindIcon`); events via `RunEventOverlay`; shop via `ShopOverlay`
 - [x] **Shop node** — Ripperdoc spends creds on cards/body mods/heal/remove (`shop.ts`, `ShopOverlay`)
 - [x] **Random event node** — branching choice encounters (`RunEventOverlay`, `runEvents.ts`)
-- [x] **Per-floor rerolls** — 3 hand rerolls shared across fights on each logical floor (`rerollsPerFloor`, App-owned)
-- [x] **3-floor scaffolding** — logical floors on the current 11-column map (`getFloorForColumn`); separate floor maps later
+- [x] **Per-floor rerolls** — 3 hand rerolls; refill once after the lieutenant on Floor 1
+- [x] **Floor 1 is this board** — lieutenant is mid-boss, not Floor 2; extra floors are future separate maps after the Warden
 
 #### Phase 2 — Spatial tactics (~1 week)
 
@@ -364,6 +365,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | 2026-08-13 | **Fight overclock.** After each enemy response, enemies gain +4 attack for the rest of the fight (`enemyStrengthPerTurn`). Chip shows current › next from the opening (+0›+4). First hit is baseline; a second energy round already sits at +12. |
 | 2026-08-13 | **Enemy HP variance.** `enemies.json` `maxHealth` is a median. Each fight (and mid-battle spawn) rolls integrity ±10% via the seeded RNG (`enemyHealthVariance`). Bestiary shows the range. |
 | 2026-08-13 | **Copy catalog.** Player-facing labels live in `src/game/copy/strings.ts` — cards, enemies, body mods, map nodes, shop services, archetypes, passives, traits, and intents. JSON `label` fields are fallbacks; catalog wins. Swap `EN` when adding locales. |
+| 2026-08-17 | **Floor 1 is the whole board.** Lieutenant no longer triggers a Floor 2 banner. Extra floors stay future work (separate maps after Warden). Rerolls refill once after the lieutenant. Body mods sit in the map header; in-fight panel is compact so it no longer covers the runner HUD. |
 | 2026-08-17 | **Wipe ends the attack immediately.** When the last enemy dies mid-chain, leftover traps/curses/siphon and other end-of-chain beats are skipped — victory fires without bombs detonating. |
 | 2026-08-17 | **Session/scene depth peels.** `CardGameSession` delegates squad/targeting to `EnemySquadManager`, energy/round refresh to `EnergyRoundController`, and Signal Twist to `HandRedirectController`. `Game.ts` attack resolve, board/hand drops, and pile/HUD sync live in `battleAttackFlow.ts` / `battleInputHandlers.ts` / `battleUiSync.ts`. |
 | 2026-08-17 | **Should-do / nice-later refactors.** Run economy data-driven (`runEconomy.json`). Events split into `runEventTypes` / `runEventDefinitions` / `applyRunEventEffects` (`runEvents.ts` barrel). Explicit `add-random-card` / `add-random-body-mod` / `open-random-puzzle` effect kinds (no `__random__` sentinels). Reward + body-mod pools in JSON. `AttackPipeline` peeled into pathfinding / bomb / resolve / sequence modules. Shared `DeckCardPicker` for shop + rest. Shop tooltip stale copy fixed. Node tooltips + route labels in `strings.ts`. Main menu screens under `ui/components/mainMenu/`. |
