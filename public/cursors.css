@@ -1,9 +1,10 @@
 :root {
     --cursor-default: url('./assets/ui/cursors/blue/default.svg') 1 1, auto;
-    --cursor-pointer: url('./assets/ui/cursors/blue/pointer.svg') 1 1, pointer;
-    --cursor-grab: url('./assets/ui/cursors/blue/grab.svg') 12 12, grab;
-    --cursor-grabbing: url('./assets/ui/cursors/blue/grabbing.svg') 12 12, grabbing;
-    --cursor-not-allowed: url('./assets/ui/cursors/not-allowed.svg') 16 16, not-allowed;
+    --cursor-pointer: url('./assets/ui/cursors/blue/default.svg') 1 1, pointer;
+    --cursor-grab: url('./assets/ui/cursors/blue/default.svg') 1 1, grab;
+    --cursor-grabbing: url('./assets/ui/cursors/blue/grabbing.svg') 1 1, grabbing;
+    --cursor-text: url('./assets/ui/cursors/blue/text.svg') 12 12, text;
+    --cursor-not-allowed: url('./assets/ui/cursors/not-allowed.svg') 1 1, not-allowed;
 }
 
 html,
@@ -22,5 +23,11 @@ body,
 .game-viewport--grabbing,
 .game-viewport--grabbing .game-canvas-host,
 .game-viewport--grabbing canvas {
-    cursor: var(--cursor-grabbing);
+    cursor: var(--cursor-grabbing) !important;
+}
+
+input:not(:disabled):not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
+textarea:not(:disabled),
+[contenteditable='true'] {
+    cursor: var(--cursor-text) !important;
 }

@@ -27,7 +27,8 @@ describe('cursorSettings', () =>
     it('builds color-specific cursor asset paths', () =>
     {
         expect(buildCursorUrls('purple').default).toContain('/purple/default.svg');
-        expect(buildCursorUrls('green').pointer).toContain('/green/pointer.svg');
+        expect(buildCursorUrls('green').pointer).toContain('/green/default.svg');
+        expect(buildCursorUrls('purple').text).toContain('/purple/text.svg');
     });
 
     it('persists and applies the chosen accent color', () =>

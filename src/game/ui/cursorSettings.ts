@@ -7,6 +7,7 @@ export type GameCursorUrls = {
     pointer: string;
     grab: string;
     grabbing: string;
+    text: string;
     notAllowed: string;
 };
 
@@ -57,10 +58,11 @@ export const buildCursorUrls = (color: CursorColor): GameCursorUrls =>
 
     return {
         default: `url('${base}/default.svg') 1 1, auto`,
-        pointer: `url('${base}/pointer.svg') 1 1, pointer`,
-        grab: `url('${base}/grab.svg') 12 12, grab`,
-        grabbing: `url('${base}/grabbing.svg') 12 12, grabbing`,
-        notAllowed: `url('./assets/ui/cursors/not-allowed.svg') 16 16, not-allowed`,
+        pointer: `url('${base}/default.svg') 1 1, pointer`,
+        grab: `url('${base}/default.svg') 1 1, grab`,
+        grabbing: `url('${base}/grabbing.svg') 1 1, grabbing`,
+        text: `url('${base}/text.svg') 12 12, text`,
+        notAllowed: `url('./assets/ui/cursors/not-allowed.svg') 1 1, not-allowed`,
     };
 };
 
@@ -100,6 +102,7 @@ export const applyCursorColor = (color: CursorColor = readCursorColor()): void =
     document.documentElement.style.setProperty('--cursor-pointer', urls.pointer);
     document.documentElement.style.setProperty('--cursor-grab', urls.grab);
     document.documentElement.style.setProperty('--cursor-grabbing', urls.grabbing);
+    document.documentElement.style.setProperty('--cursor-text', urls.text);
     document.documentElement.style.setProperty('--cursor-not-allowed', urls.notAllowed);
     notifyCursorListeners(urls);
 };
