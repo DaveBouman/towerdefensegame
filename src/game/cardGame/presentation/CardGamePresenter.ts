@@ -40,6 +40,7 @@ export class CardGamePresenter
     private syncBattleModifierStatus (): void
     {
         this.battleModifierView?.setModifiers(this.session.getBattleModifiers());
+        this.playerView.setThorns(this.session.getPlayerThorns());
     }
 
     private scheduleAttackTimer (callback: () => void, delayMs: number): void

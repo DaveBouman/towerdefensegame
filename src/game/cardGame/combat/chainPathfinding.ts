@@ -111,6 +111,7 @@ export const tryBuildActivationStep = (
         ? { includeInSequence: false, damage: 0 }
         : behavior.contributeToAttack(ctx);
     const armor = isLoopPassThrough ? 0 : behavior.contributeArmor?.(ctx) ?? 0;
+    const thorns = isLoopPassThrough ? 0 : behavior.contributeThorns?.(ctx) ?? 0;
 
     if (isLoop && !isLoopPassThrough)
     {
@@ -134,6 +135,7 @@ export const tryBuildActivationStep = (
         exitArrow,
         damage: attack.includeInSequence ? attack.damage : 0,
         armor,
+        thorns,
     };
 };
 

@@ -93,6 +93,7 @@ export class CardGameSession
     private player: PlayerState;
     private readonly overclock: EnemyOverclockTracker;
     private readonly battleModifiers: BattleModifier[] = [];
+    private playerThorns = 0;
     private readonly puzzleMode: PuzzleModeConfig | null;
     private puzzleFinished = false;
     private readonly bodyMods: readonly string[];
@@ -165,6 +166,7 @@ export class CardGameSession
             shatterCombatantIfNeeded: (instanceId) => this.squad.shatterCombatantIfNeeded(instanceId),
             onCombatantKilled: (instanceId) => this.squad.onCombatantKilled(instanceId),
             tryTriggerPhaseShift: (combatant) => this.squad.tryTriggerPhaseShift(combatant),
+            getPlayerThorns: () => this.playerThorns,
         }, runAttackCount);
         this.enemyPhase = new EnemyPhaseController({
             combatants: this.squad.combatants,
@@ -444,6 +446,21 @@ export class CardGameSession
         );
     }
 
+    addPlayerThorns (amount: number): void
+    {
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        this.playerThorns += amount;
+    }
+
+    getPlayerThorns (): number
+    {
+        return this.playerThorns;
+    }
+
     applyBattleModifiersFromChain (chain: readonly ActivationStep[]): void
     {
         for (const definitionId of collectBattleModifierApplications(chain))
@@ -485,6 +502,7 @@ export class CardGameSession
     clearBattleModifiers (): void
     {
         this.battleModifiers.length = 0;
+        this.playerThorns = 0;
     }
 
     clearTransientBattleModifiers (): void
@@ -1152,9 +1170,9 @@ export class CardGameSession
         this.energyRound.finishEnemyPhase();
     }
 
-    resolveEnemyAttack (damage: number): PlayerDamageResult
+    resolveEnemyAttack (damage: number, attackerInstanceId?: string): PlayerDamageResult
     {
-        return this.combat.resolveEnemyAttack(damage);
+        return this.combat.resolveEnemyAttack(damage, attackerInstanceId);
     }
 
     resolveEnemyShield (shield: number, instanceId?: string): EnemyState

@@ -369,6 +369,18 @@
       }
     },
     {
+      "id": "thorns",
+      "label": "Thorns",
+      "power": 1,
+      "behaviorId": "thorns",
+      "visualId": "thorns",
+      "arrowPool": "orthogonal",
+      "tier": 2,
+      "upgrade": {
+        "power": 2
+      }
+    },
+    {
       "id": "glitch",
       "label": "Glitch",
       "power": 0,

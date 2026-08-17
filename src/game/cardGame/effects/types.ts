@@ -20,6 +20,7 @@ export interface CardBehavior {
     id: string;
     contributeToAttack (ctx: AttackStepContext): AttackContribution;
     contributeArmor?: (ctx: AttackStepContext) => number;
+    contributeThorns?: (ctx: AttackStepContext) => number;
     /** Called when this card is activated in the chain (e.g. hazard disarm hooks). */
     onDisarmed?: (ctx: AttackStepContext) => DisarmResult | void;
 }

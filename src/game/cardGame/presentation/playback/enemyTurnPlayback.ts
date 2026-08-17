@@ -50,7 +50,7 @@ export function playEnemyTurnStep (
 
         scene.time.delayedCall(turnMs, () =>
         {
-            const result = session.resolveEnemyAttack(step.amount ?? 0);
+            const result = session.resolveEnemyAttack(step.amount ?? 0, instanceId);
             playerView.setHealth(result.player);
             setDisplayedArmor(result.player.shield);
 
@@ -68,6 +68,23 @@ export function playEnemyTurnStep (
                 playerView.showDamageNumber(result.healthDamage);
                 shakeCamera(scene, tier.shakeIntensity * 1.25);
                 playPlayerHitSfx(result.healthDamage);
+            }
+
+            if (result.reflectedThorns)
+            {
+                applyEnemyHitResult(
+                    {
+                        scene,
+                        session,
+                        boardView,
+                        enemySquad,
+                        playerView,
+                        armorView,
+                        setDisplayedArmor,
+                    },
+                    result.reflectedThorns,
+                    { behaviorId: 'thorns', visualId: 'thorns', definitionId: 'thorns' },
+                );
             }
 
             onComplete();

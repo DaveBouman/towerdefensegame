@@ -164,6 +164,7 @@ export const applyBoostBonuses = (chain: ActivationStep[]): ActivationStep[] =>
 
         let damage = step.damage;
         let armor = step.armor;
+        let thorns = step.thorns ?? 0;
 
         if (damage > 0)
         {
@@ -175,7 +176,12 @@ export const applyBoostBonuses = (chain: ActivationStep[]): ActivationStep[] =>
             armor = scaleBoostedValue(armor, multiplier);
         }
 
-        if (damage === step.damage && armor === step.armor)
+        if (thorns > 0)
+        {
+            thorns = scaleBoostedValue(thorns, multiplier);
+        }
+
+        if (damage === step.damage && armor === step.armor && thorns === (step.thorns ?? 0))
         {
             return step;
         }
@@ -184,6 +190,7 @@ export const applyBoostBonuses = (chain: ActivationStep[]): ActivationStep[] =>
             ...step,
             damage,
             armor,
+            thorns,
         };
     });
 
@@ -199,7 +206,7 @@ export const isBoostedChainStep = (
 
     const step = chain[index];
 
-    if ((step?.damage ?? 0) + (step?.armor ?? 0) > 0)
+    if ((step?.damage ?? 0) + (step?.armor ?? 0) + (step?.thorns ?? 0) > 0)
     {
         return true;
     }
@@ -207,6 +214,11 @@ export const isBoostedChainStep = (
     const definition = step ? getCardDefinitionOrThrow(step.definitionId) : undefined;
 
     if (definition?.behaviorId === 'battle-mod' && definition.battleModifier)
+    {
+        return true;
+    }
+
+    if (definition?.behaviorId === 'thorns')
     {
         return true;
     }

@@ -125,11 +125,11 @@ const drawTriangle = (
 const drawCursorBrackets = (context: CanvasRenderingContext2D, color: string): void =>
 {
     const thickness = 2;
-    const arm = 5;
-    const left = 1;
-    const top = 1;
-    const right = 24;
-    const bottom = 28;
+    const arm = 3;
+    const left = 3;
+    const top = 3;
+    const right = 21;
+    const bottom = 25;
 
     context.fillStyle = color;
 

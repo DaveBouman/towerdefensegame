@@ -137,6 +137,7 @@ describe('chainPlayback', () =>
                 playerView: {
                     container: { width: 100, height: 100 },
                     setHealth: vi.fn(),
+                    setThorns: vi.fn(),
                 } as never,
                 armorView: {
                     showShieldGain: vi.fn(),
@@ -220,6 +221,7 @@ describe('chainPlayback', () =>
                 playerView: {
                     container: { width: 100, height: 100 },
                     setHealth: vi.fn(),
+                    setThorns: vi.fn(),
                 } as never,
                 armorView: {
                     showShieldGain: vi.fn(),

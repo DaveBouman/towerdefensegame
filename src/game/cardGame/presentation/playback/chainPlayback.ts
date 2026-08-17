@@ -253,6 +253,46 @@ export function runChainPlayback (
         }
     };
 
+    const grantStepThorns = (step: ActivationStep): void =>
+    {
+        if (deps.session.isSlotNullified(step.slot))
+        {
+            return;
+        }
+
+        const stepIndex = chain.indexOf(step);
+
+        if (stepIndex < 0)
+        {
+            return;
+        }
+
+        const resolvedStep = resolveChainSteps(chain)[stepIndex]!;
+        const granted = resolvedStep.thorns ?? 0;
+
+        if (granted <= 0)
+        {
+            return;
+        }
+
+        deps.session.addPlayerThorns(granted);
+        deps.playerView.setThorns(deps.session.getPlayerThorns());
+
+        const target = deps.boardView.getCardVisualTarget(step.slot);
+
+        if (target)
+        {
+            playFloatingText(
+                deps.scene,
+                target.wrapper,
+                target.width / 2,
+                target.height * 0.22,
+                `+${granted} THORNS`,
+                '#f39c12',
+            );
+        }
+    };
+
     const dealStepDamage = (
         damage: number,
         sourceDefinitionId: string,
@@ -475,6 +515,11 @@ export function runChainPlayback (
             grantStepArmor(prevStep);
         }
 
+        if ((prevResolved.thorns ?? 0) > 0)
+        {
+            grantStepThorns(prevStep);
+        }
+
         if (onStepComplete)
         {
             deps.scheduleAttackTimer(onStepComplete, replayMs);
@@ -544,6 +589,7 @@ export function runChainPlayback (
                 replayPriorStep(replay, boosted ? boostMultiplier : 1, () =>
                 {
                     grantStepArmor(step);
+                    grantStepThorns(step);
                     scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs);
                 });
                 return;
@@ -562,6 +608,7 @@ export function runChainPlayback (
         }
 
         grantStepArmor(step);
+        grantStepThorns(step);
 
         const playOnStepAbilitiesThen = (next: (abilityDetonation: boolean) => void): void =>
         {

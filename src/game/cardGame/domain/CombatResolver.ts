@@ -53,6 +53,7 @@ export interface CombatContext
     onCombatantKilled (instanceId: string): void;
     /** Lieutenant phase shift when HP crosses threshold. */
     tryTriggerPhaseShift (combatant: EnemyCombatant): { label: string; message: string } | null;
+    getPlayerThorns (): number;
 }
 
 export class CombatResolver
@@ -450,7 +451,7 @@ export class CombatResolver
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_CANCELLED);
     }
 
-    resolveEnemyAttack (damage: number): PlayerDamageResult
+    resolveEnemyAttack (damage: number, attackerInstanceId?: string): PlayerDamageResult
     {
         const scaledDamage = this.scaleEnemyAttackDamage(damage);
 
@@ -502,11 +503,42 @@ export class CombatResolver
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: this.ctx.player.shield });
 
-        return {
+        const hit: PlayerDamageResult = {
             player: { ...this.ctx.player },
             shieldAbsorbed,
             healthDamage,
         };
+
+        const reflectedThorns = this.reflectPlayerThorns(attackerInstanceId);
+
+        if (!reflectedThorns)
+        {
+            return hit;
+        }
+
+        return {
+            ...hit,
+            reflectedThorns,
+        };
+    }
+
+    private reflectPlayerThorns (attackerInstanceId?: string): DamageResult | undefined
+    {
+        const thorns = this.ctx.getPlayerThorns();
+
+        if (thorns <= 0 || !attackerInstanceId)
+        {
+            return undefined;
+        }
+
+        const attacker = this.ctx.getCombatant(attackerInstanceId);
+
+        if (!attacker || !isCombatantAlive(attacker))
+        {
+            return undefined;
+        }
+
+        return this.dealAttackDamage(thorns, attackerInstanceId, 'thorns', 'thorns');
     }
 
     resolveEnemyShield (shield: number, instanceId?: string): EnemyState

@@ -67,6 +67,8 @@ export interface PlayerDamageResult {
     player: PlayerState;
     shieldAbsorbed: number;
     healthDamage: number;
+    /** Player thorns reflecting this hit back at the attacker. */
+    reflectedThorns?: DamageResult;
 }
 
 export type EnemyTurnKind =
@@ -154,6 +156,8 @@ export interface ActivationStep {
     exitArrow: CardDirection;
     damage: number;
     armor: number;
+    /** Player thorns granted this step (reflect on enemy attacks this energy round). */
+    thorns?: number;
 }
 
 export type AttackRejectReason =
