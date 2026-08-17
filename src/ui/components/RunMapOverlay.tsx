@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { RunMap, RunMapNode } from '../../game/run/runMap';
 import { getMapNodeDisplay } from '../../game/run/mapNodeDisplay';
+import { getBodyModDefinition } from '../../game/run/bodyMods';
 import { NodeKindIcon } from './NodeKindIcon';
 
 const PAD_X = 0.09;
@@ -46,6 +47,7 @@ interface RunMapOverlayProps {
     gold: number;
     currentFloor: number;
     floorCount: number;
+    bodyMods?: readonly string[];
     floorRerollsRemaining: number;
     floorRerollsMax: number;
     ascensionLevel?: number;
@@ -63,6 +65,7 @@ export const RunMapOverlay = ({
     gold,
     currentFloor,
     floorCount,
+    bodyMods = [],
     floorRerollsRemaining,
     floorRerollsMax,
     ascensionLevel = 0,
@@ -148,8 +151,20 @@ export const RunMapOverlay = ({
                     </div>
                     <div className="run-map__floor" role="status">
                         <span className="run-map__floor-label">Floor</span>
-                        <span className="run-map__floor-value">{currentFloor}/{floorCount}</span>
+                        <span className="run-map__floor-value">
+                            {floorCount > 1 ? `${currentFloor}/${floorCount}` : currentFloor}
+                        </span>
                     </div>
+                    {bodyMods.length > 0 && (
+                        <div className="run-map__body-mods" role="status">
+                            <span className="run-map__body-mods-label">Mods</span>
+                            <span className="run-map__body-mods-value">
+                                {bodyMods
+                                    .map((id) => getBodyModDefinition(id)?.label ?? id)
+                                    .join(' · ')}
+                            </span>
+                        </div>
+                    )}
                     <div className="run-map__rerolls" role="status">
                         <span className="run-map__rerolls-label">Rerolls</span>
                         <span className="run-map__rerolls-value">{floorRerollsRemaining}/{floorRerollsMax}</span>

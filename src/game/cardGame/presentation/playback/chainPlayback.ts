@@ -114,6 +114,18 @@ export function runChainPlayback (
         }
 
         const sequence = buildCurrentSequence();
+        const finishSequence = (): void =>
+        {
+            onComplete(sequence);
+        };
+
+        // Wipe / player death: skip bombs, curses, siphon, and other end-of-chain beats.
+        if (deps.session.isEnemyDefeated() || deps.session.isPlayerDefeated())
+        {
+            finishSequence();
+            return;
+        }
+
         const offChainSlots = getOffChainSlots(board, chain);
         const hazardSlots = [
             ...getUnchainedHazardSlots(board, chain),
@@ -129,11 +141,6 @@ export function runChainPlayback (
             || sequence.abilityPlayerDamage > 0
             || sequence.siphonHeal > 0
             || sequence.disarmResults.length > 0;
-
-        const finishSequence = (): void =>
-        {
-            onComplete(sequence);
-        };
 
         if (!hasEndEffects)
         {

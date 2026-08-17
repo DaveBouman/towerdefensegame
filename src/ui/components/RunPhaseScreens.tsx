@@ -103,7 +103,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
             {phase !== 'victory' && phase !== 'defeat' && phase !== 'menu' && (
                 <GameMenuButton open={pauseMenuOpen} onClick={togglePauseMenu} />
             )}
-            {bodyMods.length > 0 && phase !== 'victory' && phase !== 'defeat' && phase !== 'menu' && (
+            {bodyMods.length > 0 && (phase === 'battle' || phase === 'puzzle') && (
                 <BodyModsPanel
                     bodyMods={bodyMods}
                     runAttackCount={runAttackCount}
@@ -155,7 +155,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
             {tutorial.showRewardTip && (
                 <TutorialRewardTipOverlay onDismiss={tutorial.dismissRewardTip} />
             )}
-            {floorBriefing !== null && getFloorBriefing(floorBriefing) && (
+            {floorBriefing !== null && getFloorBriefing(floorBriefing) && !tutorial.showIntro && (
                 <FloorBriefingOverlay
                     floor={floorBriefing}
                     briefing={getFloorBriefing(floorBriefing)!}
@@ -181,7 +181,8 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                     maxHealth={runMaxHealth}
                     gold={gold}
                     currentFloor={currentFloor}
-                    floorCount={RUN_CONFIG.floorCount}
+                    floorCount={RUN_CONFIG.mapFloorCount}
+                    bodyMods={bodyMods}
                     floorRerollsRemaining={floorRerollsRemaining}
                     floorRerollsMax={GAME_RULES.rerollsPerFloor}
                     ascensionLevel={ascensionLevel}

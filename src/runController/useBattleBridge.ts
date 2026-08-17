@@ -11,7 +11,7 @@ import { unlockBodyMods } from '../game/run/bodyModBestiary';
 import { getRunMaxHealth, getVictoryGoldBonus } from '../game/run/runResources';
 import { getRunPuzzle, rollPuzzleCardReward } from '../game/run/runPuzzles';
 import { HOT_ROUTE_VICTORY_GOLD } from '../game/run/routeModifiers';
-import { RUN_CONFIG, type RunMapNode } from '../game/run/runMap';
+import { getFloorForColumn, RUN_CONFIG, type RunMapNode } from '../game/run/runMap';
 import { emitRunSfx } from '../game/audio/emitRunSfx';
 import { emitRunBgm } from '../game/audio/emitRunBgm';
 import { seedScope } from '../game/random/rng';
@@ -207,7 +207,7 @@ export const useBattleBridge = (
                     node.id,
                     node.reward,
                     toDefinitionIds(refs.deck.current),
-                    refs.currentFloor.current,
+                    getFloorForColumn(node.row),
                     refs.bodyMods.current,
                 );
 

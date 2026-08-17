@@ -62,13 +62,18 @@ export const RUN_CONFIG = {
     middleColumns: 9,
     /** Zero-based column index that always rolls a semi-boss fight (4th column). */
     semiBossRow: 3,
-    /** Logical floors spanning the current single map (scaffolding for future multi-map floors). */
+    /**
+     * Reward-depth bands on this map (late columns offer stronger cards).
+     * Not separate boards — extra floors are future districts after the Warden.
+     */
     floorCount: 3,
+    /** Shipped act maps. Floor 1 is this board; later floors are not in yet. */
+    mapFloorCount: 1,
 };
 
 /**
- * Column ranges for each logical floor (inclusive).
- * Floor 1: open → semi-boss; Floor 2: mid; Floor 3: late → Warden.
+ * Column ranges used as reward-depth bands on the current Floor 1 map.
+ * Band 1: open → lieutenant; 2: mid; 3: late → Warden.
  */
 export const FLOOR_COLUMN_RANGES: readonly { floor: number; startCol: number; endCol: number }[] = [
     { floor: 1, startCol: 0, endCol: 3 },
@@ -76,7 +81,7 @@ export const FLOOR_COLUMN_RANGES: readonly { floor: number; startCol: number; en
     { floor: 3, startCol: 8, endCol: 10 },
 ];
 
-/** 1-based floor index for a map column. */
+/** 1-based reward-depth band for a map column (not a separate floor board). */
 export const getFloorForColumn = (column: number): number =>
 {
     for (const range of FLOOR_COLUMN_RANGES)

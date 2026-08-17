@@ -364,6 +364,7 @@ export class CombatResolver
     completeAttack (sequence: AttackSequence): void
     {
         const remainingDamage = sequence.totalDamage - this.damageDealtThisAttack;
+        const fightOver = this.ctx.getLivingCombatants().length === 0 || this.ctx.player.health <= 0;
 
         if (remainingDamage > 0 && this.ctx.getLivingCombatants().length > 0)
         {
@@ -371,29 +372,33 @@ export class CombatResolver
         }
 
         const target = this.ctx.getTargetCombatant();
-        const postAttack = resolvePostAttackPassives(
-            this.ctx.board,
-            sequence,
-            target.definition.passives,
-        );
 
-        target.enrageStacks = postAttack.enrageStacks;
-
-        if (postAttack.jammerShield > 0)
+        if (!fightOver)
         {
-            this.resolveEnemyShield(postAttack.jammerShield, target.instanceId);
-        }
+            const postAttack = resolvePostAttackPassives(
+                this.ctx.board,
+                sequence,
+                target.definition.passives,
+            );
 
-        if (postAttack.loopHunterDamage > 0)
-        {
-            this.resolveEnemyAttack(postAttack.loopHunterDamage);
+            target.enrageStacks = postAttack.enrageStacks;
+
+            if (postAttack.jammerShield > 0)
+            {
+                this.resolveEnemyShield(postAttack.jammerShield, target.instanceId);
+            }
+
+            if (postAttack.loopHunterDamage > 0)
+            {
+                this.resolveEnemyAttack(postAttack.loopHunterDamage);
+            }
         }
 
         this.ctx.fieldEffects.resolveHazardsAfterAttack(sequence.chain);
 
         const remainingSiphonHeal = Math.max(0, sequence.siphonHeal - this.siphonHealedThisAttack);
 
-        if (remainingSiphonHeal > 0)
+        if (remainingSiphonHeal > 0 && !fightOver)
         {
             this.resolveSiphonHeal(remainingSiphonHeal);
         }

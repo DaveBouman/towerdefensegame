@@ -82,6 +82,7 @@ export const useRunController = () =>
     const [ ascensionUnlockedToast, setAscensionUnlockedToast ] = useState<number | null>(null);
     const [ runStats, setRunStats ] = useState<RunStats>(() => createEmptyRunStats(readRunAscensionLevel()));
     const [ floorBriefing, setFloorBriefing ] = useState<number | null>(null);
+    const lieutenantRerollsRefilledRef = useRef(false);
     const [ combatRecap, setCombatRecap ] = useState<{ damageDealt: number; armorGained: number; damageTaken: number } | null>(null);
     const [ clutchVictory, setClutchVictory ] = useState(false);
     const [ pendingRewardFlow, setPendingRewardFlow ] = useState<PendingRewardFlow | null>(null);
@@ -227,19 +228,9 @@ export const useRunController = () =>
 
     const enterNodeFloor = useCallback((node: RunMapNode): number =>
     {
-        const nodeFloor = getFloorForColumn(node.row);
-
-        if (nodeFloor > currentFloorRef.current)
+        if (node.row > RUN_CONFIG.semiBossRow && !lieutenantRerollsRefilledRef.current)
         {
-            currentFloorRef.current = nodeFloor;
-            setCurrentFloor(nodeFloor);
-            setFloorBanner(nodeFloor);
-
-            if (getFloorBriefing(nodeFloor))
-            {
-                setFloorBriefing(nodeFloor);
-            }
-
+            lieutenantRerollsRefilledRef.current = true;
             floorRerollsRef.current = GAME_RULES.rerollsPerFloor;
             setFloorRerollsRemaining(GAME_RULES.rerollsPerFloor);
         }
@@ -389,7 +380,7 @@ export const useRunController = () =>
                     setVisit({
                         node,
                         eventId: null,
-                        shopOffers: rollShopOffers(bodyMods, toDefinitionIds(deck), currentFloor),
+                        shopOffers: rollShopOffers(bodyMods, toDefinitionIds(deck), getFloorForColumn(node.row)),
                     });
                 }
                 else if (node.kind === 'rest')
@@ -424,7 +415,7 @@ export const useRunController = () =>
 
             startBattleForNode(node, battleEnemyIds, rerollsRemaining);
         }, 380);
-    }, [ deck, seed, bodyMods, signalsVisited, enterNodeFloor, currentFloor, startBattleForNode ]);
+    }, [ deck, seed, bodyMods, signalsVisited, enterNodeFloor, startBattleForNode ]);
 
     const shopHandlers = useMemo(
         () => createShopPurchaseHandlers(() => ({
@@ -696,7 +687,7 @@ export const useRunController = () =>
                     step.reward,
                     rerollIndex,
                     toDefinitionIds(deckRef.current),
-                    currentFloorRef.current,
+                    getFloorForColumn(selectedNodeRef.current?.row ?? 0),
                 ),
             };
 
@@ -723,9 +714,10 @@ export const useRunController = () =>
         setFloorRerollsRemaining(GAME_RULES.rerollsPerFloor);
         currentFloorRef.current = 1;
         floorRerollsRef.current = GAME_RULES.rerollsPerFloor;
+        lieutenantRerollsRefilledRef.current = false;
         setAscensionLevel(readRunAscensionLevel());
         setRunStats(createEmptyRunStats(readRunAscensionLevel()));
-        setFloorBriefing(null);
+        setFloorBriefing(nextPhase === 'map' ? 1 : null);
         setCombatRecap(null);
         setPendingRewardFlow(null);
         setVisit(null);

@@ -1403,6 +1403,26 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getEnemy().health).toBe(0);
     });
 
+    it('does not detonate leftover traps after the last enemy dies', () =>
+    {
+        const session = new CardGameSession();
+        const trapSlot = { row: 0, col: 1 };
+        const healthBefore = session.getPlayer().health;
+
+        session.board.placeCard(trapSlot, createCardInstance('hazard', 'left', 'enemy'));
+        session.dealAttackDamage(session.getEnemy().health + 20);
+        expect(session.isEnemyDefeated()).toBe(true);
+
+        session.completeAttack({
+            ...emptySequence(),
+            hazardDamage: 4,
+            abilityPlayerDamage: 10,
+        });
+
+        expect(session.getPlayer().health).toBe(healthBefore);
+        expect(session.board.getCardAt(trapSlot)).toBeNull();
+    });
+
     it('scorches undisarmed trap tiles for the next player turn', () =>
     {
         const session = new CardGameSession();

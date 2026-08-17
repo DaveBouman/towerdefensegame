@@ -566,9 +566,18 @@ html, body, #root {
 .run-map__gold-value,
 .run-map__floor-value,
 .run-map__rerolls-value,
-.run-map__ascension-value {
+.run-map__ascension-value,
+.run-map__body-mods-value {
     color: #f2cf82;
     font-variant-numeric: tabular-nums;
+}
+
+.run-map__body-mods-value {
+    max-width: min(280px, 28vw);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
 }
 
 .body-mods-panel {
@@ -578,16 +587,18 @@ html, body, #root {
 
 .body-mods-panel--persistent {
     position: fixed;
-    top: 12px;
+    top: 56px;
     left: 12px;
     z-index: 110;
-    width: min(280px, calc(100vw - 24px));
-    padding: 12px 14px;
+    width: min(240px, calc(100vw - 24px));
+    max-height: min(28vh, 240px);
+    overflow-y: auto;
+    padding: 10px 12px;
     border-radius: 12px;
     border: 1px solid rgba(140, 120, 220, 0.45);
     background: linear-gradient(160deg, rgba(28, 24, 52, 0.96) 0%, rgba(12, 10, 24, 0.94) 100%);
     box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
-    pointer-events: none;
+    pointer-events: auto;
 }
 
 .body-mods-panel__title {
@@ -645,8 +656,15 @@ html, body, #root {
 .body-mods-panel__effect {
     margin: 4px 0 0;
     font-size: 11px;
-    line-height: 1.45;
+    line-height: 1.35;
     color: #b8b0d8;
+}
+
+.body-mods-panel--persistent .body-mods-panel__effect {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .body-mods-panel__ready {

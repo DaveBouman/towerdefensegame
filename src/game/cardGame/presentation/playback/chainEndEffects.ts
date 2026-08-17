@@ -36,6 +36,11 @@ export function playEndOfChainEffects (
     onComplete: () => void,
 ): void
 {
+    if (deps.session.isEnemyDefeated() || deps.session.isPlayerDefeated())
+    {
+        onComplete();
+        return;
+    }
     const stepMs = GAME_RULES.activationStepMs;
     // On-step abilities (e.g. Overload) already played during their card's activation.
     const abilityEffects = [ ...sequence.chainAbilityEffects ]

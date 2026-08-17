@@ -16,7 +16,7 @@ branching **run map** (roguelite-style path of battles).
 - Chain resolves step-by-step (attack, defend, fire, rad, Reroute, hazard, siphon, boost).
 - Enemy acts with telegraphed intent (attack/shield + hazard traps / leech nodes).
 - Win: all enemy HP ≤ 0. Lose: player HP ≤ 0.
-- Multi-enemy fights: click an enemy to set your attack target before attacking; pick a new target mid-chain if the current one dies. When **all** enemies are dead, the chain stops (remaining cards do not activate).
+- Multi-enemy fights: click an enemy to set your attack target before attacking; pick a new target mid-chain if the current one dies. When **all** enemies are dead, the chain stops immediately — leftover traps, curses, siphon, and other end-of-chain beats do not resolve.
 
 ## Run structure
 
@@ -364,6 +364,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | 2026-08-13 | **Fight overclock.** After each enemy response, enemies gain +4 attack for the rest of the fight (`enemyStrengthPerTurn`). Chip shows current › next from the opening (+0›+4). First hit is baseline; a second energy round already sits at +12. |
 | 2026-08-13 | **Enemy HP variance.** `enemies.json` `maxHealth` is a median. Each fight (and mid-battle spawn) rolls integrity ±10% via the seeded RNG (`enemyHealthVariance`). Bestiary shows the range. |
 | 2026-08-13 | **Copy catalog.** Player-facing labels live in `src/game/copy/strings.ts` — cards, enemies, body mods, map nodes, shop services, archetypes, passives, traits, and intents. JSON `label` fields are fallbacks; catalog wins. Swap `EN` when adding locales. |
+| 2026-08-17 | **Wipe ends the attack immediately.** When the last enemy dies mid-chain, leftover traps/curses/siphon and other end-of-chain beats are skipped — victory fires without bombs detonating. |
 | 2026-08-17 | **Session/scene depth peels.** `CardGameSession` delegates squad/targeting to `EnemySquadManager`, energy/round refresh to `EnergyRoundController`, and Signal Twist to `HandRedirectController`. `Game.ts` attack resolve, board/hand drops, and pile/HUD sync live in `battleAttackFlow.ts` / `battleInputHandlers.ts` / `battleUiSync.ts`. |
 | 2026-08-17 | **Should-do / nice-later refactors.** Run economy data-driven (`runEconomy.json`). Events split into `runEventTypes` / `runEventDefinitions` / `applyRunEventEffects` (`runEvents.ts` barrel). Explicit `add-random-card` / `add-random-body-mod` / `open-random-puzzle` effect kinds (no `__random__` sentinels). Reward + body-mod pools in JSON. `AttackPipeline` peeled into pathfinding / bomb / resolve / sequence modules. Shared `DeckCardPicker` for shop + rest. Shop tooltip stale copy fixed. Node tooltips + route labels in `strings.ts`. Main menu screens under `ui/components/mainMenu/`. |
 | 2026-08-17 | **Must-fix refactors.** Event results use `RunDeckCard[]` end-to-end (no string/object deck mix). Pure shop purchase + finish-event planners extracted from `useRunController`. Enemy overclock/ramp peeled into `enemyOverclock.ts`. Battle view teardown moved to `gameBattleViews.ts`. |
@@ -421,7 +422,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | 2026-08-10 | **Reroute rename.** Player-facing **Joker** card renamed to **Reroute** (internal id `joker` unchanged). Fits Signal Chain routing lore — mid-chain direction pick. |
 | 2026-08-10 | **Credits = temp art only.** Credits screen lists Craftpix UI icons + enemy portraits (with pack ids / license link); dropped Phaser/React, music titles, and desktop packaging notes. |
 | 2026-08-10 | **Card index from `cards.json`.** Collection catalog lists every base card automatically; set `"collectible": false` to hide system cards (traps, boosts, curses, dormant). No longer gated on reward-pool membership — friendlier for mods. |
-| 2026-08-10 | **Chain stops on clear.** When the last living enemy dies mid-chain, remaining cards do not activate (end-of-chain effects still resolve for the partial chain). |
+| 2026-08-10 | **Chain stops on clear.** When the last living enemy dies mid-chain, remaining cards do not activate. End-of-chain effects (traps, curses, siphon) are also skipped so the fight ends immediately. |
 | 2026-08-10 | **Salvage heal-on-kill.** Salvage restores **7** HP on kill (upgraded **10**). |
 | 2026-08-10 | **Card collection index.** Main menu **Card index** shows every collectible base card from `cards.json` as unlocked or locked (`???`). Opt out with `"collectible": false`. Starter deck cards unlock on boot; rewards, shop buys, and event deck gains unlock permanently via `localStorage` (`cardCollection.ts`). |
 | 2026-08-10 | **Card index interaction fix.** Collection overlay mounts outside `.main-menu` (which uses `pointer-events: none`) so scroll, card select, and hover tooltips work; tooltips render below cards to avoid grid clipping. Menu + card index use `emitRunSfx` for open/select/filter/close and primary nav clicks. |

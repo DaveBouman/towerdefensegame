@@ -7,7 +7,7 @@ export interface FloorBriefing {
 export const FLOOR_BRIEFINGS: Record<number, FloorBriefing> = {
     1: {
         title: 'Outer Grid',
-        body: 'Street ops probe your routing. Lieutenants wait in column 4 — telegraph their passives before you commit.',
+        body: 'This whole board is Floor 1. Street ops probe your routing, a lieutenant holds mid-grid, and the Warden waits at the far gate. Hand rerolls refill once after you clear the lieutenant.',
         tip: 'Hot routes (marked on the map) hit harder but pay extra creds on victory.',
     },
     2: {
