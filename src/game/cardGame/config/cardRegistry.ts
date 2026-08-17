@@ -118,7 +118,7 @@ export interface GameRules {
     maxChainSteps: number;
     battleModifier?: { step: number; enemyIntentChance: number };
     chainAbilities: {
-        poisonTrail: { damagePerSubsequentCard: number };
+        poisonTrail: { damagePerSubsequentCard: number; damagePerStack: number };
         fireAlternation: { bonusDamagePerAlternatingStep: number };
         bleed: { attackThreshold: number; bonusPerExtraAttack: number };
         fortify: { defendThreshold: number; armorPerExtraDefend: number };

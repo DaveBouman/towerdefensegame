@@ -14,7 +14,9 @@ export type CardBehaviorIconId =
     | 'curse'
     | 'fuse'
     | 'echo'
-    | 'courier';
+    | 'courier'
+    | 'thorns'
+    | 'battle-mod';
 
 /** Phaser texture keys for card behavior icons. */
 export const CARD_BEHAVIOR_TEXTURE_KEY: Record<CardBehaviorIconId, string> = {
@@ -31,6 +33,8 @@ export const CARD_BEHAVIOR_TEXTURE_KEY: Record<CardBehaviorIconId, string> = {
     fuse: 'card-icon-fuse',
     echo: 'card-icon-echo',
     courier: 'card-icon-courier',
+    thorns: 'card-icon-thorns',
+    'battle-mod': 'card-icon-battle-mod',
 };
 
 const CARD_BEHAVIOR_ICON_FILE: Record<CardBehaviorIconId, string> = {
@@ -47,6 +51,34 @@ const CARD_BEHAVIOR_ICON_FILE: Record<CardBehaviorIconId, string> = {
     fuse: 'fuse.png',
     echo: 'echo.png',
     courier: 'courier.png',
+    thorns: 'thorns.png',
+    'battle-mod': 'intent-battle-mod.png',
+};
+
+/** Visual ids (and shared behaviors) that reuse another behavior's icon. */
+const CARD_BEHAVIOR_ICON_ALIASES: Record<string, CardBehaviorIconId> = {
+    shiv: 'attack',
+    lacerate: 'attack',
+    salvage: 'attack',
+    switchback: 'attack',
+    miasma: 'poison',
+    cinder: 'fire',
+    scorch: 'fire',
+    bramble: 'defend',
+    glitch: 'joker',
+    hardwire: 'defend',
+    patch: 'boost',
+    overclock: 'fire',
+};
+
+const resolveCardBehaviorIconId = (id: string): CardBehaviorIconId | null =>
+{
+    if (id in CARD_BEHAVIOR_TEXTURE_KEY)
+    {
+        return id as CardBehaviorIconId;
+    }
+
+    return CARD_BEHAVIOR_ICON_ALIASES[id] ?? null;
 };
 
 export const CARD_BEHAVIOR_ICON_ENTRIES = (Object.keys(CARD_BEHAVIOR_TEXTURE_KEY) as CardBehaviorIconId[]).map((id) => ({
@@ -56,11 +88,15 @@ export const CARD_BEHAVIOR_ICON_ENTRIES = (Object.keys(CARD_BEHAVIOR_TEXTURE_KEY
 }));
 
 export const getCardBehaviorTextureKey = (behaviorId: string): string | null =>
-    behaviorId in CARD_BEHAVIOR_TEXTURE_KEY
-        ? CARD_BEHAVIOR_TEXTURE_KEY[behaviorId as CardBehaviorIconId]
-        : null;
+{
+    const resolved = resolveCardBehaviorIconId(behaviorId);
+
+    return resolved ? CARD_BEHAVIOR_TEXTURE_KEY[resolved] : null;
+};
 
 export const getCardBehaviorIconUrl = (behaviorId: string): string | null =>
-    behaviorId in CARD_BEHAVIOR_ICON_FILE
-        ? craftpixIconUrl(CARD_BEHAVIOR_ICON_FILE[behaviorId as CardBehaviorIconId])
-        : null;
+{
+    const resolved = resolveCardBehaviorIconId(behaviorId);
+
+    return resolved ? craftpixIconUrl(CARD_BEHAVIOR_ICON_FILE[resolved]) : null;
+};

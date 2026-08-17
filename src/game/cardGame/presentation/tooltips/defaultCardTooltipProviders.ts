@@ -54,7 +54,7 @@ const defendLines = ({ definition }: CardTooltipContext): string[] =>
 const radTrailLines = (ctx: CardTooltipContext, extras: string[] = []): string[] =>
     [
         `Defend cards after this lose armor and add ${ctx.definition.power} ${poisonStatusNameLower()} stack(s) each to the enemy.`,
-        `${poisonStatusName()} fumes damage the enemy at the start of each of its turns, then weaken by 1.`,
+        `${poisonStatusName()} fumes deal ${GAME_RULES.chainAbilities.poisonTrail.damagePerStack} damage per stack at the start of each enemy turn, then weaken by 1.`,
         ...extras,
     ];
 
@@ -156,7 +156,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: [
             'Re-activates the previous chain card when this step resolves.',
-            'Repeats its damage, armor, and battle modifiers — Echo on Patch stacks to -20% damage taken.',
+            'Repeats its damage, armor, battle modifiers, and thorns — Echo on Patch stacks to -20% damage taken.',
             'Does nothing when it is the first card in the chain.',
         ],
     })),
@@ -240,7 +240,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
     provider('boost', () => ({
         title: cardLabel('boost'),
         lines: [
-            `Multiplies the next card's effect by ×${GAME_RULES.fieldBoost.nextStepMultiplier} (attack, defend, fire, ${poisonStatusNameLower()}, skills, battle mods).`,
+            `Multiplies the next card's effect by ×${GAME_RULES.fieldBoost.nextStepMultiplier} (attack, defend, fire, ${poisonStatusNameLower()}, skills, battle mods, thorns).`,
             'Boosts stack multiplicatively: Boost → Boost → Attack = ×4.',
             'Reroutes pass the boost stack through to the following card.',
             'Field card — spawns on a random empty tile after the enemy turn.',
@@ -327,6 +327,15 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
             `Grants ${ctx.definition.power} armor when activated in the chain.`,
             'Turns the corner: steps one tile along the arrow, then continues to the next card around the bend.',
             `Fortify: +${GAME_RULES.chainAbilities.fortify.armorPerExtraDefend} armor for each defend in the chain beyond ${GAME_RULES.chainAbilities.fortify.defendThreshold}.`,
+        ],
+    })),
+    provider('thorns', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Adds ${ctx.definition.power} thorn${ctx.definition.power === 1 ? '' : 's'} when activated in the chain.`,
+            'Each time an enemy attack hits you this energy round, reflect that many damage at the attacker.',
+            'Lasts until energy refills. Field Boost multiplies the thorns granted (Boost → Thorns = ×2).',
+            'Does not consume on reflect — every enemy attack in the round takes the full pool.',
         ],
     })),
     provider('battle-mod', (ctx) => ({

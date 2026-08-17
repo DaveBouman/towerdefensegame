@@ -10,6 +10,7 @@ import { describeBattleModifier } from '../../combat/battleModifiers';
 import { getDamageTierStyle, shakeCamera } from '../combatJuice';
 import { playPlayerHitSfx, playShieldAbsorbSfx } from '../../../audio/bindGameAudio';
 import { playSfx } from '../../../audio/gameAudio';
+import { applyEnemyHitResult } from './combatHitVisuals';
 
 export interface EnemyTurnPlaybackDeps
 {

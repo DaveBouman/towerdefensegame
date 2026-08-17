@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GRID_CONFIG } from '../../config/gridConfig';
 import { GAME_RULES } from '../config/cardRegistry';
-import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeSiphonHeal, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, getJokerDirectionChoices, getNextChainSlot, applyJokerChosenDirection, getNextChainSlotFromStep, resolveChainSteps } from './AttackPipeline';
+import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeSiphonHeal, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, getJokerDirectionChoices, getNextChainSlot, applyJokerChosenDirection, getNextChainSlotFromStep, resolveChainSteps, isBoostedChainStep } from './AttackPipeline';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { createCardInstance, resetCardInstanceCounter } from '../domain/createCardInstance';
 import type { ActivationStep, SlotPosition } from '../domain/types';
@@ -70,6 +70,24 @@ const hazardStep = (slot: SlotPosition): ActivationStep =>
         exitArrow: 'right',
         damage: 0,
         armor: 0,
+    };
+};
+
+const thornsStep = (slot: SlotPosition, thorns = 1): ActivationStep =>
+{
+    const card = createCardInstance('thorns', 'right');
+
+    return {
+        slot,
+        card,
+        definitionId: 'thorns',
+        behaviorId: 'thorns',
+        visualId: 'thorns',
+        arrow: 'right',
+        exitArrow: 'right',
+        damage: 0,
+        armor: 0,
+        thorns,
     };
 };
 
@@ -433,6 +451,7 @@ describe('AttackPipeline', () =>
         applyJokerChosenDirection(step, 'up-right');
 
         expect(step.exitArrow).toBe('up-right');
+        expect(step.card.jokerDirectionChosen).toBe(true);
         expect(getNextChainSlotFromStep(board, step)).toEqual({ row: 0, col: 3 });
     });
 
@@ -745,5 +764,42 @@ describe('AttackPipeline', () =>
         const sequence = planAttack(board, { row: 0, col: 0 });
 
         expect(sequence.abilityPoisonStacks).toBe(4);
+    });
+});
+
+describe('player thorns chain resolve', () =>
+{
+    it('doubles thorns under a field boost', () =>
+    {
+        const resolved = resolveChainSteps([
+            boostStep({ row: 0, col: 0 }),
+            thornsStep({ row: 0, col: 1 }),
+        ]);
+
+        expect(resolved[1]!.thorns).toBe(2);
+        expect(isBoostedChainStep(resolved, 1)).toBe(true);
+    });
+
+    it('stacks two boosts into ×4 thorns', () =>
+    {
+        const resolved = resolveChainSteps([
+            boostStep({ row: 0, col: 0 }),
+            boostStep({ row: 0, col: 1 }),
+            thornsStep({ row: 0, col: 2 }),
+        ]);
+
+        expect(resolved[2]!.thorns).toBe(4);
+    });
+
+    it('reads thorns from a placed Thorns card', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('thorns', 'right'));
+
+        const chain = planActivationChain(board, { row: 0, col: 0 });
+
+        expect(chain[0]?.thorns).toBe(1);
+        expect(chain[0]?.behaviorId).toBe('thorns');
     });
 });

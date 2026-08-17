@@ -35,6 +35,16 @@ describe('echoReplay', () =>
         expect(replay?.resolved.damage).toBe(3);
     });
 
+    it('replays thorns from the previous step', () =>
+    {
+        const chain = [
+            { ...step('thorns', 'thorns'), thorns: 1 },
+            step('echo', 'echo'),
+        ];
+
+        expect(getEchoReplayTarget(chain, 1)?.resolved.thorns).toBe(1);
+    });
+
     it('returns null for the first chain step', () =>
     {
         expect(getEchoReplayTarget([ step('echo', 'echo') ], 0)).toBeNull();

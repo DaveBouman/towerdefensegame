@@ -76,7 +76,11 @@ export const CardChip = ({
                     <DirectionArrowIcon direction={loopArrow} loop />
                 </span>
             )}
-            <CardBehaviorIcon behaviorId={resolvedBehaviorId} className="card-chip__icon" />
+            <CardBehaviorIcon
+                behaviorId={resolvedBehaviorId}
+                visualId={definition.visualId}
+                className="card-chip__icon"
+            />
             <span className="card-chip__label">{displayLabel}</span>
             <span className="card-chip__power">{displayPower}</span>
         </div>

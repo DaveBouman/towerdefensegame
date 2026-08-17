@@ -13,7 +13,7 @@ branching **run map** (roguelite-style path of battles).
 
 - Player drags cards from hand onto a grid; arrows define activation order.
 - Player sets chain start (click a column-0 tile) and clicks **Attack**.
-- Chain resolves step-by-step (attack, defend, fire, rad, Reroute, hazard, siphon, boost).
+- Chain resolves step-by-step (attack, defend, fire, rad, Reroute, hazard, siphon, boost, thorns).
 - Enemy acts with telegraphed intent (attack/shield + hazard traps / leech nodes).
 - Win: all enemy HP ≤ 0. Lose: player HP ≤ 0.
 - Multi-enemy fights: click an enemy to set your attack target before attacking; pick a new target mid-chain if the current one dies. When **all** enemies are dead, the chain stops immediately — leftover traps, curses, siphon, and other end-of-chain beats do not resolve.
@@ -217,14 +217,15 @@ The player turn is **escalating**: each Attack resolves the current board withou
 |--------|-------|-----------------|
 | Chain routing | `AttackPipeline.ts`, `cardDirections.ts` | Arrow pools, leap (2-tile), corner-turn (`cornerTurn` — hooks to a forward-diagonal, `getCornerNextSlot`), edge-wrap (`wrapEdges` — **Phase Relay** / **Phase Bulwark** continue on the opposite board edge). Loop-reset exists in code but is **disabled** (not in starter deck, rewards, or puzzles). |
 | Rad trail | `poisonTrailAbility.ts` | Converts subsequent defends to **rad stacks** on the enemy (radioactive fumes) |
-| Rad stacks (status) | `CardGameSession.tickPoison` | Enemy takes `stacks` damage at the start of each of its turns (ignores shield), then stacks decay by 1 |
+| Rad stacks (status) | `CardGameSession.tickPoison` | Enemy takes `stacks × 4` damage at the start of each of its turns (ignores shield), then stacks decay by 1 (`gameRules.chainAbilities.poisonTrail.damagePerStack`) |
 | Fire alternation | `fireAlternationAbility.ts` | +3 damage per alternating attack/defend after fire |
 | Bleed (Rupture / Shiv / Lacerate) | `bleedAbility.ts` | +2 damage per attack in the chain beyond 2 (rewards attack-heavy chains) |
 | Fortify (Bulwark / Bramble) | `fortifyAbility.ts` | +2 armor per defend in the chain beyond 2 (rewards defend-heavy chains) |
 | Overload (Surge) | `overloadAbility.ts` | When Surge activates: +3 damage per other skill already in the chain, ×2 if a Reroute already fired; shows `OVERLOAD N` on the card + enemy hit |
 | Combo starters | `cards.json` — Shiv, Miasma, Cinder, Lacerate, Scorch, Bramble | Diagonal/corner/lunge variants that pair routing with bleed, rad trail, fire alternation, or fortify |
+| Player thorns | `thornsBehavior.ts`, `CombatResolver.reflectPlayerThorns` | **Thorns** card adds its power to a player thorns pool for the energy round. Each enemy **attack** that actually hits (shield absorb counts; fully blocked hits do not) reflects that many damage at the attacker. Pool does not consume on reflect. Field Boost multiplies thorns (Boost → Thorns = ×2); Echo replays the previous thorns grant. Clears when energy refills. |
 | Battle modifiers | `battleModifiers.ts`, `battle-mod` behavior, `battle-mod` enemy intent | ±10% to enemy attack, damage taken, shield gained, or damage dealt — player cards (Glitch/Hardwire/Patch/Overclock) and enemy intents. **All modifiers last until energy refills.** Field **Boost** multiplies the next battle-mod delta. Active chips sit **below** the player/enemy panels (`BattleModifierStatusView`): enemy-attack under enemies, other stats under the player. Each stat has a distinct color; % text is green (buff) or red (debuff). |
-| Echo | `echo` behavior, `echoReplay.ts` | Re-activates the previous chain card (damage, armor, battle modifiers) then activates itself |
+| Echo | `echo` behavior, `echoReplay.ts` | Re-activates the previous chain card (damage, armor, battle modifiers, thorns) then activates itself |
 | Hazards/traps | `hazardBehavior.ts`, `AttackPipeline.applyBombConversion`, `FieldEffects.resolveHazardsAfterAttack` | Skip → slot explodes (4 dmg) + scorches tile; **route a card into it (or start the chain on it and continue)** → the trap converts to that card's type and joins the chain. **All resolved traps are removed from the board after the attack.** Enemies only place traps in the **last 3 columns**. |
 | **Curse cards** | `cards.json` (`unplayable`, `nonRerollable`, `handEndPenalty`), `CardGameSession.resolveHandEndPenalties` | Bad cards that clog resources — **Burden** (place to clear hand; **cannot be rerolled**; route through it safely or take **double hand penalty** if left off-chain on attack; 5 dmg if held in hand at end of turn). **Fuse** (weak attack, 8 dmg if not placed by end of turn). Penalties resolve after **each attack**. **Saboteur** adds Burdens via `curseHand` |
 | Shield layer | Both sides | Absorbs before HP (rad bypasses shield) |
@@ -365,6 +366,10 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-17 | **Rad tick 4.** Each rad stack deals 4 damage at the start of the enemy turn (was 1 per stack), then still decays by 1. |
+| 2026-08-17 | **Hardwire / battle-mod icons.** Hardwire, Glitch, Patch, and Overclock now show kind icons (Hardwire uses the defend glyph). Reroute swaps its `?` for the chosen arrow when it resolves. |
+| 2026-08-17 | **Player Thorns card.** Reward card grants 1 thorn (2 upgraded) for the energy round. Enemy attacks that hit you reflect that damage at the attacker; Boost multiplies the grant; Echo replays it. HUD shows the pool under the runner. |
+| 2026-08-17 | **Clickable cursor brackets.** Hover/clickable corner ticks sit tighter on the pointer triangle. |
 | 2026-08-17 | **Early Access label.** Main menu badge and build string now say Early Access (was Alpha); notice copy updated in `gameMeta.ts`. Footer version line follows `GAME_BUILD_LABEL`. |
 | 2026-08-17 | **Off-chain card beats.** Unchained attacks, defends, curses, and traps each pulse their card glow at end-of-chain with per-card floating feedback (not one lump sum). |
 | 2026-08-17 | **Combat playback hardening.** Chain finalize, hit VFX, and ability beats no longer throw into a stuck state — enemy response and round end always advance even if juice fails. |

@@ -161,6 +161,7 @@ export const emitAttackReadiness = (deps: BattleUiSyncDeps): void =>
     deps.enemySquad?.syncTargetPrompt(deps.session);
     syncBattleModifierLayout(deps);
     deps.battleModifierView?.setModifiers(deps.session.getBattleModifiers());
+    deps.playerView?.setThorns(deps.session.getPlayerThorns());
 
     if (!deps.session.isBusy()
         && !deps.session.isEnemyDefeated())

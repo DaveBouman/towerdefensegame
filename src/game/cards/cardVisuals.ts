@@ -115,6 +115,12 @@ export const CARD_VISUALS: Record<string, CardVisualStyle> = {
         labelColor: '#b8ffd0',
         powerColor: '#58d68d',
     },
+    thorns: {
+        fill: 0x1a1208,
+        border: 0xf39c12,
+        labelColor: '#ffe0a8',
+        powerColor: '#ffb347',
+    },
     glitch: {
         fill: 0x101828,
         border: 0x7af0ff,

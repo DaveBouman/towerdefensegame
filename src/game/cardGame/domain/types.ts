@@ -17,6 +17,8 @@ export interface CardInstance {
     arrow: import('./cardDirections').CardDirection;
     /** Loop arrow — where the chain jumps to replay earlier cards (loop-reset only). */
     loopArrow?: import('./cardDirections').CardDirection;
+    /** After Reroute resolves, the chosen direction is shown instead of `?`. */
+    jokerDirectionChosen?: boolean;
     owner?: CardOwner;
     /** Set when a single-use card is played — destroyed for this battle, not sent to the graveyard. */
     exhausted?: boolean;

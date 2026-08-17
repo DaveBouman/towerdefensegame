@@ -81,6 +81,7 @@ export const getChainStepMs = (behaviorId: string, baseMs: number): number =>
             return Math.round(baseMs * 1.18);
         case 'poison':
         case 'battle-mod':
+        case 'thorns':
             return Math.round(baseMs * 1.05);
         case 'echo':
         case 'joker':

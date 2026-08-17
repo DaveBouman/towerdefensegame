@@ -26,7 +26,9 @@ export class PlayerHealthView
     private readonly glowRing: Phaser.GameObjects.Rectangle;
     private readonly combatTraitRowView: CombatTraitRowView;
     private readonly playerLabel: Phaser.GameObjects.Text;
+    private readonly thornsText: Phaser.GameObjects.Text;
     private combatTraitCount = 0;
+    private thornsCount = 0;
     private readonly playerSize: number;
     private idleTween?: Phaser.Tweens.Tween;
 
@@ -131,6 +133,10 @@ export class PlayerHealthView
 
         this.playerLabel = label;
 
+        this.thornsText = scene.add.text(playerSize / 2, this.getThornsY(), '', {
+            ...uiDisplayTextStyle(11, '#f39c12', { bold: true }),
+        }).setOrigin(0.5, 0).setVisible(false);
+
         this.combatTraitRowView = new CombatTraitRowView(
             scene,
             container,
@@ -148,6 +154,7 @@ export class PlayerHealthView
             this.healthBarFill,
             this.healthText,
             label,
+            this.thornsText,
         ]);
         this.container = container;
         this.body = body;
@@ -180,6 +187,20 @@ export class PlayerHealthView
 
         this.glowRing.setStrokeStyle(3, CYBER.player, low ? 0.85 : 0.45);
         this.body.setFillStyle(CYBER.player, low ? 0.32 : 0.18);
+    }
+
+    setThorns (count: number): void
+    {
+        if (!this.container.active || !this.thornsText.active)
+        {
+            return;
+        }
+
+        this.thornsCount = Math.max(0, Math.round(count));
+        this.thornsText.setVisible(this.thornsCount > 0);
+        this.thornsText.setText(this.thornsCount > 0 ? `THORNS ${this.thornsCount}` : '');
+        this.thornsText.y = this.getThornsY();
+        this.syncStatusRowLayout();
     }
 
     playHitFlash (): void
@@ -220,6 +241,11 @@ export class PlayerHealthView
     {
         let bottom = this.playerSize + 16 + this.playerLabel.height;
 
+        if (this.thornsCount > 0)
+        {
+            bottom = this.getThornsY() + this.thornsText.height;
+        }
+
         if (this.combatTraitCount > 0)
         {
             bottom = this.getTraitRowY() + COMBAT_TRAIT_ICON_SIZE / 2;
@@ -233,13 +259,25 @@ export class PlayerHealthView
         this.combatTraitRowView.setRowY(this.getTraitRowY());
     }
 
+    private getThornsY (): number
+    {
+        return this.playerSize + 16 + this.playerLabel.height + 2;
+    }
+
     private getTraitRowY (): number
     {
-        return this.playerSize
+        let y = this.playerSize
             + 16
             + this.playerLabel.height
             + COMBAT_TRAIT_NAME_GAP
             + COMBAT_TRAIT_ICON_SIZE / 2;
+
+        if (this.thornsCount > 0)
+        {
+            y += 16;
+        }
+
+        return y;
     }
 
     destroy (): void

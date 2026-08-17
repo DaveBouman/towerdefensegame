@@ -24,6 +24,7 @@ describe('visualEffectRegistry', () =>
             'lacerate',
             'scorch',
             'bramble',
+            'thorns',
             'glitch',
             'hardwire',
             'patch',

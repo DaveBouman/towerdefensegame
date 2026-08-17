@@ -36,6 +36,7 @@ const EN = {
     'card.lacerate': 'Lacerate',
     'card.scorch': 'Scorch',
     'card.bramble': 'Bramble',
+    'card.thorns': 'Thorns',
     'card.glitch': 'Glitch',
     'card.hardwire': 'Hardwire',
     'card.patch': 'Patch',

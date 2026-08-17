@@ -393,4 +393,5 @@ export const applyJokerChosenDirection = (
     step.arrow = direction;
     step.exitArrow = direction;
     step.card.arrow = direction;
+    step.card.jokerDirectionChosen = true;
 };

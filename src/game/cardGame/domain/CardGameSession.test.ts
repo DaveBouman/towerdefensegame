@@ -189,6 +189,97 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth);
     });
 
+    it('ticks rad stacks for 4 damage each, then decays by 1', () =>
+    {
+        const session = new CardGameSession('basic');
+        const before = session.getEnemy().health;
+
+        session.applyPoisonStacks(1);
+        const first = session.tickPoison();
+
+        expect(first.healthDamage).toBe(4);
+        expect(session.getEnemy().health).toBe(before - 4);
+        expect(session.getEnemyPoison()).toBe(0);
+    });
+
+    it('ticks two rad stacks for 8 damage, then leaves one stack', () =>
+    {
+        const session = new CardGameSession('basic');
+        const before = session.getEnemy().health;
+
+        session.applyPoisonStacks(2);
+        const first = session.tickPoison();
+
+        expect(first.healthDamage).toBe(8);
+        expect(session.getEnemy().health).toBe(before - 8);
+        expect(session.getEnemyPoison()).toBe(1);
+    });
+
+    it('reflects player thorns at the attacking enemy', () =>
+    {
+        const session = new CardGameSession('basic');
+        const attackerId = session.getCombatants()[0]!.instanceId;
+
+        session.addPlayerThorns(1);
+        const before = session.getEnemy(attackerId).health;
+        const result = session.resolveEnemyAttack(5, attackerId);
+
+        expect(session.getPlayerThorns()).toBe(1);
+        expect(result.healthDamage).toBeGreaterThan(0);
+        expect(result.reflectedThorns?.healthDamage).toBe(1);
+        expect(session.getEnemy(attackerId).health).toBe(before - 1);
+    });
+
+    it('reflects boosted player thorns as a larger pool', () =>
+    {
+        const session = new CardGameSession('basic');
+        const attackerId = session.getCombatants()[0]!.instanceId;
+        const before = session.getEnemy(attackerId).health;
+
+        session.addPlayerThorns(2);
+        const result = session.resolveEnemyAttack(5, attackerId);
+
+        expect(result.reflectedThorns?.healthDamage).toBe(2);
+        expect(session.getEnemy(attackerId).health).toBe(before - 2);
+    });
+
+    it('does not reflect player thorns without an attacker id', () =>
+    {
+        const session = new CardGameSession('basic');
+        const before = session.getEnemy().health;
+
+        session.addPlayerThorns(1);
+        const result = session.resolveEnemyAttack(5);
+
+        expect(result.reflectedThorns).toBeUndefined();
+        expect(session.getEnemy().health).toBe(before);
+    });
+
+    it('does not reflect player thorns when the hit is fully blocked', () =>
+    {
+        const session = new CardGameSession('basic', undefined, undefined, [ 'reactive-plating' ]);
+        const attackerId = session.getCombatants()[0]!.instanceId;
+        const before = session.getEnemy(attackerId).health;
+
+        session.addPlayerThorns(1);
+        const result = session.resolveEnemyAttack(8, attackerId);
+
+        expect(result.healthDamage).toBe(0);
+        expect(result.shieldAbsorbed).toBe(0);
+        expect(result.reflectedThorns).toBeUndefined();
+        expect(session.getEnemy(attackerId).health).toBe(before);
+    });
+
+    it('clears player thorns when energy refills', () =>
+    {
+        const session = new CardGameSession('basic');
+
+        session.addPlayerThorns(2);
+        expect(session.getPlayerThorns()).toBe(2);
+        session.finishPlayerRound();
+        expect(session.getPlayerThorns()).toBe(0);
+    });
+
     it('caps damage per card hit for enemies with damageCap', () =>
     {
         const session = new CardGameSession('thornward');

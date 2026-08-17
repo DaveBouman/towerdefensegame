@@ -1,6 +1,7 @@
 import { BODY_MOD_IDS, CAPACITOR_BANK_ATTACK_MULTIPLIER, isFifthStrikeAttack, isSeventhStrikeAttack, PORTSIDE_GYRO_DAMAGE_MULTIPLIER } from '../../run/bodyMods';
 import type { CardDirection } from './cardDirections';
 import {
+    GAME_RULES,
     getCardDefinitionOrThrow,
     getCardHealOnKill,
 } from '../config/cardRegistry';
@@ -650,9 +651,11 @@ export class CombatResolver
         }
 
         const wasAlive = isCombatantAlive(combatant);
-        const healthDamage = Math.min(combatant.state.health, stacks);
+        const damagePerStack = Math.max(1, GAME_RULES.chainAbilities.poisonTrail.damagePerStack);
+        const rawDamage = stacks * damagePerStack;
+        const healthDamage = Math.min(combatant.state.health, rawDamage);
 
-        combatant.state.health = Math.max(0, combatant.state.health - stacks);
+        combatant.state.health = Math.max(0, combatant.state.health - rawDamage);
         combatant.state.poison = Math.max(0, stacks - 1);
 
         const enemyKilled = wasAlive && combatant.state.health <= 0;

@@ -34,6 +34,7 @@ const CARD_ARCHETYPE_WEIGHTS: Record<string, Partial<Record<DeckArchetypeId, num
     'corner-defense': { bulwark: 0.6 },
     bulwark: { bulwark: 1 },
     bramble: { bulwark: 1 },
+    thorns: { bulwark: 0.85 },
     citadel: { bulwark: 1 },
     surge: { blade: 0.45, heat: 0.35 },
     'amp-core': { blade: 0.4, heat: 0.5 },

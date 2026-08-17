@@ -38,6 +38,7 @@ const VISUAL_ALIASES: Record<string, string> = {
     cinder: 'fire',
     scorch: 'fire',
     bramble: 'defend',
+    thorns: 'hazard',
     glitch: 'joker',
     hardwire: 'defend',
     patch: 'boost',

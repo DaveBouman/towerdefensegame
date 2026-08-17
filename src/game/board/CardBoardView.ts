@@ -3,7 +3,7 @@ import { uiTextStyle } from '../config/uiTypography';
 import { CYBER } from '../config/cyberpunkTheme';
 import { drawCornerBrackets, drawNeonPanel } from '../config/cyberpunkUiGraphics';
 import { GRID_CONFIG } from '../config/gridConfig';
-import { buildCardGraphic } from '../cards/CardRenderer';
+import { buildCardGraphic, updateCardGraphicDirection } from '../cards/CardRenderer';
 import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
 import { getJokerDirectionChoices } from '../cardGame/combat/AttackPipeline';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
@@ -315,6 +315,22 @@ export class CardBoardView
     hideJokerDirectionPicker (): void
     {
         this.jokerDirectionPicker.hide();
+    }
+
+    /** Swaps Reroute's `?` for the chosen chain arrow after the player picks. */
+    setCardDirectionMark (slot: SlotPosition, direction: CardDirection): void
+    {
+        const wrapper = this.cardContainers[slot.row]?.[slot.col];
+        const graphic = wrapper?.getData('cardGraphic') as Phaser.GameObjects.Container | undefined;
+
+        if (!wrapper || !graphic)
+        {
+            return;
+        }
+
+        const size = GRID_CONFIG.tileSize - SLOT_INSET * 2;
+
+        updateCardGraphicDirection(this.scene, graphic, direction, size, size);
     }
 
     findSlotAt (worldX: number, worldY: number): SlotPosition | null
@@ -1140,6 +1156,7 @@ export class CardBoardView
         wrapper.add(graphic);
         wrapper.setData('slotRow', slot.row);
         wrapper.setData('slotCol', slot.col);
+        wrapper.setData('cardGraphic', graphic);
         this.container.add(wrapper);
         this.container.bringToTop(wrapper);
 

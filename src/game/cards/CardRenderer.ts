@@ -8,7 +8,7 @@ import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
 import { getCardBehaviorTextureKey } from '../../ui/icons/cardBehaviorIcons';
 import { ARROW_GLYPH, arrowLabelPosition, cornerEntryArrowPosition } from './cardArrows';
 import { createDirectionArrowImage, createLoopBadgeImage } from './directionArrowVisual';
-import { cornerTargetDirections } from '../cardGame/domain/cardDirections';
+import { cornerTargetDirections, type CardDirection } from '../cardGame/domain/cardDirections';
 import { CARD_VISUALS } from './cardVisuals';
 import { formatCardPowerLabel } from './cardVisualUtils';
 
@@ -22,6 +22,8 @@ export interface CardGraphic {
     container: Phaser.GameObjects.Container;
     hitArea: Phaser.GameObjects.Rectangle;
 }
+
+const CARD_DIRECTION_MARK_KEY = 'directionMark';
 
 const cardKindIconSize = (width: number): number =>
     Math.max(18, Math.round(width * 0.26));
@@ -90,7 +92,7 @@ export const buildCardGraphic = (
             ...uiTextStyle(Math.max(12, Math.round(width * 0.32)), '#c97b7b', { bold: true }),
         }).setOrigin(0.5);
     }
-    else if (isJoker)
+    else if (isJoker && !card.jokerDirectionChosen)
     {
         primaryMark = scene.add.text(arrowPos.x, arrowPos.y, '?', {
             ...uiTextStyle(24, '#ffffff', { bold: true }),
@@ -109,6 +111,8 @@ export const buildCardGraphic = (
         arrow.setPosition(arrowPos.x, arrowPos.y);
         primaryMark = arrow;
     }
+
+    container.setData(CARD_DIRECTION_MARK_KEY, primaryMark);
 
     const cardDecor: Phaser.GameObjects.GameObject[] = [ primaryMark ];
 
@@ -206,6 +210,36 @@ export const buildCardGraphic = (
     }
 
     return { container, hitArea: body };
+};
+
+/** Replaces the card's direction mark (used when Reroute resolves to a chosen arrow). */
+export const updateCardGraphicDirection = (
+    scene: Phaser.Scene,
+    graphic: Phaser.GameObjects.Container,
+    direction: CardDirection,
+    width: number,
+    height: number,
+): void =>
+{
+    const previous = graphic.getData(CARD_DIRECTION_MARK_KEY) as { x?: number; y?: number; destroy?: () => void } | undefined;
+    const previousPosition = typeof previous?.x === 'number' && typeof previous.y === 'number'
+        ? { x: previous.x, y: previous.y }
+        : arrowLabelPosition(direction, width, height);
+
+    previous?.destroy?.();
+
+    const size = Math.max(14, Math.round(width * 0.28));
+    const mark = createDirectionArrowImage(scene, direction, {
+        size,
+        tint: 0xffffff,
+    }) ?? scene.add.text(0, 0, ARROW_GLYPH[direction], {
+        ...uiTextStyle(Math.max(12, Math.round(width * 0.32)), '#ffffff', { bold: true }),
+    }).setOrigin(0.5);
+
+    mark.setPosition(previousPosition.x, previousPosition.y);
+    graphic.add(mark);
+    graphic.bringToTop(mark);
+    graphic.setData(CARD_DIRECTION_MARK_KEY, mark);
 };
 
 /** @deprecated Use buildCardGraphic with a CardInstance. */

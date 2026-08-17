@@ -3,12 +3,14 @@ import { CraftpixIcon } from './CraftpixIcon';
 
 interface CardBehaviorIconProps {
     behaviorId: string;
+    visualId?: string;
     className?: string;
 }
 
-export const CardBehaviorIcon = ({ behaviorId, className }: CardBehaviorIconProps) =>
+export const CardBehaviorIcon = ({ behaviorId, visualId, className }: CardBehaviorIconProps) =>
 {
-    const src = getCardBehaviorIconUrl(behaviorId);
+    const src = (visualId ? getCardBehaviorIconUrl(visualId) : null)
+        ?? getCardBehaviorIconUrl(behaviorId);
 
     if (!src)
     {

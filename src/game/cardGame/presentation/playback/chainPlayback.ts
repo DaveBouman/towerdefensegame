@@ -692,6 +692,7 @@ export function runChainPlayback (
             deps.boardView.showJokerDirectionPicker(step.slot, (direction) =>
             {
                 applyJokerChosenDirection(step, direction);
+                deps.boardView.setCardDirectionMark(step.slot, direction);
                 finishStepWithHold();
             });
 
