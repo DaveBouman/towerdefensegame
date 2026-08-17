@@ -77,30 +77,76 @@ export const writeDisplayPreset = (presetId: DisplayPresetId): void =>
     }
 };
 
-export const applyDisplayPreset = async (presetId: DisplayPresetId): Promise<void> =>
+export interface DisplayLimits {
+    maxWidth: number;
+    maxHeight: number;
+    availablePresets: DisplayPresetId[];
+}
+
+export const readDisplayLimits = async (): Promise<DisplayLimits | null> =>
+{
+    const desktop = getDesktopApi();
+
+    if (!desktop?.getDisplayLimits)
+    {
+        return null;
+    }
+
+    const limits = await desktop.getDisplayLimits();
+
+    if (!limits || !Array.isArray(limits.availablePresets))
+    {
+        return null;
+    }
+
+    return {
+        maxWidth: limits.maxWidth,
+        maxHeight: limits.maxHeight,
+        availablePresets: limits.availablePresets.filter(isDisplayPresetId),
+    };
+};
+
+export const readAvailableDisplayPresets = async (): Promise<DisplayPresetId[]> =>
+{
+    const limits = await readDisplayLimits();
+
+    if (limits)
+    {
+        return limits.availablePresets;
+    }
+
+    return DISPLAY_PRESETS.map((preset) => preset.id);
+};
+
+export const applyDisplayPreset = async (presetId: DisplayPresetId): Promise<DisplayPresetId> =>
 {
     if (!isDisplayPresetId(presetId))
     {
-        return;
+        return DEFAULT_DISPLAY_PRESET;
     }
-
-    writeDisplayPreset(presetId);
 
     const desktop = getDesktopApi();
 
     if (desktop?.setDisplayPreset)
     {
-        await desktop.setDisplayPreset(presetId);
+        const applied = await desktop.setDisplayPreset(presetId);
+        const resolved = isDisplayPresetId(applied) ? applied : presetId;
+
+        writeDisplayPreset(resolved);
+
+        return resolved;
     }
+
+    writeDisplayPreset(presetId);
+
+    return presetId;
 };
 
 export const applyStoredDisplayPreset = async (): Promise<DisplayPresetId> =>
 {
-    const presetId = readDisplayPreset();
+    const stored = readDisplayPreset();
 
-    await applyDisplayPreset(presetId);
-
-    return presetId;
+    return applyDisplayPreset(stored);
 };
 
 export const readActiveDisplayPreset = async (): Promise<DisplayPresetId> =>

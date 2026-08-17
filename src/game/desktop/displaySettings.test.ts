@@ -23,7 +23,18 @@ describe('displaySettings', () =>
         vi.stubGlobal('window', {
             signalChainDesktop: {
                 quit: vi.fn(),
-                setDisplayPreset: vi.fn(),
+                setDisplayPreset: vi.fn(async (presetId: string) => presetId),
+                getDisplayLimits: vi.fn(async () => ({
+                    maxWidth: 1920,
+                    maxHeight: 1080,
+                    availablePresets: [
+                        'adaptive',
+                        '960x540',
+                        '1280x720',
+                        '1600x900',
+                        '1920x1080',
+                    ],
+                })),
             },
         });
     });
@@ -54,9 +65,17 @@ describe('displaySettings', () =>
 
     it('forwards preset changes to the desktop shell', async () =>
     {
-        await applyDisplayPreset('1600x900');
+        const applied = await applyDisplayPreset('1600x900');
 
         expect(window.signalChainDesktop?.setDisplayPreset).toHaveBeenCalledWith('1600x900');
+        expect(applied).toBe('1600x900');
         expect(readDisplayPreset()).toBe('1600x900');
+    });
+
+    it('lists presets allowed by the desktop shell', async () =>
+    {
+        const { readAvailableDisplayPresets } = await import('./displaySettings');
+
+        await expect(readAvailableDisplayPresets()).resolves.not.toContain('2560x1440');
     });
 });

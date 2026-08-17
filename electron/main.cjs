@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu, net, protocol, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, net, protocol, screen, shell } = require('electron');
 const path = require('path');
 const { pathToFileURL } = require('url');
 const steam = require('./steam.cjs');
@@ -7,6 +7,9 @@ const {
     MIN_WINDOW_HEIGHT,
     DEFAULT_PRESET_ID,
     PRESETS,
+    computeMaxWindowSize,
+    clampPresetId,
+    listAvailablePresetIds,
 } = require('./displayPresets.cjs');
 
 const DEV_URL = process.env.ELECTRON_DEV_URL ?? 'http://localhost:8080';
@@ -27,30 +30,55 @@ let activeDisplayPreset = DEFAULT_PRESET_ID;
 
 const isValidPresetId = (presetId) => Object.hasOwn(PRESETS, presetId);
 
+const getWorkAreaSize = (window) =>
+{
+    const display = window && !window.isDestroyed()
+        ? screen.getDisplayMatching(window.getBounds())
+        : screen.getPrimaryDisplay();
+
+    return display.workAreaSize;
+};
+
+const getDisplayLimits = (window) =>
+{
+    const workArea = getWorkAreaSize(window);
+    const maxWindow = computeMaxWindowSize(workArea.width, workArea.height);
+
+    return {
+        maxWidth: maxWindow.width,
+        maxHeight: maxWindow.height,
+        availablePresets: listAvailablePresetIds(maxWindow.width, maxWindow.height),
+    };
+};
+
 const applyDisplayPreset = (window, presetId) =>
 {
     if (!window || window.isDestroyed() || window.isFullScreen())
     {
-        return;
+        return activeDisplayPreset;
     }
 
     const safePresetId = isValidPresetId(presetId) ? presetId : DEFAULT_PRESET_ID;
+    const { maxWidth, maxHeight } = getDisplayLimits(window);
+    const clampedPresetId = clampPresetId(safePresetId, maxWidth, maxHeight);
 
-    activeDisplayPreset = safePresetId;
+    activeDisplayPreset = clampedPresetId;
 
-    const preset = PRESETS[safePresetId];
+    const preset = PRESETS[clampedPresetId];
 
     if (!preset)
     {
         window.setMinimumSize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT);
-        window.setMaximumSize(0, 0);
-        return;
+        window.setMaximumSize(maxWidth, maxHeight);
+        return activeDisplayPreset;
     }
 
     window.setMinimumSize(preset.width, preset.height);
     window.setMaximumSize(preset.width, preset.height);
     window.setSize(preset.width, preset.height);
     window.center();
+
+    return activeDisplayPreset;
 };
 
 protocol.registerSchemesAsPrivileged([
@@ -183,6 +211,13 @@ ipcMain.handle('app:get-fullscreen', () =>
 
 ipcMain.handle('app:get-display-preset', () => activeDisplayPreset);
 
+ipcMain.handle('app:get-display-limits', () =>
+{
+    const window = BrowserWindow.getFocusedWindow() ?? mainWindow;
+
+    return getDisplayLimits(window);
+});
+
 ipcMain.handle('app:set-display-preset', (_event, presetId) =>
 {
     if (typeof presetId !== 'string' || !isValidPresetId(presetId))
@@ -192,9 +227,7 @@ ipcMain.handle('app:set-display-preset', (_event, presetId) =>
 
     const window = BrowserWindow.getFocusedWindow() ?? mainWindow;
 
-    applyDisplayPreset(window, presetId);
-
-    return activeDisplayPreset;
+    return applyDisplayPreset(window, presetId);
 });
 
 ipcMain.on('app:open-external', (_event, url) =>

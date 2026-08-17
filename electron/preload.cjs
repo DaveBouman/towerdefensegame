@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('signalChainDesktop', {
     },
     setDisplayPreset: (presetId) => ipcRenderer.invoke('app:set-display-preset', presetId),
     getDisplayPreset: () => ipcRenderer.invoke('app:get-display-preset'),
+    getDisplayLimits: () => ipcRenderer.invoke('app:get-display-limits'),
     openExternal: (url) => ipcRenderer.send('app:open-external', url),
     platform: process.platform,
     steam: {

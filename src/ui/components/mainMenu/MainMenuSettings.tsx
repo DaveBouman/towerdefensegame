@@ -12,6 +12,7 @@ import {
     DISPLAY_PRESETS,
     applyDisplayPreset,
     readActiveDisplayPreset,
+    readAvailableDisplayPresets,
     type DisplayPreset,
     type DisplayPresetId,
 } from '../../../game/desktop/displaySettings';
@@ -60,6 +61,9 @@ export const MainMenuSettings = ({
     const steamReady = isSteamBridgeAvailable();
     const [ steamFaces, setSteamFaces ] = useState(readSteamFacesEnabled);
     const [ displayPreset, setDisplayPreset ] = useState<DisplayPresetId>('1280x720');
+    const [ availablePresets, setAvailablePresets ] = useState<DisplayPresetId[]>(
+        DISPLAY_PRESETS.map((preset) => preset.id),
+    );
 
     useEffect(() =>
     {
@@ -68,8 +72,18 @@ export const MainMenuSettings = ({
             return;
         }
 
-        void readActiveDisplayPreset().then(setDisplayPreset);
+        void Promise.all([
+            readActiveDisplayPreset(),
+            readAvailableDisplayPresets(),
+        ]).then(([ activePreset, allowedPresets ]) =>
+        {
+            setDisplayPreset(activePreset);
+            setAvailablePresets(allowedPresets);
+        });
     }, [ desktop ]);
+
+    const selectablePresets = DISPLAY_PRESETS.filter((preset) =>
+        availablePresets.includes(preset.id));
 
     const formatPresetLabel = (preset: DisplayPreset): string =>
     {
@@ -89,7 +103,10 @@ export const MainMenuSettings = ({
         }
 
         emitRunSfx('ui-click', { volume: 0.64, rate: 1.02 });
-        void applyDisplayPreset(nextPreset).then(() => setDisplayPreset(nextPreset));
+        void applyDisplayPreset(nextPreset).then((appliedPreset) =>
+        {
+            setDisplayPreset(appliedPreset);
+        });
     };
 
     const chooseTextScale = (size: TextScaleSize): void =>
@@ -206,7 +223,7 @@ export const MainMenuSettings = ({
                                         chooseDisplayPreset(event.target.value as DisplayPresetId);
                                     }}
                                 >
-                                    {DISPLAY_PRESETS.map((preset) => (
+                                    {selectablePresets.map((preset) => (
                                         <option key={preset.id} value={preset.id}>
                                             {formatPresetLabel(preset)}
                                         </option>

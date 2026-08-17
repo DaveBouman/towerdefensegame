@@ -18,13 +18,20 @@ export interface SignalChainSteamApi {
 
 export type FullscreenChangeListener = (enabled: boolean) => void;
 
+export interface DisplayLimits {
+    maxWidth: number;
+    maxHeight: number;
+    availablePresets: string[];
+}
+
 export interface SignalChainDesktopApi {
     quit: () => void;
     setFullscreen?: (enabled: boolean) => void;
     getFullscreen?: () => boolean | Promise<boolean>;
     onFullscreenChange?: (listener: FullscreenChangeListener) => (() => void);
-    setDisplayPreset?: (presetId: string) => void | Promise<void>;
+    setDisplayPreset?: (presetId: string) => string | Promise<string>;
     getDisplayPreset?: () => string | Promise<string>;
+    getDisplayLimits?: () => DisplayLimits | Promise<DisplayLimits>;
     openExternal?: (url: string) => void;
     platform?: 'win32' | 'darwin' | 'linux' | string;
     steam?: SignalChainSteamApi;
