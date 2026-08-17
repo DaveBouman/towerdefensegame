@@ -27,6 +27,7 @@ import { getRunPuzzle, rollPuzzleId } from '../../game/run/runPuzzles';
 import { PUZZLE_TRIAL_RULES } from '../../game/run/rewards';
 import type { RunDeckCard } from '../../game/run/runDeck';
 import { CardChip } from './CardChip';
+import { EventChoiceButton } from './EventChoiceButton';
 import { EventIcon } from './EventIcon';
 
 type EventPhase = 'choices' | 'wheel' | 'matcher' | 'puzzle-brief' | 'result';
@@ -316,48 +317,30 @@ export const RunEventOverlay = ({
     return (
         <div className="run-event run-event--enter">
             <div className="run-event__panel">
-                <header className="run-event__header">
-                    <span className="run-event__icon">
-                        <EventIcon icon={event.icon} />
-                    </span>
+                <div className="run-event__banner">
                     <h1 className="run-event__title">{event.title}</h1>
-                    <p className="run-event__intro">{event.intro}</p>
-                </header>
+                </div>
+
+                <div className="run-event__body">
+                    <div className="run-event__art" aria-hidden="true">
+                        <span className="run-event__icon">
+                            <EventIcon icon={event.icon} />
+                        </span>
+                    </div>
+
+                    <div className="run-event__story">
+                        <p className="run-event__intro">{event.intro}</p>
 
                 {phase === 'choices' && (
                     <div className="run-event__choices">
-                        {event.choices.map((choice) =>
-                        {
-                            const cardPreviews = getChoiceCardPreviews(choice.effects);
-
-                            return (
-                                <button
-                                    key={choice.id}
-                                    type="button"
-                                    className={`run-event__choice${cardPreviews.length > 0 ? ' run-event__choice--with-cards' : ''}`}
-                                    onClick={() => handleChoice(choice)}
-                                >
-                                    <span className="run-event__choice-icon">
-                                        <EventIcon icon={choice.icon} />
-                                    </span>
-                                    <span className="run-event__choice-label">{choice.label}</span>
-                                    <span className="run-event__choice-desc">{choice.description}</span>
-                                    {cardPreviews.length > 0 && (
-                                        <span className="run-event__choice-cards" aria-hidden="true">
-                                            {cardPreviews.map((preview) => (
-                                                <CardChip
-                                                    key={`${choice.id}-${preview.cardId}`}
-                                                    definitionId={preview.cardId}
-                                                    size="pile"
-                                                    countBadge={preview.count > 1 ? preview.count : undefined}
-                                                    className="run-event__choice-card"
-                                                />
-                                            ))}
-                                        </span>
-                                    )}
-                                </button>
-                            );
-                        })}
+                        {event.choices.map((choice) => (
+                            <EventChoiceButton
+                                key={choice.id}
+                                choice={choice}
+                                cardPreviews={getChoiceCardPreviews(choice.effects)}
+                                onPick={handleChoice}
+                            />
+                        ))}
                     </div>
                 )}
 
@@ -519,6 +502,8 @@ export const RunEventOverlay = ({
                         </button>
                     </div>
                 )}
+                    </div>
+                </div>
             </div>
         </div>
     );

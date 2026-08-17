@@ -8,21 +8,51 @@ export interface DamageTierStyle {
 const DAMAGE_TIERS: readonly { min: number; style: DamageTierStyle }[] = [
     {
         min: 40,
-        style: { color: '#ff2d2d', fontSize: 38, shakeIntensity: 0.012, hitstopMs: 70 },
+        style: { color: '#ff2d2d', fontSize: 38, shakeIntensity: 0.024, hitstopMs: 70 },
     },
     {
         min: 20,
-        style: { color: '#ff9f43', fontSize: 32, shakeIntensity: 0.008, hitstopMs: 48 },
+        style: { color: '#ff9f43', fontSize: 32, shakeIntensity: 0.016, hitstopMs: 48 },
     },
     {
         min: 10,
-        style: { color: '#ffe066', fontSize: 28, shakeIntensity: 0.005, hitstopMs: 28 },
+        style: { color: '#ffe066', fontSize: 28, shakeIntensity: 0.010, hitstopMs: 28 },
     },
     {
         min: 0,
-        style: { color: '#ff7675', fontSize: 24, shakeIntensity: 0.003, hitstopMs: 0 },
+        style: { color: '#ff7675', fontSize: 24, shakeIntensity: 0.005, hitstopMs: 0 },
     },
 ];
+
+/** Maps combat juice intensity to Phaser camera shake duration + strength. */
+export const getCameraShakeParams = (
+    intensity: number,
+): { duration: number; intensity: number } =>
+{
+    if (intensity <= 0)
+    {
+        return { duration: 0, intensity: 0 };
+    }
+
+    const clamped = Math.min(0.035, Math.max(0.004, intensity));
+
+    return {
+        duration: Math.min(360, Math.round(80 + clamped * 6500)),
+        intensity: clamped,
+    };
+};
+
+export const shakeCamera = (scene: Phaser.Scene, intensity: number): void =>
+{
+    const { duration, intensity: shakeStrength } = getCameraShakeParams(intensity);
+
+    if (duration <= 0)
+    {
+        return;
+    }
+
+    scene.cameras.main.shake(duration, shakeStrength);
+};
 
 export const getDamageTierStyle = (damage: number): DamageTierStyle =>
 {
@@ -54,17 +84,7 @@ export const getElementHitColor = (visualId?: string, behaviorId?: string): numb
     return ELEMENT_HIT_COLORS[key] ?? ELEMENT_HIT_COLORS.attack!;
 };
 
-export const shakeCamera = (scene: Phaser.Scene, intensity: number): void =>
-{
-    if (intensity <= 0)
-    {
-        return;
-    }
-
-    const camera = scene.cameras.main;
-
-    camera.shake(Math.min(280, 120 + intensity * 8000), intensity);
-};
+export const KILL_CAMERA_SHAKE = 0.022;
 
 export const getChainStepMs = (behaviorId: string, baseMs: number): number =>
 {

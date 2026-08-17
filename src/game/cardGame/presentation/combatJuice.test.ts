@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
     getBigMomentHoldMs,
+    getCameraShakeParams,
     getChainGapMs,
     getChainPaceMultiplier,
     getChainStepMs,
@@ -17,6 +18,17 @@ describe('combatJuice', () =>
         expect(getDamageTierStyle(12).fontSize).toBe(28);
         expect(getDamageTierStyle(25).fontSize).toBe(32);
         expect(getDamageTierStyle(50).hitstopMs).toBeGreaterThan(0);
+        expect(getDamageTierStyle(5).shakeIntensity).toBeGreaterThan(0);
+        expect(getDamageTierStyle(25).shakeIntensity).toBeGreaterThan(
+            getDamageTierStyle(5).shakeIntensity,
+        );
+    });
+
+    it('maps shake intensity to readable camera params', () =>
+    {
+        expect(getCameraShakeParams(0)).toEqual({ duration: 0, intensity: 0 });
+        expect(getCameraShakeParams(0.005).intensity).toBe(0.005);
+        expect(getCameraShakeParams(0.024).duration).toBeGreaterThan(200);
     });
 
     it('varies chain step timing by behavior', () =>

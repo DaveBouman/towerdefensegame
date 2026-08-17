@@ -365,6 +365,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-17 | **Hit screenshake tune.** Camera shake on HP damage is stronger and scales by damage tier (enemy hits, player/thorns damage, kills). Minimum shake floor so chip damage still registers. |
 | 2026-08-17 | **Desktop resolution presets.** Settings → Window size: Adaptive (letterbox) or fixed 16:9 sizes (960×540 through 2560×1440). Electron only; persisted in `localStorage`. |
 | 2026-08-17 | **16:9 viewport frame.** Canvas and React UI share a centered 16:9 viewport; ultrawide/tall windows letterbox instead of stretching layout. Electron minimum stays 960×540. |
 | 2026-08-17 | **Electron desktop shell.** `electron/` loads `dist/`, exposes `signalChainDesktop` (quit, fullscreen, external links, Steam IPC). electron-builder scripts for Windows/macOS/Linux. Local runner avatar via steamworks.js; friend portraits still Craftpix until upstream friends API lands. |

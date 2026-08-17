@@ -7,6 +7,7 @@ import type { PlayerHealthView } from '../../../board/PlayerHealthView';
 import {
     getDamageTierStyle,
     getElementHitColor,
+    KILL_CAMERA_SHAKE,
     playElementHitBurst,
     shakeCamera,
 } from '../combatJuice';
@@ -83,7 +84,7 @@ export function applyEnemyHitResult (
 
     if (result.enemyKilled)
     {
-        shakeCamera(scene, 0.014);
+        shakeCamera(scene, KILL_CAMERA_SHAKE);
         requestHitstop?.(70);
     }
 
@@ -116,9 +117,11 @@ export function applyEnemyHitResult (
 
         if ((result.thornsHealthDamage ?? 0) > 0)
         {
+            const thornsTier = getDamageTierStyle(result.thornsHealthDamage!);
+
             playerView.playHitFlash();
-            playerView.showDamageNumber(result.thornsHealthDamage!);
-            shakeCamera(scene, 0.006);
+            playerView.showDamageNumber(result.thornsHealthDamage!, thornsTier);
+            shakeCamera(scene, thornsTier.shakeIntensity);
             playPlayerHitSfx(result.thornsHealthDamage!);
         }
     }
