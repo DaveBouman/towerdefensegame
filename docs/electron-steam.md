@@ -52,7 +52,7 @@ The React main menu is Steam/desktop-ready:
 
 Inject this preload API from Electron (do **not** enable `nodeIntegration` in the renderer). Implemented in `electron/preload.cjs` + `electron/main.cjs`:
 
-Game-side types live in `src/game/desktop/desktopBridge.ts`. Product title/version: `src/game/meta/gameMeta.ts`.
+Game-side types live in `src/game/desktop/desktopBridge.ts`. Product title/version: `src/game/meta/gameMeta.ts` (`GAME_VERSION` is injected from `package.json` when Vite builds or runs dev).
 
 ## Electron checklist
 
