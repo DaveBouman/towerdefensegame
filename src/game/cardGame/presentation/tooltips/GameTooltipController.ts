@@ -1,3 +1,4 @@
+import { getGameCursors } from '../../../ui/gameCursors';
 import { getGameViewportElement, getGameViewportRect } from '../../../ui/gameViewport';
 
 const TOOLTIP_ID = 'game-tooltip';
@@ -149,7 +150,7 @@ export const attachDomTooltip = (
 {
     const controller = getGameTooltipController(scene);
 
-    hitArea.setInteractive({ useHandCursor: true });
+    hitArea.setInteractive({ cursor: getGameCursors().pointer });
 
     hitArea.on('pointerover', (pointer: Phaser.Input.Pointer, event?: Phaser.Types.Input.EventData) =>
     {

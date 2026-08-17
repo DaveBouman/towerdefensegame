@@ -1,3 +1,4 @@
+import { getGameCursors } from '../ui/gameCursors';
 import { uiTextStyle } from '../config/uiTypography';
 import { GRID_CONFIG } from '../config/gridConfig';
 import { ARROW_GLYPH, arrowLabelPosition } from '../cards/cardArrows';
@@ -65,7 +66,7 @@ export class JokerDirectionPicker
             const button = scene.add.rectangle(x, y, 30, 30, BUTTON_BG, 0.95);
 
             button.setStrokeStyle(2, BUTTON_BORDER, 1);
-            button.setInteractive({ useHandCursor: true });
+            button.setInteractive({ cursor: getGameCursors().pointer });
 
             const icon = createDirectionArrowImage(scene, direction, {
                 size: 18,

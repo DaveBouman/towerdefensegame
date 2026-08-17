@@ -1,3 +1,4 @@
+import { getGameCursors } from '../ui/gameCursors';
 import type { CombatTraitConfig } from '../cardGame/combat/combatTraits/types';
 import {
     summarizeCombatTraits,
@@ -84,7 +85,7 @@ export class CombatTraitRowView
         );
 
         background.setStrokeStyle(2, entry.tint, 1);
-        background.setInteractive({ useHandCursor: true });
+        background.setInteractive({ cursor: getGameCursors().pointer });
 
         const parts: Phaser.GameObjects.GameObject[] = [ background ];
 

@@ -1,8 +1,8 @@
 :root {
     --cursor-default: url('./assets/ui/cursors/blue/default.svg') 1 1, auto;
-    --cursor-pointer: url('./assets/ui/cursors/blue/default.svg') 1 1, pointer;
-    --cursor-grab: url('./assets/ui/cursors/blue/default.svg') 1 1, grab;
-    --cursor-grabbing: url('./assets/ui/cursors/blue/grabbing.svg') 1 1, grabbing;
+    --cursor-pointer: url('./assets/ui/cursors/blue/default.svg') 1 1, auto;
+    --cursor-grab: url('./assets/ui/cursors/blue/default.svg') 1 1, auto;
+    --cursor-grabbing: url('./assets/ui/cursors/blue/grabbing.svg') 1 1, auto;
     --cursor-text: url('./assets/ui/cursors/blue/text.svg') 12 12, text;
     --cursor-not-allowed: url('./assets/ui/cursors/not-allowed.svg') 1 1, not-allowed;
 }
@@ -11,13 +11,13 @@ html,
 body,
 #root,
 #app {
-    cursor: var(--cursor-default);
+    cursor: var(--cursor-default) !important;
 }
 
 .game-viewport,
 .game-canvas-host,
 .game-canvas-host canvas {
-    cursor: var(--cursor-default);
+    cursor: var(--cursor-default) !important;
 }
 
 .game-viewport--grabbing,
@@ -26,8 +26,24 @@ body,
     cursor: var(--cursor-grabbing) !important;
 }
 
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+a[href],
+summary,
+select:not(:disabled),
+label,
+.game-menu-btn {
+    cursor: var(--cursor-pointer) !important;
+}
+
 input:not(:disabled):not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']):not([type='color']),
 textarea:not(:disabled),
 [contenteditable='true'] {
     cursor: var(--cursor-text) !important;
+}
+
+button:disabled,
+[disabled],
+[aria-disabled='true'] {
+    cursor: var(--cursor-not-allowed) !important;
 }

@@ -1,3 +1,4 @@
+import { getGameCursors } from '../ui/gameCursors';
 import { Actions, Geom } from 'phaser';
 import { buildCardBackGraphic, buildCardGraphic } from '../cards/CardRenderer';
 import { PILE_CARD_HEIGHT, PILE_CARD_WIDTH } from '../cards/cardVisuals';
@@ -129,7 +130,7 @@ export class CardPileView
         const hitArea = scene.add.rectangle(0, 0, frameW, frameH, 0x000000, 0);
 
         hitArea.setOrigin(0, 0);
-        hitArea.setInteractive({ useHandCursor: true });
+        hitArea.setInteractive({ cursor: getGameCursors().pointer });
         this.frameHitArea = hitArea;
         this.container.add(hitArea);
     }
@@ -146,7 +147,7 @@ export class CardPileView
             return;
         }
 
-        this.frameHitArea.setInteractive({ useHandCursor: true });
+        this.frameHitArea.setInteractive({ cursor: getGameCursors().pointer });
         this.frameHitArea.on('pointerover', () =>
         {
             this.scene.tweens.add({

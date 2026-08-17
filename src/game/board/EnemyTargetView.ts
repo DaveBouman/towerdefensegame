@@ -1,3 +1,4 @@
+import { getGameCursors } from '../ui/gameCursors';
 import { overclockStatusName, poisonStatusName, poisonStatusNameUpper } from '../copy/strings';
 import { ENEMY_PASSIVE_TEXTURE_KEY } from '../../ui/icons/enemyPassiveIcons';
 import { drawCornerBrackets, drawEnemySilhouette } from '../config/cyberpunkUiGraphics';
@@ -436,7 +437,7 @@ export class EnemyTargetView
             );
 
             background.setStrokeStyle(2, PASSIVE_ROW_COLORS[passive.id], 1);
-            background.setInteractive({ useHandCursor: true });
+            background.setInteractive({ cursor: getGameCursors().pointer });
 
             const textureKey = ENEMY_PASSIVE_TEXTURE_KEY[passive.id];
             const icon = this.scene.textures.exists(textureKey)
@@ -1156,7 +1157,7 @@ export class EnemyTargetView
     {
         if (handler)
         {
-            this.outline.setInteractive({ useHandCursor: true });
+            this.outline.setInteractive({ cursor: getGameCursors().pointer });
             this.outline.removeAllListeners('pointerdown');
             this.outline.on('pointerdown', handler);
             return;

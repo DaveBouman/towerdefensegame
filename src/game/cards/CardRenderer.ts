@@ -1,3 +1,4 @@
+import { getGameCursors } from '../ui/gameCursors';
 import { getCardDefinitionOrThrow, getChainStepDistance } from '../cardGame/config/cardRegistry';
 import type { CardInstance } from '../cardGame/domain/types';
 import { isEnemyOwnedCard, isFieldOwnedCard } from '../cardGame/domain/cardOwnership';
@@ -201,7 +202,7 @@ export const buildCardGraphic = (
 
     if (interactive)
     {
-        body.setInteractive({ useHandCursor: true });
+        body.setInteractive({ cursor: getGameCursors().pointer });
     }
 
     return { container, hitArea: body };
@@ -255,7 +256,7 @@ export const buildCardBackGraphic = (
 
     if (interactive)
     {
-        body.setInteractive({ useHandCursor: true });
+        body.setInteractive({ cursor: getGameCursors().pointer });
     }
 
     return { container, hitArea: body };

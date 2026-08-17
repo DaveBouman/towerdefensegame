@@ -1,4 +1,4 @@
-import { setViewportGrabbingCursor } from '../ui/gameCursors';
+import { getGameCursors, setViewportGrabbingCursor } from '../ui/gameCursors';
 import { uiTextStyle } from '../config/uiTypography';
 import { CYBER } from '../config/cyberpunkTheme';
 import { drawCornerBrackets, drawNeonPanel } from '../config/cyberpunkUiGraphics';
@@ -942,7 +942,7 @@ export class CardBoardView
                 0.001,
             );
 
-            hitArea.setInteractive({ useHandCursor: true });
+            hitArea.setInteractive({ cursor: getGameCursors().pointer });
             hitArea.on('pointerdown', () =>
             {
                 this.trySelectChainStart(slot);
@@ -978,7 +978,7 @@ export class CardBoardView
             }
             else if (!indicator.hitArea.input)
             {
-                indicator.hitArea.setInteractive({ useHandCursor: true });
+                indicator.hitArea.setInteractive({ cursor: getGameCursors().pointer });
             }
         }
     }
