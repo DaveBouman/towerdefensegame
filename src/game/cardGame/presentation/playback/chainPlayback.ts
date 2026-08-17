@@ -1,4 +1,4 @@
-import { GAME_RULES, getCardDefinitionOrThrow } from '../../config/cardRegistry';
+import { GAME_RULES, getCardDefinitionOrThrow, getChainStepMs } from '../../config/cardRegistry';
 import {
     applyJokerChosenDirection,
     getNextChainSlotFromStep,
@@ -22,7 +22,7 @@ import type { CardBoardView } from '../../../board/CardBoardView';
 import type { EnemySquadView } from '../../../board/EnemySquadView';
 import { applyEnemyHitResult, type CombatHitVisualDeps } from './combatHitVisuals';
 import { playChainAbilityEffectVisual, playEndOfChainEffects } from './chainEndEffects';
-import { getBigMomentHoldMs, getChainGapMs, getChainPaceMultiplier, getChainStepMs } from '../combatJuice';
+import { getBigMomentHoldMs, getChainGapMs, getChainPaceMultiplier } from '../combatJuice';
 import { playBattleModifierFloatingLabel } from '../battleModifierFloatingLabel';
 import { boostedBuffVisual } from '../visualEffects/boostedBuffVisual';
 import { playFloatingText } from '../visualEffects/visualEffectTweens';
@@ -553,7 +553,7 @@ export function runChainPlayback (
         const boostMultiplier = getBoostMultiplierForStep(resolvedChain, stepIndex);
         const definition = getCardDefinitionOrThrow(step.definitionId);
         const pacedMs = Math.round(
-            getChainStepMs(resolvedStep.behaviorId, stepMs) * getChainPaceMultiplier(stepIndex),
+            getChainStepMs(definition, stepMs, resolvedStep.behaviorId) * getChainPaceMultiplier(stepIndex),
         );
         const stepDurationMs = Math.max(300, pacedMs);
 

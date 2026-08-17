@@ -127,17 +127,10 @@ const drawCursorBrackets = (context: CanvasRenderingContext2D, color: string): v
     const thickness = 2;
     const arm = 3;
     const left = 3;
-    const top = 3;
     const right = 21;
     const bottom = 25;
 
     context.fillStyle = color;
-
-    context.fillRect(left, top, arm, thickness);
-    context.fillRect(left, top, thickness, arm);
-
-    context.fillRect(right - arm, top, arm, thickness);
-    context.fillRect(right - thickness, top, thickness, arm);
 
     context.fillRect(right - arm, bottom - thickness, arm, thickness);
     context.fillRect(right - thickness, bottom - arm, thickness, arm);

@@ -5,6 +5,7 @@ import {
     GAME_RULES,
     canUpgradeCard,
     getCardDefinition,
+    getChainStepMs,
     upgradedCardId,
 } from './cardRegistry';
 import { getDefaultCardGameEnemy } from './enemyCatalog';
@@ -49,6 +50,18 @@ describe('cardRegistry', () =>
         expect(getDefaultCardGameEnemy().maxHealth).toBe(40);
         expect(getDefaultCardGameEnemy().attackDamage).toBe(13);
         expect(getDefaultCardGameEnemy().shieldGain).toBe(13);
+    });
+
+    it('paces chain steps from card override then behavior defaults', () =>
+    {
+        expect(getChainStepMs({ behaviorId: 'attack' }, 800)).toBe(Math.round(800 * 0.82));
+        expect(getChainStepMs({ behaviorId: 'defend' }, 800)).toBe(Math.round(800 * 1.18));
+        expect(getChainStepMs({ behaviorId: 'unknown' }, 800)).toBe(800);
+        expect(getChainStepMs({ behaviorId: 'attack', chainStepMsMultiplier: 2 }, 800)).toBe(1600);
+        expect(getChainStepMs({ behaviorId: 'attack', chainStepMsMultiplier: 2 }, 800, 'defend'))
+            .toBe(1600);
+        expect(getChainStepMs({ behaviorId: 'attack' }, 800, 'defend'))
+            .toBe(Math.round(800 * 1.18));
     });
 
     it('creates unique card instances with pool-based arrows', () =>

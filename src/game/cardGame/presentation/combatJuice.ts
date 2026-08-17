@@ -69,28 +69,6 @@ export const getDamageTierStyle = (damage: number): DamageTierStyle =>
 
 export const KILL_CAMERA_SHAKE = 0.022;
 
-export const getChainStepMs = (behaviorId: string, baseMs: number): number =>
-{
-    switch (behaviorId)
-    {
-        case 'attack':
-        case 'fire':
-        case 'bleed':
-            return Math.round(baseMs * 0.82);
-        case 'defend':
-            return Math.round(baseMs * 1.18);
-        case 'poison':
-        case 'battle-mod':
-        case 'thorns':
-            return Math.round(baseMs * 1.05);
-        case 'echo':
-        case 'joker':
-            return Math.round(baseMs * 0.92);
-        default:
-            return baseMs;
-    }
-};
-
 /** Later chain steps snap a bit faster — gentle acceleration, not a blur. */
 export const getChainPaceMultiplier = (stepIndex: number): number =>
     Math.max(0.62, 1 - Math.max(0, stepIndex) * 0.05);

@@ -4,7 +4,6 @@ import {
     getCameraShakeParams,
     getChainGapMs,
     getChainPaceMultiplier,
-    getChainStepMs,
     getDamageTierStyle,
     getIntentThreatLevel,
     isHighThreatIntent,
@@ -29,12 +28,6 @@ describe('combatJuice', () =>
         expect(getCameraShakeParams(0)).toEqual({ duration: 0, intensity: 0 });
         expect(getCameraShakeParams(0.005).intensity).toBe(0.005);
         expect(getCameraShakeParams(0.024).duration).toBeGreaterThan(200);
-    });
-
-    it('varies chain step timing by behavior', () =>
-    {
-        expect(getChainStepMs('attack', 800)).toBeLessThan(800);
-        expect(getChainStepMs('defend', 800)).toBeGreaterThan(800);
     });
 
     it('accelerates later chain steps gently and holds on big moments', () =>

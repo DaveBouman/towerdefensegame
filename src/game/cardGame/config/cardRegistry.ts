@@ -65,6 +65,12 @@ export interface CardDefinition {
         delta: number;
         duration?: import('../combat/battleModifiers').BattleModifierDuration;
     };
+    /**
+     * Multiplies `activationStepMs` for this card's chain beat.
+     * Overrides `gameRules.chainStepMsByBehavior[behaviorId]`. Mods only need
+     * this when a card should not use its behavior's default pacing.
+     */
+    chainStepMsMultiplier?: number;
 }
 
 interface CardDefinitionJson extends Omit<CardDefinition, 'tier' | 'upgradesTo' | 'upgradeOf'> {
@@ -88,6 +94,7 @@ interface CardDefinitionJson extends Omit<CardDefinition, 'tier' | 'upgradesTo' 
         | 'wrapEdges'
         | 'chainAbilityIds'
         | 'collectible'
+        | 'chainStepMsMultiplier'
     >>;
 }
 
@@ -124,6 +131,8 @@ export interface GameRules {
         fortify: { defendThreshold: number; armorPerExtraDefend: number };
         overload: { damagePerAbilityCard: number };
     };
+    /** Default chain-beat duration multiplier by `behaviorId` (card field overrides). */
+    chainStepMsByBehavior?: Record<string, number>;
 }
 
 /** Canonical upgraded definition id for a base card. */
@@ -174,6 +183,20 @@ const definitions = new Map<string, CardDefinition>(
 );
 
 export const GAME_RULES: GameRules = gameRulesData;
+
+/** Chain-beat duration: card override → behavior default → 1.0. */
+export const getChainStepMs = (
+    card: Pick<CardDefinition, 'behaviorId' | 'chainStepMsMultiplier'>,
+    baseMs: number,
+    resolvedBehaviorId?: string,
+): number =>
+{
+    const multiplier = card.chainStepMsMultiplier
+        ?? GAME_RULES.chainStepMsByBehavior?.[resolvedBehaviorId ?? card.behaviorId]
+        ?? 1;
+
+    return Math.round(baseMs * multiplier);
+};
 
 export const getCardDefinition = (id: string): CardDefinition | undefined =>
     definitions.get(id);

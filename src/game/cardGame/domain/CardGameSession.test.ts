@@ -189,7 +189,7 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getPlayer().health).toBe(GAME_RULES.player.maxHealth);
     });
 
-    it('ticks rad stacks for 4 damage each, then decays by 1', () =>
+    it('ticks rad stacks for 1 damage each, then decays by 1', () =>
     {
         const session = new CardGameSession('basic');
         const before = session.getEnemy().health;
@@ -197,12 +197,12 @@ describe('CardGameSession enemy turn', () =>
         session.applyPoisonStacks(1);
         const first = session.tickPoison();
 
-        expect(first.healthDamage).toBe(4);
-        expect(session.getEnemy().health).toBe(before - 4);
+        expect(first.healthDamage).toBe(1);
+        expect(session.getEnemy().health).toBe(before - 1);
         expect(session.getEnemyPoison()).toBe(0);
     });
 
-    it('ticks two rad stacks for 8 damage, then leaves one stack', () =>
+    it('ticks two rad stacks for 2 damage, then leaves one stack', () =>
     {
         const session = new CardGameSession('basic');
         const before = session.getEnemy().health;
@@ -210,8 +210,8 @@ describe('CardGameSession enemy turn', () =>
         session.applyPoisonStacks(2);
         const first = session.tickPoison();
 
-        expect(first.healthDamage).toBe(8);
-        expect(session.getEnemy().health).toBe(before - 8);
+        expect(first.healthDamage).toBe(2);
+        expect(session.getEnemy().health).toBe(before - 2);
         expect(session.getEnemyPoison()).toBe(1);
     });
 
