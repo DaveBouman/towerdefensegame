@@ -19,6 +19,21 @@ const nodePosition = (map: RunMap, node: RunMapNode): Point =>
     return { x: x * 100, y: y * 100 };
 };
 
+const routeBadge = (routeKind: RunMapNode['routeKind']): string | null =>
+{
+    if (routeKind === 'hot')
+    {
+        return 'Hot';
+    }
+
+    if (routeKind === 'safe')
+    {
+        return 'Safe';
+    }
+
+    return null;
+};
+
 interface RunMapOverlayProps {
     map: RunMap;
     /** Completed nodes, in the order they were cleared. */
@@ -98,6 +113,11 @@ export const RunMapOverlay = ({
             return 'run-map__edge run-map__edge--active';
         }
 
+        if (!fromId && available.has(to.id) && path.length === 0)
+        {
+            return 'run-map__edge run-map__edge--active';
+        }
+
         return 'run-map__edge';
     };
 
@@ -144,6 +164,12 @@ export const RunMapOverlay = ({
             </div>
 
             <div className="run-map__field">
+                <div className="run-map__field-fx" aria-hidden="true">
+                    <span className="run-map__field-grid" />
+                    <span className="run-map__field-scan" />
+                    <span className="run-map__field-glow" />
+                </div>
+
                 <svg className="run-map__lines" viewBox="0 0 100 100" preserveAspectRatio="none">
                     {startEdges.map((to) =>
                     {
@@ -189,13 +215,15 @@ export const RunMapOverlay = ({
                     <span className="run-map__node-label">Start</span>
                 </div>
 
-                {map.nodes.map((node) =>
+                {map.nodes.map((node, index) =>
                 {
                     const pos = positions.get(node.id)!;
                     const isCompleted = completed.has(node.id);
                     const isAvailable = available.has(node.id);
                     const isCurrent = node.id === currentNodeId;
                     const { label, tooltipTitle, tooltipBody } = getMapNodeDisplay(node);
+                    const badge = isAvailable ? routeBadge(node.routeKind) : null;
+                    const choiceIndex = isAvailable ? availableIds.indexOf(node.id) : -1;
                     const classes = [ 'run-map__node', `run-map__node--${node.kind}` ];
 
                     if (isCompleted) classes.push('run-map__node--completed');
@@ -203,13 +231,22 @@ export const RunMapOverlay = ({
                     if (isAvailable) classes.push('run-map__node--available');
                     if (node.id === departingNodeId) classes.push('run-map__node--departing');
                     if (!isAvailable && !isCompleted && !isCurrent) classes.push('run-map__node--locked');
+                    if (node.routeKind === 'hot') classes.push('run-map__node--hot');
+                    if (node.routeKind === 'safe') classes.push('run-map__node--safe');
 
                     return (
                         <button
                             key={node.id}
                             type="button"
                             className={classes.join(' ')}
-                            style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+                            style={{
+                                left: `${pos.x}%`,
+                                top: `${pos.y}%`,
+                                ['--map-enter-delay' as string]: `${80 + index * 28}ms`,
+                                ['--map-pulse-delay' as string]: choiceIndex >= 0
+                                    ? `${choiceIndex * 180}ms`
+                                    : '0ms',
+                            }}
                             aria-disabled={!isAvailable}
                             onClick={() =>
                             {
@@ -219,10 +256,21 @@ export const RunMapOverlay = ({
                                 }
                             }}
                         >
+                            {isAvailable && (
+                                <span className="run-map__node-ping" aria-hidden="true" />
+                            )}
+                            {isCurrent && (
+                                <span className="run-map__node-beacon" aria-hidden="true" />
+                            )}
                             <span className="run-map__node-dot">
                                 <NodeKindIcon kind={node.kind} className="run-map__node-icon" />
                             </span>
                             <span className="run-map__node-label">{label}</span>
+                            {badge && (
+                                <span className={`run-map__route-badge run-map__route-badge--${node.routeKind}`}>
+                                    {badge}
+                                </span>
+                            )}
                             <span className="run-map__tooltip" role="tooltip">
                                 <span className="run-map__tooltip-title">{tooltipTitle}</span>
                                 <span className="run-map__tooltip-body">{tooltipBody}</span>

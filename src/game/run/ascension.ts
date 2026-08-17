@@ -95,15 +95,56 @@ export const describeAscensionLevel = (level: number): string =>
     return `Ascension ${level} — enemies +${bonus}% integrity`;
 };
 
-/** Shown on the Warden victory screen when a new ascension tier unlocks. */
-export const formatAscensionUnlockMessage = (unlockedLevel: number): string =>
+export interface AscensionUnlockNotice {
+    /** First Warden clear that introduces Ascension. */
+    firstClear: boolean;
+    title: string;
+    lines: string[];
+}
+
+/** Victory-screen copy when a new Ascension tier unlocks. */
+export const getAscensionUnlockNotice = (unlockedLevel: number): AscensionUnlockNotice | null =>
 {
     if (unlockedLevel <= 0)
+    {
+        return null;
+    }
+
+    const bonus = Math.round(unlockedLevel * ASCENSION_HP_BONUS_PER_LEVEL * 100);
+    const firstClear = unlockedLevel === 1;
+
+    if (firstClear)
+    {
+        return {
+            firstClear: true,
+            title: 'Thanks for playing',
+            lines: [
+                'You cleared the gauntlet and took down the Warden. That means a lot — Signal Chain is still early, and every clear helps shape what comes next.',
+                `Ascension ${unlockedLevel} is unlocked. Future runs hit harder — enemies gain +${bonus}% integrity.`,
+                'Ascension will show on the start screen and map from here on. Clear the Warden again to push the next tier.',
+            ],
+        };
+    }
+
+    return {
+        firstClear: false,
+        title: `Ascension ${unlockedLevel} unlocked`,
+        lines: [
+            `Enemies gain +${bonus}% integrity on your next run.`,
+            'Clear the Warden again to unlock the next tier.',
+        ],
+    };
+};
+
+/** @deprecated Prefer getAscensionUnlockNotice for structured UI. */
+export const formatAscensionUnlockMessage = (unlockedLevel: number): string =>
+{
+    const notice = getAscensionUnlockNotice(unlockedLevel);
+
+    if (!notice)
     {
         return '';
     }
 
-    const bonus = Math.round(unlockedLevel * ASCENSION_HP_BONUS_PER_LEVEL * 100);
-
-    return `Ascension ${unlockedLevel} unlocked — enemies +${bonus}% integrity on your next run.`;
+    return notice.lines.join(' ');
 };

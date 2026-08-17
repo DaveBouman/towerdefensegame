@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import {
     applyRunEventEffects,
     buildIconMatchGrid,
+    getChoiceCardPreviews,
     getRunEvent,
     getWheelSegmentIndex,
     getWheelSpinEffects,
@@ -24,9 +25,9 @@ import {
 import { seedScope } from '../../game/random/rng';
 import { getRunPuzzle, rollPuzzleId } from '../../game/run/runPuzzles';
 import { PUZZLE_TRIAL_RULES } from '../../game/run/rewards';
-import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistry';
 import type { RunDeckCard } from '../../game/run/runDeck';
 import { mergeDeckAfterEvent, toDefinitionIds } from '../../game/run/runDeck';
+import { CardChip } from './CardChip';
 import { EventIcon } from './EventIcon';
 
 type EventPhase = 'choices' | 'wheel' | 'matcher' | 'puzzle-brief' | 'result';
@@ -293,7 +294,7 @@ export const RunEventOverlay = ({
         onFinish({
             playerHealth: snapshot.playerHealth,
             gold: snapshot.gold,
-            deck: snapshot.deck,
+            deck: toDefinitionIds(snapshot.deck),
             bodyMods: snapshot.bodyMods,
             messages,
         });
@@ -324,20 +325,38 @@ export const RunEventOverlay = ({
 
                 {phase === 'choices' && (
                     <div className="run-event__choices">
-                        {event.choices.map((choice) => (
-                            <button
-                                key={choice.id}
-                                type="button"
-                                className="run-event__choice"
-                                onClick={() => handleChoice(choice)}
-                            >
-                                <span className="run-event__choice-icon">
-                                    <EventIcon icon={choice.icon} />
-                                </span>
-                                <span className="run-event__choice-label">{choice.label}</span>
-                                <span className="run-event__choice-desc">{choice.description}</span>
-                            </button>
-                        ))}
+                        {event.choices.map((choice) =>
+                        {
+                            const cardPreviews = getChoiceCardPreviews(choice.effects);
+
+                            return (
+                                <button
+                                    key={choice.id}
+                                    type="button"
+                                    className={`run-event__choice${cardPreviews.length > 0 ? ' run-event__choice--with-cards' : ''}`}
+                                    onClick={() => handleChoice(choice)}
+                                >
+                                    <span className="run-event__choice-icon">
+                                        <EventIcon icon={choice.icon} />
+                                    </span>
+                                    <span className="run-event__choice-label">{choice.label}</span>
+                                    <span className="run-event__choice-desc">{choice.description}</span>
+                                    {cardPreviews.length > 0 && (
+                                        <span className="run-event__choice-cards" aria-hidden="true">
+                                            {cardPreviews.map((preview) => (
+                                                <CardChip
+                                                    key={`${choice.id}-${preview.cardId}`}
+                                                    definitionId={preview.cardId}
+                                                    size="pile"
+                                                    countBadge={preview.count > 1 ? preview.count : undefined}
+                                                    className="run-event__choice-card"
+                                                />
+                                            ))}
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
 
@@ -444,7 +463,12 @@ export const RunEventOverlay = ({
                         <ul className="run-event__puzzle-cards">
                             {puzzle.cards.map((card, index) => (
                                 <li key={`${card.definitionId}-${index}`}>
-                                    {getCardDefinitionOrThrow(card.definitionId).label}
+                                    <CardChip
+                                        definitionId={card.definitionId}
+                                        arrow={card.arrow}
+                                        size="pile"
+                                        className="run-event__puzzle-card"
+                                    />
                                 </li>
                             ))}
                         </ul>
@@ -463,9 +487,21 @@ export const RunEventOverlay = ({
                                 messages.map((message, index) => (
                                     <li
                                         key={`${message.text}-${index}`}
-                                        className={`run-event__message ${toneClass(message.tone)}`}
+                                        className={`run-event__message ${toneClass(message.tone)}${message.cardId ? ' run-event__message--with-card' : ''}`}
                                     >
-                                        {message.text}
+                                        <span className="run-event__message-text">{message.text}</span>
+                                        {message.cardId && (
+                                            <CardChip
+                                                definitionId={message.cardId}
+                                                size="pile"
+                                                countBadge={
+                                                    message.cardCount && message.cardCount > 1
+                                                        ? message.cardCount
+                                                        : undefined
+                                                }
+                                                className="run-event__message-card"
+                                            />
+                                        )}
                                     </li>
                                 ))
                             )}

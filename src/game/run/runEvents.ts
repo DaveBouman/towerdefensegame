@@ -1,6 +1,8 @@
 import { pickRandom, random, shuffleInPlace } from '../random/rng';
 import { rollCardReward } from './rewards';
 import { getBodyModDefinition, rollBodyModReward } from './bodyMods';
+import { getCardDefinition } from '../cardGame/config/cardRegistry';
+import { cardLabel } from '../copy/strings';
 
 /** Icons used across run events (wheel, matcher, choices). */
 export type EventIconId =
@@ -71,6 +73,9 @@ export const ICON_MATCH_PAIR_COUNT = ICON_MATCH_GRID_SIZE / 2;
 export interface AppliedEventMessage {
     text: string;
     tone: 'good' | 'bad' | 'neutral';
+    /** Concrete card awarded/cursed — UI can show a chip beside the text. */
+    cardId?: string;
+    cardCount?: number;
 }
 
 export interface AppliedEventResult {
@@ -452,6 +457,32 @@ const expandEffect = (
     return [ effect ];
 };
 
+const cardDisplayName = (cardId: string): string =>
+    getCardDefinition(cardId)?.label ?? cardLabel(cardId);
+
+/** Concrete card ids previewed on a choice (skips random rolls). */
+export const getChoiceCardPreviews = (
+    effects: readonly RunEventEffect[],
+): { cardId: string; count: number }[] =>
+{
+    const previews: { cardId: string; count: number }[] = [];
+
+    for (const effect of effects)
+    {
+        if (effect.kind === 'add-card' && effect.cardId !== '__random__')
+        {
+            previews.push({ cardId: effect.cardId, count: 1 });
+        }
+
+        if (effect.kind === 'add-curse' && effect.cardId !== '__random__')
+        {
+            previews.push({ cardId: effect.cardId, count: effect.count });
+        }
+    }
+
+    return previews;
+};
+
 const describeEffect = (effect: RunEventEffect): AppliedEventMessage =>
 {
     switch (effect.kind)
@@ -470,11 +501,20 @@ const describeEffect = (effect: RunEventEffect): AppliedEventMessage =>
         case 'lose-gold':
             return { text: '', tone: 'bad' };
         case 'add-card':
-            return { text: `Added ${effect.cardId} to your deck.`, tone: 'good' };
+            return {
+                text: `Added ${cardDisplayName(effect.cardId)} to your deck.`,
+                tone: 'good',
+                cardId: effect.cardId,
+                cardCount: 1,
+            };
         case 'add-curse':
             return {
-                text: `Added ${effect.count}× ${effect.cardId} to your deck.`,
+                text: effect.count > 1
+                    ? `Added ${effect.count}× ${cardDisplayName(effect.cardId)} to your deck.`
+                    : `Added ${cardDisplayName(effect.cardId)} to your deck.`,
                 tone: 'bad',
+                cardId: effect.cardId,
+                cardCount: effect.count,
             };
         case 'body-mod':
             return {

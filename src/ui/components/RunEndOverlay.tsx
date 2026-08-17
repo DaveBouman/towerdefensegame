@@ -1,5 +1,5 @@
 import { ModalShell } from './CyberPanel';
-import { formatAscensionUnlockMessage } from '../../game/run/ascension';
+import { getAscensionUnlockNotice } from '../../game/run/ascension';
 import type { RunStats } from '../../game/run/runStats';
 
 interface RunEndOverlayProps {
@@ -37,6 +37,9 @@ export const RunEndOverlay = ({
 {
     const copy = COPY[variant];
     const panelVariant = variant === 'victory' ? 'green' : 'magenta';
+    const unlockNotice = variant === 'victory' && unlockedAscension !== null
+        ? getAscensionUnlockNotice(unlockedAscension)
+        : null;
 
     return (
         <ModalShell
@@ -47,14 +50,24 @@ export const RunEndOverlay = ({
             {clutch && variant === 'victory' && (
                 <p className="run-end__clutch">Clutch clear — you limped out at critical integrity.</p>
             )}
-            {variant === 'victory' && unlockedAscension !== null && unlockedAscension > 0 && (
-                <p className="run-end__unlock">
-                    {formatAscensionUnlockMessage(unlockedAscension)}
-                </p>
-            )}
             <p className="run-end__eyebrow">{copy.eyebrow}</p>
             <h1 className="run-end__title">{copy.title}</h1>
             <p className="run-end__summary">{copy.summary}</p>
+
+            {unlockNotice && (
+                <aside
+                    className={`run-end__unlock${unlockNotice.firstClear ? ' run-end__unlock--debut' : ''}`}
+                    role="status"
+                >
+                    <p className="run-end__unlock-eyebrow">
+                        {unlockNotice.firstClear ? 'First clear' : 'Difficulty'}
+                    </p>
+                    <h2 className="run-end__unlock-title">{unlockNotice.title}</h2>
+                    {unlockNotice.lines.map((line) => (
+                        <p key={line} className="run-end__unlock-line">{line}</p>
+                    ))}
+                </aside>
+            )}
 
             {stats && (
                 <ul className="run-end__stats">

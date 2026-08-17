@@ -5,6 +5,7 @@ import {
     describeAscensionLevel,
     formatAscensionUnlockMessage,
     getAscensionEnemyHealthMultiplier,
+    getAscensionUnlockNotice,
     hasUnlockedAscension,
     readRunAscensionLevel,
     recordAscensionClear,
@@ -58,7 +59,17 @@ describe('ascension', () =>
 
     it('formats unlock copy for the victory screen', () =>
     {
-        expect(formatAscensionUnlockMessage(1)).toContain('Ascension 1 unlocked');
+        const debut = getAscensionUnlockNotice(1);
+
+        expect(debut?.firstClear).toBe(true);
+        expect(debut?.title).toBe('Thanks for playing');
+        expect(debut?.lines.some((line) => line.includes('Ascension 1'))).toBe(true);
+        expect(formatAscensionUnlockMessage(1)).toContain('Ascension 1');
         expect(describeAscensionLevel(3)).toContain('Ascension 3');
+
+        const next = getAscensionUnlockNotice(3);
+
+        expect(next?.firstClear).toBe(false);
+        expect(next?.title).toContain('Ascension 3');
     });
 });

@@ -3,6 +3,7 @@ import { seedScope } from '../random/rng';
 import {
     applyRunEventEffects,
     buildIconMatchGrid,
+    getChoiceCardPreviews,
     getRunEvent,
     ICON_MATCH_ATTEMPTS,
     ICON_MATCH_GRID_SIZE,
@@ -22,6 +23,32 @@ describe('runEvents', () =>
         expect(getRunEvent('sign-matcher').choices).toHaveLength(1);
         expect(getRunEvent('wire-rats').choices).toHaveLength(3);
         expect(getRunEvent('dead-drop').title).toBe('Dead Drop');
+    });
+
+    it('previews the Fuse card on Dead Drop crack choice', () =>
+    {
+        const take = getRunEvent('dead-drop').choices.find((choice) => choice.id === 'take')!;
+
+        expect(getChoiceCardPreviews(take.effects)).toEqual([
+            { cardId: 'fuse', count: 1 },
+        ]);
+    });
+
+    it('attaches card chips to curse/add messages', () =>
+    {
+        const result = applyRunEventEffects(
+            [ { kind: 'add-curse', cardId: 'fuse', count: 1 } ],
+            {
+                playerHealth: 40,
+                maxHealth: 40,
+                gold: 0,
+                deck: [],
+                bodyMods: [],
+            },
+        );
+
+        expect(result.messages.some((message) => message.cardId === 'fuse')).toBe(true);
+        expect(result.messages.find((message) => message.cardId === 'fuse')?.text).toContain('Fuse');
     });
 
     it('rolls events deterministically per node seed', () =>

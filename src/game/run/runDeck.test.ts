@@ -32,6 +32,20 @@ describe('runDeck', () =>
         ]);
     });
 
+    it('mergeDeckAfterEvent tolerates accidental RunDeckCard objects', () =>
+    {
+        const before = [ { definitionId: 'attack', arrow: 'left' as const } ];
+        const after = mergeDeckAfterEvent(
+            before,
+            [ { definitionId: 'attack' }, { definitionId: 'fuse' } ] as unknown as string[],
+        );
+
+        expect(after).toEqual([
+            { definitionId: 'attack', arrow: 'left' },
+            { definitionId: 'fuse' },
+        ]);
+    });
+
     it('groups deck entries by definition and arrow', () =>
     {
         const entries = groupRunDeckEntries([

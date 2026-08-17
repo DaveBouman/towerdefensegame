@@ -22,8 +22,17 @@ export const mergeDeckAfterEvent = (
 {
     const pool = [ ...before ];
 
-    return afterIds.map((definitionId) =>
+    return afterIds.map((rawId) =>
     {
+        const definitionId = typeof rawId === 'string'
+            ? rawId
+            : (rawId as { definitionId?: string }).definitionId;
+
+        if (typeof definitionId !== 'string' || definitionId.length === 0)
+        {
+            throw new Error(`Invalid deck entry after event: ${String(rawId)}`);
+        }
+
         const index = pool.findIndex((card) => card.definitionId === definitionId);
 
         if (index >= 0)
