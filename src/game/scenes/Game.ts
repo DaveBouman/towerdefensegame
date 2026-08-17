@@ -45,6 +45,7 @@ import {
     preloadBgm,
     unbindGameBgmScene,
 } from '../audio/gameBgm';
+import { destroyBattleViews } from './gameBattleViews';
 import { BlendModes, Scene } from 'phaser';
 
 const sameSlot = (a: SlotPosition, b: SlotPosition): boolean =>
@@ -516,41 +517,10 @@ export class Game extends Scene
 
     private endBattle (): void
     {
-        if (this.phaseShiftHandler)
-        {
-            CardGameEventBus.off(CARD_GAME_EVENTS.PHASE_SHIFT, this.phaseShiftHandler);
-            this.phaseShiftHandler = undefined;
-        }
-
-        this.session?.cancelAttack();
-        this.session?.cancelEnemyTurn();
-        this.presenter?.unbind();
-        this.boardView?.destroy();
-        this.handView?.destroy();
-        this.enemySquad?.destroy();
-        this.playerView?.destroy();
-        this.battleModifierView?.destroy();
-        this.armorView?.destroy();
-        this.deckView?.destroy();
-        this.graveyardView?.destroy();
-        destroyGameTooltipController();
-        this.presenter = undefined;
-        this.boardView = undefined;
-        this.handView = undefined;
-        this.enemySquad = undefined;
-        this.playerView = undefined;
-        this.battleModifierView = undefined;
-        this.armorView = undefined;
-        this.deckView = undefined;
-        this.graveyardView = undefined;
-        this.session = undefined;
+        destroyBattleViews(this);
         this.battleActive = false;
         this.activePuzzleId = null;
         this.rerollModeActive = false;
-        this.battlefieldBackground?.destroy();
-        this.battlefieldBackground = undefined;
-        this.lowHpVignette?.destroy();
-        this.lowHpVignette = undefined;
     }
 
     private winBattle (): void

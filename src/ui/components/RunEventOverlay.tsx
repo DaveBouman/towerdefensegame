@@ -26,7 +26,6 @@ import { seedScope } from '../../game/random/rng';
 import { getRunPuzzle, rollPuzzleId } from '../../game/run/runPuzzles';
 import { PUZZLE_TRIAL_RULES } from '../../game/run/rewards';
 import type { RunDeckCard } from '../../game/run/runDeck';
-import { mergeDeckAfterEvent, toDefinitionIds } from '../../game/run/runDeck';
 import { CardChip } from './CardChip';
 import { EventIcon } from './EventIcon';
 
@@ -140,18 +139,18 @@ export const RunEventOverlay = ({
         playerHealth: snapshot.playerHealth,
         maxHealth,
         gold: snapshot.gold,
-        deck: toDefinitionIds(snapshot.deck),
+        deck: snapshot.deck,
         bodyMods: snapshot.bodyMods,
     });
 
     const showResult = (result: AppliedEventResult): void =>
     {
-        setSnapshot((prev) => ({
+        setSnapshot({
             playerHealth: result.playerHealth,
             gold: result.gold,
-            deck: mergeDeckAfterEvent(prev.deck, result.deck),
+            deck: result.deck,
             bodyMods: result.bodyMods,
-        }));
+        });
         setMessages(result.messages);
         setPhase('result');
     };
@@ -294,7 +293,7 @@ export const RunEventOverlay = ({
         onFinish({
             playerHealth: snapshot.playerHealth,
             gold: snapshot.gold,
-            deck: toDefinitionIds(snapshot.deck),
+            deck: snapshot.deck,
             bodyMods: snapshot.bodyMods,
             messages,
         });

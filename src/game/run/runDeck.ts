@@ -14,7 +14,7 @@ export const toDefinitionIds = (deck: readonly RunDeckCard[]): string[] =>
 export const fromDefinitionIds = (definitionIds: readonly string[]): RunDeckCard[] =>
     definitionIds.map((definitionId) => ({ definitionId }));
 
-/** Preserves arrows on existing cards when event effects return a flat id list. */
+/** Preserves arrows on existing cards when rebuilding from a flat id list. */
 export const mergeDeckAfterEvent = (
     before: readonly RunDeckCard[],
     afterIds: readonly string[],
@@ -22,17 +22,8 @@ export const mergeDeckAfterEvent = (
 {
     const pool = [ ...before ];
 
-    return afterIds.map((rawId) =>
+    return afterIds.map((definitionId) =>
     {
-        const definitionId = typeof rawId === 'string'
-            ? rawId
-            : (rawId as { definitionId?: string }).definitionId;
-
-        if (typeof definitionId !== 'string' || definitionId.length === 0)
-        {
-            throw new Error(`Invalid deck entry after event: ${String(rawId)}`);
-        }
-
         const index = pool.findIndex((card) => card.definitionId === definitionId);
 
         if (index >= 0)

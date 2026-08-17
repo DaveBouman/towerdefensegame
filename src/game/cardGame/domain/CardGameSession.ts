@@ -2,6 +2,7 @@ import { BODY_MOD_IDS } from '../../run/bodyMods';
 import type { RunDeckCard } from '../../run/runDeck';
 import { getBattleEnergyBonus, getRunMaxHealth } from '../../run/runResources';
 import { collectRunModifierBattleModifiers } from '../../run/runModifiers';
+import { EnemyOverclockTracker, getEnemyDamageRamp as computeEnemyDamageRamp } from './enemyOverclock';
 import { GRID_CONFIG } from '../../config/gridConfig';
 import {
     GAME_RULES,
@@ -102,8 +103,7 @@ export class CardGameSession
     private player: PlayerState;
     private energy: number;
     private readonly maxEnergy: number;
-    /** Enemy responses completed — each one adds fight-long attack. */
-    private overclockStacks = 0;
+    private readonly overclock: EnemyOverclockTracker;
     /** Original arrows for cards scrambled by redirect-hand this energy round. */
     private readonly handRedirectOriginals = new Map<string, {
         arrow: CardDirection;
@@ -137,6 +137,7 @@ export class CardGameSession
     )
     {
         this.puzzleMode = puzzleMode;
+        this.overclock = new EnemyOverclockTracker(puzzleMode !== null);
         this.bodyMods = bodyMods;
         this.runGold = Math.max(0, runGold);
 
@@ -339,50 +340,35 @@ export class CardGameSession
     /** Bonus damage the enemy gains for the player's escalating attacks this round. */
     getEnemyDamageRamp (): number
     {
-        const perAttack = Math.max(0, GAME_RULES.enemyDamageRampPerAttack ?? 0);
-
-        // The first attack of a round is baseline; each additional attack ramps enemy damage.
-        return Math.max(0, this.getAttacksThisRound() - 1) * perAttack;
+        return computeEnemyDamageRamp(this.getAttacksThisRound());
     }
 
     /** Fight-long attack bonus: +N after each enemy response. */
     getEnemyOverclock (): number
     {
-        if (this.puzzleMode)
-        {
-            return 0;
-        }
-
-        const perTurn = Math.max(0, GAME_RULES.enemyStrengthPerTurn ?? 0);
-
-        return this.overclockStacks * perTurn;
+        return this.overclock.getBonus();
     }
 
     getEnemyOverclockPerTurn (): number
     {
-        if (this.puzzleMode)
-        {
-            return 0;
-        }
-
-        return Math.max(0, GAME_RULES.enemyStrengthPerTurn ?? 0);
+        return this.overclock.getPerTurn();
     }
 
     /** Overclock the next Attack will lock in after the enemy responds. */
     getNextEnemyOverclock (): number
     {
-        return this.getEnemyOverclock() + this.getEnemyOverclockPerTurn();
+        return this.overclock.getNextBonus();
     }
 
     /** Called once after all enemies finish responding to a player Attack. */
     tickEnemyOverclock (): void
     {
-        if (this.puzzleMode || this.isPlayerDefeated() || this.isEnemyDefeated())
+        if (this.isPlayerDefeated() || this.isEnemyDefeated())
         {
             return;
         }
 
-        this.overclockStacks += 1;
+        this.overclock.tick();
     }
 
     /** Applies intra-round ramp and fight-long overclock to enemy attack steps. */

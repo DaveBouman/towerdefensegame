@@ -3,6 +3,7 @@ import { rollCardReward } from './rewards';
 import { getBodyModDefinition, rollBodyModReward } from './bodyMods';
 import { getCardDefinition } from '../cardGame/config/cardRegistry';
 import { cardLabel } from '../copy/strings';
+import { toDefinitionIds, type RunDeckCard } from './runDeck';
 
 /** Icons used across run events (wheel, matcher, choices). */
 export type EventIconId =
@@ -81,7 +82,7 @@ export interface AppliedEventMessage {
 export interface AppliedEventResult {
     playerHealth: number;
     gold: number;
-    deck: string[];
+    deck: RunDeckCard[];
     bodyMods: string[];
     messages: AppliedEventMessage[];
 }
@@ -539,20 +540,20 @@ export const applyRunEventEffects = (
         playerHealth: number;
         maxHealth: number;
         gold: number;
-        deck: string[];
+        deck: readonly RunDeckCard[];
         bodyMods: string[];
     },
 ): AppliedEventResult =>
 {
     let health = playerHealth;
     let nextGold = gold;
-    const nextDeck = [ ...deck ];
+    const nextDeck: RunDeckCard[] = deck.map((card) => ({ ...card }));
     const nextBodyMods = [ ...bodyMods ];
     const messages: AppliedEventMessage[] = [];
 
     for (const rawEffect of effects)
     {
-        for (const effect of expandEffect(rawEffect, nextBodyMods, nextDeck))
+        for (const effect of expandEffect(rawEffect, nextBodyMods, toDefinitionIds(nextDeck)))
         {
             switch (effect.kind)
             {
@@ -590,13 +591,13 @@ export const applyRunEventEffects = (
                     break;
                 }
                 case 'add-card':
-                    nextDeck.push(effect.cardId);
+                    nextDeck.push({ definitionId: effect.cardId });
                     messages.push(describeEffect(effect));
                     break;
                 case 'add-curse':
                     for (let i = 0; i < effect.count; i++)
                     {
-                        nextDeck.push(effect.cardId);
+                        nextDeck.push({ definitionId: effect.cardId });
                     }
                     messages.push(describeEffect(effect));
                     break;
@@ -635,7 +636,7 @@ export const resolveIconMatchResult = (
         playerHealth: number;
         maxHealth: number;
         gold: number;
-        deck: string[];
+        deck: readonly RunDeckCard[];
         bodyMods: string[];
     },
 ): AppliedEventResult =>

@@ -3,8 +3,8 @@ import { EventBus } from '../game/EventBus';
 import { GAME_EVENTS } from '../game/events/gameEvents';
 import { GAME_RULES } from '../game/cardGame/config/cardRegistry';
 import type { RerollState } from '../game/cardGame/domain/types';
+import { toDefinitionIds } from '../game/run/runDeck';
 import type { RunDeckCard } from '../game/run/runDeck';
-import { mergeDeckAfterEvent, toDefinitionIds } from '../game/run/runDeck';
 import { applyRunEventEffects } from '../game/run/runEvents';
 import { unlockCards } from '../game/run/cardCollection';
 import { unlockBodyMods } from '../game/run/bodyModBestiary';
@@ -299,14 +299,14 @@ export const useBattleBridge = (
                 playerHealth: refs.playerHealth.current,
                 maxHealth: getRunMaxHealth(refs.bodyMods.current),
                 gold: refs.gold.current,
-                deck: toDefinitionIds(refs.deck.current),
+                deck: refs.deck.current,
                 bodyMods: [ ...refs.bodyMods.current ],
             });
 
             actions.setPlayerHealth(applied.playerHealth);
             actions.setGold(applied.gold);
-            actions.setDeck(mergeDeckAfterEvent(refs.deck.current, applied.deck));
-            unlockCards(applied.deck);
+            actions.setDeck(applied.deck);
+            unlockCards(toDefinitionIds(applied.deck));
             actions.setBodyMods(applied.bodyMods);
             unlockBodyMods(applied.bodyMods);
 

@@ -47,8 +47,28 @@ describe('runEvents', () =>
             },
         );
 
+        expect(result.deck).toEqual([ { definitionId: 'fuse' } ]);
         expect(result.messages.some((message) => message.cardId === 'fuse')).toBe(true);
         expect(result.messages.find((message) => message.cardId === 'fuse')?.text).toContain('Fuse');
+    });
+
+    it('preserves existing card arrows when adding new cards', () =>
+    {
+        const result = applyRunEventEffects(
+            [ { kind: 'add-curse', cardId: 'fuse', count: 1 } ],
+            {
+                playerHealth: 40,
+                maxHealth: 40,
+                gold: 0,
+                deck: [ { definitionId: 'attack', arrow: 'left' } ],
+                bodyMods: [],
+            },
+        );
+
+        expect(result.deck).toEqual([
+            { definitionId: 'attack', arrow: 'left' },
+            { definitionId: 'fuse' },
+        ]);
     });
 
     it('rolls events deterministically per node seed', () =>

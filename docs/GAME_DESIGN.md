@@ -130,6 +130,7 @@ before `rollCardReward`/display, or add a new `RunReward` kind + a case in `App`
 ```
 index.html → src/main.tsx → App.tsx (run shell)
   ├── runController/useRunController.ts (run state, phase machine, handlers)
+  ├── runController/shopPurchases.ts / shopHandlers.ts / finishEventFlow.ts
   ├── runController/useBattleBridge.ts (Phaser EventBus: battles, puzzles, recap)
   ├── runController/rewardHelpers.ts (reward rolls, map seeding)
   ├── PhaserGame.tsx → src/game/main.ts → scenes/Game.ts
@@ -159,7 +160,7 @@ it waits for `START_BATTLE`, builds a battle, and emits `BATTLE_WON` / `BATTLE_L
 | Run controller | `src/runController/useRunController.ts` | Map/battle/end phases, carry-over HP, node picks |
 | Run UI shell | `src/App.tsx`, `src/ui/components/RunPhaseScreens.tsx` | Thin React shell + phase overlay mounting |
 | Run map | `src/game/run/runMap.ts` | Graph generation, reachability, run config |
-| Session | `src/game/cardGame/domain/CardGameSession.ts` | Turn flow / combat orchestration facade (delegates to DeckHand, FieldEffects, CombatResolver, EnemyPhaseController, BoardEditController) |
+| Session | `src/game/cardGame/domain/CardGameSession.ts` | Turn flow / combat orchestration facade (delegates to DeckHand, FieldEffects, CombatResolver, EnemyPhaseController, BoardEditController, EnemyOverclockTracker) |
 | Deck / hand | `src/game/cardGame/domain/DeckHand.ts` | Draw pile, hand, discard, rerolls |
 | Board edits | `src/game/cardGame/domain/BoardEditController.ts` | Place / remove / move / swap while combat is idle |
 | Field effects | `src/game/cardGame/domain/FieldEffects.ts` | Dampen field, silenced/bomb slots, hazard/boost placement |
@@ -362,6 +363,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | 2026-08-13 | **Fight overclock.** After each enemy response, enemies gain +4 attack for the rest of the fight (`enemyStrengthPerTurn`). Chip shows current › next from the opening (+0›+4). First hit is baseline; a second energy round already sits at +12. |
 | 2026-08-13 | **Enemy HP variance.** `enemies.json` `maxHealth` is a median. Each fight (and mid-battle spawn) rolls integrity ±10% via the seeded RNG (`enemyHealthVariance`). Bestiary shows the range. |
 | 2026-08-13 | **Copy catalog.** Player-facing labels live in `src/game/copy/strings.ts` — cards, enemies, body mods, map nodes, shop services, archetypes, passives, traits, and intents. JSON `label` fields are fallbacks; catalog wins. Swap `EN` when adding locales. |
+| 2026-08-17 | **Must-fix refactors.** Event results use `RunDeckCard[]` end-to-end (no string/object deck mix). Pure shop purchase + finish-event planners extracted from `useRunController`. Enemy overclock/ramp peeled into `enemyOverclock.ts`. Battle view teardown moved to `gameBattleViews.ts`. |
 | 2026-08-17 | **Event card chips.** Signal choices that add a known card (e.g. Dead Drop → Fuse) show a `CardChip` preview; result messages include the card too. Puzzle briefs also render trial cards as chips instead of text-only lists. |
 | 2026-08-17 | **Route map motion.** Pick-your-route field gets a drifting grid + scan glow; nodes stagger in; choosable nodes ping with staggered delays; current node beacons; Hot/Safe choices show floating badges and tinted rings. Opening edges also animate when the run starts. |
 | 2026-08-17 | **Ascension unlock popup.** First Warden clear shows a victory card: **Thanks for playing** + Ascension 1 unlock (and that Ascension now appears on menu/map). Later clears still show a tier unlock note on the run-end screen. |

@@ -5,13 +5,8 @@ import { GAME_RULES } from '../game/cardGame/config/cardRegistry';
 import { buildDefaultRunDeck } from '../game/cardGame/domain/buildPlayerDeck';
 import {
     applyDirectionPicksToDeck,
-    findNewDefinitionIdsNeedingDirection,
-    mergeDeckAfterEvent,
-    removeMatchingDeckEntry,
-    setMatchingDeckEntryArrow,
     toDefinitionIds,
     type RunDeckCard,
-    type RunDeckEntry,
 } from '../game/run/runDeck';
 import {
     createRandomSeed,
@@ -28,15 +23,16 @@ import type { AppliedEventResult } from '../game/run/runEvents';
 import { unlockCards, ensureStarterCollectionUnlocks } from '../game/run/cardCollection';
 import { unlockBodyMods } from '../game/run/bodyModBestiary';
 import { unlockEnemies } from '../game/run/enemyBestiary';
-import { getBodyModDefinitionOrThrow } from '../game/run/bodyMods';
-import { upgradeFirstCardInDeck, upgradeMatchingDeckEntry } from '../game/run/cardUpgrades';
+import { upgradeFirstCardInDeck } from '../game/run/cardUpgrades';
 import { readRunAscensionLevel, recordAscensionClear } from '../game/run/ascension';
 import { getFloorBriefing } from '../game/run/floorBriefings';
 import { createEmptyRunStats, type RunStats } from '../game/run/runStats';
 import { scoreDeckArchetypes } from '../game/run/deckArchetypes';
 import { getCardSynergyHint } from '../game/run/rewards';
 import { getRunMaxHealth } from '../game/run/runResources';
-import { rollShopOffers, type ShopOffer } from '../game/run/shop';
+import { rollShopOffers } from '../game/run/shop';
+import { createShopPurchaseHandlers } from './shopHandlers';
+import { planFinishEvent } from './finishEventFlow';
 import {
     getBattleEnemyIds,
     getFloorForColumn,
@@ -430,93 +426,29 @@ export const useRunController = () =>
         }, 380);
     }, [ deck, seed, bodyMods, signalsVisited, enterNodeFloor, currentFloor, startBattleForNode ]);
 
-    const confirmShopCardPurchase = useCallback((offer: ShopOffer, card: RunDeckCard): void =>
-    {
-        if (gold < offer.price)
-        {
-            return;
-        }
+    const shopHandlers = useMemo(
+        () => createShopPurchaseHandlers(() => ({
+            gold,
+            deck,
+            bodyMods,
+            playerHealth,
+            runMaxHealth,
+            setGold,
+            setDeck,
+            setBodyMods,
+            setPlayerHealth,
+        })),
+        [ gold, deck, bodyMods, playerHealth, runMaxHealth ],
+    );
 
-        setGold((prev) => prev - offer.price);
-        setDeck((prev) => [ ...prev, card ]);
-        unlockCards([ card.definitionId ]);
-        emitRunSfx('shop-buy', { volume: 0.95 });
-    }, [ gold ]);
-
-    const buyShopBodyMod = useCallback((offer: ShopOffer): void =>
-    {
-        if (!offer.bodyModId || gold < offer.price || bodyMods.includes(offer.bodyModId))
-        {
-            return;
-        }
-
-        getBodyModDefinitionOrThrow(offer.bodyModId);
-        setGold((prev) => prev - offer.price);
-        setBodyMods((prev) => [ ...prev, offer.bodyModId! ]);
-        unlockBodyMods([ offer.bodyModId! ]);
-        setPlayerHealth((prev) => Math.min(getRunMaxHealth([ ...bodyMods, offer.bodyModId! ]), prev));
-        emitRunSfx('shop-buy', { volume: 0.95 });
-    }, [ gold, bodyMods ]);
-
-    const buyShopHeal = useCallback((offer: ShopOffer): void =>
-    {
-        if (gold < offer.price || !offer.healAmount)
-        {
-            return;
-        }
-
-        setGold((prev) => prev - offer.price);
-        setPlayerHealth((prev) => Math.min(runMaxHealth, prev + offer.healAmount!));
-        emitRunSfx('shop-buy', { volume: 0.95 });
-        emitRunSfx('heal', { volume: 0.85 });
-    }, [ gold, runMaxHealth ]);
-
-    const buyShopRemove = useCallback((offer: ShopOffer, entry: RunDeckEntry): void =>
-    {
-        if (gold < offer.price)
-        {
-            return;
-        }
-
-        setGold((prev) => prev - offer.price);
-        setDeck((prev) => removeMatchingDeckEntry(prev, entry));
-        emitRunSfx('shop-buy', { volume: 0.95 });
-    }, [ gold ]);
-
-    const buyShopReroute = useCallback((
-        offer: ShopOffer,
-        entry: RunDeckEntry,
-        arrow: import('../game/cardGame/domain/cardDirections').CardDirection,
-    ): void =>
-    {
-        if (gold < offer.price)
-        {
-            return;
-        }
-
-        setGold((prev) => prev - offer.price);
-        setDeck((prev) => setMatchingDeckEntryArrow(prev, entry, arrow));
-        emitRunSfx('shop-buy', { volume: 0.95 });
-    }, [ gold ]);
-
-    const buyShopUpgrade = useCallback((offer: ShopOffer, entry: RunDeckEntry): void =>
-    {
-        if (gold < offer.price)
-        {
-            return;
-        }
-
-        const nextDeck = upgradeMatchingDeckEntry(deck, entry);
-
-        if (!nextDeck)
-        {
-            return;
-        }
-
-        setGold((prev) => prev - offer.price);
-        setDeck(nextDeck);
-        emitRunSfx('shop-buy', { volume: 0.95 });
-    }, [ gold, deck ]);
+    const {
+        confirmShopCardPurchase,
+        buyShopBodyMod,
+        buyShopHeal,
+        buyShopRemove,
+        buyShopReroute,
+        buyShopUpgrade,
+    } = shopHandlers;
 
     const restHeal = useCallback((healAmount: number): void =>
     {
@@ -595,27 +527,25 @@ export const useRunController = () =>
 
     const finishEvent = useCallback((result: AppliedEventResult): void =>
     {
-        setPlayerHealth(result.playerHealth);
-        setGold(result.gold);
-        const merged = mergeDeckAfterEvent(deckRef.current, result.deck);
-        unlockCards(result.deck);
-        setBodyMods(result.bodyMods);
-        unlockBodyMods(result.bodyMods);
+        const plan = planFinishEvent(deckRef.current, result);
 
-        const needingDirection = findNewDefinitionIdsNeedingDirection(deckRef.current, merged);
+        setPlayerHealth(plan.playerHealth);
+        setGold(plan.gold);
+        unlockCards(plan.unlockCardIds);
+        setBodyMods(plan.bodyMods);
+        unlockBodyMods(plan.unlockBodyModIds);
+        setDeck(plan.deck);
 
-        if (needingDirection.length > 0)
+        if (plan.needingDirection.length > 0)
         {
-            setDeck(merged);
             setPendingCardDirectionFlow({
-                definitionIds: needingDirection,
-                mergedDeck: merged,
+                definitionIds: plan.needingDirection,
+                mergedDeck: plan.deck,
                 onApplied: finishVisit,
             });
             return;
         }
 
-        setDeck(merged);
         finishVisit();
     }, [ finishVisit ]);
 
