@@ -1,3 +1,4 @@
+import { getGameCursors, subscribeGameCursors } from '../ui/gameCursors';
 import { applyBoardLayout, computeBoardLayout, type BoardLayout } from '../board/boardLayout';
 import { BattlefieldBackgroundView } from '../board/BattlefieldBackgroundView';
 import { MapBackgroundView } from '../board/MapBackgroundView';
@@ -92,6 +93,7 @@ export class Game extends Scene
     private runPhase = 'map';
     private unbindAudio?: () => void;
     private unbindBgm?: () => void;
+    private unbindCursors?: () => void;
     private pileInspectionBlocked = false;
     private phaseShiftHandler?: (payload: { label: string; message: string }) => void;
 
@@ -108,6 +110,11 @@ export class Game extends Scene
 
     create (): void
     {
+        this.input.setDefaultCursor(getGameCursors().default);
+        this.unbindCursors = subscribeGameCursors((urls) =>
+        {
+            this.input.setDefaultCursor(urls.default);
+        });
         bindGameAudioScene(this);
         bindGameBgmScene(this);
         markSfxLoaded();
@@ -673,6 +680,8 @@ export class Game extends Scene
         this.unbindAudio = undefined;
         this.unbindBgm?.();
         this.unbindBgm = undefined;
+        this.unbindCursors?.();
+        this.unbindCursors = undefined;
         unbindGameAudioScene();
         unbindGameBgmScene();
 

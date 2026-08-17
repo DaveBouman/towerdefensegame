@@ -1,3 +1,4 @@
+import { setViewportGrabbingCursor } from '../ui/gameCursors';
 import type { CardInstance } from '../cardGame/domain/types';
 import { getCardDefinitionOrThrow, isCardNonRerollable, isCardUnplayable } from '../cardGame/config/cardRegistry';
 import { buildCardGraphic } from '../cards/CardRenderer';
@@ -321,6 +322,7 @@ export class CardHandView
         this.scene.input.on('pointermove', this.onPointerMove);
         this.scene.input.on('pointerup', this.onPointerUp);
         this.scene.input.on('pointerupoutside', this.onPointerUp);
+        setViewportGrabbingCursor(true);
     }
 
     private readonly onPointerMove = (pointer: Phaser.Input.Pointer): void =>
@@ -371,6 +373,7 @@ export class CardHandView
         this.dragProxy?.destroy();
         this.dragProxy = undefined;
         this.draggingIndex = null;
+        setViewportGrabbingCursor(false);
 
         if (index !== null)
         {

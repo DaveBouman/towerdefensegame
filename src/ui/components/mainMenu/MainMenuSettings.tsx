@@ -22,6 +22,13 @@ import {
     writeSteamFacesEnabled,
 } from '../../../game/desktop/steamAvatars';
 import {
+    CURSOR_COLOR_LABELS,
+    CURSOR_COLORS,
+    readCursorColor,
+    setCursorColor,
+    type CursorColor,
+} from '../../../game/ui/cursorSettings';
+import {
     TEXT_SCALE_SIZES,
     type TextScaleSize,
     setTextScale,
@@ -60,6 +67,7 @@ export const MainMenuSettings = ({
     const desktop = isDesktopShell();
     const steamReady = isSteamBridgeAvailable();
     const [ steamFaces, setSteamFaces ] = useState(readSteamFacesEnabled);
+    const [ cursorColor, setCursorColorState ] = useState(readCursorColor);
     const [ displayPreset, setDisplayPreset ] = useState<DisplayPresetId>('1280x720');
     const [ availablePresets, setAvailablePresets ] = useState<DisplayPresetId[]>(
         DISPLAY_PRESETS.map((preset) => preset.id),
@@ -198,6 +206,31 @@ export const MainMenuSettings = ({
                                 </button>
                             ))}
                         </div>
+                        <span className="main-menu__sublabel">{t('settings.cursor.label')}</span>
+                        <div
+                            className="main-menu__cursor-row"
+                            role="radiogroup"
+                            aria-label={t('settings.cursor.label')}
+                        >
+                            {CURSOR_COLORS.map((color) => (
+                                <button
+                                    key={color}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={cursorColor === color}
+                                    className={[
+                                        'main-menu__cursor-option',
+                                        `main-menu__cursor-option--${color}`,
+                                        cursorColor === color ? 'main-menu__cursor-option--active' : '',
+                                    ].filter(Boolean).join(' ')}
+                                    onClick={() => chooseCursorColor(color)}
+                                >
+                                    <span className="main-menu__cursor-swatch" aria-hidden="true" />
+                                    {CURSOR_COLOR_LABELS[color]}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="main-menu__hint">{t('settings.cursor.hint')}</p>
                         <button
                             type="button"
                             className={`main-menu__toggle${fullscreen ? ' main-menu__toggle--on' : ''}`}

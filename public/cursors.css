@@ -1,0 +1,26 @@
+:root {
+    --cursor-default: url('./assets/ui/cursors/blue/default.svg') 1 1, auto;
+    --cursor-pointer: url('./assets/ui/cursors/blue/pointer.svg') 1 1, pointer;
+    --cursor-grab: url('./assets/ui/cursors/blue/grab.svg') 12 12, grab;
+    --cursor-grabbing: url('./assets/ui/cursors/blue/grabbing.svg') 12 12, grabbing;
+    --cursor-not-allowed: url('./assets/ui/cursors/blue/not-allowed.svg') 12 12, not-allowed;
+}
+
+html,
+body,
+#root,
+#app {
+    cursor: var(--cursor-default);
+}
+
+.game-viewport,
+.game-canvas-host,
+.game-canvas-host canvas {
+    cursor: var(--cursor-default);
+}
+
+.game-viewport--grabbing,
+.game-viewport--grabbing .game-canvas-host,
+.game-viewport--grabbing canvas {
+    cursor: var(--cursor-grabbing);
+}

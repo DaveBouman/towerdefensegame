@@ -1,3 +1,4 @@
+import { setViewportGrabbingCursor } from '../ui/gameCursors';
 import { uiTextStyle } from '../config/uiTypography';
 import { CYBER } from '../config/cyberpunkTheme';
 import { drawCornerBrackets, drawNeonPanel } from '../config/cyberpunkUiGraphics';
@@ -1339,7 +1340,9 @@ export class CardBoardView
             this.scene.input.off('pointermove', onPointerMove);
             this.scene.input.off('pointerup', onPointerUp);
             this.scene.input.off('pointerupoutside', onPointerUp);
+            setViewportGrabbingCursor(false);
         });
+        setViewportGrabbingCursor(true);
     }
 
     private finishBoardDrag (): void

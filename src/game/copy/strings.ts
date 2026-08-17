@@ -180,6 +180,8 @@ const EN = {
     'settings.resolution.adaptive': 'Adaptive — fit monitor (letterbox)',
     'settings.resolution.windowHint': 'Fixed sizes lock the window. Options above your monitor are hidden; Adaptive letterboxes on ultrawide.',
     'settings.resolution.fullscreenHint': 'Exit fullscreen to change window size.',
+    'settings.cursor.label': 'Cursor color',
+    'settings.cursor.hint': 'Triangle pointer border color for menus and combat.',
 } as const;
 
 export type CopyKey = keyof typeof EN;
