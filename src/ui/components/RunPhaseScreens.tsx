@@ -7,7 +7,6 @@ import { CardRewardOverlay } from './CardRewardOverlay';
 import { PendingCardDirectionOverlay } from './PendingCardDirectionOverlay';
 import { BodyModRewardOverlay } from './BodyModRewardOverlay';
 import { CombatRecapStrip } from './CombatRecapStrip';
-import { FloorBriefingOverlay } from './FloorBriefingOverlay';
 import { NodeVisitOverlay } from './NodeVisitOverlay';
 import { ShopOverlay } from './ShopOverlay';
 import { RunEventOverlay } from './RunEventOverlay';
@@ -26,7 +25,6 @@ import { GameMenuButton } from './GameMenuButton';
 import { MainMenuOverlay } from './MainMenuOverlay';
 import { BodyModsPanel } from './BodyModsPanel';
 import { BATTLE_REWARD_RULES, PUZZLE_TRIAL_RULES } from '../../game/run/rewards';
-import { getFloorBriefing } from '../../game/run/floorBriefings';
 import { GAME_RULES } from '../../game/cardGame/config/cardRegistry';
 import { RUN_CONFIG } from '../../game/run/runMap';
 import type { RunController } from '../../runController/useRunController';
@@ -53,8 +51,6 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
         ascensionLevel,
         departingNodeId,
         availableIds,
-        floorBriefing,
-        setFloorBriefing,
         floorBanner,
         setFloorBanner,
         runToast,
@@ -154,13 +150,6 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
             )}
             {tutorial.showRewardTip && (
                 <TutorialRewardTipOverlay onDismiss={tutorial.dismissRewardTip} />
-            )}
-            {floorBriefing !== null && getFloorBriefing(floorBriefing) && !tutorial.showIntro && (
-                <FloorBriefingOverlay
-                    floor={floorBriefing}
-                    briefing={getFloorBriefing(floorBriefing)!}
-                    onDismiss={() => setFloorBriefing(null)}
-                />
             )}
             {floorBanner !== null && (
                 <FloorBanner floor={floorBanner} onDone={() => setFloorBanner(null)} />

@@ -80,7 +80,6 @@ export const useRunController = () =>
     const [ ascensionLevel, setAscensionLevel ] = useState(readRunAscensionLevel);
     const [ ascensionUnlockedToast, setAscensionUnlockedToast ] = useState<number | null>(null);
     const [ runStats, setRunStats ] = useState<RunStats>(() => createEmptyRunStats(readRunAscensionLevel()));
-    const [ floorBriefing, setFloorBriefing ] = useState<number | null>(null);
     const lieutenantRerollsRefilledRef = useRef(false);
     const [ combatRecap, setCombatRecap ] = useState<{ damageDealt: number; armorGained: number; damageTaken: number } | null>(null);
     const [ clutchVictory, setClutchVictory ] = useState(false);
@@ -716,7 +715,6 @@ export const useRunController = () =>
         lieutenantRerollsRefilledRef.current = false;
         setAscensionLevel(readRunAscensionLevel());
         setRunStats(createEmptyRunStats(readRunAscensionLevel()));
-        setFloorBriefing(nextPhase === 'map' ? 1 : null);
         setCombatRecap(null);
         setPendingRewardFlow(null);
         setVisit(null);
@@ -825,8 +823,6 @@ export const useRunController = () =>
         ascensionLevel,
         departingNodeId,
         availableIds,
-        floorBriefing,
-        setFloorBriefing,
         floorBanner,
         setFloorBanner,
         runToast,
