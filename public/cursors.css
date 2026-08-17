@@ -3,7 +3,7 @@
     --cursor-pointer: url('./assets/ui/cursors/blue/pointer.svg') 1 1, pointer;
     --cursor-grab: url('./assets/ui/cursors/blue/grab.svg') 12 12, grab;
     --cursor-grabbing: url('./assets/ui/cursors/blue/grabbing.svg') 12 12, grabbing;
-    --cursor-not-allowed: url('./assets/ui/cursors/blue/not-allowed.svg') 12 12, not-allowed;
+    --cursor-not-allowed: url('./assets/ui/cursors/not-allowed.svg') 16 16, not-allowed;
 }
 
 html,

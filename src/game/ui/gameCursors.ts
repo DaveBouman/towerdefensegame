@@ -1,6 +1,5 @@
 import { getGameViewportElement } from './gameViewport';
 import {
-    applyCursorColor,
     buildCursorUrls,
     readCursorColor,
     subscribeGameCursors,
@@ -15,13 +14,6 @@ export { applyCursorColor, readCursorColor, setCursorColor, subscribeGameCursors
 export const getGameCursors = (): GameCursorUrls => buildCursorUrls(readCursorColor());
 
 const GRABBING_CLASS = 'game-viewport--grabbing';
-
-export const initGameCursors = (): (() => void) =>
-{
-    applyCursorColor();
-
-    return subscribeGameCursors(() => undefined);
-};
 
 export const setViewportGrabbingCursor = (active: boolean): void =>
 {

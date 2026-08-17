@@ -60,7 +60,7 @@ export const buildCursorUrls = (color: CursorColor): GameCursorUrls =>
         pointer: `url('${base}/pointer.svg') 1 1, pointer`,
         grab: `url('${base}/grab.svg') 12 12, grab`,
         grabbing: `url('${base}/grabbing.svg') 12 12, grabbing`,
-        notAllowed: `url('${base}/not-allowed.svg') 12 12, not-allowed`,
+        notAllowed: `url('./assets/ui/cursors/not-allowed.svg') 16 16, not-allowed`,
     };
 };
 

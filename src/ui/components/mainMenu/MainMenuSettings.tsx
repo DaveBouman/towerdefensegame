@@ -129,6 +129,18 @@ export const MainMenuSettings = ({
         onTextScaleChange(size);
     };
 
+    const chooseCursorColor = (color: CursorColor): void =>
+    {
+        if (color === cursorColor)
+        {
+            return;
+        }
+
+        emitRunSfx('ui-click', { volume: 0.64, rate: 1.06 });
+        setCursorColor(color);
+        setCursorColorState(color);
+    };
+
     return (
         <>
             <BackButton onClick={onBack} />

@@ -5,7 +5,6 @@ import {
     buildCursorUrls,
     readCursorColor,
     setCursorColor,
-    writeCursorColor,
 } from './cursorSettings';
 
 describe('cursorSettings', () =>
@@ -49,7 +48,6 @@ describe('cursorSettings', () =>
 
         setCursorColor('green');
 
-        expect(writeCursorColor).not.toBeDefined();
         expect(storage.get('signal-chain-cursor-color')).toBe('green');
         expect(setProperty).toHaveBeenCalledWith('--cursor-default', buildCursorUrls('green').default);
     });
