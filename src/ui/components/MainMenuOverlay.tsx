@@ -482,15 +482,17 @@ export const MainMenuOverlay = ({
                                     </button>
                                 </span>
                             </label>
-                            <div className="main-menu__field">
-                                <span className="main-menu__field-label">Ascension</span>
-                                <p className="main-menu__seed-readonly" aria-label="Ascension level">
-                                    {describeAscensionLevel(ascensionLevel)}
-                                </p>
-                                <p className="main-menu__hint main-menu__field-hint--muted">
-                                    Clear the Warden to unlock the next tier.
-                                </p>
-                            </div>
+                            {ascensionLevel > 0 && (
+                                <div className="main-menu__field">
+                                    <span className="main-menu__field-label">Ascension</span>
+                                    <p className="main-menu__seed-readonly" aria-label="Ascension level">
+                                        {describeAscensionLevel(ascensionLevel)}
+                                    </p>
+                                    <p className="main-menu__hint main-menu__field-hint--muted">
+                                        Clear the Warden to unlock the next tier.
+                                    </p>
+                                </div>
+                            )}
                             <div className="main-menu__actions">
                                 <button
                                     type="button"

@@ -290,7 +290,7 @@ remain as a fallback if a portrait fails to load.
 - [x] **Column pressure** — Gridlock locks a telegraphed board column each turn (`pressureColumn` / `lock-column`)
 - [x] **Threshold telegraphs** — HUD shows Last Stand / Enrage breakpoints (`EnemyTargetView`)
 - [ ] **Perfect-fight rewards** — bonus reroll or card upgrade for clean wins
-- [x] **Ascension modifiers** — 0–10 counter (+10% enemy integrity per level); next tier unlocks after clearing the Warden; shown on map HUD; unlock message on victory screen only (`ascension.ts`)
+- [x] **Ascension modifiers** — 0–10 counter (+10% enemy integrity per level); next tier unlocks after clearing the Warden; UI (menu / map / run-end) hidden until first clear; unlock message on victory screen only (`ascension.ts`)
 - [x] **Route risk tags** — hot/safe branches on the map (`routeKind`, `routeModifiers.ts`)
 
 #### Phase 3 — Meta (~1–2 weeks)
@@ -362,6 +362,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | 2026-08-13 | **Fight overclock.** After each enemy response, enemies gain +4 attack for the rest of the fight (`enemyStrengthPerTurn`). Chip shows current › next from the opening (+0›+4). First hit is baseline; a second energy round already sits at +12. |
 | 2026-08-13 | **Enemy HP variance.** `enemies.json` `maxHealth` is a median. Each fight (and mid-battle spawn) rolls integrity ±10% via the seeded RNG (`enemyHealthVariance`). Bestiary shows the range. |
 | 2026-08-13 | **Copy catalog.** Player-facing labels live in `src/game/copy/strings.ts` — cards, enemies, body mods, map nodes, shop services, archetypes, passives, traits, and intents. JSON `label` fields are fallbacks; catalog wins. Swap `EN` when adding locales. |
+| 2026-08-17 | **Ascension hidden until first clear.** Start-run confirm, map HUD, and run-end stats only show Ascension after the player has beaten the Warden once (`hasUnlockedAscension` / level &gt; 0). First victory still shows the unlock banner. |
 | 2026-08-14 | **Overclock tooltip.** Enemy Overclock chip uses the shared DOM tooltip on hover (current › next bonus, per-response stack, intra-round ramp). |
 | 2026-08-14 | **Main menu layout.** Home groups actions into Run / Archives / Help / System. Card index, bestiary, and body mods live on an **Archives** sub-screen; opening an archive hides the menu panel so overlays sit cleanly on top. Seed + ascension tier show on **Start run** confirm. |
 | 2026-08-13 | **Rad retheme.** The Poison card and status chip are now **Rad** (radioactive fumes). Miasma, Neurotoxin, Black Ichor, Venom Latch, and the Toxin lane keep their names. Internal id stays `poison`. |

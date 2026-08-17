@@ -5,6 +5,7 @@ import {
     describeAscensionLevel,
     formatAscensionUnlockMessage,
     getAscensionEnemyHealthMultiplier,
+    hasUnlockedAscension,
     readRunAscensionLevel,
     recordAscensionClear,
 } from './ascension';
@@ -41,12 +42,14 @@ describe('ascension', () =>
     it('starts at ascension 0', () =>
     {
         expect(readRunAscensionLevel()).toBe(0);
+        expect(hasUnlockedAscension()).toBe(false);
     });
 
     it('increments the counter only after clearing the Warden at the current tier', () =>
     {
         expect(recordAscensionClear(0)).toBe(1);
         expect(readRunAscensionLevel()).toBe(1);
+        expect(hasUnlockedAscension()).toBe(true);
 
         expect(recordAscensionClear(0)).toBe(1);
         expect(recordAscensionClear(1)).toBe(2);

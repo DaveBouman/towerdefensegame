@@ -52,6 +52,13 @@ const writeStoredInt = (value: number): void =>
 export const readRunAscensionLevel = (): number =>
     clampAscension(readStoredInt(0));
 
+/**
+ * True after the player has beaten the Warden at least once.
+ * Until then, Ascension UI stays hidden (menu, map, run-end stats).
+ */
+export const hasUnlockedAscension = (): boolean =>
+    readRunAscensionLevel() > 0;
+
 /** @deprecated Use readRunAscensionLevel. */
 export const readMaxUnlockedAscension = readRunAscensionLevel;
 
