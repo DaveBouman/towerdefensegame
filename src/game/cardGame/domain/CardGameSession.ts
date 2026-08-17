@@ -31,31 +31,25 @@ import { getEnemyPassive } from '../enemyPassives/defaults';
 import { collectCombatTraitsFromBodyMods } from '../combat/combatTraits/collect';
 import { getCombatTrait } from '../combat/combatTraits/defaults';
 import type { CombatTraitConfig } from '../combat/combatTraits/types';
-import { BoardEditController } from '../domain/BoardEditController';
-import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
-import { CombatResolver } from '../domain/CombatResolver';
-import { DeckHand } from '../domain/DeckHand';
-import { EnemyPhaseController } from '../domain/EnemyPhaseController';
-import { FieldEffects } from '../domain/FieldEffects';
-import { isPlayerOwnedCard } from '../domain/cardOwnership';
+import { BoardEditController } from './BoardEditController';
+import { BoardModel, createEmptyBoard } from './BoardModel';
+import { CombatResolver } from './CombatResolver';
+import { DeckHand } from './DeckHand';
+import { EnemyPhaseController } from './EnemyPhaseController';
+import { EnemySquadManager } from './EnemySquadManager';
+import { EnergyRoundController } from './EnergyRoundController';
+import { FieldEffects } from './FieldEffects';
+import { HandRedirectController } from './HandRedirectController';
+import { isPlayerOwnedCard } from './cardOwnership';
 import {
     clearLatchSlots,
     getLatchKeepInstanceIds,
     noteLatchPlacement,
     noteLatchRemoval,
     type LatchSlots,
-} from '../domain/boardPersist';
-import { createCardInstance } from '../domain/createCardInstance';
-import { createEnemyCombatant, isCombatantAlive, normalizeEnemyIds } from './enemyCombatants';
-import { shatterPartsThatFit, shouldSpawnMinionAfterTurn } from '../enemyPassives/spawnShatter';
-import {
-    applyLinkRageToAllies,
-    applyRerollTaxToCombatants,
-    getCardThiefPassive,
-    shouldFleeThisTurn,
-    shouldStealCardThisTurn,
-    stealCredFromRun,
-} from '../enemyPassives/interactionPassives';
+} from './boardPersist';
+import { createCardInstance } from './createCardInstance';
+import { applyRerollTaxToCombatants } from '../enemyPassives/interactionPassives';
 import type {
     ActivationStep,
     AttackReadiness,
@@ -73,7 +67,6 @@ import type {
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
 import type { CardDirection } from './cardDirections';
-import { randomDirectionForPool, randomOrthogonalPair } from './cardDirections';
 
 export interface PuzzleModeConfig {
     handCards: readonly {
@@ -92,27 +85,13 @@ export class CardGameSession
     private readonly combat: CombatResolver;
     private readonly enemyPhase: EnemyPhaseController;
     private readonly boardEdit: BoardEditController;
+    private readonly squad: EnemySquadManager;
+    private readonly energyRound: EnergyRoundController;
+    private readonly handRedirect: HandRedirectController;
     /** Definition ids exhausted (played) this battle — battle-scoped only. */
     private readonly exhaustedDefinitionIds: string[] = [];
-    private readonly combatants: EnemyCombatant[] = [];
-    private readonly runGold: number;
-    private goldStolen = 0;
-    private readonly permanentlyStolenCardIds: string[] = [];
-    private nextCombatantIndex = 0;
-    private attackTargetId: string | null = null;
     private player: PlayerState;
-    private energy: number;
-    private readonly maxEnergy: number;
     private readonly overclock: EnemyOverclockTracker;
-    /** Original arrows for cards scrambled by redirect-hand this energy round. */
-    private readonly handRedirectOriginals = new Map<string, {
-        arrow: CardDirection;
-        loopArrow?: CardDirection;
-    }>();
-    /** When true, scramble the next renewed hand (enemy acted as energy hit 0). */
-    private pendingHandRedirect = false;
-    /** Hand arrows stay twisted until the current energy round ends. */
-    private handRedirectActiveThisRound = false;
     private readonly battleModifiers: BattleModifier[] = [];
     private readonly puzzleMode: PuzzleModeConfig | null;
     private puzzleFinished = false;
@@ -139,15 +118,18 @@ export class CardGameSession
         this.puzzleMode = puzzleMode;
         this.overclock = new EnemyOverclockTracker(puzzleMode !== null);
         this.bodyMods = bodyMods;
-        this.runGold = Math.max(0, runGold);
 
         const healthMultiplier = Math.max(0.5, enemyHealthMultiplier);
 
-        for (const [ index, definitionId ] of normalizeEnemyIds(enemyIds).entries())
-        {
-            this.combatants.push(createEnemyCombatant(`enemy-${index}`, definitionId, healthMultiplier));
-            this.nextCombatantIndex = index + 1;
-        }
+        this.squad = new EnemySquadManager(
+            {
+                returnStolenCardToDeck: (definitionId) => this.deckHand.returnStolenCardToDeck(definitionId),
+                stealRandomDeckCard: () => this.deckHand.stealRandomDeckCard(),
+            },
+            enemyIds,
+            healthMultiplier,
+            runGold,
+        );
 
         const maxHealth = getRunMaxHealth(bodyMods);
         this.player = {
@@ -171,32 +153,32 @@ export class CardGameSession
             puzzleMode: this.puzzleMode,
             battleModifiers: this.battleModifiers,
             player: this.player,
-            getCombatants: () => this.combatants,
-            getLivingCombatants: () => this.getLivingCombatants(),
-            getCombatant: (instanceId) => this.getCombatant(instanceId),
-            getCombatantOrThrow: (instanceId) => this.getCombatantOrThrow(instanceId),
-            getTargetCombatant: () => this.getTargetCombatant(),
-            getAttackTargetId: () => this.getAttackTargetId(),
-            setAttackTargetId: (instanceId) => { this.attackTargetId = instanceId; },
-            ensureAttackTarget: () => this.ensureAttackTarget(),
-            resolveAttackTargetId: (explicit) => this.resolveAttackTargetId(explicit),
-            shatterCombatantIfNeeded: (instanceId) => this.shatterCombatantIfNeeded(instanceId),
-            onCombatantKilled: (instanceId) => this.onCombatantKilled(instanceId),
-            tryTriggerPhaseShift: (combatant) => this.tryTriggerPhaseShift(combatant),
+            getCombatants: () => this.squad.combatants,
+            getLivingCombatants: () => this.squad.getLivingCombatants(),
+            getCombatant: (instanceId) => this.squad.getCombatant(instanceId),
+            getCombatantOrThrow: (instanceId) => this.squad.getCombatantOrThrow(instanceId),
+            getTargetCombatant: () => this.squad.getTargetCombatant(),
+            getAttackTargetId: () => this.squad.getAttackTargetId(),
+            setAttackTargetId: (instanceId) => this.squad.setAttackTargetId(instanceId),
+            ensureAttackTarget: () => this.squad.ensureAttackTarget(),
+            resolveAttackTargetId: (explicit) => this.squad.resolveAttackTargetId(explicit),
+            shatterCombatantIfNeeded: (instanceId) => this.squad.shatterCombatantIfNeeded(instanceId),
+            onCombatantKilled: (instanceId) => this.squad.onCombatantKilled(instanceId),
+            tryTriggerPhaseShift: (combatant) => this.squad.tryTriggerPhaseShift(combatant),
         }, runAttackCount);
         this.enemyPhase = new EnemyPhaseController({
-            combatants: this.combatants,
-            getLivingCombatants: () => this.getLivingCombatants(),
-            getCombatant: (instanceId) => this.getCombatant(instanceId),
+            combatants: this.squad.combatants,
+            getLivingCombatants: () => this.squad.getLivingCombatants(),
+            getCombatant: (instanceId) => this.squad.getCombatant(instanceId),
             isEnemyDefeated: () => this.isEnemyDefeated(),
             isPlayerDefeated: () => this.isPlayerDefeated(),
             getPlayer: () => this.getPlayer(),
-            getEnemy: (instanceId) => this.getEnemy(instanceId),
+            getEnemy: (instanceId) => this.squad.getEnemy(instanceId),
             rampEnemyAction: (action) => this.rampEnemyAction(action),
             tickEnemyOverclock: () => this.tickEnemyOverclock(),
             applySilenceTilesFromPassives: () =>
             {
-                const passives = this.getLivingCombatants().flatMap((entry) => entry.definition.passives);
+                const passives = this.squad.getLivingCombatants().flatMap((entry) => entry.definition.passives);
                 this.fieldEffects.applySilenceTiles(passives);
             },
         });
@@ -220,10 +202,30 @@ export class CardGameSession
         }
 
         const bonusEnergy = getBattleEnergyBonus(bodyMods);
-        this.maxEnergy = puzzleMode
+        const maxEnergy = puzzleMode
             ? 1
             : Math.max(1, Math.round(GAME_RULES.energyPerTurn) + bonusEnergy);
-        this.energy = this.maxEnergy;
+        this.energyRound = new EnergyRoundController({
+            isPlayerDefeated: () => this.isPlayerDefeated(),
+            isEnemyDefeated: () => this.isEnemyDefeated(),
+            refillHand: () => this.refillHand(),
+            renewHand: () => this.renewHand(),
+            clearTransientBattleModifiers: () => this.clearTransientBattleModifiers(),
+            clearBattleModifiers: () => this.clearBattleModifiers(),
+            applyEnemyCurseHand: () => this.applyEnemyCurseHand(),
+            isHandRedirectActiveThisRound: () => this.handRedirect.isActiveThisRound(),
+            scrambleHandArrows: () => this.handRedirect.scrambleHandArrows(),
+            clearHandRedirect: () => this.handRedirect.clearHandRedirect(),
+            activatePendingHandRedirectAfterRenew: () => this.handRedirect.activatePendingAfterRenew(),
+            completeEnemyPhase: () => this.enemyPhase.completeEnemyPhase(),
+            completeSingleEnemyTurn: (action) => this.completeSingleEnemyTurn(action),
+            hasMoreEnemyTurnsInPhase: () => this.enemyPhase.hasMoreEnemyTurnsInPhase(),
+        }, maxEnergy);
+        this.handRedirect = new HandRedirectController({
+            board: this.board,
+            deckHand: this.deckHand,
+            getEnergy: () => this.energyRound.getEnergy(),
+        });
         this.applyRunModifierBattleModifiers(runModifiers);
 
         if (puzzleMode)
@@ -318,23 +320,23 @@ export class CardGameSession
 
     getEnergy (): number
     {
-        return this.energy;
+        return this.energyRound.getEnergy();
     }
 
     getMaxEnergy (): number
     {
-        return this.maxEnergy;
+        return this.energyRound.getMaxEnergy();
     }
 
     hasEnergy (): boolean
     {
-        return this.energy > 0;
+        return this.energyRound.hasEnergy();
     }
 
     /** Attacks the player has taken so far this round (one energy spent per attack). */
     getAttacksThisRound (): number
     {
-        return this.maxEnergy - this.energy;
+        return this.energyRound.getAttacksThisRound();
     }
 
     /** Bonus damage the enemy gains for the player's escalating attacks this round. */
@@ -524,19 +526,7 @@ export class CardGameSession
     /** Spends one energy for an attack. Returns false when none remains. */
     spendEnergy (): boolean
     {
-        if (this.energy <= 0)
-        {
-            return false;
-        }
-
-        this.energy -= 1;
-
-        return true;
-    }
-
-    private resetEnergy (): void
-    {
-        this.energy = this.maxEnergy;
+        return this.energyRound.spendEnergy();
     }
 
     /** Tops the hand back up to the full hand size without discarding held cards. */
@@ -708,55 +698,27 @@ export class CardGameSession
 
     getCombatants (): readonly EnemyCombatant[]
     {
-        return this.combatants;
+        return this.squad.getCombatants();
     }
 
     getCombatant (instanceId: string): EnemyCombatant | undefined
     {
-        return this.combatants.find((combatant) => combatant.instanceId === instanceId);
+        return this.squad.getCombatant(instanceId);
     }
 
     getLivingCombatants (): EnemyCombatant[]
     {
-        return this.combatants.filter((combatant) => isCombatantAlive(combatant));
+        return this.squad.getLivingCombatants();
     }
 
     hasMultipleEnemies (): boolean
     {
-        return this.getLivingCombatants().length > 1;
+        return this.squad.hasMultipleEnemies();
     }
 
     tryTriggerPhaseShift (combatant: EnemyCombatant): { label: string; message: string } | null
     {
-        if (combatant.phaseShiftActive)
-        {
-            return null;
-        }
-
-        const passive = getEnemyPassive(combatant.definition.passives, 'phaseShift');
-
-        if (!passive || combatant.state.maxHealth <= 0)
-        {
-            return null;
-        }
-
-        const ratio = combatant.state.health / combatant.state.maxHealth;
-
-        if (ratio > passive.healthRatio)
-        {
-            return null;
-        }
-
-        combatant.phaseShiftActive = true;
-
-        const payload = {
-            label: passive.label,
-            message: passive.message,
-        };
-
-        CardGameEventBus.emit(CARD_GAME_EVENTS.PHASE_SHIFT, payload);
-
-        return payload;
+        return this.squad.tryTriggerPhaseShift(combatant);
     }
 
     getCombatRecap (): { damageDealt: number; armorGained: number; damageTaken: number }
@@ -772,43 +734,12 @@ export class CardGameSession
     /** Adds a living combatant mid-battle (spawn / shatter). */
     addCombatant (definitionId: string): EnemyCombatant
     {
-        const combatant = createEnemyCombatant(`enemy-${this.nextCombatantIndex}`, definitionId);
-        this.nextCombatantIndex += 1;
-        this.combatants.push(combatant);
-
-        return combatant;
+        return this.squad.addCombatant(definitionId);
     }
 
     removeCombatant (instanceId: string): boolean
     {
-        const index = this.combatants.findIndex((combatant) => combatant.instanceId === instanceId);
-
-        if (index < 0)
-        {
-            return false;
-        }
-
-        if (this.attackTargetId === instanceId)
-        {
-            this.attackTargetId = null;
-        }
-
-        this.combatants.splice(index, 1);
-
-        return true;
-    }
-
-    private emitCombatantsChanged (
-        added: readonly string[],
-        removed: readonly string[],
-        reason: 'spawn' | 'shatter' | 'flee',
-    ): void
-    {
-        CardGameEventBus.emit(CARD_GAME_EVENTS.COMBATANTS_CHANGED, {
-            added: [ ...added ],
-            removed: [ ...removed ],
-            reason,
-        });
+        return this.squad.removeCombatant(instanceId);
     }
 
     /**
@@ -817,247 +748,65 @@ export class CardGameSession
      */
     shatterCombatantIfNeeded (instanceId: string): string[]
     {
-        const combatant = this.getCombatant(instanceId);
-
-        if (!combatant)
-        {
-            return [];
-        }
-
-        const livingOthers = this.getLivingCombatants()
-            .filter((entry) => entry.instanceId !== instanceId)
-            .length;
-        const partIds = shatterPartsThatFit(combatant, livingOthers);
-
-        if (partIds.length === 0)
-        {
-            return [];
-        }
-
-        this.removeCombatant(instanceId);
-        const added = partIds.map((definitionId) => this.addCombatant(definitionId).instanceId);
-        this.emitCombatantsChanged(added, [ instanceId ], 'shatter');
-
-        return added;
+        return this.squad.shatterCombatantIfNeeded(instanceId);
     }
 
     /** After a host finishes its turn, maybe spawn a minion. */
     trySpawnMinionAfterEnemyTurn (instanceId: string): EnemyCombatant | null
     {
-        const host = this.getCombatant(instanceId);
-
-        if (!host)
-        {
-            return null;
-        }
-
-        const passive = shouldSpawnMinionAfterTurn(host, this.combatants);
-
-        if (!passive)
-        {
-            return null;
-        }
-
-        const spawned = this.addCombatant(passive.minionId);
-        this.emitCombatantsChanged([ spawned.instanceId ], [], 'spawn');
-
-        return spawned;
+        return this.squad.trySpawnMinionAfterEnemyTurn(instanceId);
     }
 
     onCombatantKilled (instanceId: string): void
     {
-        const combatant = this.getCombatant(instanceId);
-
-        if (combatant?.stolenCardId)
-        {
-            this.deckHand.returnStolenCardToDeck(combatant.stolenCardId);
-            combatant.stolenCardId = undefined;
-        }
-
-        applyLinkRageToAllies(
-            this.getLivingCombatants().filter((entry) => entry.instanceId !== instanceId),
-        );
+        this.squad.onCombatantKilled(instanceId);
     }
 
     fleeCombatant (instanceId: string): void
     {
-        const combatant = this.getCombatant(instanceId);
-
-        if (!combatant)
-        {
-            return;
-        }
-
-        if (combatant.stolenCardId)
-        {
-            this.permanentlyStolenCardIds.push(combatant.stolenCardId);
-            combatant.stolenCardId = undefined;
-        }
-
-        this.removeCombatant(instanceId);
-        this.emitCombatantsChanged([], [ instanceId ], 'flee');
+        this.squad.fleeCombatant(instanceId);
     }
 
     getRunBattleDeltas (): { goldStolen: number; stolenCardIds: readonly string[] }
     {
-        return {
-            goldStolen: this.goldStolen,
-            stolenCardIds: [ ...this.permanentlyStolenCardIds ],
-        };
+        return this.squad.getRunBattleDeltas();
     }
 
     getAttackTargetId (): string | null
     {
-        if (!this.attackTargetId)
-        {
-            return null;
-        }
-
-        const combatant = this.getCombatant(this.attackTargetId);
-
-        return combatant && isCombatantAlive(combatant) ? this.attackTargetId : null;
+        return this.squad.getAttackTargetId();
     }
 
     setAttackTarget (instanceId: string): boolean
     {
-        const combatant = this.getCombatant(instanceId);
-
-        if (!combatant || !isCombatantAlive(combatant))
-        {
-            return false;
-        }
-
-        this.attackTargetId = instanceId;
-
-        return true;
+        return this.squad.setAttackTarget(instanceId);
     }
 
     /** Cycles lock target to the next living enemy in squad order (wraps). */
     cycleAttackTarget (): string | null
     {
-        const living = this.getLivingCombatants();
-
-        if (living.length === 0)
-        {
-            return null;
-        }
-
-        if (living.length === 1)
-        {
-            this.attackTargetId = living[0]!.instanceId;
-
-            return this.attackTargetId;
-        }
-
-        const ids = living.map((combatant) => combatant.instanceId);
-        const current = this.getAttackTargetId();
-        const currentIndex = current ? ids.indexOf(current) : -1;
-        const nextIndex = (currentIndex + 1) % ids.length;
-
-        this.attackTargetId = ids[nextIndex]!;
-
-        return this.attackTargetId;
+        return this.squad.cycleAttackTarget();
     }
 
     hasValidAttackTarget (): boolean
     {
-        return this.getAttackTargetId() !== null;
+        return this.squad.hasValidAttackTarget();
     }
 
     /** Picks a lone living enemy automatically; returns null when the player must choose. */
     ensureAttackTarget (): string | null
     {
-        const current = this.getAttackTargetId();
-
-        if (current)
-        {
-            return current;
-        }
-
-        const living = this.getLivingCombatants();
-
-        if (living.length === 1)
-        {
-            this.attackTargetId = living[0]!.instanceId;
-
-            return this.attackTargetId;
-        }
-
-        return null;
-    }
-
-    private getTargetCombatant (): EnemyCombatant
-    {
-        const targetId = this.getAttackTargetId() ?? this.getLivingCombatants()[0]?.instanceId;
-        const combatant = targetId ? this.getCombatant(targetId) : this.combatants[0];
-
-        if (!combatant)
-        {
-            throw new Error('No enemy combatants in session');
-        }
-
-        return combatant;
-    }
-
-    private getCombatantOrThrow (instanceId: string): EnemyCombatant
-    {
-        const combatant = this.getCombatant(instanceId);
-
-        if (!combatant)
-        {
-            throw new Error(`Unknown enemy combatant: ${instanceId}`);
-        }
-
-        return combatant;
-    }
-
-    private resolveAttackTargetId (explicit?: string): string
-    {
-        if (explicit)
-        {
-            const combatant = this.getCombatant(explicit);
-
-            if (combatant && isCombatantAlive(combatant))
-            {
-                return explicit;
-            }
-        }
-
-        const targetId = this.ensureAttackTarget();
-
-        if (targetId)
-        {
-            return targetId;
-        }
-
-        const living = this.getLivingCombatants();
-
-        if (living.length > 0)
-        {
-            this.attackTargetId = living[0]!.instanceId;
-
-            return this.attackTargetId;
-        }
-
-        throw new Error('Attack target required');
+        return this.squad.ensureAttackTarget();
     }
 
     getEnemy (instanceId?: string): EnemyState
     {
-        const combatant = instanceId
-            ? this.getCombatant(instanceId)
-            : this.getTargetCombatant();
-
-        return combatant ? { ...combatant.state } : { health: 0, maxHealth: 0, shield: 0 };
+        return this.squad.getEnemy(instanceId);
     }
 
     getEnemyDefinition (instanceId?: string): LoadedCardGameEnemyDefinition
     {
-        const combatant = instanceId
-            ? this.getCombatant(instanceId)
-            : this.getTargetCombatant();
-
-        return combatant.definition;
+        return this.squad.getEnemyDefinition(instanceId);
     }
 
     getHand (): readonly CardInstance[]
@@ -1133,7 +882,7 @@ export class CardGameSession
         stepMs = GAME_RULES.activationStepMs,
     ): AttackSequence
     {
-        const target = this.getTargetCombatant();
+        const target = this.squad.getTargetCombatant();
         const raw = buildRawAttackSequence(chain, this.board, stepMs);
         const passives = this.getLivingCombatants().flatMap((combatant) => combatant.definition.passives);
         const sequence = applyEnemyPassivesToSequence(
@@ -1160,127 +909,13 @@ export class CardGameSession
      */
     applyHandRedirect (): number
     {
-        if (this.energy <= 0)
-        {
-            this.pendingHandRedirect = true;
-
-            return 0;
-        }
-
-        this.handRedirectActiveThisRound = true;
-
-        return this.scrambleHandArrows();
+        return this.handRedirect.applyHandRedirect();
     }
 
     /** True while hand arrows are twisted (or queued for the next hand). */
     hasHandRedirect (): boolean
     {
-        return this.handRedirectActiveThisRound
-            || this.handRedirectOriginals.size > 0
-            || this.pendingHandRedirect;
-    }
-
-    private scrambleHandArrows (): number
-    {
-        let changed = 0;
-
-        for (const card of this.deckHand.getHand())
-        {
-            const definition = getCardDefinitionOrThrow(card.definitionId);
-
-            if (definition.arrowPool === 'joker')
-            {
-                continue;
-            }
-
-            if (!this.handRedirectOriginals.has(card.instanceId))
-            {
-                this.handRedirectOriginals.set(card.instanceId, {
-                    arrow: card.arrow,
-                    loopArrow: card.loopArrow,
-                });
-            }
-
-            if (definition.behaviorId === 'loop-reset')
-            {
-                const pair = randomOrthogonalPair();
-                card.arrow = pair.arrow;
-                card.loopArrow = pair.loopArrow;
-            }
-            else
-            {
-                card.arrow = randomDirectionForPool(definition.arrowPool);
-            }
-
-            changed += 1;
-        }
-
-        if (changed > 0)
-        {
-            CardGameEventBus.emit(CARD_GAME_EVENTS.HAND_CHANGED, {
-                hand: [ ...this.deckHand.getHand() ],
-            });
-        }
-
-        return changed;
-    }
-
-    /** Restores any arrows twisted this round (hand, board, or piles). */
-    private clearHandRedirect (): void
-    {
-        if (this.handRedirectOriginals.size === 0)
-        {
-            return;
-        }
-
-        const restore = (card: CardInstance): void =>
-        {
-            const original = this.handRedirectOriginals.get(card.instanceId);
-
-            if (!original)
-            {
-                return;
-            }
-
-            card.arrow = original.arrow;
-
-            if (original.loopArrow !== undefined)
-            {
-                card.loopArrow = original.loopArrow;
-            }
-            else
-            {
-                delete card.loopArrow;
-            }
-        };
-
-        for (const card of this.deckHand.getHand())
-        {
-            restore(card);
-        }
-
-        for (const card of this.deckHand.getDeckCards())
-        {
-            restore(card);
-        }
-
-        for (const card of this.deckHand.getDiscardCards())
-        {
-            restore(card);
-        }
-
-        for (const slot of this.board.slotsInOrder())
-        {
-            const card = this.board.getCardAt(slot);
-
-            if (card)
-            {
-                restore(card);
-            }
-        }
-
-        this.handRedirectOriginals.clear();
-        this.handRedirectActiveThisRound = false;
+        return this.handRedirect.hasHandRedirect();
     }
 
     getDampenField (): DampenField | null
@@ -1373,7 +1008,7 @@ export class CardGameSession
             return { canAttack: false, reason: 'no-target' };
         }
 
-        if (this.energy <= 0)
+        if (!this.energyRound.hasEnergy())
         {
             return { canAttack: false, reason: 'no-energy' };
         }
@@ -1490,46 +1125,8 @@ export class CardGameSession
 
         if (action.instanceId)
         {
-            this.applyPostEnemyTurnPassives(action.instanceId);
+            this.squad.applyPostEnemyTurnPassives(action.instanceId);
             this.trySpawnMinionAfterEnemyTurn(action.instanceId);
-        }
-    }
-
-    private applyPostEnemyTurnPassives (instanceId: string): void
-    {
-        const combatant = this.getCombatant(instanceId);
-
-        if (!combatant || !isCombatantAlive(combatant))
-        {
-            return;
-        }
-
-        const credLeech = getEnemyPassive(combatant.definition.passives, 'credLeech');
-
-        if (credLeech && this.runGold > 0)
-        {
-            const result = stealCredFromRun(this.runGold, this.goldStolen, credLeech.amountPerTurn);
-            this.goldStolen = result.goldStolen;
-        }
-
-        const thief = getCardThiefPassive(combatant);
-
-        if (thief)
-        {
-            if (shouldStealCardThisTurn(combatant, thief))
-            {
-                const stolen = this.deckHand.stealRandomDeckCard();
-
-                if (stolen)
-                {
-                    combatant.stolenCardId = stolen;
-                }
-            }
-
-            if (shouldFleeThisTurn(combatant, thief))
-            {
-                this.fleeCombatant(instanceId);
-            }
         }
     }
 
@@ -1541,62 +1138,18 @@ export class CardGameSession
     /** Refreshes the player between attacks in the same energy round (board persists). */
     refreshPlayerAfterMidRoundEnemy (): void
     {
-        if (this.isPlayerDefeated() || this.isEnemyDefeated())
-        {
-            return;
-        }
-
-        this.refillHand();
-
-        if (this.handRedirectActiveThisRound)
-        {
-            this.scrambleHandArrows();
-        }
-
-        this.clearTransientBattleModifiers();
-        this.applyEnemyCurseHand();
+        this.energyRound.refreshPlayerAfterMidRoundEnemy();
     }
 
     /** Starts the next energy round after the board has been cleared. */
     finishPlayerRound (): void
     {
-        if (this.isPlayerDefeated() || this.isEnemyDefeated())
-        {
-            return;
-        }
-
-        this.clearHandRedirect();
-        this.renewHand();
-        this.resetEnergy();
-        this.clearBattleModifiers();
-
-        if (this.pendingHandRedirect)
-        {
-            this.pendingHandRedirect = false;
-            this.handRedirectActiveThisRound = true;
-            this.scrambleHandArrows();
-        }
-
-        this.applyEnemyCurseHand();
+        this.energyRound.finishPlayerRound();
     }
 
     finishEnemyPhase (): void
     {
-        this.completeEnemyPhase();
-
-        if (this.isPlayerDefeated() || this.isEnemyDefeated())
-        {
-            return;
-        }
-
-        if (this.energy <= 0)
-        {
-            this.finishPlayerRound();
-        }
-        else
-        {
-            this.refreshPlayerAfterMidRoundEnemy();
-        }
+        this.energyRound.finishEnemyPhase();
     }
 
     resolveEnemyAttack (damage: number): PlayerDamageResult
@@ -1655,19 +1208,7 @@ export class CardGameSession
 
     completeEnemyTurn (action: EnemyTurnAction): void
     {
-        this.completeSingleEnemyTurn(action);
-
-        if (this.enemyPhase.hasMoreEnemyTurnsInPhase())
-        {
-            return;
-        }
-
-        this.enemyPhase.completeEnemyPhase();
-
-        if (this.energy > 0)
-        {
-            this.refreshPlayerAfterMidRoundEnemy();
-        }
+        this.energyRound.completeEnemyTurn(action);
     }
 
     /** Clears player cards from the board at end of player round (before the enemy acts). */

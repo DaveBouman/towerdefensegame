@@ -1,6 +1,8 @@
 import { bodyModLabel, poisonStatusName } from '../copy/strings';
 import { pickRandom } from '../random/rng';
 import type { CombatTraitInput } from '../cardGame/combat/combatTraits/types';
+import bodyModPools from './config/bodyModPools.json';
+import { RUN_ECONOMY } from './config/runEconomy';
 
 /** Run-long cybernetic implants collected from events and ripperdocs. */
 export interface BodyModDefinition {
@@ -31,20 +33,22 @@ export const BODY_MOD_IDS = {
     capacitorBank: 'capacitor-bank',
 } as const;
 
+const bm = RUN_ECONOMY.bodyMods;
+
 /** Attacks that trigger Mark VII's double-damage proc (7th, 14th, …). */
-export const SEVENTH_STRIKE_INTERVAL = 7;
+export const SEVENTH_STRIKE_INTERVAL = bm.markSeven.interval;
 
 /** Attacks that trigger Mark V's double-damage proc (5th, 10th, …). */
-export const FIFTH_STRIKE_INTERVAL = 5;
+export const FIFTH_STRIKE_INTERVAL = bm.markFive.interval;
 
 /** Left-routing card hits deal +30% damage with Portside Gyro installed. */
-export const PORTSIDE_GYRO_DAMAGE_MULTIPLIER = 1.3;
+export const PORTSIDE_GYRO_DAMAGE_MULTIPLIER = bm.portsideGyro.damageMultiplier;
 
 /** Defends in one chain needed to store a Capacitor Bank charge. */
-export const CAPACITOR_BANK_DEFEND_INTERVAL = 3;
+export const CAPACITOR_BANK_DEFEND_INTERVAL = bm.capacitorBank.defendInterval;
 
 /** Attack damage multiplier when Capacitor Bank discharges in-chain. */
-export const CAPACITOR_BANK_ATTACK_MULTIPLIER = 1.5;
+export const CAPACITOR_BANK_ATTACK_MULTIPLIER = bm.capacitorBank.attackMultiplier;
 
 /** Run-wide attack intervals for proc body mods (shown in the body mod panel). */
 export const INTERVAL_STRIKE_BODY_MOD_INTERVALS: Readonly<Record<string, number>> = {
@@ -99,44 +103,44 @@ export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
         id: BODY_MOD_IDS.chromeHeart,
         label: bodyModLabel(BODY_MOD_IDS.chromeHeart),
         blurb: 'Synthetic myocardium grafted behind the ribcage — runs hot, keeps you upright.',
-        effect: '+10 max integrity for the rest of the run.',
+        effect: `+${bm.chromeHeart.maxHealthBonus} max integrity for the rest of the run.`,
     },
     {
         id: BODY_MOD_IDS.overclockCell,
         label: bodyModLabel(BODY_MOD_IDS.overclockCell),
         blurb: 'Neural capacitor wired into your combat reflex loop.',
-        effect: '+1 energy each round.',
+        effect: `+${bm.overclockCell.energyBonus} energy each round.`,
     },
     {
         id: BODY_MOD_IDS.credSiphon,
         label: bodyModLabel(BODY_MOD_IDS.credSiphon),
         blurb: 'Firmware skims loose eddies from every downed target.',
-        effect: '+8 creds after each victory.',
+        effect: `+${bm.credSiphon.victoryGold} creds after each victory.`,
     },
     {
         id: BODY_MOD_IDS.markFive,
         label: bodyModLabel(BODY_MOD_IDS.markFive),
         blurb: 'Aggressive strike firmware — shorter fuse, harder swing.',
-        effect: 'Every 5th attack deals double damage.',
+        effect: `Every ${FIFTH_STRIKE_INTERVAL}th attack deals double damage.`,
     },
     {
         id: BODY_MOD_IDS.markSeven,
         label: bodyModLabel(BODY_MOD_IDS.markSeven),
         blurb: 'Neural strike firmware overclocks every seventh combat swing.',
-        effect: 'Every 7th attack deals double damage.',
+        effect: `Every ${SEVENTH_STRIKE_INTERVAL}th attack deals double damage.`,
     },
     {
         id: BODY_MOD_IDS.portsideGyro,
         label: bodyModLabel(BODY_MOD_IDS.portsideGyro),
         blurb: 'Left-vector stabilizers bleed lateral momentum into the payload.',
-        effect: 'Left-routing cards deal 30% more damage.',
+        effect: `Left-routing cards deal ${Math.round((PORTSIDE_GYRO_DAMAGE_MULTIPLIER - 1) * 100)}% more damage.`,
     },
     {
         id: BODY_MOD_IDS.reactivePlating,
         label: bodyModLabel(BODY_MOD_IDS.reactivePlating),
         blurb: 'Subdermal impact mesh hardens on first contact, then vents.',
-        effect: 'First 2 card hits each fight deal no damage to you.',
-        combatTraits: [ { id: 'hitWard', hitsBlocked: 2 } ],
+        effect: `First ${bm.reactivePlating.hitsBlocked} card hits each fight deal no damage to you.`,
+        combatTraits: [ { id: 'hitWard', hitsBlocked: bm.reactivePlating.hitsBlocked } ],
     },
     {
         id: BODY_MOD_IDS.venomLatch,
@@ -172,7 +176,7 @@ export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
         id: BODY_MOD_IDS.gatekeeperSeal,
         label: bodyModLabel(BODY_MOD_IDS.gatekeeperSeal),
         blurb: 'Warden core shard — still warm from the final gate.',
-        effect: '+15 max integrity and +1 energy each round for the rest of the run.',
+        effect: `+${bm.gatekeeperSeal.maxHealthBonus} max integrity and +${bm.gatekeeperSeal.energyBonus} energy each round for the rest of the run.`,
     },
     {
         id: BODY_MOD_IDS.latchArray,
@@ -184,7 +188,7 @@ export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
         id: BODY_MOD_IDS.capacitorBank,
         label: bodyModLabel(BODY_MOD_IDS.capacitorBank),
         blurb: 'Defend steps bleed kinetic charge into a combat capacitor — discharged on the next swing.',
-        effect: 'Every 3rd Defend in a chain stores charge; your next Attack in that chain deals +50% damage.',
+        effect: `Every ${CAPACITOR_BANK_DEFEND_INTERVAL}rd Defend in a chain stores charge; your next Attack in that chain deals +${Math.round((CAPACITOR_BANK_ATTACK_MULTIPLIER - 1) * 100)}% damage.`,
     },
 ];
 
@@ -206,20 +210,7 @@ export const getBodyModDefinitionOrThrow = (id: string): BodyModDefinition =>
 };
 
 /** Body mods offered after lieutenant victories. */
-export const LIEUTENANT_RELIC_POOL: readonly string[] = [
-    BODY_MOD_IDS.markFive,
-    BODY_MOD_IDS.markSeven,
-    BODY_MOD_IDS.portsideGyro,
-    BODY_MOD_IDS.reactivePlating,
-    BODY_MOD_IDS.venomLatch,
-    BODY_MOD_IDS.razorFeed,
-    BODY_MOD_IDS.pyreLink,
-    BODY_MOD_IDS.hemorrhageCoil,
-    BODY_MOD_IDS.carapaceWeave,
-    BODY_MOD_IDS.overclockCell,
-    BODY_MOD_IDS.latchArray,
-    BODY_MOD_IDS.capacitorBank,
-];
+export const LIEUTENANT_RELIC_POOL: readonly string[] = bodyModPools.lieutenant;
 
 export type BodyModRewardPool = 'standard' | 'lieutenant' | 'warden';
 
@@ -250,9 +241,11 @@ export const rollBattleBodyModReward = (
 {
     if (pool === 'warden')
     {
-        if (!ownedIds.includes(BODY_MOD_IDS.gatekeeperSeal))
+        const wardenId = bodyModPools.warden[0] ?? BODY_MOD_IDS.gatekeeperSeal;
+
+        if (!ownedIds.includes(wardenId))
         {
-            return BODY_MOD_IDS.gatekeeperSeal;
+            return wardenId;
         }
 
         return rollBodyModFromPool(LIEUTENANT_RELIC_POOL, ownedIds);

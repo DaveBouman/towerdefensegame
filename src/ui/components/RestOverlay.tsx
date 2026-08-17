@@ -3,6 +3,7 @@ import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistr
 import { listUpgradableCardsInDeck } from '../../game/run/cardUpgrades';
 import type { RunDeckCard } from '../../game/run/runDeck';
 import { getRestHealAmount, REST_HEAL_FRACTION } from '../../game/run/restSite';
+import { DeckCardPicker, type DeckPickerEntry } from './DeckCardPicker';
 import { NodeKindIcon } from './NodeKindIcon';
 import { ModalShell } from './CyberPanel';
 
@@ -15,13 +16,7 @@ interface RestOverlayProps {
     onContinue: () => void;
 }
 
-interface DeckEntry {
-    definitionId: string;
-    label: string;
-    count: number;
-}
-
-const buildUpgradeEntries = (deck: readonly RunDeckCard[]): DeckEntry[] =>
+const buildUpgradeEntries = (deck: readonly RunDeckCard[]): DeckPickerEntry[] =>
 {
     const ids = listUpgradableCardsInDeck(deck);
     const counts = new Map<string, number>();
@@ -65,9 +60,9 @@ export const RestOverlay = ({
     const atFullHealth = playerHealth >= maxHealth;
     const nothingAvailable = atFullHealth && !canUpgrade;
 
-    const confirmUpgrade = (definitionId: string): void =>
+    const confirmUpgrade = (entry: DeckPickerEntry): void =>
     {
-        onUpgrade(definitionId);
+        onUpgrade(entry.definitionId);
         setPickingUpgrade(false);
         setChoiceMade(true);
     };
@@ -75,36 +70,19 @@ export const RestOverlay = ({
     if (pickingUpgrade)
     {
         return (
-            <ModalShell
+            <DeckCardPicker
                 variant="green"
                 rootClassName="shop-overlay rest-overlay rest-overlay--enter"
-                panelClassName="shop-overlay__panel"
-            >
-                    <p className="shop-overlay__eyebrow">Safehouse</p>
-                    <h1 className="shop-overlay__title">Choose a card to upgrade</h1>
-                    <p className="shop-overlay__subtitle">Free chrome grind — this cannot be undone.</p>
-                    <ul className="shop-overlay__deck-list">
-                        {upgradeEntries.map((entry) => (
-                            <li key={entry.definitionId}>
-                                <button
-                                    type="button"
-                                    className="shop-overlay__deck-card"
-                                    onClick={() => confirmUpgrade(entry.definitionId)}
-                                >
-                                    <span>{entry.label}</span>
-                                    <span className="shop-overlay__deck-count">×{entry.count}</span>
-                                </button>
-                            </li>
-                        ))}
-                    </ul>
-                    <button
-                        type="button"
-                        className="shop-overlay__continue"
-                        onClick={() => setPickingUpgrade(false)}
-                    >
-                        Back
-                    </button>
-            </ModalShell>
+                eyebrow="Safehouse"
+                title="Choose a card to upgrade"
+                subtitle="Free chrome grind — this cannot be undone."
+                entries={upgradeEntries}
+                layout="list"
+                cancelLabel="Back"
+                onPick={confirmUpgrade}
+                onCancel={() => setPickingUpgrade(false)}
+                entryKey={(entry) => entry.definitionId}
+            />
         );
     }
 

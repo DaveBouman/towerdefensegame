@@ -159,7 +159,9 @@ export const RunEventOverlay = ({
     {
         const openWheel = choice.effects.some((effect) => effect.kind === 'open-wheel');
         const openMatch = choice.effects.some((effect) => effect.kind === 'open-icon-match');
-        const openPuzzle = choice.effects.find((effect) => effect.kind === 'open-puzzle');
+        const openPuzzle = choice.effects.find(
+            (effect) => effect.kind === 'open-puzzle' || effect.kind === 'open-random-puzzle',
+        );
 
         if (openWheel)
         {
@@ -176,7 +178,7 @@ export const RunEventOverlay = ({
         if (openPuzzle)
         {
             seedScope(seed, `event:${nodeId}:puzzle`);
-            const rolledId = openPuzzle.puzzleId === '__random__'
+            const rolledId = openPuzzle.kind === 'open-random-puzzle'
                 ? rollPuzzleId()
                 : openPuzzle.puzzleId;
 

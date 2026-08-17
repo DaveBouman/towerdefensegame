@@ -1,10 +1,9 @@
-import { nodeKindLabel } from '../copy/strings';
+import { nodeKindLabel, nodeKindTooltip } from '../copy/strings';
 import { random } from '../random/rng';
 
 /**
- * The kinds of node that can appear on the run map. `enemy` and `boss` are
- * battles; `shop` and `event` are non-battle stops (behavior TBD — placeholder
- * for now). New kinds can be added here plus a case in `App`'s node handling.
+ * The kinds of node that can appear on the run map. `enemy` / `semi-boss` /
+ * `boss` are battles; `shop`, `event`, and `rest` are non-battle stops.
  */
 export type RunMapNodeKind = 'enemy' | 'semi-boss' | 'boss' | 'shop' | 'event' | 'rest';
 
@@ -19,32 +18,32 @@ export interface NodeKindInfo {
 export const NODE_KIND_INFO: Record<RunMapNodeKind, NodeKindInfo> = {
     enemy: {
         label: nodeKindLabel('enemy'),
-        tooltip: 'Routine chrome on the grid. Flatline them to jack a card into your deck.',
+        tooltip: nodeKindTooltip('enemy'),
         isBattle: true,
     },
     'semi-boss': {
         label: nodeKindLabel('semi-boss'),
-        tooltip: 'A district lieutenant. Tougher than street ops — flatline them for a card reward.',
+        tooltip: nodeKindTooltip('semi-boss'),
         isBattle: true,
     },
     boss: {
         label: nodeKindLabel('boss'),
-        tooltip: 'The run\u2019s final warden. Take them down to clear the district.',
+        tooltip: nodeKindTooltip('boss'),
         isBattle: true,
     },
     shop: {
         label: nodeKindLabel('shop'),
-        tooltip: 'Spend creds on cards and body mods. (Coming soon)',
+        tooltip: nodeKindTooltip('shop'),
         isBattle: false,
     },
     event: {
         label: nodeKindLabel('event'),
-        tooltip: 'An unknown signal on the grid. Jack in for a random encounter — repeat pings may draw hostiles.',
+        tooltip: nodeKindTooltip('event'),
         isBattle: false,
     },
     rest: {
         label: nodeKindLabel('rest'),
-        tooltip: 'A quiet stasis pod before the Warden. Rest to recover integrity or grind one card upgrade.',
+        tooltip: nodeKindTooltip('rest'),
         isBattle: false,
     },
 };

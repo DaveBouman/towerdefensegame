@@ -2,6 +2,7 @@ import { shopLabel } from '../copy/strings';
 import { pickRandom } from '../random/rng';
 import { getBodyModDefinition, rollBodyModReward } from './bodyMods';
 import { listUpgradableCardsInDeck } from './cardUpgrades';
+import { RUN_ECONOMY } from './config/runEconomy';
 import { fromDefinitionIds } from './runDeck';
 import { describeCardReward, rollCardReward } from './rewards';
 
@@ -21,16 +22,9 @@ export interface ShopOffer {
     healAmount?: number;
 }
 
-export const SHOP_PRICES = {
-    card: 45,
-    bodyMod: 80,
-    heal: 35,
-    removeCard: 50,
-    rerouteCard: 40,
-    upgradeCard: 60,
-} as const;
+export const SHOP_PRICES = RUN_ECONOMY.shop.prices;
 
-export const SHOP_HEAL_AMOUNT = 22;
+export const SHOP_HEAL_AMOUNT = RUN_ECONOMY.shop.healAmount;
 
 /**
  * Seeded Ripperdoc stock for a shop node. Call after

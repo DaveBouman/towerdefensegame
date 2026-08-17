@@ -109,12 +109,22 @@ const EN = {
     'node.shop': 'Ripperdoc',
     'node.event': 'Signal',
     'node.rest': 'Safehouse',
+    'node.enemy.tooltip': 'Routine chrome on the grid. Flatline them to jack a card into your deck.',
+    'node.semi-boss.tooltip': 'A district lieutenant. Tougher than street ops — flatline them for a card reward.',
+    'node.boss.tooltip': 'The run\u2019s final warden. Take them down to clear the district.',
+    'node.shop.tooltip': 'Spend creds on cards, body mods, heals, removals, and chrome upgrades.',
+    'node.event.tooltip': 'An unknown signal on the grid. Jack in for a random encounter — repeat pings may draw hostiles.',
+    'node.rest.tooltip': 'A quiet stasis pod before the Warden. Rest to recover integrity or grind one card upgrade.',
 
     // Shop services
     'shop.heal': 'Integrity Patch',
     'shop.remove-card': 'Deck Excision',
     'shop.reroute-card': 'Signal Reroute',
     'shop.upgrade-card': 'Chrome Grind',
+
+    // Route labels
+    'route.safe': 'Safe route — lighter opposition',
+    'route.standard': 'Standard route',
 
     // Deck archetypes
     'archetype.blade': 'Blade',
@@ -197,6 +207,9 @@ export const bodyModLabel = (id: string, fallback = id): string =>
 
 export const nodeKindLabel = (kind: string, fallback = kind): string =>
     copy(`node.${kind}`, fallback);
+
+export const nodeKindTooltip = (kind: string, fallback = ''): string =>
+    copy(`node.${kind}.tooltip`, fallback);
 
 export const shopLabel = (id: string, fallback = id): string =>
     copy(`shop.${id}`, fallback);

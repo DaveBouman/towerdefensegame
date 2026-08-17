@@ -4,6 +4,7 @@ import { getCardDefinitionOrThrow, type CardTier } from '../cardGame/config/card
 import { getCardRewardWeight, scoreDeckArchetypes } from './deckArchetypes';
 import type { BodyModRewardPool } from './bodyMods';
 import type { RunMapNodeKind } from './nodeKinds';
+import rewardPools from './config/rewardPools.json';
 
 /**
  * Rewards granted for defeating an enemy. Kept as a discriminated union so new
@@ -132,88 +133,10 @@ export const PUZZLE_TRIAL_RULES: readonly string[] = [
 ];
 
 /** Base (unupgraded) cards eligible as battle rewards. */
-export const REWARD_CARD_POOL: readonly string[] = [
-    'attack',
-    'defend',
-    'attack-special',
-    'attack-leap',
-    'defend-special',
-    'defend-leap',
-    'joker',
-    'poison',
-    'fire',
-    'rupture',
-    'bulwark',
-    'surge',
-    'corner-strike',
-    'corner-defense',
-    'shiv',
-    'miasma',
-    'cinder',
-    'lacerate',
-    'switchback',
-    'phase-relay',
-    'phase-bulwark',
-    'scorch',
-    'bramble',
-    'neurotoxin',
-    'serration',
-    'kindling',
-    'black-ichor',
-    'exsanguinate',
-    'white-hot',
-    'citadel',
-    'execution',
-    'amp-core',
-    'glitch',
-    'hardwire',
-    'patch',
-    'overclock',
-    'echo',
-    'salvage',
-    'courier',
-];
+export const REWARD_CARD_POOL: readonly string[] = rewardPools.standard;
 
 /** Higher-tier pool for lieutenants — skips basic attack/defend fillers. */
-export const ELITE_REWARD_CARD_POOL: readonly string[] = [
-    'attack-special',
-    'attack-leap',
-    'defend-special',
-    'defend-leap',
-    'joker',
-    'poison',
-    'fire',
-    'rupture',
-    'bulwark',
-    'surge',
-    'corner-strike',
-    'corner-defense',
-    'shiv',
-    'miasma',
-    'cinder',
-    'lacerate',
-    'switchback',
-    'phase-relay',
-    'phase-bulwark',
-    'scorch',
-    'bramble',
-    'neurotoxin',
-    'serration',
-    'kindling',
-    'black-ichor',
-    'exsanguinate',
-    'white-hot',
-    'citadel',
-    'execution',
-    'amp-core',
-    'glitch',
-    'hardwire',
-    'patch',
-    'overclock',
-    'echo',
-    'salvage',
-    'courier',
-];
+export const ELITE_REWARD_CARD_POOL: readonly string[] = rewardPools.elite;
 
 const poolForId = (poolId: RewardPoolId = 'standard'): readonly string[] =>
     poolId === 'elite' ? ELITE_REWARD_CARD_POOL : REWARD_CARD_POOL;
@@ -252,9 +175,12 @@ export const rollCardReward = (
     deckOrOptions: readonly string[] | RollCardRewardOptions = [],
 ): string[] =>
 {
-    const options: RollCardRewardOptions = Array.isArray(deckOrOptions)
-        ? { deckDefinitionIds: deckOrOptions }
-        : deckOrOptions;
+    const options: RollCardRewardOptions =
+        typeof deckOrOptions === 'object'
+        && deckOrOptions !== null
+        && !Array.isArray(deckOrOptions)
+            ? deckOrOptions
+            : { deckDefinitionIds: deckOrOptions as readonly string[] };
     const deckDefinitionIds = options.deckDefinitionIds ?? [];
     const floor = options.floor ?? 1;
     const pool = [ ...poolForId(poolId) ];

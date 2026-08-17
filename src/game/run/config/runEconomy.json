@@ -1,0 +1,71 @@
+{
+  "shop": {
+    "prices": {
+      "card": 45,
+      "bodyMod": 80,
+      "heal": 35,
+      "removeCard": 50,
+      "rerouteCard": 40,
+      "upgradeCard": 60
+    },
+    "healAmount": 22
+  },
+  "routes": {
+    "hot": {
+      "enemyHealthMultiplier": 1.15,
+      "victoryGold": 12
+    },
+    "safe": {
+      "enemyHealthMultiplier": 0.9
+    }
+  },
+  "run": {
+    "healOnVictory": 12
+  },
+  "rest": {
+    "healFraction": 0.3
+  },
+  "bodyMods": {
+    "chromeHeart": { "maxHealthBonus": 10 },
+    "overclockCell": { "energyBonus": 1 },
+    "credSiphon": { "victoryGold": 8 },
+    "gatekeeperSeal": { "maxHealthBonus": 15, "energyBonus": 1 },
+    "markFive": { "interval": 5 },
+    "markSeven": { "interval": 7 },
+    "portsideGyro": { "damageMultiplier": 1.3 },
+    "reactivePlating": { "hitsBlocked": 2 },
+    "capacitorBank": { "defendInterval": 3, "attackMultiplier": 1.5 }
+  },
+  "events": {
+    "wheel": {
+      "spinCost": 5,
+      "segments": {
+        "gold20": { "gold": 20, "damage": 5 },
+        "gold35": { "gold": 35, "damage": 8 },
+        "heal": { "heal": 10, "goldCost": 10 },
+        "trap": { "damage": 5 }
+      }
+    },
+    "iconMatch": {
+      "gridSize": 16,
+      "cols": 4,
+      "attempts": 4,
+      "zeroPairsDamage": 6,
+      "goldPerPair": 4,
+      "taxPerPair": 2,
+      "midTier": { "goldCost": 12, "damage": 3 },
+      "highTier": { "goldBonus": 10 }
+    },
+    "fallback": {
+      "randomBodyModGold": 20,
+      "duplicateBodyMod": { "gold": 15, "damage": 5 }
+    }
+  },
+  "puzzles": {
+    "boostBasics": { "successGold": 18, "successTax": 18, "failDamage": 6 },
+    "tripleStrike": { "successGold": 20, "successTax": 20, "failDamage": 6 },
+    "loopingStrike": { "successGold": 22, "successTax": 22, "failDamage": 7 },
+    "fireAlternation": { "successGold": 25, "successTax": 25, "failDamage": 7 },
+    "ruptureBleed": { "successGold": 30, "successTax": 30, "failDamage": 8 }
+  }
+}

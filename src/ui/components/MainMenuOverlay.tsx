@@ -1,41 +1,35 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { emitRunSfx } from '../../game/audio/emitRunSfx';
 import {
     getAudioSettings,
-    setMasterVolume,
-    setMusicVolume,
-    setSfxMuted,
-    setSfxVolume,
     subscribeSfxSettings,
 } from '../../game/audio/gameAudio';
 import type { AudioSettings } from '../../game/audio/audioSettings';
 import {
     isDesktopShell,
     isDocumentFullscreen,
-    quitGame,
-    setGameFullscreen,
 } from '../../game/desktop/desktopBridge';
-import { poisonStatusName } from '../../game/copy/strings';
-import { GAME_ALPHA_NOTICE, GAME_BUILD_LABEL, GAME_TAGLINE, GAME_TITLE, GAME_VERSION } from '../../game/meta/gameMeta';
+import { GAME_BUILD_LABEL, GAME_VERSION } from '../../game/meta/gameMeta';
 import { getCollectionProgress } from '../../game/run/cardCollection';
 import { getBestiaryProgress } from '../../game/run/enemyBestiary';
 import { getBodyModBestiaryProgress } from '../../game/run/bodyModBestiary';
 import { createRandomSeed, normalizeSeed } from '../../game/random/rng';
-import { describeAscensionLevel, readRunAscensionLevel } from '../../game/run/ascension';
+import { readRunAscensionLevel } from '../../game/run/ascension';
 import {
-    TEXT_SCALE_SIZES,
     type TextScaleSize,
     readTextScale,
-    setTextScale,
 } from '../../game/ui/textScale';
 import { BestiaryOverlay } from './BestiaryOverlay';
 import { CardCollectionOverlay } from './CardCollectionOverlay';
 import { BodyModBestiaryOverlay } from './BodyModBestiaryOverlay';
 import { CyberPanelChrome } from './CyberPanel';
-import { BOARD_COL_LABELS, BOARD_ROW_LABELS } from '../../game/board/boardCoordinates';
-
-type MenuMode = 'boot' | 'pause';
-type MenuScreen = 'home' | 'archives' | 'settings' | 'how-to-play' | 'credits' | 'confirm-new-run';
+import { MainMenuArchives } from './mainMenu/MainMenuArchives';
+import { MainMenuCredits } from './mainMenu/MainMenuCredits';
+import { MainMenuHome } from './mainMenu/MainMenuHome';
+import { MainMenuHowToPlay } from './mainMenu/MainMenuHowToPlay';
+import { MainMenuSettings } from './mainMenu/MainMenuSettings';
+import { NewRunConfirm } from './mainMenu/NewRunConfirm';
+import type { MenuMode, MenuScreen } from './mainMenu/menuShared';
 
 interface MainMenuOverlayProps {
     mode?: MenuMode;
@@ -46,69 +40,6 @@ interface MainMenuOverlayProps {
     onNewRun?: (seed: string) => void;
     onReplayTutorial: () => void;
 }
-
-const percent = (value: number): number => Math.round(value * 100);
-
-const VolumeRow = ({
-    label,
-    value,
-    disabled,
-    onChange,
-}: {
-    label: string;
-    value: number;
-    disabled?: boolean;
-    onChange: (next: number) => void;
-}) => (
-    <label className="main-menu__volume-row">
-        <span className="main-menu__volume-label">{label}</span>
-        <input
-            className="main-menu__volume"
-            type="range"
-            min={0}
-            max={100}
-            step={1}
-            value={percent(value)}
-            disabled={disabled}
-            aria-label={`${label} volume`}
-            onChange={(event) => onChange(Number(event.target.value) / 100)}
-        />
-        <span className="main-menu__volume-value" aria-hidden="true">
-            {disabled ? '—' : `${percent(value)}%`}
-        </span>
-    </label>
-);
-
-const MenuSection = ({
-    label,
-    children,
-}: {
-    label: string;
-    children: ReactNode;
-}) => (
-    <div className="main-menu__section">
-        <p className="main-menu__section-label">{label}</p>
-        <div className="main-menu__section-actions">{children}</div>
-    </div>
-);
-
-const ProgressBadge = ({ unlocked, total }: { unlocked: number; total: number }) => (
-    <span className="main-menu__collection-count">{unlocked}/{total}</span>
-);
-
-const BackButton = ({ onClick }: { onClick: () => void }) => (
-    <button
-        type="button"
-        className="main-menu__nav-back"
-        onClick={() =>
-        {
-            emitRunSfx('ui-click', { volume: 0.66, rate: 0.94 });
-            onClick();
-        }}
-    >
-        ← Back
-    </button>
-);
 
 export const MainMenuOverlay = ({
     mode = 'boot',
@@ -255,18 +186,6 @@ export const MainMenuOverlay = ({
         setShowBodyModBestiary(true);
     };
 
-    const chooseTextScale = (size: TextScaleSize): void =>
-    {
-        if (size === textScale)
-        {
-            return;
-        }
-
-        emitRunSfx('ui-click', { volume: 0.64, rate: 1.06 });
-        setTextScale(size);
-        setTextScaleState(size);
-    };
-
     const randomizeDraftSeed = (): void =>
     {
         emitRunSfx('ui-click', { volume: 0.62, rate: 1.1 });
@@ -288,128 +207,6 @@ export const MainMenuOverlay = ({
         openHome();
     };
 
-    const renderQuitButton = (): ReactNode => (
-        <button
-            type="button"
-            className="main-menu__quit"
-            onClick={() =>
-            {
-                emitRunSfx('ui-click', { volume: 0.6, rate: 0.85 });
-                quitGame();
-            }}
-            title={desktop ? 'Quit to desktop' : 'Close window'}
-        >
-            Quit
-        </button>
-    );
-
-    const renderArchivesHub = (): ReactNode => (
-        <>
-            <BackButton onClick={backFromSubscreen} />
-            <p className="main-menu__eyebrow">Data vault</p>
-            <h2 className="main-menu__screen-title">Archives</h2>
-            <p className="main-menu__tagline main-menu__tagline--screen">
-                Unlocked entries persist across runs.
-            </p>
-            <div className="main-menu__actions">
-                <button
-                    type="button"
-                    className="main-menu__secondary"
-                    onClick={openCollection}
-                >
-                    Card index
-                    <ProgressBadge unlocked={progress.unlocked} total={progress.total} />
-                </button>
-                <button
-                    type="button"
-                    className="main-menu__secondary"
-                    onClick={openBestiary}
-                >
-                    Bestiary
-                    <ProgressBadge unlocked={bestiaryProgress.unlocked} total={bestiaryProgress.total} />
-                </button>
-                <button
-                    type="button"
-                    className="main-menu__secondary"
-                    onClick={openBodyModBestiary}
-                >
-                    Body mods
-                    <ProgressBadge unlocked={bodyModProgress.unlocked} total={bodyModProgress.total} />
-                </button>
-            </div>
-        </>
-    );
-
-    const renderHomeActions = (): ReactNode => (
-        <>
-            <MenuSection label="Run">
-                {pause ? (
-                    <>
-                        <button type="button" className="main-menu__start" onClick={resumeRun}>
-                            Resume
-                        </button>
-                        <button
-                            type="button"
-                            className="main-menu__secondary"
-                            onClick={openNewRunConfirm}
-                        >
-                            New run
-                        </button>
-                    </>
-                ) : (
-                    <button type="button" className="main-menu__start" onClick={openNewRunConfirm}>
-                        Start run
-                    </button>
-                )}
-            </MenuSection>
-
-            <MenuSection label="Archives">
-                <button
-                    type="button"
-                    className="main-menu__secondary"
-                    onClick={openArchives}
-                >
-                    Browse archives
-                    <ProgressBadge
-                        unlocked={progress.unlocked + bestiaryProgress.unlocked + bodyModProgress.unlocked}
-                        total={progress.total + bestiaryProgress.total + bodyModProgress.total}
-                    />
-                </button>
-            </MenuSection>
-
-            <MenuSection label="Help">
-                <button
-                    type="button"
-                    className="main-menu__secondary"
-                    onClick={() => openScreen('how-to-play')}
-                >
-                    How to play
-                </button>
-                <button
-                    type="button"
-                    className="main-menu__secondary"
-                    onClick={() => openScreen('credits')}
-                >
-                    Credits
-                </button>
-            </MenuSection>
-
-            <MenuSection label="System">
-                <button
-                    type="button"
-                    className="main-menu__secondary"
-                    onClick={() => openScreen('settings')}
-                >
-                    Settings
-                </button>
-            </MenuSection>
-
-            <div className="main-menu__actions main-menu__actions--footer">
-                {renderQuitButton()}
-            </div>
-        </>
-    );
-
     return (
         <>
             <div className={`main-menu${pause ? ' main-menu--pause' : ''}`}>
@@ -418,290 +215,68 @@ export const MainMenuOverlay = ({
                 <div className="main-menu__panel cp-panel cp-panel--cyan">
                     <CyberPanelChrome variant="cyan" />
 
-                    {screen === 'home' && !pause && (
-                        <>
-                            <p className="main-menu__eyebrow">{GAME_TAGLINE}</p>
-                            <h1 className="main-menu__brand">{GAME_TITLE}</h1>
-                            <p className="main-menu__alpha" role="note">
-                                <span className="main-menu__alpha-badge">{GAME_BUILD_LABEL}</span>
-                                {GAME_ALPHA_NOTICE}
-                            </p>
-                            <p className="main-menu__tagline">
-                                Link the grid, outlast the street, and cut down the Warden.
-                            </p>
-
-                            <div className="main-menu__actions">{renderHomeActions()}</div>
-                        </>
+                    {screen === 'home' && (
+                        <MainMenuHome
+                            pause={pause}
+                            progress={progress}
+                            bestiaryProgress={bestiaryProgress}
+                            bodyModProgress={bodyModProgress}
+                            onResume={resumeRun}
+                            onNewRunConfirm={openNewRunConfirm}
+                            onOpenArchives={openArchives}
+                            onOpenHowToPlay={() => openScreen('how-to-play')}
+                            onOpenCredits={() => openScreen('credits')}
+                            onOpenSettings={() => openScreen('settings')}
+                        />
                     )}
 
-                    {screen === 'home' && pause && (
-                        <>
-                            <p className="main-menu__eyebrow">Paused</p>
-                            <h1 className="main-menu__brand main-menu__brand--pause">{GAME_TITLE}</h1>
-                            <p className="main-menu__tagline">
-                                Adjust settings, inspect archives, or abandon this run.
-                            </p>
-
-                            <div className="main-menu__actions">{renderHomeActions()}</div>
-                        </>
+                    {screen === 'archives' && (
+                        <MainMenuArchives
+                            progress={progress}
+                            bestiaryProgress={bestiaryProgress}
+                            bodyModProgress={bodyModProgress}
+                            onBack={backFromSubscreen}
+                            onOpenCollection={openCollection}
+                            onOpenBestiary={openBestiary}
+                            onOpenBodyModBestiary={openBodyModBestiary}
+                        />
                     )}
-
-                    {screen === 'archives' && renderArchivesHub()}
 
                     {screen === 'confirm-new-run' && (
-                        <>
-                            <BackButton onClick={openHome} />
-                            <p className="main-menu__eyebrow">{pause ? 'Confirm' : 'Jack in'}</p>
-                            <h2 className="main-menu__screen-title">
-                                {pause ? 'Start a new run?' : 'Start run'}
-                            </h2>
-                            {pause && (
-                                <p className="main-menu__confirm-copy">
-                                    This abandons your current progress. The map, deck, and HP will reset.
-                                </p>
-                            )}
-                            <label className="main-menu__field main-menu__field--seed">
-                                <span className="main-menu__field-label">Run seed</span>
-                                <span className="main-menu__seed-row">
-                                    <input
-                                        className="main-menu__seed-input"
-                                        value={draftSeed}
-                                        maxLength={12}
-                                        spellCheck={false}
-                                        aria-label="Run seed"
-                                        onChange={(event) => setDraftSeed(event.target.value)}
-                                    />
-                                    <button
-                                        type="button"
-                                        className="main-menu__seed-random"
-                                        title="Random seed"
-                                        aria-label="Random seed"
-                                        onClick={randomizeDraftSeed}
-                                    >
-                                        &#x21bb;
-                                    </button>
-                                </span>
-                            </label>
-                            {ascensionLevel > 0 && (
-                                <div className="main-menu__field">
-                                    <span className="main-menu__field-label">Ascension</span>
-                                    <p className="main-menu__seed-readonly" aria-label="Ascension level">
-                                        {describeAscensionLevel(ascensionLevel)}
-                                    </p>
-                                    <p className="main-menu__hint main-menu__field-hint--muted">
-                                        Clear the Warden to unlock the next tier.
-                                    </p>
-                                </div>
-                            )}
-                            <div className="main-menu__actions">
-                                <button
-                                    type="button"
-                                    className={`main-menu__start${pause ? ' main-menu__start--danger' : ''}`}
-                                    onClick={confirmNewRun}
-                                >
-                                    {pause ? 'Yes, new run' : 'Start run'}
-                                </button>
-                                <button
-                                    type="button"
-                                    className="main-menu__secondary"
-                                    onClick={() => openScreen('home')}
-                                >
-                                    {pause ? 'Keep current run' : 'Back'}
-                                </button>
-                            </div>
-                        </>
+                        <NewRunConfirm
+                            pause={pause}
+                            draftSeed={draftSeed}
+                            ascensionLevel={ascensionLevel}
+                            onBack={openHome}
+                            onDraftSeedChange={setDraftSeed}
+                            onRandomizeSeed={randomizeDraftSeed}
+                            onConfirm={confirmNewRun}
+                            onCancel={() => openScreen('home')}
+                        />
                     )}
 
                     {screen === 'settings' && (
-                        <>
-                            <BackButton onClick={openHome} />
-                            <p className="main-menu__eyebrow">Options</p>
-                            <h2 className="main-menu__screen-title">Settings</h2>
-
-                            <div className="main-menu__settings">
-                                {pause && (
-                                    <div className="main-menu__field">
-                                        <span className="main-menu__field-label">Current seed</span>
-                                        <p className="main-menu__seed-readonly" aria-label="Current run seed">
-                                            {seed}
-                                        </p>
-                                        <p className="main-menu__hint">
-                                            To play a different seed, use New run.
-                                        </p>
-                                    </div>
-                                )}
-
-                                <div className="main-menu__field">
-                                    <span className="main-menu__field-label">Audio</span>
-                                    <div className="main-menu__audio-panel">
-                                        <button
-                                            type="button"
-                                            className={`main-menu__mute${audio.muted ? ' main-menu__mute--on' : ''}`}
-                                            aria-pressed={audio.muted}
-                                            onClick={() =>
-                                            {
-                                                emitRunSfx('ui-click', { volume: 0.7 });
-                                                setSfxMuted(!audio.muted);
-                                            }}
-                                        >
-                                            {audio.muted ? 'Muted' : 'Audio on'}
-                                        </button>
-                                        <VolumeRow
-                                            label="Master"
-                                            value={audio.masterVolume}
-                                            disabled={audio.muted}
-                                            onChange={setMasterVolume}
-                                        />
-                                        <VolumeRow
-                                            label="Music"
-                                            value={audio.musicVolume}
-                                            disabled={audio.muted}
-                                            onChange={setMusicVolume}
-                                        />
-                                        <VolumeRow
-                                            label="SFX"
-                                            value={audio.sfxVolume}
-                                            disabled={audio.muted}
-                                            onChange={setSfxVolume}
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="main-menu__field">
-                                    <span className="main-menu__field-label">Display</span>
-                                    <div className="main-menu__display-panel">
-                                        <span className="main-menu__sublabel">Text size</span>
-                                        <div
-                                            className="main-menu__size-row"
-                                            role="radiogroup"
-                                            aria-label="Text size"
-                                        >
-                                            {TEXT_SCALE_SIZES.map((size) => (
-                                                <button
-                                                    key={size}
-                                                    type="button"
-                                                    role="radio"
-                                                    aria-checked={textScale === size}
-                                                    className={`main-menu__size-option${textScale === size ? ' main-menu__size-option--active' : ''}`}
-                                                    onClick={() => chooseTextScale(size)}
-                                                >
-                                                    {size === 'small' ? 'Small' : size === 'medium' ? 'Medium' : 'Large'}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            className={`main-menu__toggle${fullscreen ? ' main-menu__toggle--on' : ''}`}
-                                            aria-pressed={fullscreen}
-                                            onClick={() =>
-                                            {
-                                                emitRunSfx('ui-click', { volume: 0.68 });
-                                                void setGameFullscreen(!fullscreen).then(() =>
-                                                {
-                                                    setFullscreen(isDocumentFullscreen());
-                                                });
-                                            }}
-                                        >
-                                            {fullscreen ? 'Fullscreen on' : 'Fullscreen off'}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="main-menu__field">
-                                    <span className="main-menu__field-label">Teaching</span>
-                                    <button
-                                        type="button"
-                                        className="main-menu__secondary"
-                                        onClick={() =>
-                                        {
-                                            emitRunSfx('ui-select', { volume: 0.72 });
-                                            onReplayTutorial();
-                                            setTutorialArmed(true);
-                                        }}
-                                    >
-                                        Replay first-run tips
-                                    </button>
-                                    {tutorialArmed && (
-                                        <p className="main-menu__hint">
-                                            Tips will show again when you start the next run.
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        </>
+                        <MainMenuSettings
+                            pause={pause}
+                            seed={seed}
+                            audio={audio}
+                            fullscreen={fullscreen}
+                            textScale={textScale}
+                            tutorialArmed={tutorialArmed}
+                            onBack={openHome}
+                            onFullscreenChange={setFullscreen}
+                            onTextScaleChange={setTextScaleState}
+                            onTutorialArmed={() => setTutorialArmed(true)}
+                            onReplayTutorial={onReplayTutorial}
+                        />
                     )}
 
                     {screen === 'how-to-play' && (
-                        <>
-                            <BackButton onClick={openHome} />
-                            <p className="main-menu__eyebrow">Field manual</p>
-                            <h2 className="main-menu__screen-title">How to play</h2>
-                            <div className="main-menu__grid-legend" aria-hidden="true">
-                                <div className="main-menu__grid-legend-frame">
-                                    <span className="main-menu__grid-legend-corner" />
-                                    {BOARD_COL_LABELS.map((col, colIndex) => (
-                                        <span
-                                            key={`col-${col}`}
-                                            className={`main-menu__grid-legend-axis main-menu__grid-legend-axis--col${colIndex === 0 ? ' main-menu__grid-legend-axis--start' : ''}`}
-                                        >
-                                            {col}
-                                        </span>
-                                    ))}
-                                    {BOARD_ROW_LABELS.map((rowLabel, row) => (
-                                        <div key={`row-${rowLabel}`} className="main-menu__grid-legend-row">
-                                            <span className="main-menu__grid-legend-axis main-menu__grid-legend-axis--row">
-                                                {rowLabel}
-                                            </span>
-                                            {BOARD_COL_LABELS.map((col, colIndex) => (
-                                                <span
-                                                    key={`${rowLabel}-${col}`}
-                                                    className={`main-menu__grid-legend-cell${colIndex === 0 ? ' main-menu__grid-legend-cell--start' : ''}`}
-                                                />
-                                            ))}
-                                        </div>
-                                    ))}
-                                </div>
-                                <p className="main-menu__grid-legend-caption">
-                                    Columns <strong>0–4</strong> across, rows <strong>A–E</strong> down
-                                    (letters stand vertical). Chain start locks to column <strong>0</strong>.
-                                    During an attack the live cell’s letter and number light up.
-                                </p>
-                            </div>
-                            <ol className="main-menu__manual">
-                                <li>Place cards on the 5×5 grid so their arrows form a chain.</li>
-                                <li>Click a column-0 tile to set chain start, then press Attack.</li>
-                                <li>Starter seeds teach combos: Fire alternation, {poisonStatusName()}→Defends, Rupture bleed, Bulwark fortify, Surge overload.</li>
-                                <li>Echo repeats the previous card; Reroute steers mid-chain.</li>
-                                <li>Attack and defense cards off the chain still grant small bonuses.</li>
-                                <li>Each Attack spends energy. After each enemy response they overclock (+attack). When empty, the board clears for a new round.</li>
-                                <li>Pick map nodes to fight, shop, rest, or jack into signals — HP carries over.</li>
-                                <li>In multi-enemy fights, click a host to lock your target.</li>
-                            </ol>
-                        </>
+                        <MainMenuHowToPlay onBack={openHome} />
                     )}
 
                     {screen === 'credits' && (
-                        <>
-                            <BackButton onClick={openHome} />
-                            <p className="main-menu__eyebrow">Transmission</p>
-                            <h2 className="main-menu__screen-title">Credits</h2>
-                            <div className="main-menu__credits">
-                                <p>
-                                    Temporary art (to be replaced):
-                                </p>
-                                <p>
-                                    UI icons — Craftpix free cyberpunk icon packs
-                                    (craftpix-net-172155, craftpix-net-507528).
-                                </p>
-                                <p>
-                                    Enemy portraits — Craftpix free cyberpunk avatar packs
-                                    (craftpix-net-108089, craftpix-net-969033).
-                                </p>
-                                <p className="main-menu__hint">
-                                    License: <a href="https://craftpix.net/file-licenses/" target="_blank" rel="noreferrer">craftpix.net/file-licenses</a>
-                                </p>
-                            </div>
-                        </>
+                        <MainMenuCredits onBack={openHome} />
                     )}
 
                     <p className="main-menu__version">

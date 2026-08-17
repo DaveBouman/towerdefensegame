@@ -1,11 +1,17 @@
 import { getCardGameEnemyDefinition } from '../cardGame/config/enemyCatalog';
+import { copy } from '../copy/strings';
 import type { RunMapNode } from './runMap';
 import { NODE_KIND_INFO } from './nodeKinds';
+import { HOT_ROUTE_VICTORY_GOLD } from './routeModifiers';
 
-const ROUTE_LABELS: Record<string, string> = {
-    hot: 'Hot route — harder fight, +12 creds on win',
-    safe: 'Safe route — lighter opposition',
-    standard: 'Standard route',
+const routeLabel = (routeKind: string): string =>
+{
+    if (routeKind === 'hot')
+    {
+        return `Hot route — harder fight, +${HOT_ROUTE_VICTORY_GOLD} creds on win`;
+    }
+
+    return copy(`route.${routeKind}`, 'Standard route');
 };
 
 /** Enemy ids whose names are shown on the map instead of the generic node-kind label. */
@@ -35,7 +41,7 @@ export const getMapNodeDisplay = (node: RunMapNode): MapNodeDisplay =>
     }
 
     const routeHint = node.routeKind && node.routeKind !== 'standard'
-        ? ROUTE_LABELS[node.routeKind]
+        ? routeLabel(node.routeKind)
         : undefined;
 
     return {

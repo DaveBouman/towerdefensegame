@@ -9,8 +9,8 @@ import {
     type RunDeckCard,
     type RunDeckEntry,
 } from '../../game/run/runDeck';
-import { CardChip } from './CardChip';
 import { CardDirectionPicker } from './CardDirectionPicker';
+import { DeckCardPicker } from './DeckCardPicker';
 import { NodeKindIcon } from './NodeKindIcon';
 import { ModalShell } from './CyberPanel';
 
@@ -30,9 +30,6 @@ interface ShopOverlayProps {
 }
 
 type ShopPickMode = 'remove' | 'upgrade' | 'reroute' | 'card-direction';
-
-const entryKey = (entry: RunDeckEntry): string =>
-    `${entry.definitionId}:${entry.arrow ?? ''}:${entry.loopArrow ?? ''}`;
 
 /**
  * Ripperdoc shop — buy cards (with direction pick), body mods, heal, reroute, remove, upgrade.
@@ -240,39 +237,14 @@ export const ShopOverlay = ({
                 : 'Choose a card to upgrade';
 
         return (
-            <ModalShell
-                variant="gold"
-                rootClassName="shop-overlay shop-overlay--enter"
-                panelClassName="shop-overlay__panel"
-            >
-                <p className="shop-overlay__eyebrow">Ripperdoc</p>
-                <h1 className="shop-overlay__title">{pickTitle}</h1>
-                <p className="shop-overlay__subtitle">
-                    Costs {activeOffer.price} creds. {picking === 'remove' ? 'This cannot be undone.' : ''}
-                </p>
-                <div className="shop-overlay__deck-strip">
-                    {entries.map((entry) => (
-                        <button
-                            key={entryKey(entry)}
-                            type="button"
-                            className="shop-overlay__deck-pick"
-                            onClick={() => confirmEntryPick(entry)}
-                        >
-                            <CardChip
-                                definitionId={entry.definitionId}
-                                label={entry.label}
-                                arrow={entry.arrow}
-                                loopArrow={entry.loopArrow}
-                                countBadge={entry.count}
-                                size="pile"
-                            />
-                        </button>
-                    ))}
-                </div>
-                <button type="button" className="shop-overlay__continue" onClick={resetPick}>
-                    Cancel
-                </button>
-            </ModalShell>
+            <DeckCardPicker
+                eyebrow="Ripperdoc"
+                title={pickTitle}
+                subtitle={`Costs ${activeOffer.price} creds. ${picking === 'remove' ? 'This cannot be undone.' : ''}`}
+                entries={entries}
+                onPick={(entry) => confirmEntryPick(entry as RunDeckEntry)}
+                onCancel={resetPick}
+            />
         );
     }
 

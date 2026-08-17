@@ -9,7 +9,8 @@ import type { ArmorView } from '../board/ArmorView';
 import type { CardPileView } from '../board/CardPileView';
 import type { BattlefieldBackgroundView } from '../board/BattlefieldBackgroundView';
 import { destroyGameTooltipController } from '../cardGame/presentation/tooltips/GameTooltipController';
-import { CardGameEventBus, CARD_GAME_EVENTS } from '../cardGame/events/cardGameEvents';
+import { CARD_GAME_EVENTS } from '../cardGame/events/cardGameEvents';
+import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
 
 /** Mutable battle view/session handles owned by the Phaser Game scene. */
 export interface GameBattleViewBundle {

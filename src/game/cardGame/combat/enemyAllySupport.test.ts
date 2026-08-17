@@ -29,12 +29,19 @@ describe('enemyAllySupport', () =>
         const steps = planAllySupportSteps(
             fieldMedic,
             [ fieldMedic, raiderA, raiderB ],
-            getCardGameEnemyDefinitionOrThrow('field-medic').allyActions ?? [],
+            [
+                {
+                    kind: 'heal-ally',
+                    amount: 14,
+                    chance: 1,
+                    target: 'lowest-health',
+                },
+            ],
         );
 
-        expect(steps.length).toBeGreaterThanOrEqual(1);
-        expect(steps[0]?.kind).toBe('heal-ally');
-        expect(steps[0]?.targetInstanceId).toBe('enemy-a');
+        expect(steps).toEqual([
+            { kind: 'heal-ally', amount: 14, targetInstanceId: 'enemy-a' },
+        ]);
     });
 
     it('inserts ally steps after the combat step', () =>

@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-08-13
+**Last updated:** 2026-08-17
 
 ---
 
@@ -59,8 +59,9 @@ Helpers: `getFloorForColumn`, `getFloorColumnRange`, `RUN_CONFIG.floorCount` in 
   (`rest` nodes): rest for 30% max integrity or free-upgrade one card (`RestOverlay`, `restSite.ts`).
   **Signal nodes** resolve on visit (`signalEncounter.ts`):
   first jack-in is always an encounter; each prior signal raises ambush chance into a regular street fight.
-  Encounters roll from `runEvents.ts` — wheel, matcher, combo trials, stasis patches, gambles, body mods,
+  Encounters roll from `runEventDefinitions.ts` / `applyRunEventEffects.ts` (`runEvents.ts` barrel) — wheel, matcher, combo trials, stasis patches, gambles, body mods,
   dead drops, malware spikes, wire rats, and more. Map always shows the generic **Signal** label until you arrive.
+- **Economy numbers** live in `src/game/run/config/runEconomy.json` (shop prices, route bonuses, rest heal, body-mod knobs, wheel/matcher/puzzle payouts). Card reward pools: `rewardPools.json`. Lieutenant/warden body-mod pools: `bodyModPools.json`.
 - **Ripperdoc shop** (`ShopOverlay`, `shop.ts`): seeded offers (`seedScope(seed, shop:<nodeId>)`) — buy a card, body mod, Integrity heal, or remove a card from the run deck. Spend creds; leave without buying is always available.
 - **HP carries over** between fights, with a small heal on each victory (`RUN_CONFIG.healOnVictory`).
 - **Deck persists and grows**: the run owns the deck as a list of card definition ids (`getDefaultDeckDefinitionIds`). Each battle builds instances from those ids (`buildDeckFromDefinitionIds`).
@@ -160,13 +161,13 @@ it waits for `START_BATTLE`, builds a battle, and emits `BATTLE_WON` / `BATTLE_L
 | Run controller | `src/runController/useRunController.ts` | Map/battle/end phases, carry-over HP, node picks |
 | Run UI shell | `src/App.tsx`, `src/ui/components/RunPhaseScreens.tsx` | Thin React shell + phase overlay mounting |
 | Run map | `src/game/run/runMap.ts` | Graph generation, reachability, run config |
-| Session | `src/game/cardGame/domain/CardGameSession.ts` | Turn flow / combat orchestration facade (delegates to DeckHand, FieldEffects, CombatResolver, EnemyPhaseController, BoardEditController, EnemyOverclockTracker) |
+| Session | `src/game/cardGame/domain/CardGameSession.ts` | Turn flow / combat orchestration facade (delegates to DeckHand, FieldEffects, CombatResolver, EnemyPhaseController, BoardEditController, EnemyOverclockTracker, EnemySquadManager, EnergyRoundController, HandRedirectController) |
 | Deck / hand | `src/game/cardGame/domain/DeckHand.ts` | Draw pile, hand, discard, rerolls |
 | Board edits | `src/game/cardGame/domain/BoardEditController.ts` | Place / remove / move / swap while combat is idle |
 | Field effects | `src/game/cardGame/domain/FieldEffects.ts` | Dampen field, silenced/bomb slots, hazard/boost placement |
 | Combat | `src/game/cardGame/domain/CombatResolver.ts` | Attack damage, player damage, shields, rad |
 | Enemy phase | `src/game/cardGame/domain/EnemyPhaseController.ts` | Enemy turn queue, phase prep, telegraph ramp |
-| Combat | `src/game/cardGame/combat/AttackPipeline.ts` | Chain resolution, type streaks, off-chain bonus |
+| Combat | `src/game/cardGame/combat/AttackPipeline.ts` (barrel) | Chain plan/resolve — delegates to `chainPathfinding`, `bombConversion`, `chainResolve`, `attackSequence` |
 | Enemy AI | `src/game/cardGame/combat/enemyTurn.ts` | Intent, attack/shield, hazard placement |
 | Passives | `src/game/cardGame/enemyPassives/` | Per-enemy counter-play |
 | Config | `src/game/cardGame/config/` | `gameRules.json`, `cards.json`, `enemies.json` |
@@ -363,6 +364,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | 2026-08-13 | **Fight overclock.** After each enemy response, enemies gain +4 attack for the rest of the fight (`enemyStrengthPerTurn`). Chip shows current › next from the opening (+0›+4). First hit is baseline; a second energy round already sits at +12. |
 | 2026-08-13 | **Enemy HP variance.** `enemies.json` `maxHealth` is a median. Each fight (and mid-battle spawn) rolls integrity ±10% via the seeded RNG (`enemyHealthVariance`). Bestiary shows the range. |
 | 2026-08-13 | **Copy catalog.** Player-facing labels live in `src/game/copy/strings.ts` — cards, enemies, body mods, map nodes, shop services, archetypes, passives, traits, and intents. JSON `label` fields are fallbacks; catalog wins. Swap `EN` when adding locales. |
+| 2026-08-17 | **Session/scene depth peels.** `CardGameSession` delegates squad/targeting to `EnemySquadManager`, energy/round refresh to `EnergyRoundController`, and Signal Twist to `HandRedirectController`. `Game.ts` attack resolve, board/hand drops, and pile/HUD sync live in `battleAttackFlow.ts` / `battleInputHandlers.ts` / `battleUiSync.ts`. |
+| 2026-08-17 | **Should-do / nice-later refactors.** Run economy data-driven (`runEconomy.json`). Events split into `runEventTypes` / `runEventDefinitions` / `applyRunEventEffects` (`runEvents.ts` barrel). Explicit `add-random-card` / `add-random-body-mod` / `open-random-puzzle` effect kinds (no `__random__` sentinels). Reward + body-mod pools in JSON. `AttackPipeline` peeled into pathfinding / bomb / resolve / sequence modules. Shared `DeckCardPicker` for shop + rest. Shop tooltip stale copy fixed. Node tooltips + route labels in `strings.ts`. Main menu screens under `ui/components/mainMenu/`. |
 | 2026-08-17 | **Must-fix refactors.** Event results use `RunDeckCard[]` end-to-end (no string/object deck mix). Pure shop purchase + finish-event planners extracted from `useRunController`. Enemy overclock/ramp peeled into `enemyOverclock.ts`. Battle view teardown moved to `gameBattleViews.ts`. |
 | 2026-08-17 | **Event card chips.** Signal choices that add a known card (e.g. Dead Drop → Fuse) show a `CardChip` preview; result messages include the card too. Puzzle briefs also render trial cards as chips instead of text-only lists. |
 | 2026-08-17 | **Route map motion.** Pick-your-route field gets a drifting grid + scan glow; nodes stagger in; choosable nodes ping with staggered delays; current node beacons; Hot/Safe choices show floating badges and tinted rings. Opening edges also animate when the run starts. |

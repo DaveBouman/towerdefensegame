@@ -11,6 +11,7 @@ import {
     expandRolledEnemy,
     maybeAppendFieldMedic,
 } from './battleEncounterRoll';
+import { RUN_ECONOMY } from './config/runEconomy';
 
 /** Path risk label — hot routes hit harder but pay bonus creds. */
 export type RouteKind = 'standard' | 'hot' | 'safe';
@@ -56,7 +57,7 @@ export interface RunMap {
 
 export const RUN_CONFIG = {
     /** Health restored after each victory (before carrying into the next fight). */
-    healOnVictory: 12,
+    healOnVictory: RUN_ECONOMY.run.healOnVictory,
     /** Map columns between the first fight and the boss (exclusive of both). */
     middleColumns: 9,
     /** Zero-based column index that always rolls a semi-boss fight (4th column). */

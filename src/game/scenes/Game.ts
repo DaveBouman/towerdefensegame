@@ -3,7 +3,6 @@ import { BattlefieldBackgroundView } from '../board/BattlefieldBackgroundView';
 import { MapBackgroundView } from '../board/MapBackgroundView';
 import { ArmorView } from '../board/ArmorView';
 import { CardBoardView } from '../board/CardBoardView';
-import { boardRowLabel } from '../board/boardCoordinates';
 import { CardHandView } from '../board/CardHandView';
 import { CardPileView } from '../board/CardPileView';
 import { EnemySquadView } from '../board/EnemySquadView';
@@ -12,12 +11,9 @@ import { PlayerHealthView } from '../board/PlayerHealthView';
 import { CardGameSession } from '../cardGame/domain/CardGameSession';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
 import type { SlotPosition } from '../cardGame/domain/types';
-import { destroyGameTooltipController } from '../cardGame/presentation/tooltips/GameTooltipController';
 import { preloadEnemyPassiveIcons } from '../cardGame/presentation/icons/preloadEnemyPassiveIcons';
 import { preloadEnemyPortraits } from '../cardGame/presentation/icons/preloadEnemyPortraits';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
-import { resolveEnemyPhasePlayback } from '../cardGame/presentation/playback/enemyPhasePlayback';
-import { playFloatingText } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import { CardGameEventBus } from '../cardGame/events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../cardGame/events/cardGameEvents';
 import { EventBus } from '../EventBus';
@@ -27,7 +23,6 @@ import { getRunPuzzle } from '../run/runPuzzles';
 import { getAscensionEnemyHealthMultiplier } from '../run/ascension';
 import { getRouteEnemyHealthMultiplier } from '../run/routeModifiers';
 import type { PuzzleModeConfig } from '../cardGame/domain/CardGameSession';
-import { unlockEnemies } from '../run/enemyBestiary';
 import {
     bindGameAudioListeners,
     resetBattleAudioState,
@@ -45,11 +40,32 @@ import {
     preloadBgm,
     unbindGameBgmScene,
 } from '../audio/gameBgm';
+import {
+    handleAttack,
+    handleEndTurn,
+    type BattleAttackFlowDeps,
+} from './battleAttackFlow';
+import {
+    handleBoardCardDropped,
+    handleCardDropped,
+    handleRerollBegin,
+    handleRerollCancel,
+    handleRerollConfirm,
+    type RerollHandlerDeps,
+} from './battleInputHandlers';
+import {
+    emitAttackReadiness,
+    emitRerollState,
+    handleCombatantsChanged,
+    handlePilesChanged,
+    syncBattleModifierLayout,
+    syncBoardFromSession,
+    syncPileClickHandlers,
+    syncPileViews,
+    type BattleUiSyncDeps,
+} from './battleUiSync';
 import { destroyBattleViews } from './gameBattleViews';
 import { BlendModes, Scene } from 'phaser';
-
-const sameSlot = (a: SlotPosition, b: SlotPosition): boolean =>
-    a.row === b.row && a.col === b.col;
 
 export class Game extends Scene
 {
@@ -161,31 +177,79 @@ export class Game extends Scene
         this.syncPileClickHandlers();
     };
 
+    private battleUiSyncDeps (): BattleUiSyncDeps
+    {
+        return {
+            session: this.session,
+            presenter: this.presenter,
+            boardView: this.boardView,
+            handView: this.handView,
+            enemySquad: this.enemySquad,
+            playerView: this.playerView,
+            battleModifierView: this.battleModifierView,
+            deckView: this.deckView,
+            graveyardView: this.graveyardView,
+            layout: this.layout,
+            rerollModeActive: this.rerollModeActive,
+        };
+    }
+
+    private battleAttackFlowDeps (): BattleAttackFlowDeps
+    {
+        return {
+            session: this.session,
+            presenter: this.presenter,
+            boardView: this.boardView,
+            handView: this.handView,
+            enemySquad: this.enemySquad,
+            playerView: this.playerView,
+            armorView: this.armorView,
+            graveyardView: this.graveyardView,
+            getRerollModeActive: () => this.rerollModeActive,
+            cancelReroll: () => this.onRerollCancel(),
+            emitAttackReadiness: () => this.emitAttackReadiness(),
+            syncPileViews: () => this.syncPileViews(),
+            syncBoardFromSession: () => this.syncBoardFromSession(),
+            syncLowHpVignette: () => this.syncLowHpVignette(),
+            getActivePuzzleId: () => this.activePuzzleId,
+            delayCall: (ms, callback) =>
+            {
+                this.time.delayedCall(ms, callback);
+            },
+            endBattle: () => this.endBattle(),
+            winBattle: () => this.winBattle(),
+            loseBattle: () => this.loseBattle(),
+        };
+    }
+
+    private rerollHandlerDeps (): RerollHandlerDeps
+    {
+        return {
+            session: this.session,
+            handView: this.handView,
+            setRerollModeActive: (active) =>
+            {
+                this.rerollModeActive = active;
+            },
+            emitRerollState: (selectedCount) => this.emitRerollState(selectedCount),
+            emitAttackReadiness: () => this.emitAttackReadiness(),
+            syncPileViews: () => this.syncPileViews(),
+        };
+    }
+
     private syncPileClickHandlers (): void
     {
-        if (this.pileInspectionBlocked)
-        {
-            this.deckView?.setClickHandler(null);
-            this.graveyardView?.setClickHandler(null);
-
-            return;
-        }
-
-        this.deckView?.setClickHandler(() => this.openPileView('deck'));
-        this.graveyardView?.setClickHandler(() => this.openPileView('graveyard'));
-    };
+        syncPileClickHandlers({
+            pileInspectionBlocked: this.pileInspectionBlocked,
+            deckView: this.deckView,
+            graveyardView: this.graveyardView,
+            openPileView: (kind) => this.openPileView(kind),
+        });
+    }
 
     private syncBattleModifierLayout (): void
     {
-        if (!this.battleModifierView || !this.layout || !this.playerView || !this.enemySquad)
-        {
-            return;
-        }
-
-        this.battleModifierView.setAnchors({
-            getPlayerBottomY: () => this.playerView!.getStatusChromeBottomWorldY(),
-            getEnemyBottomY: () => this.enemySquad!.getMaxStatusChromeBottomWorldY(),
-        });
+        syncBattleModifierLayout(this.battleUiSyncDeps());
     };
 
     private onStartBattle = (
@@ -517,7 +581,34 @@ export class Game extends Scene
 
     private endBattle (): void
     {
-        destroyBattleViews(this);
+        destroyBattleViews({
+            session: this.session,
+            presenter: this.presenter,
+            boardView: this.boardView,
+            handView: this.handView,
+            enemySquad: this.enemySquad,
+            playerView: this.playerView,
+            battleModifierView: this.battleModifierView,
+            armorView: this.armorView,
+            deckView: this.deckView,
+            graveyardView: this.graveyardView,
+            battlefieldBackground: this.battlefieldBackground,
+            lowHpVignette: this.lowHpVignette,
+            phaseShiftHandler: this.phaseShiftHandler,
+        });
+        this.session = undefined;
+        this.presenter = undefined;
+        this.boardView = undefined;
+        this.handView = undefined;
+        this.enemySquad = undefined;
+        this.playerView = undefined;
+        this.battleModifierView = undefined;
+        this.armorView = undefined;
+        this.deckView = undefined;
+        this.graveyardView = undefined;
+        this.battlefieldBackground = undefined;
+        this.lowHpVignette = undefined;
+        this.phaseShiftHandler = undefined;
         this.battleActive = false;
         this.activePuzzleId = null;
         this.rerollModeActive = false;
@@ -601,13 +692,7 @@ export class Game extends Scene
 
     private onPilesChanged = ({ deckSize, discardSize }: { deckSize: number; discardSize: number }): void =>
     {
-        if (!this.session)
-        {
-            return;
-        }
-
-        this.deckView?.setStack(deckSize, this.session.getDeckTopCard() ?? null);
-        this.graveyardView?.setStack(discardSize, this.session.getDiscardTopCard() ?? null);
+        handlePilesChanged(this.battleUiSyncDeps(), { deckSize, discardSize });
     };
 
     private onCombatantsChanged = ({
@@ -620,66 +705,23 @@ export class Game extends Scene
         reason: 'spawn' | 'shatter' | 'flee';
     }): void =>
     {
-        if (!this.session || !this.enemySquad)
-        {
-            return;
-        }
-
-        const spawned = added
-            .map((instanceId) => this.session!.getCombatant(instanceId))
-            .filter((combatant): combatant is NonNullable<typeof combatant> => Boolean(combatant));
-
-        this.enemySquad.applyRosterChange(this.session, spawned, removed);
-        this.syncBattleModifierLayout();
-        this.emitAttackReadiness();
-        unlockEnemies(spawned.map((combatant) => combatant.definitionId));
-
-        const anchor = this.enemySquad.firstView?.container;
-
-        if (!anchor)
-        {
-            return;
-        }
-
-        playFloatingText(
-            this,
-            anchor,
-            anchor.width / 2,
-            -8,
-            reason === 'shatter' ? 'SHATTER' : reason === 'flee' ? 'FLED' : 'SPAWN',
-            reason === 'shatter' ? '#ff9a8a' : '#7af0ff',
-        );
+        handleCombatantsChanged({
+            ...this.battleUiSyncDeps(),
+            scene: this,
+            added,
+            removed,
+            reason,
+        });
     };
 
     private syncPileViews (): void
     {
-        if (!this.session)
-        {
-            return;
-        }
-
-        const { deckSize, discardSize } = this.session.getPileCounts();
-
-        this.deckView?.setStack(deckSize, this.session.getDeckTopCard() ?? null);
-        this.graveyardView?.setStack(discardSize, this.session.getDiscardTopCard() ?? null);
+        syncPileViews(this.battleUiSyncDeps());
     }
 
     private syncBoardFromSession (): void
     {
-        if (!this.session || !this.boardView)
-        {
-            return;
-        }
-
-        // Drop cached glow targets before wrappers are destroyed/rebuilt.
-        this.presenter?.dropTransientVisualRefs();
-        this.boardView.syncFromBoard(this.session.board);
-        this.boardView.setBlockedSlots(
-            this.session.getPlacementBlockedSlots(),
-            this.session.getBombDisabledSlots(),
-        );
-        this.boardView.setDampenedSlots(this.session.getDampenedSlots());
-        this.boardView.setNullifiedSlots(this.session.getNullifiedSlots());
+        syncBoardFromSession(this.battleUiSyncDeps());
     }
 
     private openPileView (kind: 'deck' | 'graveyard'): void
@@ -718,240 +760,13 @@ export class Game extends Scene
 
     private onAttack = (): void =>
     {
-        if (!this.session || !this.presenter || this.session.isBusy())
-        {
-            return;
-        }
-
-        if (this.rerollModeActive)
-        {
-            this.onRerollCancel();
-        }
-
-        const readiness = this.session.getAttackReadiness();
-
-        if (!readiness.canAttack)
-        {
-            if (readiness.reason === 'no-target')
-            {
-                this.enemySquad?.flashTargetPrompt();
-            }
-
-            EventBus.emit(GAME_EVENTS.ATTACK_REJECTED, { reason: readiness.reason });
-            return;
-        }
-
-        const selectedTarget = this.enemySquad?.getSelectedId();
-
-        if (selectedTarget)
-        {
-            this.session.setAttackTarget(selectedTarget);
-        }
-
-        const chainStart = this.session.beginAttack();
-
-        if (!chainStart)
-        {
-            EventBus.emit(GAME_EVENTS.ATTACK_REJECTED, {
-                reason: this.session.getAttackReadiness().reason ?? 'no-cards-on-board',
-            });
-            this.emitAttackReadiness();
-            return;
-        }
-
-        // Disable Attack immediately — lock is held through chain + enemy response.
-        this.emitAttackReadiness();
-
-        if (!this.session.isPuzzleMode())
-        {
-            EventBus.emit(GAME_EVENTS.RUN_ATTACK_COUNT, {
-                runAttackCount: this.session.getRunAttackCount(),
-            });
-        }
-
-        try
-        {
-            this.presenter.playAttack(chainStart, (sequence) =>
-            {
-                this.onAttackResolved(sequence);
-            });
-        }
-        catch
-        {
-            // Visual cleanup must never leave the attack lock stuck (blocks Attack + Reroll).
-            this.unlockPlayerInput();
-        }
-    };
-
-    /**
-     * After a chain resolves: spend energy, then the enemy responds. The board
-     * persists until all energy for the round is spent.
-     * Attack lock stays held through the enemy response so a second Attack cannot start.
-     */
-    private onAttackResolved (sequence: import('../cardGame/domain/types').AttackSequence): void
-    {
-        if (!this.session)
-        {
-            return;
-        }
-
-        this.session.completeAttack(sequence);
-
-        if (!this.boardView || !this.enemySquad)
-        {
-            this.unlockPlayerInput();
-            return;
-        }
-
-        this.playerView?.setHealth(this.session.getPlayer());
-        this.syncLowHpVignette();
-
-        if (this.session.isPuzzleMode())
-        {
-            this.session.spendEnergy();
-            this.session.finishPuzzle();
-
-            this.boardView.syncFromBoard(this.session.board);
-            this.handView?.syncHand(this.session.getHand());
-            this.enemySquad.syncFromSession(this.session);
-            this.armorView?.setArmor(this.session.getPlayer().shield);
-            this.syncPileViews();
-
-            const evaluation = this.session.evaluatePuzzleAttack(sequence);
-            const puzzleId = this.activePuzzleId ?? 'unknown';
-            const damageTarget = this.session.getPuzzleDamageTarget() ?? 0;
-
-            this.unlockPlayerInput();
-
-            this.time.delayedCall(900, () =>
-            {
-                this.endBattle();
-                EventBus.emit(GAME_EVENTS.PUZZLE_RESOLVED, {
-                    puzzleId,
-                    success: evaluation.success,
-                    damageDealt: evaluation.damageDealt,
-                    damageTarget,
-                });
-            });
-
-            return;
-        }
-
-        this.session.spendEnergy();
-
-        this.syncBoardFromSession();
-        this.enemySquad.syncFromSession(this.session);
-        this.armorView?.setArmor(this.session.getPlayer().shield);
-        this.syncPileViews();
-
-        if (this.session.isEnemyDefeated())
-        {
-            this.enemySquad.clearIntent();
-            this.unlockPlayerInput();
-            this.winBattle();
-            return;
-        }
-
-        this.beginPostAttackPhase();
-    }
-
-    /** Enemy response after each attack; board clear only when energy is depleted. */
-    private beginPostAttackPhase (): void
-    {
-        if (!this.session || !this.boardView)
-        {
-            this.unlockPlayerInput();
-            return;
-        }
-
-        // Recover from a stuck enemy-turn flag so Attack/Reroll cannot soft-lock.
-        if (this.session.isEnemyTurnInProgress())
-        {
-            this.session.cancelEnemyTurn();
-        }
-
-        if (this.session.isEnemyDefeated() || this.session.isPlayerDefeated())
-        {
-            this.unlockPlayerInput();
-            return;
-        }
-
-        if (this.rerollModeActive)
-        {
-            this.onRerollCancel();
-        }
-
-        this.emitAttackReadiness();
-        this.resolveEnemyPhase();
-    }
-
-    private endPlayerRound = (): void =>
-    {
-        if (this.session?.isBusy())
-        {
-            return;
-        }
-
-        this.beginPostAttackPhase();
+        handleAttack(this.battleAttackFlowDeps());
     };
 
     private onEndTurn = (): void =>
     {
-        this.endPlayerRound();
+        handleEndTurn(this.battleAttackFlowDeps());
     };
-
-    /** Releases attack lock and re-enables player input. */
-    private unlockPlayerInput (): void
-    {
-        this.presenter?.dropTransientVisualRefs();
-        this.session?.releaseAttackLock();
-        this.emitAttackReadiness();
-    }
-
-    private resolveEnemyPhase (): void
-    {
-        if (!this.session || !this.boardView || !this.enemySquad)
-        {
-            this.unlockPlayerInput();
-            return;
-        }
-
-        resolveEnemyPhasePlayback({
-            session: this.session,
-            boardView: this.boardView,
-            handView: this.handView,
-            enemySquad: this.enemySquad,
-            playerView: this.playerView,
-            armorView: this.armorView,
-            graveyardView: this.graveyardView,
-            presenter: this.presenter,
-            syncBoardFromSession: () => this.syncBoardFromSession(),
-            syncPileViews: () => this.syncPileViews(),
-            onPhaseSettled: (result) =>
-            {
-                this.playerView?.setHealth(this.session!.getPlayer());
-                this.syncLowHpVignette();
-                this.unlockPlayerInput();
-
-                if (result.kind === 'player-defeated')
-                {
-                    this.loseBattle();
-                    return;
-                }
-
-                if (result.kind === 'enemy-defeated')
-                {
-                    this.winBattle();
-                    return;
-                }
-
-                if (result.kind === 'continue' && this.session)
-                {
-                    EventBus.emit(GAME_EVENTS.COMBAT_RECAP, this.session.getCombatRecap());
-                }
-            },
-        });
-    }
 
     private onRerollsChanged = (): void =>
     {
@@ -960,207 +775,55 @@ export class Game extends Scene
 
     private onRerollBegin = (): void =>
     {
-        if (!this.session)
-        {
-            return;
-        }
-
-        if (!this.session.canReroll())
-        {
-            if (this.session.isBusy())
-            {
-                EventBus.emit(GAME_EVENTS.ATTACK_REJECTED, {
-                    reason: this.session.isAttackInProgress() ? 'attack-in-progress' : 'enemy-turn',
-                });
-            }
-
-            return;
-        }
-
-        this.rerollModeActive = true;
-        this.handView?.setRerollMode(true);
-        this.emitRerollState();
+        handleRerollBegin(this.rerollHandlerDeps());
     };
 
     private onRerollCancel = (): void =>
     {
-        this.rerollModeActive = false;
-        this.handView?.setRerollMode(false);
-        this.emitRerollState();
+        handleRerollCancel(this.rerollHandlerDeps());
     };
 
     private onRerollConfirm = (): void =>
     {
-        if (!this.session?.canReroll() || !this.handView)
-        {
-            return;
-        }
-
-        const indices = this.handView.getSelectedHandIndices();
-
-        if (indices.length === 0)
-        {
-            return;
-        }
-
-        if (this.session.rerollHandCards(indices))
-        {
-            this.rerollModeActive = false;
-            this.handView.setRerollMode(false);
-            this.handView.syncHand(this.session.getHand());
-            this.syncPileViews();
-            this.emitAttackReadiness();
-        }
-
-        this.emitRerollState();
+        handleRerollConfirm(this.rerollHandlerDeps());
     };
 
     private emitRerollState (selectedCount?: number): void
     {
-        if (!this.session)
-        {
-            return;
-        }
-
-        EventBus.emit(GAME_EVENTS.REROLL_STATE, {
-            rerollsRemaining: this.session.getRerollsRemaining(),
-            maxRerollsPerFloor: GAME_RULES.rerollsPerFloor,
-            canReroll: this.session.canReroll(),
-            rerollModeActive: this.rerollModeActive,
-            selectedCount: selectedCount ?? this.handView?.getRerollSelectionCount() ?? 0,
-        });
+        emitRerollState(this.battleUiSyncDeps(), selectedCount);
     }
 
     private emitAttackReadiness (): void
     {
-        if (!this.session)
-        {
-            return;
-        }
-
-        this.enemySquad?.syncFromSession(this.session);
-        this.enemySquad?.syncTargetPrompt(this.session);
-        this.syncBattleModifierLayout();
-        this.battleModifierView?.setModifiers(this.session.getBattleModifiers());
-
-        if (!this.session.isBusy()
-            && !this.session.isEnemyDefeated())
-        {
-            this.enemySquad?.showAllIntents(this.session);
-        }
-
-        const chainStartPickable = this.session.canEditBoard()
-            && !this.rerollModeActive
-            && !this.session.isBusy();
-        const chainStart = this.session.getChainStartSlot();
-
-        this.boardView?.setChainStartPickable(chainStartPickable);
-        EventBus.emit(GAME_EVENTS.CHAIN_START_STATE, {
-            pickable: chainStartPickable,
-            row: chainStart.row,
-            rowLabel: boardRowLabel(chainStart.row),
-        });
-
-        EventBus.emit(GAME_EVENTS.CARD_ATTACK_READY, this.session.getAttackReadiness());
-        this.emitTurnState();
-        this.emitRerollState();
-    }
-
-    private emitTurnState (): void
-    {
-        if (!this.session)
-        {
-            return;
-        }
-
-        EventBus.emit(GAME_EVENTS.TURN_STATE, {
-            energy: this.session.getEnergy(),
-            maxEnergy: this.session.getMaxEnergy(),
-            // Energy refills automatically when a full round of attacks is spent.
-            canEndTurn: false,
-        });
+        emitAttackReadiness(this.battleUiSyncDeps());
     }
 
     private onCardDropped (handIndex: number, worldX: number, worldY: number): boolean
     {
-        if (!this.session || !this.boardView || !this.session.canEditBoard())
-        {
-            this.boardView?.clearHighlight();
-            return false;
-        }
-
-        this.boardView.clearHighlight();
-
-        const slot = this.boardView.findSlotAt(worldX, worldY);
-
-        if (!slot)
-        {
-            return false;
-        }
-
-        if (!this.session.placeCardFromHand(handIndex, slot))
-        {
-            return false;
-        }
-
-        this.boardView.syncFromBoard(this.session.board);
-        this.emitAttackReadiness();
-
-        return true;
+        return handleCardDropped(
+            {
+                session: this.session,
+                boardView: this.boardView,
+                emitAttackReadiness: () => this.emitAttackReadiness(),
+            },
+            handIndex,
+            worldX,
+            worldY,
+        );
     }
 
     private onBoardCardDropped (fromSlot: SlotPosition, worldX: number, worldY: number): boolean
     {
-        if (!this.session || !this.boardView || !this.handView || !this.session.canEditBoard())
-        {
-            this.boardView?.clearHighlight();
-            return false;
-        }
-
-        this.boardView.clearHighlight();
-
-        if (this.handView.containsPoint(worldX, worldY))
-        {
-            if (!this.session.removeCardFromBoard(fromSlot))
+        return handleBoardCardDropped(
             {
-                return false;
-            }
-
-            this.boardView.syncFromBoard(this.session.board);
-            this.handView.syncHand(this.session.getHand());
-            this.emitAttackReadiness();
-
-            return true;
-        }
-
-        const targetSlot = this.boardView.findSlotAt(worldX, worldY);
-
-        if (!targetSlot || sameSlot(fromSlot, targetSlot))
-        {
-            return false;
-        }
-
-        if (this.session.board.isEmpty(targetSlot))
-        {
-            if (!this.session.moveCardOnBoard(fromSlot, targetSlot))
-            {
-                return false;
-            }
-
-            this.boardView.syncFromBoard(this.session.board);
-            this.emitAttackReadiness();
-
-            return true;
-        }
-
-        if (!this.session.swapCardsOnBoard(fromSlot, targetSlot))
-        {
-            return false;
-        }
-
-        this.boardView.syncFromBoard(this.session.board);
-        this.emitAttackReadiness();
-
-        return true;
+                session: this.session,
+                boardView: this.boardView,
+                handView: this.handView,
+                emitAttackReadiness: () => this.emitAttackReadiness(),
+            },
+            fromSlot,
+            worldX,
+            worldY,
+        );
     }
 }

@@ -1,0 +1,19 @@
+{
+  "lieutenant": [
+    "mark-five",
+    "mark-seven",
+    "portside-gyro",
+    "reactive-plating",
+    "venom-latch",
+    "razor-feed",
+    "pyre-link",
+    "hemorrhage-coil",
+    "carapace-weave",
+    "overclock-cell",
+    "latch-array",
+    "capacitor-bank"
+  ],
+  "warden": [
+    "gatekeeper-seal"
+  ]
+}

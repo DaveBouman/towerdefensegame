@@ -1,7 +1,8 @@
 import { random } from '../random/rng';
 import type { CardDirection } from '../cardGame/domain/cardDirections';
-import type { RunEventEffect } from './runEvents';
+import type { RunEventEffect } from './runEventTypes';
 import { rollCardReward } from './rewards';
+import { RUN_ECONOMY } from './config/runEconomy';
 
 export interface PuzzleCardSpec {
     definitionId: string;
@@ -30,6 +31,8 @@ const PUZZLE_POOL: readonly (readonly [string, number])[] = [
     [ 'rupture-bleed', 1 ],
 ];
 
+const pz = RUN_ECONOMY.puzzles;
+
 export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
     'boost-basics': {
         id: 'boost-basics',
@@ -43,12 +46,12 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
         ],
         damageTarget: 16,
         successEffects: [
-            { kind: 'gold', amount: 18 },
-            { kind: 'lose-gold', amount: 18 },
+            { kind: 'gold', amount: pz.boostBasics.successGold },
+            { kind: 'lose-gold', amount: pz.boostBasics.successTax },
             { kind: 'add-curse', cardId: 'fuse', count: 1 },
         ],
         failureEffects: [
-            { kind: 'damage', amount: 6 },
+            { kind: 'damage', amount: pz.boostBasics.failDamage },
         ],
     },
     'triple-strike': {
@@ -63,11 +66,11 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
         ],
         damageTarget: 18,
         successEffects: [
-            { kind: 'gold', amount: 20 },
-            { kind: 'lose-gold', amount: 20 },
+            { kind: 'gold', amount: pz.tripleStrike.successGold },
+            { kind: 'lose-gold', amount: pz.tripleStrike.successTax },
         ],
         failureEffects: [
-            { kind: 'damage', amount: 6 },
+            { kind: 'damage', amount: pz.tripleStrike.failDamage },
         ],
     },
     'looping-strike': {
@@ -81,12 +84,12 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
         ],
         damageTarget: 22,
         successEffects: [
-            { kind: 'gold', amount: 22 },
-            { kind: 'lose-gold', amount: 22 },
+            { kind: 'gold', amount: pz.loopingStrike.successGold },
+            { kind: 'lose-gold', amount: pz.loopingStrike.successTax },
             { kind: 'add-curse', cardId: 'fuse', count: 1 },
         ],
         failureEffects: [
-            { kind: 'damage', amount: 7 },
+            { kind: 'damage', amount: pz.loopingStrike.failDamage },
         ],
     },
     'fire-alternation': {
@@ -102,12 +105,12 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
         ],
         damageTarget: 21,
         successEffects: [
-            { kind: 'gold', amount: 25 },
-            { kind: 'lose-gold', amount: 25 },
+            { kind: 'gold', amount: pz.fireAlternation.successGold },
+            { kind: 'lose-gold', amount: pz.fireAlternation.successTax },
             { kind: 'add-curse', cardId: 'burden', count: 1 },
         ],
         failureEffects: [
-            { kind: 'damage', amount: 7 },
+            { kind: 'damage', amount: pz.fireAlternation.failDamage },
         ],
     },
     'rupture-bleed': {
@@ -123,12 +126,12 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
         ],
         damageTarget: 26,
         successEffects: [
-            { kind: 'gold', amount: 30 },
-            { kind: 'lose-gold', amount: 30 },
+            { kind: 'gold', amount: pz.ruptureBleed.successGold },
+            { kind: 'lose-gold', amount: pz.ruptureBleed.successTax },
             { kind: 'add-curse', cardId: 'burden', count: 1 },
         ],
         failureEffects: [
-            { kind: 'damage', amount: 8 },
+            { kind: 'damage', amount: pz.ruptureBleed.failDamage },
         ],
     },
 };
