@@ -1,7 +1,8 @@
 import { poisonStatusNameUpper } from '../../../copy/strings';
-import { GAME_RULES } from '../../config/cardRegistry';
+import { GAME_RULES, getCardDefinitionOrThrow, getCardHandEndPenalty } from '../../config/cardRegistry';
 import type { ChainAbilityEffect } from '../../abilities/types';
 import { isOnStepChainAbility } from '../../abilities/chainAbilityRegistry';
+import { isHazardDefinition } from '../../combat/bombConversion';
 import type { BoardModel } from '../../domain/BoardModel';
 import type { CardGameSession } from '../../domain/CardGameSession';
 import type { ActivationStep, AttackSequence, SlotPosition } from '../../domain/types';
@@ -10,7 +11,7 @@ import type { EnemySquadView } from '../../../board/EnemySquadView';
 import type { ArmorView } from '../../../board/ArmorView';
 import { playFloatingText } from '../visualEffects/visualEffectTweens';
 import { getCardVisualEffectOrThrow } from '../visualEffects/visualEffectRegistry';
-import { playAbilityProcSfx } from '../../../audio/bindGameAudio';
+import { playAbilityProcSfx, playCardAbilitySfx } from '../../../audio/bindGameAudio';
 import {
     applyEnemyHitResult,
     applyPlayerDamage,
@@ -55,12 +56,12 @@ export function playEndOfChainEffects (
 
     if (offChainSlots.length > 0)
     {
-        tasks.push((done) => playOffChainBonusVisual(deps, offChainSlots, sequence, done));
+        tasks.push((done) => playOffChainBonusVisual(deps, offChainSlots, board, done));
     }
 
     if (hazardSlots.length > 0 || sequence.abilityPlayerDamage > 0)
     {
-        tasks.push((done) => playHazardBurstVisual(deps, hazardSlots, sequence, done));
+        tasks.push((done) => playHazardBurstVisual(deps, hazardSlots, board, done));
     }
 
     if (siphonSlots.length > 0 || sequence.siphonHeal > 0)
@@ -104,14 +105,14 @@ export function playChainAbilityEffectVisual (
     const { session, boardView, armorView, setDisplayedArmor, scheduleAttackTimer } = deps;
     const chainStep = effect.stepIndex >= 0 ? { slot: effect.slot, visualId: effect.visualId } : null;
 
-    if (chainStep)
-    {
-        playAbilityProcSfx(effect.visualId, effect.abilityId);
-        pulseAbilityCard(deps, effect.slot, effect.visualId, GAME_RULES.activationStepMs);
-    }
-
     try
     {
+        if (chainStep)
+        {
+            playAbilityProcSfx(effect.visualId, effect.abilityId);
+            pulseAbilityCard(deps, effect.slot, effect.visualId, GAME_RULES.activationStepMs);
+        }
+
         if (effect.armorGain > 0)
         {
             session.grantPlayerShield(effect.armorGain);
@@ -125,7 +126,8 @@ export function playChainAbilityEffectVisual (
 
             applyEnemyHitResult(deps, session.dealAttackDamage(damage), {
                 visualId: effect.visualId,
-                behaviorId: effect.abilityId === 'overload' ? 'attack' : undefined,
+                abilityId: effect.abilityId,
+                sourceSlot: effect.slot,
             });
         }
 
@@ -166,8 +168,7 @@ export function playChainAbilityEffectVisual (
     }
     catch
     {
-        onComplete();
-        return;
+        // Ability presentation must always advance the chain/end-effects queue.
     }
 
     scheduleAttackTimer(onComplete, GAME_RULES.activationStepMs);
@@ -176,70 +177,236 @@ export function playChainAbilityEffectVisual (
 function playOffChainBonusVisual (
     deps: ChainEndEffectsDeps,
     slots: SlotPosition[],
-    sequence: AttackSequence,
+    board: BoardModel,
+    onComplete: () => void,
+): void
+{
+    const actionableSlots = slots.filter((slot) =>
+    {
+        const card = board.getCardAt(slot);
+
+        if (!card)
+        {
+            return false;
+        }
+
+        const behaviorId = getCardDefinitionOrThrow(card.definitionId).behaviorId;
+
+        return behaviorId === 'attack' || behaviorId === 'defend';
+    });
+
+    runSequentialSlotVisuals(deps, actionableSlots, (slot, done) =>
+    {
+        playOffChainCardVisual(deps, slot, board, done);
+    }, onComplete);
+}
+
+function playOffChainCardVisual (
+    deps: ChainEndEffectsDeps,
+    slot: SlotPosition,
+    board: BoardModel,
     onComplete: () => void,
 ): void
 {
     const { session, boardView, armorView, setDisplayedArmor, scheduleAttackTimer } = deps;
+    const card = board.getCardAt(slot);
 
-    for (const slot of slots)
+    if (!card)
     {
-        boardView.bringCardToFront(slot);
+        scheduleAttackTimer(onComplete, 0);
+        return;
     }
+
+    const definition = getCardDefinitionOrThrow(card.definitionId);
+    const target = boardView.getCardVisualTarget(slot);
+    const beatMs = Math.round(GAME_RULES.activationStepMs * 0.85);
+
+    pulseAbilityCard(deps, slot, definition.visualId, beatMs);
+    playCardAbilitySfx(definition.visualId, definition.behaviorId);
 
     try
     {
-        if (sequence.offChainArmor > 0)
+        if (definition.behaviorId === 'attack')
         {
-            session.grantPlayerShield(sequence.offChainArmor);
-            setDisplayedArmor(session.getPlayer().shield);
-            armorView.showShieldGain(session.getScaledArmorGain(sequence.offChainArmor));
-        }
+            const damage = GAME_RULES.offChainBonus.attackDamage;
 
-        if (sequence.offChainDamage > 0)
+            applyEnemyHitResult(deps, session.dealAttackDamage(damage), {
+                visualId: definition.visualId,
+                behaviorId: definition.behaviorId,
+                definitionId: definition.id,
+                sourceSlot: slot,
+            });
+
+            if (target)
+            {
+                playFloatingText(
+                    deps.scene,
+                    target.wrapper,
+                    target.width / 2,
+                    target.height * 0.22,
+                    `+${damage}`,
+                    '#ff7675',
+                );
+            }
+        }
+        else if (definition.behaviorId === 'defend')
         {
-            applyEnemyHitResult(deps, session.dealAttackDamage(sequence.offChainDamage));
+            const rawArmor = GAME_RULES.offChainBonus.defendArmor;
+
+            session.grantPlayerShield(rawArmor);
+            setDisplayedArmor(session.getPlayer().shield);
+
+            const grantedArmor = session.getScaledArmorGain(rawArmor);
+
+            armorView.showShieldGain(grantedArmor);
+
+            if (target && grantedArmor > 0)
+            {
+                playFloatingText(
+                    deps.scene,
+                    target.wrapper,
+                    target.width / 2,
+                    target.height * 0.22,
+                    `+${grantedArmor}`,
+                    '#58d68d',
+                );
+            }
         }
     }
     catch
     {
-        onComplete();
-        return;
+        // Off-chain juice must not stall end-of-chain playback.
     }
 
-    scheduleAttackTimer(onComplete, GAME_RULES.activationStepMs);
+    scheduleAttackTimer(onComplete, beatMs);
 }
 
 function playHazardBurstVisual (
     deps: ChainEndEffectsDeps,
     slots: SlotPosition[],
-    sequence: AttackSequence,
+    board: BoardModel,
     onComplete: () => void,
 ): void
 {
-    const { boardView, scheduleAttackTimer } = deps;
-
-    for (const slot of slots)
+    runSequentialSlotVisuals(deps, slots, (slot, done) =>
     {
-        boardView.bringCardToFront(slot);
+        playHazardSlotVisual(deps, slot, board, done);
+    }, onComplete);
+}
+
+function playHazardSlotVisual (
+    deps: ChainEndEffectsDeps,
+    slot: SlotPosition,
+    board: BoardModel,
+    onComplete: () => void,
+): void
+{
+    const { scheduleAttackTimer } = deps;
+    const card = board.getCardAt(slot);
+
+    if (!card)
+    {
+        scheduleAttackTimer(onComplete, 0);
+        return;
     }
 
-    const playerDamage = sequence.abilityPlayerDamage + sequence.hazardDamage;
+    const definition = getCardDefinitionOrThrow(card.definitionId);
+    const target = deps.boardView.getCardVisualTarget(slot);
+    const beatMs = Math.round(GAME_RULES.activationStepMs * 0.85);
+    const isCurse = definition.behaviorId === 'curse';
+    const isHazard = isHazardDefinition(definition);
+
+    if (!isCurse && !isHazard)
+    {
+        scheduleAttackTimer(onComplete, 0);
+        return;
+    }
+
+    pulseAbilityCard(deps, slot, definition.visualId, beatMs);
+    playCardAbilitySfx(definition.visualId, definition.behaviorId);
 
     try
     {
-        if (playerDamage > 0)
+        if (isCurse)
         {
-            applyPlayerDamage(deps, playerDamage);
+            const penalty = getCardHandEndPenalty(definition) * 2;
+
+            if (penalty > 0)
+            {
+                applyPlayerDamage(deps, penalty);
+
+                if (target)
+                {
+                    playFloatingText(
+                        deps.scene,
+                        target.wrapper,
+                        target.width / 2,
+                        target.height * 0.22,
+                        `-${penalty}`,
+                        '#c97b9b',
+                    );
+                }
+            }
+        }
+        else if (isHazard && definition.power > 0)
+        {
+            applyPlayerDamage(deps, definition.power);
+
+            if (target)
+            {
+                playFloatingText(
+                    deps.scene,
+                    target.wrapper,
+                    target.width / 2,
+                    target.height * 0.22,
+                    `-${definition.power}`,
+                    '#ff6b35',
+                );
+            }
         }
     }
     catch
+    {
+        // Hazard/curse juice must not stall end-of-chain playback.
+    }
+
+    scheduleAttackTimer(onComplete, beatMs);
+}
+
+function runSequentialSlotVisuals (
+    deps: ChainEndEffectsDeps,
+    slots: SlotPosition[],
+    playSlot: (slot: SlotPosition, done: () => void) => void,
+    onComplete: () => void,
+): void
+{
+    if (slots.length === 0)
     {
         onComplete();
         return;
     }
 
-    scheduleAttackTimer(onComplete, GAME_RULES.activationStepMs);
+    const gapMs = Math.round(GAME_RULES.activationStepMs * 0.35);
+    let index = 0;
+
+    const runNext = (): void =>
+    {
+        if (index >= slots.length)
+        {
+            onComplete();
+            return;
+        }
+
+        const slot = slots[index]!;
+
+        index += 1;
+        playSlot(slot, () =>
+        {
+            deps.scheduleAttackTimer(runNext, gapMs);
+        });
+    };
+
+    runNext();
 }
 
 function playSiphonHealVisual (

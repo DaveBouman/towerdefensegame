@@ -23,6 +23,7 @@ import { attachEnemyIntentTooltip } from '../cardGame/presentation/tooltips/Enem
 import { attachDomTooltip } from '../cardGame/presentation/tooltips/GameTooltipController';
 import { resolveOverclockTooltip } from '../cardGame/presentation/tooltips/enemyStatusTooltipRegistry';
 import { playFloatingText, playHitFlash as playHitFlashTween } from '../cardGame/presentation/visualEffects/visualEffectTweens';
+import { playPoisonApplyEffect } from '../cardGame/presentation/visualEffects/elementHitEffects';
 import {
     COMBAT_TRAIT_ICON_GAP,
     COMBAT_TRAIT_ICON_SIZE,
@@ -927,6 +928,20 @@ export class EnemyTargetView
         }
 
         this.showFloatingNumber(`+${stacksAdded} ${poisonStatusNameUpper()}`, '#8fe3a0');
+
+        try
+        {
+            playPoisonApplyEffect(
+                this.scene,
+                this.container,
+                this.enemySize / 2,
+                this.enemySize * 0.4,
+            );
+        }
+        catch
+        {
+            // Poison VFX must not interrupt ability playback.
+        }
     }
 
     showPoisonTick (damage: number): void

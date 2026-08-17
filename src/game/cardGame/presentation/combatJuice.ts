@@ -67,23 +67,6 @@ export const getDamageTierStyle = (damage: number): DamageTierStyle =>
     return DAMAGE_TIERS[DAMAGE_TIERS.length - 1]!.style;
 };
 
-const ELEMENT_HIT_COLORS: Record<string, number> = {
-    fire: 0xff6b35,
-    cinder: 0xff6b35,
-    poison: 0x58d68d,
-    miasma: 0x58d68d,
-    bleed: 0xff3b6b,
-    rupture: 0xff3b6b,
-    attack: 0xff7675,
-};
-
-export const getElementHitColor = (visualId?: string, behaviorId?: string): number =>
-{
-    const key = visualId ?? behaviorId ?? 'attack';
-
-    return ELEMENT_HIT_COLORS[key] ?? ELEMENT_HIT_COLORS.attack!;
-};
-
 export const KILL_CAMERA_SHAKE = 0.022;
 
 export const getChainStepMs = (behaviorId: string, baseMs: number): number =>
@@ -147,30 +130,6 @@ export const getBigMomentHoldMs = (moment: ChainMomentInput): number =>
     }
 
     return 0;
-};
-
-export const playElementHitBurst = (
-    scene: Phaser.Scene,
-    parent: Phaser.GameObjects.Container,
-    x: number,
-    y: number,
-    color: number,
-): void =>
-{
-    const burst = scene.add.circle(x, y, 8, color, 0.55);
-
-    parent.add(burst);
-    burst.setDepth(900);
-
-    scene.tweens.add({
-        targets: burst,
-        scaleX: 2.8,
-        scaleY: 2.8,
-        alpha: 0,
-        duration: 220,
-        ease: 'Cubic.easeOut',
-        onComplete: () => burst.destroy(),
-    });
 };
 
 export const getIntentThreatLevel = (action: { steps: readonly { kind: string; amount?: number }[] }): number =>

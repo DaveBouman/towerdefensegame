@@ -6,11 +6,14 @@ import type { EnemySquadView } from '../../../board/EnemySquadView';
 import type { PlayerHealthView } from '../../../board/PlayerHealthView';
 import {
     getDamageTierStyle,
-    getElementHitColor,
     KILL_CAMERA_SHAKE,
-    playElementHitBurst,
     shakeCamera,
 } from '../combatJuice';
+import {
+    playElementHitEffect,
+    playElementStrikeFromSources,
+    type ElementHitContext,
+} from '../visualEffects/elementHitEffects';
 import { playCombatHitSfx, playPlayerHitSfx, playShieldAbsorbSfx } from '../../../audio/bindGameAudio';
 import { playFloatingText } from '../visualEffects/visualEffectTweens';
 
@@ -26,11 +29,7 @@ export interface CombatHitVisualDeps
     requestHitstop?: (ms: number) => void;
 }
 
-export interface EnemyHitVisualContext
-{
-    visualId?: string;
-    behaviorId?: string;
-}
+export type EnemyHitVisualContext = ElementHitContext;
 
 export function applyEnemyHitResult (
     deps: CombatHitVisualDeps,
@@ -38,7 +37,23 @@ export function applyEnemyHitResult (
     context: EnemyHitVisualContext = {},
 ): void
 {
-    const { scene, session, enemySquad, playerView, armorView, setDisplayedArmor, requestHitstop } = deps;
+    try
+    {
+        applyEnemyHitResultInner(deps, result, context);
+    }
+    catch
+    {
+        // Juice must never stall chain playback, enemy turns, or round end.
+    }
+}
+
+function applyEnemyHitResultInner (
+    deps: CombatHitVisualDeps,
+    result: DamageResult,
+    context: EnemyHitVisualContext = {},
+): void
+{
+    const { scene, session, boardView, enemySquad, playerView, armorView, setDisplayedArmor, requestHitstop } = deps;
     const targetId = result.targetInstanceId ?? session.getAttackTargetId();
     const enemyView = targetId ? enemySquad.getView(targetId) : enemySquad.firstView;
 
@@ -72,13 +87,26 @@ export function applyEnemyHitResult (
 
         if (enemyView)
         {
-            playElementHitBurst(
-                scene,
-                enemyView.container,
-                enemyView.container.width / 2,
-                enemyView.container.height * 0.35,
-                getElementHitColor(context.visualId, context.behaviorId),
-            );
+            try
+            {
+                playElementStrikeFromSources(
+                    scene,
+                    boardView,
+                    enemyView.container,
+                    context,
+                );
+                playElementHitEffect(
+                    scene,
+                    enemyView.container,
+                    enemyView.container.width / 2,
+                    enemyView.container.height * 0.35,
+                    context,
+                );
+            }
+            catch
+            {
+                // Element VFX must never block chain completion or the enemy response.
+            }
         }
     }
 
@@ -128,6 +156,18 @@ export function applyEnemyHitResult (
 }
 
 export function applyPlayerDamage (deps: CombatHitVisualDeps, damage: number): void
+{
+    try
+    {
+        applyPlayerDamageInner(deps, damage);
+    }
+    catch
+    {
+        // Hazard juice must not stall end-of-chain playback.
+    }
+}
+
+function applyPlayerDamageInner (deps: CombatHitVisualDeps, damage: number): void
 {
     const { scene, session, playerView, armorView, setDisplayedArmor, requestHitstop } = deps;
     const result = session.resolveHazardDamage(damage);

@@ -103,13 +103,20 @@ export function runChainPlayback (
 
         for (const step of chain)
         {
-            const target = deps.boardView.getCardVisualTarget(step.slot);
-
-            if (target)
+            try
             {
-                deps.scene.tweens.killTweensOf(target.wrapper);
-                target.wrapper.setScale(1);
-                target.wrapper.setAlpha(1);
+                const target = deps.boardView.getCardVisualTarget(step.slot);
+
+                if (target?.wrapper)
+                {
+                    deps.scene.tweens.killTweensOf(target.wrapper);
+                    target.wrapper.setScale(1);
+                    target.wrapper.setAlpha(1);
+                }
+            }
+            catch
+            {
+                // Stale board wrappers must not block attack completion.
             }
         }
 
@@ -272,53 +279,65 @@ export function runChainPlayback (
 
         const deal = (): void =>
         {
-            const livingIds = deps.session.getLivingCombatants().map((combatant) => combatant.instanceId);
+            let result: DamageResult | undefined;
 
-            // Last enemy already dead — finish the step; don't wait forever for a target.
-            if (livingIds.length === 0)
+            try
             {
-                onStepComplete();
-                return;
-            }
+                const livingIds = deps.session.getLivingCombatants().map((combatant) => combatant.instanceId);
 
-            const targetId = deps.session.ensureAttackTarget();
-
-            if (!targetId)
-            {
-                deps.enemySquad.requestTarget(livingIds, (pickedId) =>
+                // Last enemy already dead — finish the step; don't wait forever for a target.
+                if (livingIds.length === 0)
                 {
-                    deps.session.setAttackTarget(pickedId);
-                    deps.enemySquad.setSelected(pickedId);
-                    deal();
+                    onStepComplete();
+                    return;
+                }
+
+                const targetId = deps.session.ensureAttackTarget();
+
+                if (!targetId)
+                {
+                    deps.enemySquad.requestTarget(livingIds, (pickedId) =>
+                    {
+                        deps.session.setAttackTarget(pickedId);
+                        deps.enemySquad.setSelected(pickedId);
+                        deal();
+                    });
+
+                    return;
+                }
+
+                result = deps.session.dealAttackDamage(
+                    damage,
+                    targetId,
+                    sourceDefinitionId,
+                    resolvedStep.behaviorId,
+                    resolvedStep.arrow,
+                );
+
+                applyEnemyHitResult(deps, result, {
+                    visualId: resolvedStep.visualId,
+                    behaviorId: resolvedStep.behaviorId,
+                    definitionId: resolvedStep.definitionId,
+                    sourceSlot: resolvedStep.slot,
                 });
 
-                return;
+                maybeSwitchTargetAfterHit(sourceDefinitionId);
+
+                attackSteps.push({
+                    slot: resolvedStep.slot,
+                    card: resolvedStep.card,
+                    definitionId: resolvedStep.definitionId,
+                    damage: resolvedStep.damage,
+                    behaviorId: resolvedStep.behaviorId,
+                    visualId: resolvedStep.visualId,
+                });
+                deps.session.emitAttackStep(attackSteps.length - 1, buildCurrentSequence());
+            }
+            catch
+            {
+                // Never leave chain playback stuck mid-step.
             }
 
-            const result = deps.session.dealAttackDamage(
-                damage,
-                targetId,
-                sourceDefinitionId,
-                resolvedStep.behaviorId,
-                resolvedStep.arrow,
-            );
-
-            applyEnemyHitResult(deps, result, {
-                visualId: resolvedStep.visualId,
-                behaviorId: resolvedStep.behaviorId,
-            });
-
-            maybeSwitchTargetAfterHit(sourceDefinitionId);
-
-            attackSteps.push({
-                slot: resolvedStep.slot,
-                card: resolvedStep.card,
-                definitionId: resolvedStep.definitionId,
-                damage: resolvedStep.damage,
-                behaviorId: resolvedStep.behaviorId,
-                visualId: resolvedStep.visualId,
-            });
-            deps.session.emitAttackStep(attackSteps.length - 1, buildCurrentSequence());
             onStepComplete(result);
         };
 
@@ -426,6 +445,8 @@ export function runChainPlayback (
             applyEnemyHitResult(deps, result, {
                 visualId: prevResolved.visualId,
                 behaviorId: prevResolved.behaviorId,
+                definitionId: prevResolved.definitionId,
+                sourceSlot: prevResolved.slot,
             });
 
             if (getCardDefinitionOrThrow(prevResolved.definitionId).switchTargetAfterHit)
