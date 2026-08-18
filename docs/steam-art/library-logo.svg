@@ -34,9 +34,9 @@
     </pattern>
   </defs>
   <text x="50%" y="46%" text-anchor="middle" font-family="'Orbitron', sans-serif" font-weight="800"
-    font-size="115.2" fill="#fff6ea" letter-spacing="0.1em" filter="url(#softGlow)">SIGNAL</text>
+    font-size="115.2" fill="#fff6ea" letter-spacing="0.085em" filter="url(#softGlow)">SIGNAL</text>
   <text x="50%" y="62%" text-anchor="middle" font-family="'Orbitron', sans-serif" font-weight="800"
-    font-size="115.2" fill="#ff2d95" letter-spacing="0.1em" filter="url(#softGlow)">CHAIN</text>
+    font-size="115.2" fill="#ff2d95" letter-spacing="0.085em" filter="url(#softGlow)">CHAIN</text>
   <line x1="28%" y1="70%" x2="72%" y2="70%" stroke="#00e8ff" stroke-width="3" opacity="0.65" />
   <text x="50%" y="78%" text-anchor="middle" font-family="'Rajdhani', sans-serif" font-weight="600"
     font-size="32.25600000000001" fill="#8aa0bc">Build the chain. Break the system.</text>

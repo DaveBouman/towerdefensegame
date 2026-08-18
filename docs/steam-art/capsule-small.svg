@@ -105,9 +105,10 @@
           fill="none" stroke="#ff6b35" stroke-width="1.3398" opacity="0.85" />
         
         
-      <image x="195.05560000000003" y="36.76272" width="17.608800000000002" height="17.608800000000002"
+      <image x="196.204" y="37.911120000000004" width="15.312000000000001" height="15.312000000000001"
         href="data:image/png;base64,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" preserveAspectRatio="xMidYMid meet" opacity="0.95" />
         <path d="M 219.63136 20.539655999999997 L 223 22.56084 L 219.63136 24.582024 Z" fill="#ff6b35" opacity="0.85" />
+        
         <text x="219.9376" y="67.50156" text-anchor="end"
           font-family="'Orbitron', sans-serif" font-weight="700" font-size="11.484"
           fill="#ff9f43">4</text>
@@ -117,10 +118,10 @@
   
   
   <text x="10.4" y="31.32" font-family="'Orbitron', sans-serif" font-weight="800"
-    font-size="18.27" fill="#fff6ea" letter-spacing="0.04em"
+    font-size="18.27" fill="#fff6ea" letter-spacing="0.03em"
     filter="url(#softGlow)">SIGNAL</text>
   <text x="10.4" y="57.42" font-family="'Orbitron', sans-serif" font-weight="800"
-    font-size="18.27" fill="#fff6ea" letter-spacing="0.04em"
+    font-size="18.27" fill="#fff6ea" letter-spacing="0.03em"
     filter="url(#softGlow)">CHAIN</text>
   
 </svg>

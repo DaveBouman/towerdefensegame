@@ -19,6 +19,6 @@ npm run generate-steam-art
 | `library-hero.png` | 3840×1240 | Library hero |
 | `library-logo.png` | 1280×720 | Library logo (text on transparent) |
 
-SVG sources are kept alongside PNG exports for manual tweaks in Figma/Inkscape.
+SVG sources are kept alongside PNG exports for manual tweaks in Figma/Inkscape. PNGs are rasterized with the same Orbitron/Rajdhani fonts as the SVG (via `@resvg/resvg-js`), not system fallbacks.
 
 Edit `scripts/generate-steam-art.mjs` to change colors, tagline, or layout.

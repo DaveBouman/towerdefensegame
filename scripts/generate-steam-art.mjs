@@ -6,6 +6,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { Resvg } from '@resvg/resvg-js';
+import { decompress } from 'wawoff2';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -32,9 +34,10 @@ const CARD_STYLES = {
     echo: { fill: '#180a28', border: '#a855f7', labelColor: '#d8b8ff', powerColor: '#c89bff', icon: 'echo.png' },
     thorns: { fill: '#1a0a18', border: '#ff3b6b', labelColor: '#ffb8c8', powerColor: '#ff6b8a', icon: 'thorns.png' },
     boost: { fill: '#141a08', border: '#fcee0a', labelColor: '#fff9b0', powerColor: '#fcee0a', icon: 'boost.png' },
+    redline: { fill: '#220810', border: '#ff4a6a', labelColor: '#ffb8c8', powerColor: '#ffd4a0', icon: 'attack.png', iconAlt: 'defend.png' },
 };
 
-/** Mini cards placed on chain cells — index is row-major 5×5 cell. */
+/** Default chain cards on the board grid. */
 const BOARD_CHAIN_CARDS = [
     { cell: 0, style: 'attack', power: '6', dir: 'right', label: 'STRIKE' },
     { cell: 1, style: 'fire', power: '4', dir: 'right', label: 'CINDER' },
@@ -46,6 +49,15 @@ const BOARD_CHAIN_CARDS = [
     { cell: 23, style: 'attack', power: '8', dir: 'right', label: '' },
     { cell: 24, style: 'fire', power: '6', dir: 'right', label: '' },
 ];
+
+const SQUARE_REDLINE_ASSETS = new Set([ 'capsule-main', 'library-header' ]);
+
+/** Square-tile layouts: Redline on the chain instead of the penultimate attack. */
+const BOARD_CHAIN_CARDS_WITH_REDLINE = BOARD_CHAIN_CARDS.map((entry) =>
+    entry.cell === 23
+        ? { cell: 23, style: 'redline', power: '13', powerAlt: '13', dir: 'right', label: 'REDLINE' }
+        : entry,
+);
 
 const ICON_DIR = path.join(ROOT, 'public/assets/ui-icons');
 const iconDataUriCache = new Map();
@@ -81,7 +93,19 @@ const STEAM_ASSETS = [
 ];
 
 const TAGLINE = 'Build the chain. Break the system.';
+const TITLE_LETTER_SPACING = '0.04em';
+const TITLE_LETTER_SPACING_MICRO = '0.03em';
+const LOGO_LETTER_SPACING = '0.085em';
 const CHAIN_CELLS = [ 0, 1, 2, 7, 12, 17, 22, 23, 24 ];
+
+const FONT_SOURCES = [
+    [ 'orbitron-latin-800-normal.woff2', 'Orbitron-800.ttf' ],
+    [ 'orbitron-latin-700-normal.woff2', 'Orbitron-700.ttf' ],
+    [ 'rajdhani-latin-600-normal.woff2', 'Rajdhani-600.ttf' ],
+    [ 'share-tech-mono-latin-400-normal.woff2', 'ShareTechMono-400.ttf' ],
+];
+
+const FONT_CACHE_DIR = path.join(ROOT, 'node_modules/.cache/steam-art-fonts');
 
 const fontToDataUri = (filename) =>
 {
@@ -176,10 +200,11 @@ const fitGridRight = (width, height, pad, textZoneEnd, heightFraction) =>
 };
 
 /** Per-format safe layout — keeps text, grid, and cards inside the frame. */
-const computeLayout = (width, height) =>
+const computeLayout = (width, height, assetName = '') =>
 {
     const tier = getLayoutTier(width, height);
     const pad = Math.max(8, Math.min(width, height) * 0.04);
+    const useSquareRedlineBoard = SQUARE_REDLINE_ASSETS.has(assetName);
 
     if (tier === 'hero')
     {
@@ -237,40 +262,46 @@ const computeLayout = (width, height) =>
             originY,
             showChainLabel: false,
             showBoardCards: true,
-            cards: [
-                { style: 'poison', power: '3', label: 'MIASMA', dir: 'down', x: width * 0.06, y: height * 0.68, w: width * 0.11, rot: -10 },
-                { style: 'thorns', power: '2', label: 'THORNS', dir: 'left', x: width * 0.2, y: height * 0.62, w: width * 0.11, rot: 8 },
-            ],
+            boardCardSquare: useSquareRedlineBoard,
+            boardChainCards: useSquareRedlineBoard ? BOARD_CHAIN_CARDS_WITH_REDLINE : BOARD_CHAIN_CARDS,
+            cards: useSquareRedlineBoard
+                ? [
+                    { style: 'redline', power: '13', powerAlt: '13', label: 'REDLINE', dir: 'right', x: width * 0.06, y: height * 0.68, w: width * 0.11, rot: -10 },
+                    { style: 'poison', power: '3', label: 'MIASMA', dir: 'down', x: width * 0.2, y: height * 0.62, w: width * 0.11, rot: 8 },
+                ]
+                : [
+                    { style: 'poison', power: '3', label: 'MIASMA', dir: 'down', x: width * 0.06, y: height * 0.68, w: width * 0.11, rot: -10 },
+                    { style: 'thorns', power: '2', label: 'THORNS', dir: 'left', x: width * 0.2, y: height * 0.62, w: width * 0.11, rot: 8 },
+                ],
         };
     }
 
     if (tier === 'header')
     {
         const textZoneEnd = width * 0.5;
-        const grid = fitGridRight(width, height, pad, textZoneEnd, 0.72);
-        const titleSize = height * 0.13;
+        const grid = fitGridRight(width, height, pad, textZoneEnd, 0.78);
+        const titleSize = height * 0.115;
 
         return {
             tier,
             pad,
             titleX: pad * 1.2,
-            titleY: height * 0.38,
+            titleY: height * 0.4,
             titleSize,
-            titleSplit: true,
-            titleLine1Y: height * 0.28,
-            titleLine2Y: height * 0.44,
-            tagSize: height * 0.058,
-            eyebrowSize: height * 0.048,
-            showEyebrow: false,
+            titleSplit: false,
+            tagSize: height * 0.052,
+            eyebrowSize: height * 0.042,
+            showEyebrow: true,
             showTagline: true,
-            showPerspective: false,
+            showPerspective: true,
             showBrackets: true,
             showGrid: grid.showGrid,
             gridSize: grid.gridSize,
             originX: grid.originX,
             originY: grid.originY,
             showChainLabel: false,
-            showBoardCards: false,
+            showBoardCards: true,
+            boardCardCompact: true,
             cards: [],
         };
     }
@@ -407,36 +438,58 @@ const buildDirGlyph = (dir, x, y, size, color) =>
     return '';
 };
 
-const buildMiniBoardCard = (cellX, cellY, cellSize, { style, power, dir, label, isStart }) =>
+const buildRedlineIcons = (cx, cy, size, visual) =>
+{
+    const half = size * 0.44;
+
+    return `
+      ${buildCardIcon(cx - half * 0.55, cy, half, visual.icon)}
+      ${buildCardIcon(cx + half * 0.55, cy, half, visual.iconAlt ?? 'defend.png')}`;
+};
+
+const buildMiniBoardCard = (cellX, cellY, cellSize, { style, power, powerAlt, dir, label, isStart }, compact = false, square = false) =>
 {
     const visual = CARD_STYLES[style] ?? CARD_STYLES.attack;
     const inset = cellSize * 0.1;
     const cardW = cellSize - inset * 2;
-    const cardH = cardW * 1.12;
+    const cardH = square ? cardW : cardW * (compact ? 1.05 : 1.12);
     const x = cellX + (cellSize - cardW) / 2;
     const y = cellY + (cellSize - cardH) / 2;
-    const iconSize = cardW * 0.52;
-    const showLabel = label.length > 0 && cellSize >= 42;
-    const powerSize = Math.max(7, cardW * 0.28);
+    const iconSize = cardW * (compact ? 0.58 : square ? 0.48 : 0.52);
+    const iconCy = square ? y + cardH * 0.54 : y + cardH * 0.52;
+    const showLabel = !compact && label.length > 0 && cellSize >= 42;
+    const showDir = !compact && cellSize >= 36 && style !== 'redline';
+    const powerSize = Math.max(5, cardW * (compact ? 0.22 : square ? 0.22 : 0.28));
+    const isRedline = style === 'redline';
 
     return `
       <g filter="url(#cardShadow)">
         <rect x="${x}" y="${y}" width="${cardW}" height="${cardH}" rx="${Math.max(2, cardW * 0.1)}"
           fill="${visual.fill}" stroke="${isStart ? COLORS.magenta : visual.border}"
-          stroke-width="${isStart ? 2 : 1.4}" />
+          stroke-width="${isStart ? 2 : isRedline ? 1.8 : 1.4}" />
         ${showLabel ? `
-        <text x="${x + cardW / 2}" y="${y + cardH * 0.2}" text-anchor="middle"
-          font-family="'Share Tech Mono', monospace" font-size="${Math.max(5, cardW * 0.14)}"
+        <text x="${x + cardW / 2}" y="${y + cardH * 0.18}" text-anchor="middle"
+          font-family="'Share Tech Mono', monospace" font-size="${Math.max(5, cardW * 0.13)}"
           fill="${visual.labelColor}">${label}</text>` : ''}
-        ${buildCardIcon(x + cardW / 2, y + cardH * 0.52, iconSize, visual.icon)}
-        ${buildDirGlyph(dir, x + cardW * 0.82, y + cardH * 0.22, cardW * 0.18, visual.border)}
-        <text x="${x + cardW - cardW * 0.1}" y="${y + cardH - cardW * 0.08}" text-anchor="end"
+        ${isRedline
+        ? buildRedlineIcons(x + cardW / 2, iconCy, iconSize, visual)
+        : buildCardIcon(x + cardW / 2, iconCy, iconSize, visual.icon)}
+        ${showDir ? buildDirGlyph(dir, x + cardW * 0.82, y + cardH * 0.22, cardW * 0.18, visual.border) : ''}
+        ${isRedline && powerAlt ? `
+        <text x="${x + cardW * 0.28}" y="${y + cardH - cardW * 0.08}" text-anchor="middle"
           font-family="'Orbitron', sans-serif" font-weight="700" font-size="${powerSize}"
-          fill="${visual.powerColor}">${power}</text>
+          fill="${CARD_STYLES.attack.powerColor}">${power}</text>
+        <text x="${x + cardW * 0.72}" y="${y + cardH - cardW * 0.08}" text-anchor="middle"
+          font-family="'Orbitron', sans-serif" font-weight="700" font-size="${powerSize}"
+          fill="${CARD_STYLES.defend.powerColor}">${powerAlt}</text>`
+        : `
+        <text x="${x + cardW - cardW * 0.08}" y="${y + cardH - cardW * 0.06}" text-anchor="end"
+          font-family="'Orbitron', sans-serif" font-weight="700" font-size="${powerSize}"
+          fill="${visual.powerColor}">${power}</text>`}
       </g>`;
 };
 
-const buildCard = ({ style, power, label, dir, x, y, w, rot }) =>
+const buildCard = ({ style, power, powerAlt, label, dir, x, y, w, rot }) =>
 {
     const visual = CARD_STYLES[style] ?? CARD_STYLES.attack;
     const cardW = w;
@@ -446,7 +499,8 @@ const buildCard = ({ style, power, label, dir, x, y, w, rot }) =>
     const inset = cardW * 0.08;
     const bracket = cardW * 0.14;
     const showLabel = label.length > 0 && cardH > 28;
-    const iconSize = cardW * 0.46;
+    const iconSize = cardW * 0.4;
+    const isRedline = style === 'redline';
 
     return `
       <g transform="rotate(${rot} ${cx} ${cy})" filter="url(#cardShadow)">
@@ -460,11 +514,21 @@ const buildCard = ({ style, power, label, dir, x, y, w, rot }) =>
         <text x="${x + cardW / 2}" y="${y + cardH * 0.18}" text-anchor="middle"
           font-family="'Share Tech Mono', monospace" font-size="${cardW * 0.14}"
           fill="${visual.labelColor}" opacity="0.9">${label}</text>` : ''}
-        ${buildCardIcon(x + cardW / 2, y + cardH * 0.54, iconSize, visual.icon)}
-        ${buildDirGlyph(dir, x + cardW - inset * 1.1, y + inset * 1.6, cardW * 0.16, visual.border)}
+        ${isRedline
+        ? buildRedlineIcons(x + cardW / 2, y + cardH * 0.54, iconSize, visual)
+        : buildCardIcon(x + cardW / 2, y + cardH * 0.54, iconSize, visual.icon)}
+        ${!isRedline ? buildDirGlyph(dir, x + cardW - inset * 1.1, y + inset * 1.6, cardW * 0.16, visual.border) : ''}
+        ${isRedline && powerAlt ? `
+        <text x="${x + cardW * 0.3}" y="${y + cardH - inset * 0.5}" text-anchor="middle"
+          font-family="'Orbitron', sans-serif" font-weight="700" font-size="${cardW * 0.26}"
+          fill="${CARD_STYLES.attack.powerColor}">${power}</text>
+        <text x="${x + cardW * 0.7}" y="${y + cardH - inset * 0.5}" text-anchor="middle"
+          font-family="'Orbitron', sans-serif" font-weight="700" font-size="${cardW * 0.26}"
+          fill="${CARD_STYLES.defend.powerColor}">${powerAlt}</text>`
+        : `
         <text x="${x + cardW - inset}" y="${y + cardH - inset * 0.6}" text-anchor="end"
           font-family="'Orbitron', sans-serif" font-weight="700" font-size="${cardW * 0.3}"
-          fill="${visual.powerColor}">${power}</text>
+          fill="${visual.powerColor}">${power}</text>`}
       </g>`;
 };
 
@@ -477,9 +541,10 @@ const buildGrid = (layout) =>
         return '';
     }
 
-    const { gridSize, originX, originY, showChainLabel, showBoardCards } = layout;
+    const { gridSize, originX, originY, showChainLabel, showBoardCards, boardCardCompact, boardCardSquare, boardChainCards } = layout;
     const cell = gridSize / 5;
-    const boardCardByCell = new Map(BOARD_CHAIN_CARDS.map((entry) => [ entry.cell, entry ]));
+    const chainCards = boardChainCards ?? BOARD_CHAIN_CARDS;
+    const boardCardByCell = new Map(chainCards.map((entry) => [ entry.cell, entry ]));
     const parts = [];
 
     for (let row = 0; row < 5; row++)
@@ -532,7 +597,7 @@ const buildGrid = (layout) =>
 
     if (showBoardCards && cell >= 24)
     {
-        for (const boardCard of BOARD_CHAIN_CARDS)
+        for (const boardCard of chainCards)
         {
             const row = Math.floor(boardCard.cell / 5);
             const col = boardCard.cell % 5;
@@ -542,7 +607,7 @@ const buildGrid = (layout) =>
             parts.push(buildMiniBoardCard(cellX, cellY, cell, {
                 ...boardCard,
                 isStart: boardCard.cell === 0,
-            }));
+            }, boardCardCompact, boardCardSquare));
         }
     }
 
@@ -621,7 +686,7 @@ const buildCornerBrackets = (width, height, layout) =>
 
 const buildTitle = (layout) =>
 {
-    const letterSpacing = layout.tier === 'micro' ? '0.04em' : '0.06em';
+    const letterSpacing = layout.tier === 'micro' ? TITLE_LETTER_SPACING_MICRO : TITLE_LETTER_SPACING;
 
     if (layout.titleSplit)
     {
@@ -640,9 +705,9 @@ const buildTitle = (layout) =>
     filter="url(#softGlow)">SIGNAL CHAIN</text>`;
 };
 
-const buildBannerSvg = (width, height) =>
+const buildBannerSvg = (width, height, assetName = '') =>
 {
-    const layout = computeLayout(width, height);
+    const layout = computeLayout(width, height, assetName);
 
     return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
@@ -677,28 +742,53 @@ const buildLogoSvg = (width, height) =>
   ${buildFontDefs()}
   ${buildFilters()}
   <text x="50%" y="46%" text-anchor="middle" font-family="'Orbitron', sans-serif" font-weight="800"
-    font-size="${titleSize}" fill="${COLORS.text}" letter-spacing="0.1em" filter="url(#softGlow)">SIGNAL</text>
+    font-size="${titleSize}" fill="${COLORS.text}" letter-spacing="${LOGO_LETTER_SPACING}" filter="url(#softGlow)">SIGNAL</text>
   <text x="50%" y="62%" text-anchor="middle" font-family="'Orbitron', sans-serif" font-weight="800"
-    font-size="${titleSize}" fill="${COLORS.magenta}" letter-spacing="0.1em" filter="url(#softGlow)">CHAIN</text>
+    font-size="${titleSize}" fill="${COLORS.magenta}" letter-spacing="${LOGO_LETTER_SPACING}" filter="url(#softGlow)">CHAIN</text>
   <line x1="28%" y1="70%" x2="72%" y2="70%" stroke="${COLORS.cyan}" stroke-width="3" opacity="0.65" />
   <text x="50%" y="78%" text-anchor="middle" font-family="'Rajdhani', sans-serif" font-weight="600"
     font-size="${tagSize}" fill="${COLORS.muted}">${TAGLINE}</text>
 </svg>`;
 };
 
+const ensureTtfFonts = async () =>
+{
+    fs.mkdirSync(FONT_CACHE_DIR, { recursive: true });
+
+    const fontFiles = [];
+
+    for (const [ woff2Name, ttfName ] of FONT_SOURCES)
+    {
+        const ttfPath = path.join(FONT_CACHE_DIR, ttfName);
+
+        if (!fs.existsSync(ttfPath))
+        {
+            const woff2 = fs.readFileSync(path.join(FONT_DIR, woff2Name));
+            fs.writeFileSync(ttfPath, Buffer.from(await decompress(woff2)));
+        }
+
+        fontFiles.push(ttfPath);
+    }
+
+    return fontFiles;
+};
+
+const rasterizeSvgToPng = (svg, fontFiles) =>
+{
+    const resvg = new Resvg(svg, {
+        font: {
+            loadSystemFonts: false,
+            fontFiles,
+            defaultFontFamily: 'Orbitron',
+        },
+    });
+
+    return resvg.render().asPng();
+};
+
 const main = async () =>
 {
-    let sharp;
-
-    try
-    {
-        sharp = (await import('sharp')).default;
-    }
-    catch
-    {
-        console.error('Missing sharp. Run: npm install --save-dev sharp');
-        process.exit(1);
-    }
+    const fontFiles = await ensureTtfFonts();
 
     fs.mkdirSync(OUT_DIR, { recursive: true });
 
@@ -706,16 +796,15 @@ const main = async () =>
     {
         const svg = asset.kind === 'logo'
             ? buildLogoSvg(asset.width, asset.height)
-            : buildBannerSvg(asset.width, asset.height);
+            : buildBannerSvg(asset.width, asset.height, asset.name);
 
         const svgPath = path.join(OUT_DIR, `${asset.name}.svg`);
         const pngPath = path.join(OUT_DIR, `${asset.name}.png`);
 
         fs.writeFileSync(svgPath, svg);
 
-        await sharp(Buffer.from(svg))
-            .png()
-            .toFile(pngPath);
+        const png = rasterizeSvgToPng(svg, fontFiles);
+        fs.writeFileSync(pngPath, png);
 
         console.log(`Wrote ${path.relative(ROOT, svgPath)} + ${path.relative(ROOT, pngPath)} (${asset.width}×${asset.height})`);
     }
