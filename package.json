@@ -38,6 +38,7 @@
     "generate-sfx": "node scripts/generate-sfx.mjs",
     "trim-bgm": "node scripts/trim-bgm.mjs",
     "sync-fonts": "node scripts/sync-ui-fonts.mjs",
+    "generate-steam-art": "node scripts/generate-steam-art.mjs",
     "postinstall": "node scripts/sync-ui-fonts.mjs"
   },
   "dependencies": {
@@ -49,20 +50,21 @@
     "steamworks.js": "^0.4.0"
   },
   "devDependencies": {
-    "electron": "^35.0.0",
-    "electron-builder": "^25.1.8",
+    "@eslint/js": "^9.22.0",
     "@fontsource/orbitron": "^5.3.0",
     "@fontsource/rajdhani": "^5.3.0",
     "@fontsource/share-tech-mono": "^5.3.0",
-    "@eslint/js": "^9.22.0",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.22.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "ffmpeg-static": "^5.3.0",
     "globals": "^16.0.0",
+    "sharp": "^0.35.3",
     "terser": "^5.28.1",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.26.1",
