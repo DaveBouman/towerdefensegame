@@ -239,40 +239,52 @@ const computeLayout = (width, height, assetName = '') =>
 
     if (tier === 'wide')
     {
-        const gridSize = Math.min(width * 0.3, height * 0.58);
-        const textZone = width * 0.52;
-        const originX = Math.max(textZone, width - pad - gridSize);
-        const originY = height * 0.5 - gridSize / 2;
+        const textZoneEnd = width * 0.47;
+        const grid = fitGridRight(width, height, pad, textZoneEnd, 0.54);
+        const titleSize = Math.min(width * 0.062, height * 0.125);
+        const tagSize = Math.min(width * 0.026, height * 0.052);
+        const handW = Math.min(width * 0.085, height * 0.19);
+        const titleY = height * 0.28;
+        const taglineY = titleY + titleSize * 1.05 + tagSize * 1.6;
+        const gridBottom = grid.originY + grid.gridSize;
+        const handY = Math.min(height - pad - handW * 1.35, taglineY + pad * 2);
+        const handFitsBelowText = handY + handW * 1.35 < height - pad
+            && handW * 1.15 + pad < grid.originX;
+        const handCards = !handFitsBelowText || !grid.showGrid
+            ? []
+            : useSquareRedlineBoard
+                ? [
+                    { style: 'redline', power: '13', powerAlt: '13', label: 'REDLINE', dir: 'right', x: pad * 1.1, y: handY, w: handW, rot: -10 },
+                    { style: 'poison', power: '3', label: 'MIASMA', dir: 'down', x: pad * 1.1 + handW * 1.15, y: handY - handW * 0.12, w: handW, rot: 8 },
+                ]
+                : [
+                    { style: 'poison', power: '3', label: 'MIASMA', dir: 'down', x: pad * 1.1, y: handY, w: handW, rot: -10 },
+                    { style: 'thorns', power: '2', label: 'THORNS', dir: 'left', x: pad * 1.1 + handW * 1.15, y: handY - handW * 0.12, w: handW, rot: 8 },
+                ];
 
         return {
             tier,
             pad,
-            titleX: pad * 1.4,
-            titleY: height * 0.42,
-            titleSize: Math.min(width * 0.078, height * 0.17),
-            tagSize: Math.min(width * 0.026, height * 0.05),
-            eyebrowSize: Math.min(width * 0.022, height * 0.04),
+            titleX: pad * 1.2,
+            titleY,
+            titleSize,
+            titleSplit: false,
+            tagSize,
+            eyebrowSize: Math.min(width * 0.02, height * 0.038),
             showEyebrow: true,
             showTagline: true,
             showPerspective: true,
             showBrackets: true,
-            showGrid: true,
-            gridSize,
-            originX,
-            originY,
+            showGrid: grid.showGrid,
+            gridSize: grid.gridSize,
+            originX: grid.originX,
+            originY: grid.originY,
             showChainLabel: false,
             showBoardCards: true,
             boardCardSquare: useSquareRedlineBoard,
             boardChainCards: useSquareRedlineBoard ? BOARD_CHAIN_CARDS_WITH_REDLINE : BOARD_CHAIN_CARDS,
-            cards: useSquareRedlineBoard
-                ? [
-                    { style: 'redline', power: '13', powerAlt: '13', label: 'REDLINE', dir: 'right', x: width * 0.06, y: height * 0.68, w: width * 0.11, rot: -10 },
-                    { style: 'poison', power: '3', label: 'MIASMA', dir: 'down', x: width * 0.2, y: height * 0.62, w: width * 0.11, rot: 8 },
-                ]
-                : [
-                    { style: 'poison', power: '3', label: 'MIASMA', dir: 'down', x: width * 0.06, y: height * 0.68, w: width * 0.11, rot: -10 },
-                    { style: 'thorns', power: '2', label: 'THORNS', dir: 'left', x: width * 0.2, y: height * 0.62, w: width * 0.11, rot: 8 },
-                ],
+            chainStrokeOpacity: 0.82,
+            cards: handCards,
         };
     }
 
@@ -334,14 +346,15 @@ const computeLayout = (width, height, assetName = '') =>
         showMicroAccent: true,
         cards: [
             {
-                style: 'fire',
-                power: '4',
+                style: 'redline',
+                power: '13',
+                powerAlt: '13',
                 label: '',
                 dir: 'right',
                 x: width - pad - cardW,
                 y: (height - cardW * 1.35) / 2,
                 w: cardW,
-                rot: 8,
+                rot: -7,
             },
         ],
     };
@@ -592,7 +605,7 @@ const buildGrid = (layout) =>
         parts.push(`
           <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
             stroke="${COLORS.magenta}" stroke-width="${Math.max(2, cell * 0.1)}"
-            stroke-linecap="round" opacity="0.7" filter="url(#softGlow)" />`);
+            stroke-linecap="round" opacity="${layout.chainStrokeOpacity ?? 0.7}" filter="url(#softGlow)" />`);
     }
 
     if (showBoardCards && cell >= 24)
