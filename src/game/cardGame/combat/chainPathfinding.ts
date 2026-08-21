@@ -1,6 +1,12 @@
 import { GAME_RULES, getCardDefinitionOrThrow, getChainStepDistance, type CardDefinition } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
-import { cornerTargetDirections, getNextSlot, getSlotAtStepDistance, getSlotAtStepDistanceWithWrap, slotKey } from '../domain/cardDirections';
+import {
+    cornerFirstStep,
+    getNextSlot,
+    getSlotAtStepDistance,
+    getSlotAtStepDistanceWithWrap,
+    slotKey,
+} from '../domain/cardDirections';
 import type {
     ActivationStep,
     CardDirection,
@@ -19,6 +25,10 @@ export const isCornerDefinition = (definition: CardDefinition): boolean =>
 
 export const isWrapDefinition = (definition: CardDefinition): boolean =>
     definition.wrapEdges === true;
+
+/** Leap that activates the skipped tile for effects, then continues on its own arrow. */
+export const isPierceLeapDefinition = (definition: CardDefinition): boolean =>
+    definition.pierceLeap === true && getChainStepDistance(definition) > 1;
 
 const getLoopContinueArrow = (card: import('../domain/types').CardInstance): CardDirection =>
     card.arrow;
@@ -162,9 +172,8 @@ export const getNextChainSlot = (
 };
 
 /**
- * Corner move: hooks 90° off the arrow to a forward-diagonal tile. Tries each
- * side in a fixed order and takes the first that holds a card, so a corner card
- * continues around whichever corner has a target.
+ * Corner move: diagonal arrow's horizontal leg first (e.g. down-left → left).
+ * The card entered there keeps its own arrow, which continues the bend.
  */
 export const getCornerNextSlot = (
     board: BoardModel,
@@ -172,17 +181,79 @@ export const getCornerNextSlot = (
     direction: CardDirection,
 ): SlotPosition | null =>
 {
-    for (const diagonal of cornerTargetDirections(direction))
-    {
-        const landing = getNextSlot(from, diagonal, board.rows, board.cols);
+    const landing = getNextSlot(from, cornerFirstStep(direction), board.rows, board.cols);
 
-        if (landing && board.getCardAt(landing))
-        {
-            return landing;
-        }
+    if (!landing || !board.getCardAt(landing))
+    {
+        return null;
     }
 
-    return null;
+    return landing;
+};
+
+/** Mid tile a pierce-leap activates before landing two steps away. */
+export const getPierceLeapMidSlot = (
+    board: BoardModel,
+    from: SlotPosition,
+    direction: CardDirection,
+): SlotPosition | null =>
+{
+    const mid = getSlotAtStepDistance(from, direction, board.rows, board.cols, 1);
+
+    if (!mid || !board.getCardAt(mid))
+    {
+        return null;
+    }
+
+    return mid;
+};
+
+const advanceFromStep = (
+    board: BoardModel,
+    step: ActivationStep,
+): { next: SlotPosition | null; forcedExit: CardDirection | null } =>
+{
+    const definition = getCardDefinitionOrThrow(step.definitionId);
+
+    if (isCornerDefinition(definition))
+    {
+        return {
+            next: getCornerNextSlot(board, step.slot, step.exitArrow),
+            forcedExit: null,
+        };
+    }
+
+    if (isPierceLeapDefinition(definition))
+    {
+        const mid = getPierceLeapMidSlot(board, step.slot, step.exitArrow);
+
+        if (mid)
+        {
+            return { next: mid, forcedExit: step.exitArrow };
+        }
+
+        return {
+            next: getNextChainSlot(
+                board,
+                step.slot,
+                step.exitArrow,
+                getChainStepDistance(definition),
+                isWrapDefinition(definition),
+            ),
+            forcedExit: null,
+        };
+    }
+
+    return {
+        next: getNextChainSlot(
+            board,
+            step.slot,
+            step.exitArrow,
+            getChainStepDistance(definition),
+            isWrapDefinition(definition),
+        ),
+        forcedExit: null,
+    };
 };
 
 /** Walk the board following each card's arrow to build the activation chain. */
@@ -194,16 +265,22 @@ export const planActivationChain = (
     const chain: ActivationStep[] = [];
     const walkState = createChainWalkState();
     let current: SlotPosition | null = findChainStart(board, startSlot);
+    let forcedExit: CardDirection | null = null;
 
     while (current && chain.length < GAME_RULES.maxChainSteps)
     {
-        const step = tryBuildActivationStep(board, current, walkState);
+        const built = tryBuildActivationStep(board, current, walkState);
 
-        if (!step)
+        if (!built)
         {
             break;
         }
 
+        const step: ActivationStep = forcedExit
+            ? { ...built, exitArrow: forcedExit }
+            : built;
+
+        forcedExit = null;
         chain.push(step);
 
         const definition = getCardDefinitionOrThrow(step.definitionId);
@@ -213,15 +290,10 @@ export const planActivationChain = (
             break;
         }
 
-        current = isCornerDefinition(definition)
-            ? getCornerNextSlot(board, current, step.exitArrow)
-            : getNextChainSlot(
-                board,
-                current,
-                step.exitArrow,
-                getChainStepDistance(definition),
-                isWrapDefinition(definition),
-            );
+        const advance = advanceFromStep(board, step);
+
+        current = advance.next;
+        forcedExit = advance.forcedExit;
     }
 
     return chain;
@@ -234,13 +306,28 @@ export const getNextChainSlotFromStep = (
 {
     const definition = getCardDefinitionOrThrow(step.definitionId);
 
-    return isCornerDefinition(definition)
-        ? getCornerNextSlot(board, step.slot, step.exitArrow)
-        : getNextChainSlot(
-            board,
-            step.slot,
-            step.exitArrow,
-            getChainStepDistance(definition),
-            isWrapDefinition(definition),
-        );
+    if (isCornerDefinition(definition))
+    {
+        return getCornerNextSlot(board, step.slot, step.exitArrow);
+    }
+
+    if (isPierceLeapDefinition(definition))
+    {
+        return getPierceLeapMidSlot(board, step.slot, step.exitArrow)
+            ?? getNextChainSlot(
+                board,
+                step.slot,
+                step.exitArrow,
+                getChainStepDistance(definition),
+                isWrapDefinition(definition),
+            );
+    }
+
+    return getNextChainSlot(
+        board,
+        step.slot,
+        step.exitArrow,
+        getChainStepDistance(definition),
+        isWrapDefinition(definition),
+    );
 };

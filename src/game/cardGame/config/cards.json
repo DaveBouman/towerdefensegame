@@ -51,6 +51,20 @@
       }
     },
     {
+      "id": "skewer",
+      "label": "Skewer",
+      "power": 6,
+      "behaviorId": "attack",
+      "visualId": "attack",
+      "arrowPool": "orthogonal",
+      "chainStepDistance": 2,
+      "pierceLeap": true,
+      "tier": 2,
+      "upgrade": {
+        "power": 8
+      }
+    },
+    {
       "id": "defend-special",
       "label": "Ward",
       "power": 5,
@@ -213,7 +227,7 @@
       "power": 6,
       "behaviorId": "attack",
       "visualId": "attack",
-      "arrowPool": "orthogonal",
+      "arrowPool": "diagonal",
       "cornerTurn": true,
       "tier": 2,
       "upgrade": {
@@ -226,7 +240,7 @@
       "power": 5,
       "behaviorId": "defend",
       "visualId": "defend",
-      "arrowPool": "orthogonal",
+      "arrowPool": "diagonal",
       "cornerTurn": true,
       "tier": 2,
       "upgrade": {
@@ -342,7 +356,7 @@
       "power": 7,
       "behaviorId": "fire",
       "visualId": "scorch",
-      "arrowPool": "orthogonal",
+      "arrowPool": "diagonal",
       "cornerTurn": true,
       "chainAbilityIds": [
         "fire-alternation"
@@ -358,7 +372,7 @@
       "power": 4,
       "behaviorId": "defend",
       "visualId": "bramble",
-      "arrowPool": "orthogonal",
+      "arrowPool": "diagonal",
       "cornerTurn": true,
       "chainAbilityIds": [
         "fortify"
@@ -606,7 +620,7 @@
       "power": 8,
       "behaviorId": "fire",
       "visualId": "scorch",
-      "arrowPool": "orthogonal",
+      "arrowPool": "diagonal",
       "cornerTurn": true,
       "chainAbilityIds": [
         "fire-alternation"

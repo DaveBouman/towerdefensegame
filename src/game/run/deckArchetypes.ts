@@ -8,6 +8,7 @@ const CARD_ARCHETYPE_WEIGHTS: Record<string, Partial<Record<DeckArchetypeId, num
     attack: { blade: 0.35 },
     'attack-special': { blade: 0.7 },
     'attack-leap': { blade: 0.55 },
+    skewer: { blade: 0.7 },
     'corner-strike': { blade: 0.6 },
     rupture: { blade: 1 },
     shiv: { blade: 1 },

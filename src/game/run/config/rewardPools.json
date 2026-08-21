@@ -4,6 +4,7 @@
     "defend",
     "attack-special",
     "attack-leap",
+    "skewer",
     "defend-special",
     "defend-leap",
     "joker",
@@ -45,6 +46,7 @@
   "elite": [
     "attack-special",
     "attack-leap",
+    "skewer",
     "defend-special",
     "defend-leap",
     "joker",

@@ -215,7 +215,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 
 | System | Files | Player decision |
 |--------|-------|-----------------|
-| Chain routing | `AttackPipeline.ts`, `cardDirections.ts` | Arrow pools, leap (2-tile), corner-turn (`cornerTurn` — hooks to a forward-diagonal, `getCornerNextSlot`), edge-wrap (`wrapEdges` — **Phase Relay** / **Phase Bulwark** continue on the opposite board edge). Loop-reset exists in code but is **disabled** (not in starter deck, rewards, or puzzles). |
+| Chain routing | `AttackPipeline.ts`, `cardDirections.ts` | Arrow pools, leap (2-tile), **Skewer** only (`pierceLeap` — activates mid for effects, ignores mid arrow), corner-turn (`cornerTurn` — diagonal; side neighbor’s arrow continues the bend), edge-wrap (`wrapEdges`). Loop-reset exists in code but is **disabled**. |
 | Rad trail | `poisonTrailAbility.ts` | Converts subsequent defends to **rad stacks** on the enemy (radioactive fumes) |
 | Rad stacks (status) | `CardGameSession.tickPoison` | Enemy takes `stacks × 4` damage at the start of each of its turns (ignores shield), then stacks decay by 1 (`gameRules.chainAbilities.poisonTrail.damagePerStack`) |
 | Fire alternation | `fireAlternationAbility.ts` | +3 damage per alternating attack/defend after fire |
@@ -368,6 +368,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-21 | **Skewer.** New leap-2 attack that activates the mid card for effects only (mid arrow ignored). Existing Lunge / corner cards unchanged. |
 | 2026-08-21 | **Smokebinder: Skill Jam.** Replaced dormant Loop Hunter (loop-reset is disabled) with Skill Jam — first 3 skill cards in the chain are suppressed. |
 | 2026-08-21 | **Corner cards: one arrow.** Corner Strike / Scorch / White-Hot show a single tucked direction arrow (same as Corner Defense), not entry + both diagonal hooks. |
 | 2026-08-17 | **Main menu changelog.** Help → **What's new** opens a scrollable patch feed (`src/game/meta/changelog.ts`, `MainMenuChangelog.tsx`). Entries are added manually when shipping — not synced from this dev log. |

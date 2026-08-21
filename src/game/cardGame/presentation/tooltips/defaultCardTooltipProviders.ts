@@ -110,15 +110,24 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: [
             `Deals ${ctx.definition.power} damage when activated in the chain.`,
-            'Turns the corner: steps one tile along the arrow, then hooks to a forward-diagonal tile.',
-            'Continues around whichever corner has a card.',
+            'Diagonal bend: enters the card to the left or right first (horizontal leg of the arrow).',
+            'That neighbor\'s arrow continues the chain — point it down/up to finish the corner.',
         ],
     })),
     provider('corner-defense', (ctx) => ({
         title: titleFromDefinition(ctx),
         lines: [
             `Grants ${ctx.definition.power} armor when activated in the chain.`,
-            'Turns the corner: steps one tile along the arrow, then continues to the next card around the bend.',
+            'Diagonal bend: enters the card to the left or right first (horizontal leg of the arrow).',
+            'That neighbor\'s arrow continues the chain — point it down/up to finish the corner.',
+        ],
+    })),
+    provider('skewer', (ctx) => ({
+        title: titleFromDefinition(ctx),
+        lines: [
+            `Deals ${ctx.definition.power} damage when activated in the chain.`,
+            'Leaps 2 tiles. Activates the card you jump over (effects only — its arrow is ignored).',
+            'Then continues to the landing tile along this card\'s arrow.',
         ],
     })),
     provider('phase-relay', (ctx) => ({
@@ -321,7 +330,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: [
             `Deals ${ctx.definition.power} damage when activated in the chain.`,
-            'Turns the corner: steps one tile along the arrow, then hooks to a forward-diagonal tile.',
+            'Diagonal bend: enters the left/right neighbor first; that card\'s arrow finishes the corner.',
             `+${GAME_RULES.chainAbilities.fireAlternation.bonusDamagePerAlternatingStep} bonus damage per alternating attack/defend step after this (needs 2+).`,
         ],
     })),
@@ -329,7 +338,7 @@ export const defaultCardTooltipProviders: readonly CardTooltipProvider[] = [
         title: titleFromDefinition(ctx),
         lines: [
             `Grants ${ctx.definition.power} armor when activated in the chain.`,
-            'Turns the corner: steps one tile along the arrow, then continues to the next card around the bend.',
+            'Diagonal bend: enters the left/right neighbor first; that card\'s arrow finishes the corner.',
             `Fortify: +${GAME_RULES.chainAbilities.fortify.armorPerExtraDefend} armor for each defend in the chain beyond ${GAME_RULES.chainAbilities.fortify.defendThreshold}.`,
         ],
     })),

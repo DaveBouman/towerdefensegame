@@ -13,6 +13,7 @@ const EN = {
     'card.defend': 'Defend',
     'card.attack-special': 'Strike',
     'card.attack-leap': 'Lunge',
+    'card.skewer': 'Skewer',
     'card.defend-special': 'Ward',
     'card.defend-leap': 'Bastion',
     'card.joker': 'Reroute',

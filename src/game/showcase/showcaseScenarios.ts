@@ -41,12 +41,12 @@ export interface ShowcaseBoardCard {
  * Mid-grid showcase chain for ?capture=board.
  *
  * Row 2 corridor: boost → fire → strike → defend → leap↑ (skips row 1 col 4)
- * Top row back:   cinder ← echo ← glitch ← corner↓
- * Hook landing:   redline → thorns → rupture
+ * Top row:        bend← corner↙ glitch← echo← cinder
+ * Mid bend:       redline→ thorns→ rupture   (corner enters bend, bend points down)
  *
- *     .   corner← glitch← echo← cinder
- *   redline→ thorns→ rupture  .   (gap)
- *   START→ fire→ strike→ defend→ leap↑
+ *   bend   corner↙ glitch← echo← cinder
+ * redline→ thorns→ rupture  .   (gap)
+ * START→ fire→ strike→ defend→ leap↑
  */
 export const SHOWCASE_FULL_BOARD: ShowcaseBoardCard[] = [
     { row: 2, col: 0, definitionId: 'boost', arrow: 'right' },
@@ -57,7 +57,8 @@ export const SHOWCASE_FULL_BOARD: ShowcaseBoardCard[] = [
     { row: 0, col: 4, definitionId: 'cinder', arrow: 'left' },
     { row: 0, col: 3, definitionId: 'echo', arrow: 'left' },
     { row: 0, col: 2, definitionId: 'glitch', arrow: 'left' },
-    { row: 0, col: 1, definitionId: 'corner-strike', arrow: 'down' },
+    { row: 0, col: 1, definitionId: 'corner-strike', arrow: 'down-left' },
+    { row: 0, col: 0, definitionId: 'hardwire', arrow: 'down' },
     { row: 1, col: 0, definitionId: 'redline', arrow: 'right' },
     { row: 1, col: 1, definitionId: 'thorns', arrow: 'right' },
     { row: 1, col: 2, definitionId: 'rupture', arrow: 'right' },
@@ -71,10 +72,10 @@ export const SHOWCASE_HAND_CARDS: readonly {
 }[] = [
     { definitionId: 'poison', arrow: 'right' },
     { definitionId: 'defend-leap', arrow: 'down' },
-    { definitionId: 'hardwire', arrow: 'right' },
     { definitionId: 'overclock', arrow: 'left' },
     { definitionId: 'surge', arrow: 'up' },
-    { definitionId: 'corner-defense', arrow: 'right' },
+    { definitionId: 'corner-defense', arrow: 'down-right' },
+    { definitionId: 'bulwark', arrow: 'right' },
 ];
 
 export const SHOWCASE_BOARD_CHAIN_START = { row: 2, col: 0 };

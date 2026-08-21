@@ -257,25 +257,51 @@ export const getInBoundsDirections = (
     CARD_DIRECTIONS.filter((direction) => getNextSlot(slot, direction, rows, cols) !== null);
 
 /**
- * The two forward-diagonal directions a "corner turn" card can hook into, given
- * its orthogonal arrow. Order is fixed so routing stays seed-deterministic.
- * Non-orthogonal arrows have no corner targets.
+ * Corner cards use diagonal arrows. The first step is always the horizontal
+ * leg (left/right); the neighbor's own arrow then continues the chain
+ * (typically the vertical leg of the bend).
+ *
+ * Example: down-left → enter the card to the left; that card pointing down
+ * carries the chain downward.
  */
-const CORNER_TARGETS: Record<CardDirection, readonly CardDirection[]> = {
-    up: [ 'up-left', 'up-right' ],
-    down: [ 'down-left', 'down-right' ],
-    left: [ 'up-left', 'down-left' ],
-    right: [ 'up-right', 'down-right' ],
-    'up-left': [],
-    'up-right': [],
-    'down-left': [],
-    'down-right': [],
+export const cornerFirstStep = (direction: CardDirection): CardDirection =>
+{
+    switch (direction)
+    {
+        case 'up-left':
+        case 'down-left':
+            return 'left';
+        case 'up-right':
+        case 'down-right':
+            return 'right';
+        case 'left':
+        case 'right':
+        case 'up':
+        case 'down':
+            // Legacy orthogonal arrows on corner cards: step into that neighbor.
+            return direction;
+    }
 };
 
+/** @deprecated Prefer cornerFirstStep — old forward-diagonal hook targets. */
 export const cornerTargetDirections = (
     direction: CardDirection,
 ): readonly CardDirection[] =>
-    CORNER_TARGETS[direction];
+{
+    switch (direction)
+    {
+        case 'up':
+            return [ 'up-left', 'up-right' ];
+        case 'down':
+            return [ 'down-left', 'down-right' ];
+        case 'left':
+            return [ 'up-left', 'down-left' ];
+        case 'right':
+            return [ 'up-right', 'down-right' ];
+        default:
+            return [];
+    }
+};
 
 export const slotKey = ({ row, col }: SlotPosition): string => `${row},${col}`;
 
