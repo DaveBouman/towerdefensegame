@@ -75,7 +75,7 @@
       "hazardsPerTurn": 1,
       "passives": [
         "smoke",
-        "loopHunter",
+        { "id": "skillJam", "suppressedSkillCards": 3 },
         { "id": "dampenTiles", "parity": "even", "multiplier": 0.5, "everyTurns": 2, "duration": 1 },
         {
           "id": "phaseShift",

@@ -74,6 +74,15 @@ export interface PuzzleModeConfig {
         arrow?: CardDirection;
         loopArrow?: CardDirection;
     }[];
+    /** When set, cards are placed on the grid at battle start (showcase / capture). */
+    boardCards?: readonly {
+        row: number;
+        col: number;
+        definitionId: string;
+        arrow?: CardDirection;
+        loopArrow?: CardDirection;
+    }[];
+    chainStart?: SlotPosition;
     damageTarget: number;
 }
 
@@ -232,14 +241,39 @@ export class CardGameSession
 
         if (puzzleMode)
         {
-            this.deckHand.initPuzzleHand(
-                puzzleMode.handCards.map((spec) => createCardInstance(
-                    spec.definitionId,
-                    spec.arrow,
-                    'player',
-                    spec.loopArrow,
-                )),
-            );
+            if (puzzleMode.handCards.length > 0)
+            {
+                this.deckHand.initPuzzleHand(
+                    puzzleMode.handCards.map((spec) => createCardInstance(
+                        spec.definitionId,
+                        spec.arrow,
+                        'player',
+                        spec.loopArrow,
+                    )),
+                );
+            }
+
+            if (puzzleMode.boardCards?.length)
+            {
+                for (const spec of puzzleMode.boardCards)
+                {
+                    this.board.placeCard(
+                        { row: spec.row, col: spec.col },
+                        createCardInstance(
+                            spec.definitionId,
+                            spec.arrow,
+                            'player',
+                            spec.loopArrow,
+                        ),
+                    );
+                }
+            }
+
+            if (puzzleMode.chainStart)
+            {
+                this.setChainStartSlot(puzzleMode.chainStart);
+            }
+
             this.enemyPhase.clearQueuedTurn();
         }
         else

@@ -280,6 +280,7 @@ export class Game extends Scene
             runGold,
             ascensionLevel = 0,
             routeKind,
+            puzzleMode = null,
         }:
         {
             enemyId?: string;
@@ -294,6 +295,7 @@ export class Game extends Scene
             runGold?: number;
             ascensionLevel?: number;
             routeKind?: import('../run/runMap').RouteKind;
+            puzzleMode?: PuzzleModeConfig | null;
         },
     ): void =>
     {
@@ -318,13 +320,18 @@ export class Game extends Scene
             deck,
             seed,
             bodyMods,
-            null,
+            puzzleMode,
             runAttackCount,
             rerollsRemaining,
             runModifiers ?? [],
             runGold ?? 0,
             enemyHealthMultiplier,
         );
+
+        if (puzzleMode && puzzleMode.damageTarget >= 999)
+        {
+            this.activePuzzleId = null;
+        }
     };
 
     private onStartPuzzle = (

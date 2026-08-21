@@ -47,6 +47,7 @@ import {
     rollRewardForNode,
 } from './rewardHelpers';
 import { useBattleBridge } from './useBattleBridge';
+import { useShowcaseCapture } from './useShowcaseCapture';
 import type {
     CombatRecapLine,
     PendingCardDirectionFlow,
@@ -275,6 +276,24 @@ export const useRunController = () =>
             completeWardenVictory,
         },
     );
+
+    useShowcaseCapture({
+        setPhase,
+        setMap,
+        setPath,
+        setPlayerHealth,
+        setGold,
+        setDeck,
+        setBodyMods,
+        setVisit,
+        setPendingRewardFlow,
+        setBattleIntroKind,
+        sceneReadyRef,
+        pendingStartRef,
+        pendingPuzzleRef,
+        bodyMods,
+        runAttackCount,
+    });
 
     const startBattleForNode = useCallback((
         node: RunMapNode,

@@ -241,7 +241,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | `thornward` | **Thorns** — take 1 damage per Attack hit (blockable); **Damage Cap** trait — each card hit deals at most 5 damage |
 | `saboteur` | Enrage (+3 atk per trap), Escalate (ramps traps +1/turn up to 4), Silence Tile, **Curse Hand** (adds Burden to hand each turn) — trap pressure snowballs. On the run map, saboteur nodes always connect to an adjacent route up or down on the next column. |
 | `warden` | Wet Blanket (halves fire bonus), Jammer (+5 shield if chain ≥6), Last Stand (≤25% HP: atk 12, 2 traps), **Null Strip** (telegraphed: nullifies one column or row — cards still place, but deal no damage/armor/effects); **Hit Ward** trait — first 3 card hits deal no damage |
-| `smokebinder` | Smoke (blocks rad stacks), Loop Hunter (dormant while loop-reset is out of content), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
+| `smokebinder` | Smoke (blocks rad stacks), **Skill Jam** (first 3 skill cards in the chain are suppressed), Dead Zone (telegraphed event: every 2 turns, cards on even checkerboard tiles deal half damage/armor next turn) |
 | `field-medic` | Low personal threat — **ally support** in multi-enemy fights: heals weakest ally, can shield the most shielded ally (`allyActions` in `enemies.json`). Can appear as a duo partner in mid-run Street Ops. |
 | `gridlock` | **Column Pressure** — after each turn, locks one board column (telegraphed); you cannot place/move onto that column. Never locks the chain-start column. |
 | `broodframe` | **Spawn** — 80 HP host that opens with a **Wire Drone** (20 HP). Respawns a drone every 2 host turns, or under 50% HP if none live. Focus the drone or burn the frame. |
@@ -368,6 +368,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-21 | **Smokebinder: Skill Jam.** Replaced dormant Loop Hunter (loop-reset is disabled) with Skill Jam — first 3 skill cards in the chain are suppressed. |
+| 2026-08-21 | **Corner cards: one arrow.** Corner Strike / Scorch / White-Hot show a single tucked direction arrow (same as Corner Defense), not entry + both diagonal hooks. |
 | 2026-08-17 | **Main menu changelog.** Help → **What's new** opens a scrollable patch feed (`src/game/meta/changelog.ts`, `MainMenuChangelog.tsx`). Entries are added manually when shipping — not synced from this dev log. |
 | 2026-08-17 | **Exhaust pile + Redline.** Exhaust cards stay on the grid as spent routing links until energy refills, then go to a dedicated Exhaust pile (not the graveyard). New rare **Redline**: 13 damage and 13 armor, exhausts. |
 | 2026-08-17 | **Chain-step pacing on cards.** `getChainStepMs` reads optional `chainStepMsMultiplier` on the card, then `gameRules.chainStepMsByBehavior`, then 1.0. New/modded cards no longer need a TS switch in combat juice. |

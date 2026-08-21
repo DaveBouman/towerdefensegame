@@ -8,7 +8,7 @@ import { uiDisplayTextStyle, uiTextStyle } from '../config/uiTypography';
 import { getCardBehaviorTextureKey } from '../../ui/icons/cardBehaviorIcons';
 import { ARROW_GLYPH, arrowLabelPosition, cornerEntryArrowPosition } from './cardArrows';
 import { createDirectionArrowImage, createLoopBadgeImage } from './directionArrowVisual';
-import { cornerTargetDirections, type CardDirection } from '../cardGame/domain/cardDirections';
+import type { CardDirection } from '../cardGame/domain/cardDirections';
 import { CARD_VISUALS } from './cardVisuals';
 import { formatCardPowerLabel } from './cardVisualUtils';
 
@@ -78,8 +78,8 @@ export const buildCardGraphic = (
         container.add(ownershipTint);
     }
 
-    const isCornerDefense = definition.behaviorId === 'defend' && definition.cornerTurn === true;
-    const arrowPos = isCornerDefense
+    const isCornerTurn = definition.cornerTurn === true;
+    const arrowPos = isCornerTurn
         ? cornerEntryArrowPosition(card.arrow, width, height)
         : arrowLabelPosition(card.arrow, width, height);
     const arrowSize = Math.max(14, Math.round(width * 0.28));
@@ -139,23 +139,6 @@ export const buildCardGraphic = (
         {
             loopBadge.setPosition(width * 0.5, height * 0.72);
             cardDecor.push(loopBadge);
-        }
-    }
-
-    if (definition.cornerTurn && !isCornerDefense)
-    {
-        for (const target of cornerTargetDirections(card.arrow))
-        {
-            const hookPos = arrowLabelPosition(target, width, height);
-            const hookArrow = createDirectionArrowImage(scene, target, {
-                size: Math.max(11, Math.round(width * 0.2)),
-                tint: 0xffd98a,
-            }) ?? scene.add.text(0, 0, ARROW_GLYPH[target], {
-                ...uiTextStyle(15, '#ffd98a', { bold: true }),
-            }).setOrigin(0.5);
-
-            hookArrow.setPosition(hookPos.x, hookPos.y);
-            cardDecor.push(hookArrow);
         }
     }
 

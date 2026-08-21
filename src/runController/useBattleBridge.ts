@@ -41,6 +41,7 @@ interface PendingBattleStart {
     ascensionLevel?: number;
     routeKind?: import('../game/run/runMap').RouteKind;
     runGold?: number;
+    puzzleMode?: import('../game/cardGame/domain/CardGameSession').PuzzleModeConfig | null;
 }
 
 interface PendingPuzzleStart {

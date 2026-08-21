@@ -43,7 +43,7 @@ export const arrowLabelPosition = (
     }
 };
 
-/** Corner-turn cards that only show one arrow tucked in the card corner (less visual noise). */
+/** Corner-turn cards: one tucked arrow showing face direction (hooks resolve in combat). */
 export const cornerEntryArrowPosition = (
     direction: CardDirection,
     width: number,
