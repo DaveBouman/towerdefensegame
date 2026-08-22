@@ -271,5 +271,3 @@ export const stopBgm = (immediate = false): void =>
         onComplete: () => sound.stop(),
     });
 };
-
-export const getActiveBgmTrack = (): BgmTrack | null => activeTrack;

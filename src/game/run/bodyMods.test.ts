@@ -3,8 +3,6 @@ import {
     BODY_MOD_IDS,
     FIFTH_STRIKE_INTERVAL,
     getIntervalStrikeProgress,
-    getMarkFiveProgress,
-    getMarkSevenProgress,
     isFifthStrikeAttack,
     isIntervalStrikeAttack,
     isSeventhStrikeAttack,
@@ -71,23 +69,20 @@ describe('getIntervalStrikeProgress', () =>
     });
 });
 
-describe('getMarkSevenProgress', () =>
+describe('interval strike helpers', () =>
 {
-    it('counts attacks toward the next proc within each cycle', () =>
+    it('counts attacks toward the next Mark VII proc within each cycle', () =>
     {
-        expect(getMarkSevenProgress(6)).toEqual({
+        expect(getIntervalStrikeProgress(6, SEVENTH_STRIKE_INTERVAL)).toEqual({
             attacksInCycle: 6,
             interval: 7,
             nextAttackIsProc: true,
         });
     });
-});
 
-describe('getMarkFiveProgress', () =>
-{
-    it('counts attacks toward the next proc within each cycle', () =>
+    it('counts attacks toward the next Mark V proc within each cycle', () =>
     {
-        expect(getMarkFiveProgress(4)).toEqual({
+        expect(getIntervalStrikeProgress(4, FIFTH_STRIKE_INTERVAL)).toEqual({
             attacksInCycle: 4,
             interval: 5,
             nextAttackIsProc: true,

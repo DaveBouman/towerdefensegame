@@ -221,13 +221,6 @@ export const setMusicVolume = (nextVolume: number): void =>
     notifyListeners();
 };
 
-export const toggleSfxMuted = (): boolean =>
-{
-    setSfxMuted(!settings.muted);
-
-    return settings.muted;
-};
-
 export const subscribeSfxSettings = (listener: AudioSettingsListener): (() => void) =>
 {
     listeners.add(listener);
@@ -235,9 +228,6 @@ export const subscribeSfxSettings = (listener: AudioSettingsListener): (() => vo
 
     return () => listeners.delete(listener);
 };
-
-/** @deprecated Prefer subscribeSfxSettings — kept as alias for clarity. */
-export const subscribeAudioSettings = subscribeSfxSettings;
 
 const notifyListeners = (): void =>
 {

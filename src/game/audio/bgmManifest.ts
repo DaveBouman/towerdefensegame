@@ -27,9 +27,6 @@ export const BATTLE_BGM_TRACKS: readonly BgmTrack[] = [
     'iron-gait',
 ];
 
-/** BGM files are tail-trimmed via `npm run trim-bgm` (see scripts/trim-bgm.mjs). */
-export const BGM_LOOP_TRIM_SEC = 0;
-
 /** Relative loudness vs SFX master (BGM sits under combat hits). */
 export const BGM_LEVEL: Record<BgmTrack, number> = {
     'glass-streets': 0.52,

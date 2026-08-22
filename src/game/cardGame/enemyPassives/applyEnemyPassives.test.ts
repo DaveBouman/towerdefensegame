@@ -409,7 +409,7 @@ describe('enemy passives', () =>
         expect(adjusted.abilityEnemyDamage).toBe(2);
     });
 
-    it('rewards jammer and punishes loop hunter after the chain resolves', () =>
+    it('rewards jammer after a long chain resolves', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
         const chain = Array.from({ length: 6 }, (_, col) => ({
@@ -424,33 +424,12 @@ describe('enemy passives', () =>
             armor: 0,
         }));
 
-        const withLoop = [
-            ...chain,
-            {
-                slot: { row: 0, col: 6 },
-                card: createCardInstance('loop-reset', 'right', 'player', 'left'),
-                definitionId: 'loop-reset',
-                behaviorId: 'loop-reset',
-                visualId: 'loop-reset',
-                arrow: 'right' as const,
-                exitArrow: 'left' as const,
-                damage: 0,
-                armor: 0,
-            },
-        ];
-
         const jammer = resolvePostAttackPassives(
             board,
             buildAttackSequence(chain, board),
             normalizeEnemyPassives([ 'jammer' ]),
         );
-        const loopHunter = resolvePostAttackPassives(
-            board,
-            buildAttackSequence(withLoop, board),
-            normalizeEnemyPassives([ 'loopHunter' ]),
-        );
 
         expect(jammer.jammerShield).toBe(5);
-        expect(loopHunter.loopHunterDamage).toBe(3);
     });
 });

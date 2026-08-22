@@ -283,26 +283,6 @@ export const cornerFirstStep = (direction: CardDirection): CardDirection =>
     }
 };
 
-/** @deprecated Prefer cornerFirstStep — old forward-diagonal hook targets. */
-export const cornerTargetDirections = (
-    direction: CardDirection,
-): readonly CardDirection[] =>
-{
-    switch (direction)
-    {
-        case 'up':
-            return [ 'up-left', 'up-right' ];
-        case 'down':
-            return [ 'down-left', 'down-right' ];
-        case 'left':
-            return [ 'up-left', 'down-left' ];
-        case 'right':
-            return [ 'up-right', 'down-right' ];
-        default:
-            return [];
-    }
-};
-
 export const slotKey = ({ row, col }: SlotPosition): string => `${row},${col}`;
 
 export const getNextSlot = (

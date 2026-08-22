@@ -49,8 +49,6 @@ export const preloadGameIcons = async (scene: Phaser.Scene): Promise<void> =>
         {
             console.warn(error);
         }),
-    ));
+    )    );
 };
 
-/** @deprecated Use preloadGameIcons */
-export const preloadEnemyPassiveIcons = preloadGameIcons;

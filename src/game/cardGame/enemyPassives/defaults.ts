@@ -18,7 +18,6 @@ export const ENEMY_PASSIVE_DEFAULTS: Record<EnemyPassiveId, EnemyPassiveConfig> 
     smoke: { id: 'smoke', suppressedPoisonCards: 1 },
     wetBlanket: { id: 'wetBlanket', fireAlternationMultiplier: 0.5 },
     silenceTile: { id: 'silenceTile', tilesPerTurn: 1 },
-    loopHunter: { id: 'loopHunter', damage: 3 },
     jammer: { id: 'jammer', minChainLength: 6, shieldGain: 5 },
     escalate: { id: 'escalate', trapsPerRamp: 1, maxTraps: 4 },
     dampenTiles: { id: 'dampenTiles', parity: 'even', multiplier: 0.5, everyTurns: 2, duration: 1 },

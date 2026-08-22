@@ -142,7 +142,6 @@ const EN = {
     'passive.smoke': 'Smoke',
     'passive.wetBlanket': 'Wet Blanket',
     'passive.silenceTile': 'Silence Tile',
-    'passive.loopHunter': 'Loop Hunter',
     'passive.jammer': 'Jammer',
     'passive.escalate': 'Escalate',
     'passive.dampenTiles': 'Dead Zone',

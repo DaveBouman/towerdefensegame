@@ -5,7 +5,6 @@ export type EnemyPassiveId =
     | 'smoke'
     | 'wetBlanket'
     | 'silenceTile'
-    | 'loopHunter'
     | 'jammer'
     | 'escalate'
     | 'dampenTiles'
@@ -65,11 +64,6 @@ export interface WetBlanketPassiveConfig {
 export interface SilenceTilePassiveConfig {
     id: 'silenceTile';
     tilesPerTurn: number;
-}
-
-export interface LoopHunterPassiveConfig {
-    id: 'loopHunter';
-    damage: number;
 }
 
 export interface JammerPassiveConfig {
@@ -229,7 +223,6 @@ export type EnemyPassiveConfig =
     | SmokePassiveConfig
     | WetBlanketPassiveConfig
     | SilenceTilePassiveConfig
-    | LoopHunterPassiveConfig
     | JammerPassiveConfig
     | EscalatePassiveConfig
     | DampenTilesPassiveConfig

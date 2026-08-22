@@ -566,12 +566,6 @@ export class CardBoardView
         );
     }
 
-    /** @deprecated Use setBlockedSlots */
-    setSilencedSlots (slots: readonly SlotPosition[]): void
-    {
-        this.setBlockedSlots(slots, []);
-    }
-
     /** Marks tiles weakened by the enemy's Dead Zone field. */
     setDampenedSlots (slots: readonly SlotPosition[]): void
     {

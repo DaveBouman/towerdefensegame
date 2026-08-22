@@ -59,12 +59,6 @@ export const readRunAscensionLevel = (): number =>
 export const hasUnlockedAscension = (): boolean =>
     readRunAscensionLevel() > 0;
 
-/** @deprecated Use readRunAscensionLevel. */
-export const readMaxUnlockedAscension = readRunAscensionLevel;
-
-/** @deprecated Use readRunAscensionLevel. */
-export const readAscensionLevel = readRunAscensionLevel;
-
 /**
  * After clearing the Warden at `clearedLevel`, bump the counter for the next run.
  * Returns the new ascension level (unchanged if already at max).
@@ -134,17 +128,4 @@ export const getAscensionUnlockNotice = (unlockedLevel: number): AscensionUnlock
             'Clear the Warden again to unlock the next tier.',
         ],
     };
-};
-
-/** @deprecated Prefer getAscensionUnlockNotice for structured UI. */
-export const formatAscensionUnlockMessage = (unlockedLevel: number): string =>
-{
-    const notice = getAscensionUnlockNotice(unlockedLevel);
-
-    if (!notice)
-    {
-        return '';
-    }
-
-    return notice.lines.join(' ');
 };

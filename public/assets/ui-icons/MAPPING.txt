@@ -20,7 +20,6 @@ last-stand.png        <- 172155/44
 smoke.png             <- 172155/38
 wet-blanket.png       <- 507528/35
 silence.png           <- 172155/26
-loop-hunter.png       <- 172155/22
 jammer.png            <- 172155/23
 escalate.png          <- 172155/7
 dampen.png            <- 172155/16

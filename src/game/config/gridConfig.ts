@@ -7,25 +7,10 @@ export const GRID_CONFIG: GridConfig = {
     tileSize: 80,
 };
 
-export const VIEWPORT_CONFIG: GridConfig = { ...GRID_CONFIG };
-
 export const getGridPixelSize = (config: GridConfig = GRID_CONFIG): GridPixelSize => ({
     width: config.cols * config.tileSize,
     height: config.rows * config.tileSize,
 });
-
-export const getViewportPixelSize = (_config: GridConfig = VIEWPORT_CONFIG): GridPixelSize =>
-{
-    if (typeof window === 'undefined')
-    {
-        return { width: 960, height: 540 };
-    }
-
-    return {
-        width: window.innerWidth,
-        height: window.innerHeight,
-    };
-};
 
 /** Enemy traps may only be placed in this many rightmost columns. */
 export const TRAP_PLACEMENT_COLUMN_COUNT = 3;

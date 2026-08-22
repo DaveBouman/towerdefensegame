@@ -1,7 +1,6 @@
 import { BODY_MOD_IDS } from '../../run/bodyMods';
 import type { RunDeckCard } from '../../run/runDeck';
 import { getBattleEnergyBonus, getRunMaxHealth } from '../../run/runResources';
-import { collectRunModifierBattleModifiers } from '../../run/runModifiers';
 import { EnemyOverclockTracker, getEnemyDamageRamp as computeEnemyDamageRamp } from './enemyOverclock';
 import { GRID_CONFIG } from '../../config/gridConfig';
 import {
@@ -22,7 +21,6 @@ import {
 } from '../combat/battleModifiers';
 import { collectBattleModifierApplications } from '../combat/chainBattleModifiers';
 import { scaleBoostedDelta } from '../combat/chainBoost';
-import { getBattleModifierAnchor } from '../combat/battleModifierDisplay';
 import {
     applyEnemyPassivesToSequence,
     type DampenField,
@@ -120,7 +118,6 @@ export class CardGameSession
         puzzleMode: PuzzleModeConfig | null = null,
         runAttackCount = 0,
         rerollsRemaining?: number,
-        runModifiers: readonly string[] = [],
         runGold = 0,
         enemyHealthMultiplier = 1,
     )
@@ -237,7 +234,6 @@ export class CardGameSession
             deckHand: this.deckHand,
             getEnergy: () => this.energyRound.getEnergy(),
         });
-        this.applyRunModifierBattleModifiers(runModifiers);
 
         if (puzzleMode)
         {
@@ -462,20 +458,6 @@ export class CardGameSession
         }
 
         this.battleModifiers.push({ stat, delta, source, duration });
-    }
-
-    private applyRunModifierBattleModifiers (runModifierIds: readonly string[]): void
-    {
-        for (const preset of collectRunModifierBattleModifiers(runModifierIds))
-        {
-            const anchor = getBattleModifierAnchor(preset.stat);
-
-            this.addBattleModifier(
-                preset.stat,
-                preset.delta,
-                anchor === 'player' ? 'player' : 'enemy',
-            );
-        }
     }
 
     addBattleModifierFromCard (definitionId: string, boostMultiplier = 1): void

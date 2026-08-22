@@ -12,7 +12,7 @@ import { PlayerHealthView } from '../board/PlayerHealthView';
 import { CardGameSession } from '../cardGame/domain/CardGameSession';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
 import type { SlotPosition } from '../cardGame/domain/types';
-import { preloadEnemyPassiveIcons } from '../cardGame/presentation/icons/preloadEnemyPassiveIcons';
+import { preloadGameIcons } from '../cardGame/presentation/icons/preloadEnemyPassiveIcons';
 import { preloadEnemyPortraits } from '../cardGame/presentation/icons/preloadEnemyPortraits';
 import { preloadSteamPortraits } from '../cardGame/presentation/icons/preloadSteamPortraits';
 import { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
@@ -124,7 +124,7 @@ export class Game extends Scene
         this.unbindBgm = bindGameBgmListeners();
 
         void Promise.all([
-            preloadEnemyPassiveIcons(this),
+            preloadGameIcons(this),
             preloadEnemyPortraits(this),
             preloadSteamPortraits(this),
         ]).then(() =>
@@ -276,7 +276,6 @@ export class Game extends Scene
             bodyMods,
             runAttackCount,
             rerollsRemaining,
-            runModifiers,
             runGold,
             ascensionLevel = 0,
             routeKind,
@@ -291,7 +290,6 @@ export class Game extends Scene
             bodyMods: string[];
             runAttackCount: number;
             rerollsRemaining: number;
-            runModifiers?: readonly string[];
             runGold?: number;
             ascensionLevel?: number;
             routeKind?: import('../run/runMap').RouteKind;
@@ -323,7 +321,6 @@ export class Game extends Scene
             puzzleMode,
             runAttackCount,
             rerollsRemaining,
-            runModifiers ?? [],
             runGold ?? 0,
             enemyHealthMultiplier,
         );
@@ -383,7 +380,6 @@ export class Game extends Scene
         puzzleMode: PuzzleModeConfig | null = null,
         runAttackCount = 0,
         rerollsRemaining = GAME_RULES.rerollsPerFloor,
-        runModifiers: readonly string[] = [],
         runGold = 0,
         enemyHealthMultiplier = 1,
     ): void
@@ -417,7 +413,6 @@ export class Game extends Scene
             puzzleMode,
             runAttackCount,
             puzzleMode ? 0 : rerollsRemaining,
-            runModifiers,
             runGold,
             enemyHealthMultiplier,
         );

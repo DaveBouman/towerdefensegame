@@ -121,7 +121,6 @@ export const describeEnemyPassives = (
         smoke: 'Smoke',
         wetBlanket: 'Wet Blanket',
         silenceTile: 'Silence Tile',
-        loopHunter: 'Loop Hunter',
         jammer: 'Jammer',
         escalate: 'Escalate',
         dampenTiles: 'Dead Zone',

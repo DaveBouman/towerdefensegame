@@ -181,7 +181,7 @@ body {
     color: var(--cp-cyan);
 }
 
-.game-hud__start-wave {
+.game-hud__attack {
     padding: 10px 22px;
     border: 1px solid var(--cp-cyan);
     border-radius: 4px;
@@ -194,13 +194,13 @@ body {
     box-shadow: 0 0 18px rgba(255, 45, 149, 0.25);
 }
 
-.game-hud__start-wave:hover:not(:disabled) {
+.game-hud__attack:hover:not(:disabled) {
     background: linear-gradient(180deg, rgba(255, 45, 149, 0.35) 0%, rgba(255, 45, 149, 0.12) 100%);
     border-color: #7af0ff;
     box-shadow: var(--cp-glow-cyan);
 }
 
-.game-hud__start-wave:disabled {
+.game-hud__attack:disabled {
     opacity: 0.4;
     box-shadow: none;
 }
@@ -590,7 +590,7 @@ body {
 /* Readability — scale overlay text that lives in style.css */
 .game-hud__energy-label { font-size: calc(12px * var(--text-scale)); }
 .game-hud__energy-count { font-size: calc(13px * var(--text-scale)); }
-.game-hud__start-wave,
+.game-hud__attack,
 .game-hud__reroll,
 .game-hud__reroll-confirm,
 .game-hud__reroll-cancel { font-size: calc(14px * var(--text-scale)); }
@@ -1027,7 +1027,6 @@ body {
 }
 
 /* Splash banners */
-.floor-banner,
 .battle-intro {
     font-family: var(--font-ui);
     background:
@@ -1035,7 +1034,6 @@ body {
     backdrop-filter: blur(4px);
 }
 
-.floor-banner__title,
 .battle-intro__title {
     font-family: var(--font-display);
     letter-spacing: 0.1em;
@@ -1054,7 +1052,6 @@ body {
     text-shadow: 0 0 28px rgba(255, 45, 149, 0.45);
 }
 
-.floor-banner__eyebrow,
 .battle-intro__eyebrow {
     font-family: var(--font-mono);
     letter-spacing: 0.16em;

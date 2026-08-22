@@ -93,42 +93,8 @@ export const ModalShell = ({
                 onClick={stopPanelClick}
                 onWheel={stopPanelWheel}
             >
-                {children}
-            </CyberPanel>
+        {children}
+    </CyberPanel>
         </div>
     );
 };
-
-interface CyberOverlayProps {
-    variant?: CyberPanelVariant;
-    overlayClassName?: string;
-    panelClassName?: string;
-    onBackdropClick?: () => void;
-    role?: string;
-    ariaModal?: boolean;
-    ariaLabel?: string;
-    children: ReactNode;
-}
-
-export const CyberOverlay = ({
-    variant = 'cyan',
-    overlayClassName = '',
-    panelClassName = '',
-    onBackdropClick,
-    role,
-    ariaModal,
-    ariaLabel,
-    children,
-}: CyberOverlayProps) => (
-    <ModalShell
-        variant={variant}
-        rootClassName={`cp-overlay cp-overlay--${variant} ${overlayClassName}`.trim()}
-        panelClassName={panelClassName}
-        onBackdropClick={onBackdropClick}
-        role={role}
-        ariaModal={ariaModal}
-        ariaLabel={ariaLabel}
-    >
-        {children}
-    </ModalShell>
-);

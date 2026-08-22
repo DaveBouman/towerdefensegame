@@ -14,7 +14,6 @@ describe('enemyPassiveTooltipRegistry', () =>
             'smoke',
             'wetBlanket',
             'silenceTile',
-            'loopHunter',
             'jammer',
             'escalate',
             'dampenTiles',

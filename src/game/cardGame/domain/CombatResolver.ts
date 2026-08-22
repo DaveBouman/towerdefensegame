@@ -389,11 +389,6 @@ export class CombatResolver
             {
                 this.resolveEnemyShield(postAttack.jammerShield, target.instanceId);
             }
-
-            if (postAttack.loopHunterDamage > 0)
-            {
-                this.resolveEnemyAttack(postAttack.loopHunterDamage);
-            }
         }
 
         this.ctx.fieldEffects.resolveHazardsAfterAttack(sequence.chain);

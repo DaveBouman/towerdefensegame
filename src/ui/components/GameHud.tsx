@@ -184,8 +184,8 @@ export const GameHud = () =>
                 type="button"
                 className={
                     needsTarget
-                        ? 'game-hud__start-wave game-hud__start-wave--needs-target'
-                        : 'game-hud__start-wave'
+                        ? 'game-hud__attack game-hud__attack--needs-target'
+                        : 'game-hud__attack'
                 }
                 disabled={!readiness.canAttack || rerollState.rerollModeActive}
                 title={needsTarget ? 'Select an enemy target before attacking' : undefined}

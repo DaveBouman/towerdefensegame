@@ -67,13 +67,6 @@ export const resolveEnemyPassiveTooltip = (
                     'You cannot place or move cards onto muted tiles.',
                 ],
             };
-        case 'loopHunter':
-            return {
-                title: passiveLabel('loopHunter'),
-                lines: [
-                    `Deals ${passive.damage} damage to you if your chain includes a Loop card.`,
-                ],
-            };
         case 'jammer':
             return {
                 title: passiveLabel('jammer'),

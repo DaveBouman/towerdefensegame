@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-08-17
+**Last updated:** 2026-08-22
 
 ---
 
@@ -142,7 +142,7 @@ index.html → src/main.tsx → App.tsx (run shell)
   ├── BestiaryOverlay.tsx   (unlocked / locked enemy archive)
   ├── BodyModBestiaryOverlay.tsx (unlocked / locked body mod archive; uses ArchiveOverlay)
   ├── ArchiveOverlay.tsx      (shared archive shell + filter UX)
-  ├── CyberPanel.tsx          (CyberPanelChrome, ModalShell, CyberOverlay)
+  ├── CyberPanel.tsx          (CyberPanelChrome, ModalShell)
   ├── desktopBridge.ts      (`window.signalChainDesktop` quit/fullscreen/Steam persona hooks for Electron)
   ├── steamAvatars.ts       (optional Steam faces: your portrait on the runner, friends on enemies)
   ├── GameHud.tsx           (battle phase)
@@ -368,6 +368,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-22 | **Dead-code cleanup.** Removed unused Craftpix-era SVG dump (~17MB), Phaser template assets, orphan armor helper, empty `runModifiers` scaffold, never-shown FloorBanner, unwired Loop Hunter passive stack, and deprecated aliases. Dev/build no longer call Phaser `log.js`. |
 | 2026-08-21 | **Skewer.** New leap-2 attack that activates the mid card for effects only (mid arrow ignored). Existing Lunge / corner cards unchanged. |
 | 2026-08-21 | **Smokebinder: Skill Jam.** Replaced dormant Loop Hunter (loop-reset is disabled) with Skill Jam — first 3 skill cards in the chain are suppressed. |
 | 2026-08-21 | **Corner cards: one arrow.** Corner Strike / Scorch / White-Hot show a single tucked direction arrow (same as Corner Defense), not entry + both diagonal hooks. |

@@ -74,7 +74,6 @@ export const useRunController = () =>
     const [ floorRerollsRemaining, setFloorRerollsRemaining ] = useState(GAME_RULES.rerollsPerFloor);
     const [ phase, setPhase ] = useState<RunPhase>('menu');
     const [ departingNodeId, setDepartingNodeId ] = useState<string | null>(null);
-    const [ floorBanner, setFloorBanner ] = useState<number | null>(null);
     const [ runToast, setRunToast ] = useState<string | null>(null);
     const [ battleIntroKind, setBattleIntroKind ] = useState<RunMapNodeKind | null>(null);
     const [ activeBattleKind, setActiveBattleKind ] = useState<RunMapNodeKind | null>(null);
@@ -180,14 +179,6 @@ export const useRunController = () =>
             emitRunSfx('reward', { volume: 1 });
         }
     }, [ phase ]);
-
-    useEffect(() =>
-    {
-        if (floorBanner !== null)
-        {
-            emitRunSfx('floor-enter', { volume: 0.95 });
-        }
-    }, [ floorBanner ]);
 
     useEffect(() =>
     {
@@ -742,7 +733,6 @@ export const useRunController = () =>
         setPendingCardDirectionFlow(null);
         eventVisitRef.current = null;
         setDepartingNodeId(null);
-        setFloorBanner(null);
         setRunToast(null);
         setBattleIntroKind(null);
         setActiveBattleKind(null);
@@ -842,8 +832,6 @@ export const useRunController = () =>
         ascensionLevel,
         departingNodeId,
         availableIds,
-        floorBanner,
-        setFloorBanner,
         runToast,
         setRunToast,
         battleIntroKind,

@@ -304,7 +304,7 @@ html, body, #root {
     background: #1a1a2e;
 }
 
-.game-hud__start-wave {
+.game-hud__attack {
     padding: 8px 16px;
     border: 1px solid #3498db;
     border-radius: 6px;
@@ -318,12 +318,12 @@ html, body, #root {
     transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.game-hud__start-wave:hover:not(:disabled) {
+.game-hud__attack:hover:not(:disabled) {
     background: #243a52;
     border-color: #5dade2;
 }
 
-.game-hud__start-wave--needs-target:disabled {
+.game-hud__attack--needs-target:disabled {
     opacity: 0.9;
     cursor: var(--cursor-not-allowed, not-allowed);
     border-color: rgba(252, 238, 10, 0.55);
@@ -331,7 +331,7 @@ html, body, #root {
     color: #fcee0a;
 }
 
-.game-hud__start-wave:disabled {
+.game-hud__attack:disabled {
     opacity: 0.45;
     cursor: var(--cursor-not-allowed, not-allowed);
     border-color: #3a3a5c;
@@ -4528,7 +4528,6 @@ button.pile-view__card {
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-.floor-banner,
 .run-toast,
 .battle-intro {
     position: fixed;
@@ -4542,24 +4541,17 @@ button.pile-view__card {
     animation: overlay-fade-in 280ms ease both;
 }
 
-.floor-banner__eyebrow,
 .battle-intro__eyebrow {
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #8aa0c8;
 }
 
-.floor-banner__title,
 .battle-intro__title {
     margin: 0.35rem 0 0;
     font-size: clamp(1.8rem, 4vw, 2.6rem);
     color: #f2f3ff;
     text-shadow: 0 0 24px rgba(170, 150, 255, 0.45);
-}
-
-.floor-banner__subtitle {
-    margin: 0.4rem 0 0;
-    color: #9eb0d0;
 }
 
 .run-toast {

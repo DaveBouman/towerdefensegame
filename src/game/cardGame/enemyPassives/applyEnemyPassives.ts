@@ -484,7 +484,6 @@ export const computeThornsReflectDamage = (
 
 export interface PostAttackPassiveResult {
     enrageStacks: number;
-    loopHunterDamage: number;
     jammerShield: number;
 }
 
@@ -495,14 +494,11 @@ export const resolvePostAttackPassives = (
 ): PostAttackPassiveResult =>
 {
     const enrage = getEnemyPassive(passives, 'enrage');
-    const loopHunter = getEnemyPassive(passives, 'loopHunter');
     const jammer = getEnemyPassive(passives, 'jammer');
     const unchainedTrapCount = getUnchainedHazardSlots(board, sequence.chain).length;
-    const usedLoop = sequence.chain.some((step) => step.behaviorId === 'loop-reset');
 
     return {
         enrageStacks: enrage ? unchainedTrapCount : 0,
-        loopHunterDamage: loopHunter && usedLoop ? loopHunter.damage : 0,
         jammerShield: jammer && sequence.chain.length >= jammer.minChainLength
             ? jammer.shieldGain
             : 0,

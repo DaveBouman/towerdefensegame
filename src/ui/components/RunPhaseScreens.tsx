@@ -19,7 +19,6 @@ import {
     TutorialRewardTipOverlay,
 } from '../tutorial/Tutorial';
 import { RunToast } from './RunToast';
-import { FloorBanner } from './FloorBanner';
 import { BattleIntroOverlay } from './BattleIntroOverlay';
 import { GameMenuButton } from './GameMenuButton';
 import { MainMenuOverlay } from './MainMenuOverlay';
@@ -51,8 +50,6 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
         ascensionLevel,
         departingNodeId,
         availableIds,
-        floorBanner,
-        setFloorBanner,
         runToast,
         setRunToast,
         battleIntroKind,
@@ -150,9 +147,6 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
             )}
             {tutorial.showRewardTip && (
                 <TutorialRewardTipOverlay onDismiss={tutorial.dismissRewardTip} />
-            )}
-            {floorBanner !== null && (
-                <FloorBanner floor={floorBanner} onDone={() => setFloorBanner(null)} />
             )}
             {runToast && (
                 <RunToast message={runToast} tone="good" onDone={() => setRunToast(null)} />

@@ -53,7 +53,6 @@ const PASSIVE_ROW_COLORS: Record<EnemyPassiveConfig['id'], number> = {
     smoke: 0x95a5a6,
     wetBlanket: 0x3498db,
     silenceTile: 0x9b59b6,
-    loopHunter: 0xe67e22,
     jammer: 0x5dade2,
     escalate: 0xff6b6b,
     dampenTiles: 0x9b8cff,

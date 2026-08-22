@@ -88,16 +88,6 @@ export const getIntervalStrikeProgress = (
     };
 };
 
-/** @deprecated Prefer `getIntervalStrikeProgress(count, SEVENTH_STRIKE_INTERVAL)`. */
-export type MarkSevenProgress = IntervalStrikeProgress;
-
-/** Progress toward the next Mark VII proc for run-wide attack counters. */
-export const getMarkSevenProgress = (runAttackCount: number): IntervalStrikeProgress =>
-    getIntervalStrikeProgress(runAttackCount, SEVENTH_STRIKE_INTERVAL);
-
-export const getMarkFiveProgress = (runAttackCount: number): IntervalStrikeProgress =>
-    getIntervalStrikeProgress(runAttackCount, FIFTH_STRIKE_INTERVAL);
-
 export const BODY_MOD_DEFINITIONS: readonly BodyModDefinition[] = [
     {
         id: BODY_MOD_IDS.chromeHeart,

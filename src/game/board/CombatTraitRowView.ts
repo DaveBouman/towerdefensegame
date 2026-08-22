@@ -8,8 +8,6 @@ import { attachCombatTraitTooltip } from '../cardGame/presentation/tooltips/Comb
 
 export const COMBAT_TRAIT_ICON_SIZE = 26;
 export const COMBAT_TRAIT_ICON_GAP = 4;
-/** @deprecated Prefer name-bottom gap via `setRowY` on each panel. */
-export const COMBAT_TRAIT_ROW_BELOW_LABEL = 18;
 export const COMBAT_TRAIT_NAME_GAP = 6;
 
 export class CombatTraitRowView

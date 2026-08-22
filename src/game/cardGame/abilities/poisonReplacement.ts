@@ -57,8 +57,3 @@ export const getAllDefendIndicesReplacedByPoison = (
 
     return replaced;
 };
-
-export const isArmorReplacedByPoison = (
-    chain: readonly ActivationStep[],
-    stepIndex: number,
-): boolean => getAllDefendIndicesReplacedByPoison(chain).has(stepIndex);

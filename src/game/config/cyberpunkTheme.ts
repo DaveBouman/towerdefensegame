@@ -52,5 +52,3 @@ export const CYBER = {
     cardBackBorder: 0x4a2840,
     cardInner: 0x0c0810,
 } as const;
-
-export const CYBER_BG_HEX = '#0c0812';

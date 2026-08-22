@@ -23,11 +23,6 @@ const abilities = new Map<string, ChainAbility>([
     [ overloadAbility.id, overloadAbility ],
 ]);
 
-export const registerChainAbility = (ability: ChainAbility): void =>
-{
-    abilities.set(ability.id, ability);
-};
-
 export const getChainAbility = (id: string): ChainAbility | undefined =>
     abilities.get(id);
 

@@ -1,6 +1,5 @@
 import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistry';
 import type { CardDirection } from '../../game/cardGame/domain/cardDirections';
-import { HAND_CARD_HEIGHT, HAND_CARD_WIDTH } from '../../game/cards/cardVisuals';
 import { cardVisualCssVars, formatCardPowerLabel, resolveCardVisualStyle } from '../../game/cards/cardVisualUtils';
 import { CardBehaviorIcon } from './CardBehaviorIcon';
 import { DirectionArrowIcon } from './DirectionArrowIcon';
@@ -86,6 +85,3 @@ export const CardChip = ({
         </div>
     );
 };
-
-export const CARD_CHIP_HAND_WIDTH = HAND_CARD_WIDTH;
-export const CARD_CHIP_HAND_HEIGHT = HAND_CARD_HEIGHT;

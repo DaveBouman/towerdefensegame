@@ -225,14 +225,6 @@ export const updateCardGraphicDirection = (
     graphic.setData(CARD_DIRECTION_MARK_KEY, mark);
 };
 
-/** @deprecated Use buildCardGraphic with a CardInstance. */
-export const buildCardGraphicFromDefinition = (
-    scene: Phaser.Scene,
-    definitionId: string,
-    options: CardVisualOptions,
-): CardGraphic =>
-    buildCardGraphic(scene, { instanceId: 'preview', definitionId, arrow: 'right' }, options);
-
 /** Face-down stack card — same chrome as hand cards, used on the draw pile. */
 export const buildCardBackGraphic = (
     scene: Phaser.Scene,
