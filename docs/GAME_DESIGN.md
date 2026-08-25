@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-08-22
+**Last updated:** 2026-08-25
 
 ---
 
@@ -368,6 +368,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-25 | **Ripperdoc storefront.** Shop is no longer a flat list: header vitals, card/body-mod product tiles on the slab, and a clinic services bay with icons. |
+| 2026-08-25 | **Ripperdoc offer previews.** Shop rows show the card chip for card stock, a tinted implant tile for body mods, and Craftpix service icons for heal / remove / reroute / upgrade — less “boxes of text.” |
 | 2026-08-22 | **Dead-code cleanup.** Removed unused Craftpix-era SVG dump (~17MB), Phaser template assets, orphan armor helper, empty `runModifiers` scaffold, never-shown FloorBanner, unwired Loop Hunter passive stack, and deprecated aliases. Dev/build no longer call Phaser `log.js`. |
 | 2026-08-21 | **Skewer.** New leap-2 attack that activates the mid card for effects only (mid arrow ignored). Existing Lunge / corner cards unchanged. |
 | 2026-08-21 | **Smokebinder: Skill Jam.** Replaced dormant Loop Hunter (loop-reset is disabled) with Skill Jam — first 3 skill cards in the chain are suppressed. |

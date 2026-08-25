@@ -275,6 +275,24 @@ export const getBodyModBestiaryProgress = (): { unlocked: number; total: number 
     };
 };
 
+/** Accent + glyph for shop / reward tiles (unlocked or not). */
+export const getBodyModVisual = (
+    id: string,
+): { accentCss: string; labelColor: string; glyph: string } =>
+{
+    const identity = BODY_MOD_IDENTITY[id] ?? {
+        accent: 0x7af0ff,
+        labelColor: '#b8f0ff',
+        glyph: '◆',
+    };
+
+    return {
+        accentCss: toCssHex(identity.accent),
+        labelColor: identity.labelColor,
+        glyph: identity.glyph,
+    };
+};
+
 export const bodyModTierLabel = (tier: BodyModTier): string =>
 {
     switch (tier)

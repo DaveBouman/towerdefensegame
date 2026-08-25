@@ -3,7 +3,7 @@
 Use **`?capture=<id>`** to jump straight to a framed in-game moment (no run grind). Capture at **1920×1080**; hide the browser chrome.
 
 ```
-http://localhost:5173/?capture=shop
+http://localhost:8080/?capture=shop
 ```
 
 **Between shots:** hard-refresh the tab, or open a new tab per URL. Same `capture` id on reload is ignored (Strict Mode safe).

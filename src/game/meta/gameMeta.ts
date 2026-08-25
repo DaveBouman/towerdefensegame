@@ -8,4 +8,4 @@ export const GAME_TAGLINE = 'Card-chain gauntlet';
 export const GAME_VERSION = __APP_VERSION__;
 export const GAME_BUILD_LABEL = 'Early Access';
 export const GAME_EARLY_ACCESS_NOTICE =
-    'This is an Early Access title. Balance, content, and features are still evolving — feedback welcome.';
+    'This is an Early Access title. Balance, content, and features are still evolving';

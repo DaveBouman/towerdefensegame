@@ -832,10 +832,95 @@ body {
 
 .shop-overlay__panel {
     position: relative;
-    width: min(560px, 100%);
-    max-height: min(90vh, 720px);
+    width: min(640px, 100%);
+    max-height: min(90vh, 760px);
     overflow: auto;
     padding: 28px 28px 22px;
+}
+
+.shop-overlay__panel--storefront {
+    width: min(780px, 100%);
+    max-height: min(86vh, 760px);
+}
+
+.shop-overlay__section-title {
+    font-family: var(--font-mono);
+    color: var(--cp-gold-dim, #a89482);
+}
+
+.shop-overlay__vital {
+    border-radius: 4px;
+    border: 1px solid var(--cp-border);
+    background: rgba(8, 14, 24, 0.92);
+}
+
+.shop-overlay__vital-label {
+    font-family: var(--font-mono);
+    color: var(--cp-text-muted);
+}
+
+.shop-overlay__vital-value {
+    font-family: var(--font-mono);
+    color: var(--cp-text-bright);
+}
+
+.shop-overlay__vital--creds {
+    border-color: color-mix(in srgb, var(--cp-gold) 45%, transparent);
+}
+
+.shop-overlay__vital--creds .shop-overlay__vital-value {
+    color: var(--cp-gold);
+}
+
+.shop-overlay__stock-tile {
+    border-radius: 4px;
+    border: 1px solid var(--cp-border);
+    background:
+        radial-gradient(ellipse at 50% 0%, rgba(255, 212, 71, 0.08), transparent 55%),
+        rgba(10, 16, 28, 0.92);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.shop-overlay__stock-tile:hover:not(:disabled) {
+    border-color: var(--cp-border-bright);
+    box-shadow: var(--cp-glow-cyan);
+}
+
+.shop-overlay__stock-kind {
+    font-family: var(--font-mono);
+    color: var(--cp-cyan-dim);
+}
+
+.shop-overlay__stock-label {
+    font-family: var(--font-display);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--cp-text-bright);
+}
+
+.shop-overlay__stock-price,
+.shop-overlay__service-price {
+    font-family: var(--font-mono);
+    color: var(--cp-gold);
+}
+
+.shop-overlay__service-tile {
+    border-radius: 4px;
+    border: 1px solid var(--cp-border);
+    background: rgba(10, 16, 28, 0.92);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+}
+
+.shop-overlay__service-tile:hover:not(:disabled) {
+    border-color: var(--cp-border-bright);
+    box-shadow: var(--cp-glow-cyan);
+}
+
+.shop-overlay__service-label {
+    font-family: var(--font-display);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--cp-text-bright);
 }
 
 .shop-overlay__eyebrow,

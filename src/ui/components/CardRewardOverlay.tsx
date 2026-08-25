@@ -258,7 +258,7 @@ export const CardRewardOverlay = ({
                                             definitionId={card.definitionId}
                                             label={card.label}
                                             power={card.power}
-                                            size="hand"
+                                            size="pile"
                                         />
                                         <span className="card-reward__pool">
                                             {arrowPoolLabel(definition.arrowPool)}
