@@ -138,68 +138,56 @@ export const CardInspectOverlay = ({
             {entries.length === 0 ? (
                 <p className="card-inspect__empty">{emptyMessage}</p>
             ) : (
-                <div className="card-collection__grid">
-                    {entries.map((entry) =>
-                    {
-                        const tooltip = tooltips.get(entry.id);
-                        const resolvedTier = entry.tier
-                            ?? getCardDefinitionOrThrow(entry.definitionId).tier;
+                <div className="card-collection__body">
+                    <div className="card-collection__grid">
+                        {entries.map((entry) =>
+                        {
+                            const resolvedTier = entry.tier
+                                ?? getCardDefinitionOrThrow(entry.definitionId).tier;
 
-                        return (
-                            <button
-                                key={entry.id}
-                                type="button"
-                                className={[
-                                    'card-collection__item',
-                                    selectedId === entry.id ? 'card-collection__item--selected' : '',
-                                ].filter(Boolean).join(' ')}
-                                onClick={() => setSelectedId(entry.id)}
-                                aria-label={entry.label}
-                            >
-                                <CardChip
-                                    definitionId={entry.definitionId}
-                                    label={entry.label}
-                                    arrow={entry.arrow}
-                                    loopArrow={entry.loopArrow}
-                                    countBadge={entry.count}
-                                    size="pile"
-                                    className="card-collection__chip"
-                                />
-                                <span className="card-collection__name">{entry.label}</span>
-                                <span className="card-collection__tier">{tierLabel(resolvedTier)}</span>
-                                {tooltip && (
-                                    <span className="card-collection__tooltip" role="tooltip">
-                                        <span className="card-collection__tooltip-title">
-                                            {tooltip.title}
-                                        </span>
-                                        {tooltip.lines.map((line, lineIndex) => (
-                                            <span
-                                                key={`${entry.id}-${lineIndex}`}
-                                                className="card-collection__tooltip-line"
-                                            >
-                                                {line}
-                                            </span>
-                                        ))}
-                                    </span>
-                                )}
-                            </button>
-                        );
-                    })}
+                            return (
+                                <button
+                                    key={entry.id}
+                                    type="button"
+                                    className={[
+                                        'card-collection__item',
+                                        selectedId === entry.id ? 'card-collection__item--selected' : '',
+                                    ].filter(Boolean).join(' ')}
+                                    onClick={() => setSelectedId(entry.id)}
+                                    onMouseEnter={() => setSelectedId(entry.id)}
+                                    onFocus={() => setSelectedId(entry.id)}
+                                    aria-label={entry.label}
+                                >
+                                    <CardChip
+                                        definitionId={entry.definitionId}
+                                        label={entry.label}
+                                        arrow={entry.arrow}
+                                        loopArrow={entry.loopArrow}
+                                        countBadge={entry.count}
+                                        size="pile"
+                                        className="card-collection__chip"
+                                    />
+                                    <span className="card-collection__name">{entry.label}</span>
+                                    <span className="card-collection__tier">{tierLabel(resolvedTier)}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="card-collection__detail" role="status">
+                        {selectedTooltip ? (
+                            <>
+                                <strong>{selectedTooltip.title}</strong>
+                                {selectedTooltip.lines.map((line, lineIndex) => (
+                                    <span key={lineIndex}>{line}</span>
+                                ))}
+                            </>
+                        ) : (
+                            <span>{detailHint}</span>
+                        )}
+                    </div>
                 </div>
             )}
-
-            <div className="card-collection__detail" role="status">
-                {selectedTooltip ? (
-                    <>
-                        <strong>{selectedTooltip.title}</strong>
-                        {selectedTooltip.lines.map((line, lineIndex) => (
-                            <span key={lineIndex}>{line}</span>
-                        ))}
-                    </>
-                ) : (
-                    <span>{detailHint}</span>
-                )}
-            </div>
 
             <button type="button" className="card-collection__close" onClick={onClose}>
                 Close

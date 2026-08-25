@@ -32,7 +32,7 @@ export const BestiaryOverlay = ({ onClose }: BestiaryOverlayProps) =>
             detailClassName="bestiary__detail"
             entries={entries}
             progress={progress}
-            renderItem={(entry, { selected, onSelect }) => (
+            renderItem={(entry, { selected, onSelect, onPreview }) => (
                 <button
                     key={entry.id}
                     type="button"
@@ -43,6 +43,8 @@ export const BestiaryOverlay = ({ onClose }: BestiaryOverlayProps) =>
                         selected ? 'card-collection__item--selected' : '',
                     ].filter(Boolean).join(' ')}
                     onClick={onSelect}
+                    onMouseEnter={onPreview}
+                    onFocus={onPreview}
                     aria-label={entry.unlocked ? entry.label : 'Unknown hostile'}
                     style={entry.unlocked
                         ? { ['--bestiary-accent' as string]: entry.accentCss }
@@ -64,27 +66,6 @@ export const BestiaryOverlay = ({ onClose }: BestiaryOverlayProps) =>
                     </span>
                     <span className="card-collection__tier">
                         {bestiaryRoleLabel(entry.role)}
-                    </span>
-                    <span className="card-collection__tooltip" role="tooltip">
-                        {entry.unlocked ? (
-                            <>
-                                <span className="card-collection__tooltip-title">
-                                    {entry.label}
-                                </span>
-                                <span className="card-collection__tooltip-line">
-                                    {entry.summary}
-                                </span>
-                            </>
-                        ) : (
-                            <>
-                                <span className="card-collection__tooltip-title">
-                                    Unknown hostile
-                                </span>
-                                <span className="card-collection__tooltip-line">
-                                    Encounter this enemy in a run to log its dossier.
-                                </span>
-                            </>
-                        )}
                     </span>
                 </button>
             )}

@@ -23,7 +23,11 @@ export interface ArchiveOverlayProps<T extends ArchiveUnlockEntry> {
     detailClassName?: string;
     entries: readonly T[];
     progress: { unlocked: number; total: number };
-    renderItem: (entry: T, ctx: { selected: boolean; onSelect: () => void }) => ReactNode;
+    renderItem: (entry: T, ctx: {
+        selected: boolean;
+        onSelect: () => void;
+        onPreview: () => void;
+    }) => ReactNode;
     renderDetail: (entry: T | null) => ReactNode;
 }
 
@@ -54,6 +58,7 @@ export const ArchiveOverlay = <T extends ArchiveUnlockEntry>({
         close,
         selectFilter,
         selectEntry,
+        previewEntry,
     } = useArchiveFilter(entries, onClose);
 
     const filterButtonLabel = (id: ArchiveFilter): string =>
@@ -101,17 +106,20 @@ export const ArchiveOverlay = <T extends ArchiveUnlockEntry>({
                 ))}
             </div>
 
-            <div className={`card-collection__grid ${gridClassName}`.trim()}>
-                {visible.map((entry) => renderItem(entry, {
-                    selected: selectedId === entry.id,
-                    onSelect: () => selectEntry(entry),
-                }))}
-            </div>
+            <div className="card-collection__body">
+                <div className={`card-collection__grid ${gridClassName}`.trim()}>
+                    {visible.map((entry) => renderItem(entry, {
+                        selected: selectedId === entry.id,
+                        onSelect: () => selectEntry(entry),
+                        onPreview: () => previewEntry(entry),
+                    }))}
+                </div>
 
-            <div className={`card-collection__detail ${detailClassName}`.trim()} role="status">
-                {selected ? renderDetail(selected) : (
-                    <span>{emptyDetailHint}</span>
-                )}
+                <div className={`card-collection__detail ${detailClassName}`.trim()} role="status">
+                    {selected ? renderDetail(selected) : (
+                        <span>{emptyDetailHint}</span>
+                    )}
+                </div>
             </div>
 
             <button type="button" className="card-collection__close" onClick={close}>

@@ -66,6 +66,12 @@ export const useArchiveFilter = <T extends ArchiveUnlockEntry>(
         setSelectedId(entry.id);
     };
 
+    /** Quiet focus for hover — drives the side dossier without a floating tooltip. */
+    const previewEntry = (entry: T): void =>
+    {
+        setSelectedId(entry.id);
+    };
+
     return {
         filter,
         selectedId,
@@ -74,5 +80,6 @@ export const useArchiveFilter = <T extends ArchiveUnlockEntry>(
         close,
         selectFilter,
         selectEntry,
+        previewEntry,
     };
 };

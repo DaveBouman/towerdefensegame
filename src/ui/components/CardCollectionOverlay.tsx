@@ -56,66 +56,37 @@ export const CardCollectionOverlay = ({ onClose }: CardCollectionOverlayProps) =
             progressSuffix="unlocked"
             filterAriaLabel="Collection filter"
             filterLabels={{ unlocked: 'Unlocked', locked: 'Locked' }}
-            emptyDetailHint="Hover or select a card to inspect it."
+            emptyDetailHint="Select a card to inspect its dossier."
             variant="cyan"
             rootClassName=""
             entries={entries}
             progress={progress}
-            renderItem={(entry, { selected, onSelect }) =>
-            {
-                const tooltip = entry.unlocked ? tooltips.get(entry.id) ?? null : null;
-
-                return (
-                    <button
-                        key={entry.id}
-                        type="button"
-                        className={[
-                            'card-collection__item',
-                            entry.unlocked ? '' : 'card-collection__item--locked',
-                            selected ? 'card-collection__item--selected' : '',
-                        ].filter(Boolean).join(' ')}
-                        onClick={onSelect}
-                        aria-label={entry.unlocked ? entry.label : 'Locked card'}
-                    >
-                        <CardChip
-                            definitionId={entry.id}
-                            size="pile"
-                            faceDown={!entry.unlocked}
-                            className="card-collection__chip"
-                        />
-                        <span className="card-collection__name">
-                            {entry.unlocked ? entry.label : '???'}
-                        </span>
-                        <span className="card-collection__tier">{tierLabel(entry.tier)}</span>
-                        <span className="card-collection__tooltip" role="tooltip">
-                            {tooltip ? (
-                                <>
-                                    <span className="card-collection__tooltip-title">
-                                        {tooltip.title}
-                                    </span>
-                                    {tooltip.lines.map((line, lineIndex) => (
-                                        <span
-                                            key={`${entry.id}-${lineIndex}`}
-                                            className="card-collection__tooltip-line"
-                                        >
-                                            {line}
-                                        </span>
-                                    ))}
-                                </>
-                            ) : (
-                                <>
-                                    <span className="card-collection__tooltip-title">
-                                        Unknown signal
-                                    </span>
-                                    <span className="card-collection__tooltip-line">
-                                        Acquire this card in a run to unlock its dossier.
-                                    </span>
-                                </>
-                            )}
-                        </span>
-                    </button>
-                );
-            }}
+            renderItem={(entry, { selected, onSelect, onPreview }) => (
+                <button
+                    key={entry.id}
+                    type="button"
+                    className={[
+                        'card-collection__item',
+                        entry.unlocked ? '' : 'card-collection__item--locked',
+                        selected ? 'card-collection__item--selected' : '',
+                    ].filter(Boolean).join(' ')}
+                    onClick={onSelect}
+                    onMouseEnter={onPreview}
+                    onFocus={onPreview}
+                    aria-label={entry.unlocked ? entry.label : 'Locked card'}
+                >
+                    <CardChip
+                        definitionId={entry.id}
+                        size="pile"
+                        faceDown={!entry.unlocked}
+                        className="card-collection__chip"
+                    />
+                    <span className="card-collection__name">
+                        {entry.unlocked ? entry.label : '???'}
+                    </span>
+                    <span className="card-collection__tier">{tierLabel(entry.tier)}</span>
+                </button>
+            )}
             renderDetail={(entry) =>
             {
                 if (!entry)
@@ -137,17 +108,12 @@ export const CardCollectionOverlay = ({ onClose }: CardCollectionOverlayProps) =
                     );
                 }
 
-                if (entry)
-                {
-                    return (
-                        <>
-                            <strong>Unknown signal</strong>
-                            <span>Acquire this card in a run to unlock its dossier.</span>
-                        </>
-                    );
-                }
-
-                return null;
+                return (
+                    <>
+                        <strong>Unknown signal</strong>
+                        <span>Acquire this card in a run to unlock its dossier.</span>
+                    </>
+                );
             }}
         />
     );

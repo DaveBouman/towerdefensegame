@@ -32,7 +32,7 @@ export const BodyModBestiaryOverlay = ({ onClose }: BodyModBestiaryOverlayProps)
             detailClassName="body-mod-bestiary__detail"
             entries={entries}
             progress={progress}
-            renderItem={(entry, { selected, onSelect }) => (
+            renderItem={(entry, { selected, onSelect, onPreview }) => (
                 <button
                     key={entry.id}
                     type="button"
@@ -43,6 +43,8 @@ export const BodyModBestiaryOverlay = ({ onClose }: BodyModBestiaryOverlayProps)
                         selected ? 'card-collection__item--selected' : '',
                     ].filter(Boolean).join(' ')}
                     onClick={onSelect}
+                    onMouseEnter={onPreview}
+                    onFocus={onPreview}
                     aria-label={entry.unlocked ? entry.label : 'Unknown body mod'}
                     style={entry.unlocked
                         ? { ['--body-mod-accent' as string]: entry.accentCss }
@@ -56,27 +58,6 @@ export const BodyModBestiaryOverlay = ({ onClose }: BodyModBestiaryOverlayProps)
                     </span>
                     <span className="card-collection__tier">
                         {bodyModTierLabel(entry.tier)}
-                    </span>
-                    <span className="card-collection__tooltip" role="tooltip">
-                        {entry.unlocked ? (
-                            <>
-                                <span className="card-collection__tooltip-title">
-                                    {entry.label}
-                                </span>
-                                <span className="card-collection__tooltip-line">
-                                    {entry.summary}
-                                </span>
-                            </>
-                        ) : (
-                            <>
-                                <span className="card-collection__tooltip-title">
-                                    Unknown body mod
-                                </span>
-                                <span className="card-collection__tooltip-line">
-                                    Install this body mod during a run to log it.
-                                </span>
-                            </>
-                        )}
                     </span>
                 </button>
             )}

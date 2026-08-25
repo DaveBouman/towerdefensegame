@@ -2872,8 +2872,8 @@ html, body, #root {
 .card-collection__panel {
     position: relative;
     z-index: 1;
-    width: min(920px, 100%);
-    max-height: min(88vh, 820px);
+    width: min(1080px, 100%);
+    max-height: min(90vh, 860px);
     display: flex;
     flex-direction: column;
     padding: 24px 24px 18px;
@@ -2944,15 +2944,44 @@ html, body, #root {
 .card-collection__grid {
     position: relative;
     flex: 1 1 auto;
-    min-height: 180px;
+    min-height: 0;
+    min-width: 0;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
     gap: 12px;
-    padding: 8px 6px 16px;
+    padding: 8px 6px 12px;
     -webkit-overflow-scrolling: touch;
+}
+
+.card-collection__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+    gap: 16px;
+    flex: 1 1 auto;
+    min-height: 0;
+    margin-bottom: 12px;
+}
+
+@media (max-width: 720px) {
+    .card-collection__body {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(160px, 1fr) minmax(120px, 38%);
+    }
+
+    .card-collection__tooltip {
+        left: 50%;
+        top: calc(100% + 8px);
+        width: min(280px, 78vw);
+        transform: translate(-50%, -4px);
+    }
+
+    .card-collection__item:hover .card-collection__tooltip,
+    .card-collection__item:focus-visible .card-collection__tooltip {
+        transform: translate(-50%, 0);
+    }
 }
 
 .card-collection__item {
@@ -3010,11 +3039,11 @@ html, body, #root {
 
 .card-collection__tooltip {
     position: absolute;
-    left: 50%;
-    top: calc(100% + 8px);
+    left: calc(100% + 10px);
+    top: 0;
     bottom: auto;
-    transform: translate(-50%, -4px);
-    width: min(280px, 78vw);
+    transform: translate(-4px, 0);
+    width: min(280px, 42vw);
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -3035,7 +3064,7 @@ html, body, #root {
 .card-collection__item:focus-visible .card-collection__tooltip {
     opacity: 1;
     visibility: visible;
-    transform: translate(-50%, 0);
+    transform: translate(0, 0);
 }
 
 .card-collection__item--selected .card-collection__tooltip {
@@ -3061,12 +3090,12 @@ html, body, #root {
 .card-collection__detail {
     display: flex;
     flex-direction: column;
-    flex: 0 1 auto;
+    flex: 1 1 auto;
     gap: 8px;
-    min-height: 64px;
-    max-height: min(32vh, 280px);
-    margin: 4px 0 12px;
-    padding: 12px 14px;
+    min-height: 0;
+    min-width: 0;
+    margin: 0;
+    padding: 14px 16px;
     border-radius: 8px;
     border: 1px solid rgba(255, 45, 149, 0.22);
     background: rgba(4, 10, 18, 0.85);
@@ -3193,7 +3222,7 @@ html, body, #root {
 }
 
 .card-collection.card-inspect .card-collection__panel {
-    max-height: min(88vh, 820px);
+    max-height: min(90vh, 860px);
 }
 
 /* ---------------------------------------------------------------------------
@@ -3304,7 +3333,6 @@ html, body, #root {
 
 .body-mod-bestiary__detail {
     gap: 8px;
-    max-height: min(36vh, 320px);
 }
 
 .body-mod-bestiary__detail-line {
