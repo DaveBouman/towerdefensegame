@@ -280,6 +280,7 @@ export class Game extends Scene
             ascensionLevel = 0,
             routeKind,
             puzzleMode = null,
+            enemyHealthMultiplier: enemyHealthOverride,
         }:
         {
             enemyId?: string;
@@ -294,6 +295,7 @@ export class Game extends Scene
             ascensionLevel?: number;
             routeKind?: import('../run/runMap').RouteKind;
             puzzleMode?: PuzzleModeConfig | null;
+            enemyHealthMultiplier?: number;
         },
     ): void =>
     {
@@ -308,9 +310,11 @@ export class Game extends Scene
                 ? [ enemyId ]
                 : [ GAME_RULES.defaultEnemyId ];
 
-        const enemyHealthMultiplier =
-            getAscensionEnemyHealthMultiplier(ascensionLevel)
-            * getRouteEnemyHealthMultiplier(routeKind);
+        const enemyHealthMultiplier = enemyHealthOverride
+            ?? (
+                getAscensionEnemyHealthMultiplier(ascensionLevel)
+                * getRouteEnemyHealthMultiplier(routeKind)
+            );
 
         this.startBattle(
             battleEnemyIds,

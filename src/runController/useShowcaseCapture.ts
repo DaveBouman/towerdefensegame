@@ -16,6 +16,8 @@ import {
     showcaseGold,
     showcasePlayerHealth,
     showcasePuzzleMode,
+    SHOWCASE_BOARD_ENEMY_HP_MULTIPLIER,
+    SHOWCASE_BOARD_ENEMY_ID,
 } from '../game/showcase/showcaseScenarios';
 import { getRunPuzzle } from '../game/run/runPuzzles';
 import { deriveSeed } from '../game/random/rng';
@@ -197,21 +199,20 @@ export const useShowcaseCapture = (target: ShowcaseCaptureTarget): void =>
         if (captureId === 'board' || captureId === 'multi' || captureId === 'boss')
         {
             const puzzleMode = captureId === 'board' ? showcasePuzzleMode() : null;
-            // Board capture needs a sponge enemy — the showcase route deals 100+ damage
-            // and would wipe a normal foe before the Strike loop-back plays out.
             const enemyIds = captureId === 'multi'
                 ? [ 'smokebinder', 'saboteur' ]
                 : captureId === 'boss'
                     ? [ 'warden' ]
-                    : captureId === 'board'
-                        ? [ 'training-dummy' ]
-                        : [ 'smokebinder' ];
+                    : [ captureId === 'board' ? SHOWCASE_BOARD_ENEMY_ID : 'smokebinder' ];
 
             target.setPhase('battle');
             const payload = {
                 ...battlePayload,
                 enemyIds,
                 puzzleMode,
+                enemyHealthMultiplier: captureId === 'board'
+                    ? SHOWCASE_BOARD_ENEMY_HP_MULTIPLIER
+                    : undefined,
             };
 
             if (target.sceneReadyRef.current)

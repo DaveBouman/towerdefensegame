@@ -42,6 +42,7 @@ interface PendingBattleStart {
     routeKind?: import('../game/run/runMap').RouteKind;
     runGold?: number;
     puzzleMode?: import('../game/cardGame/domain/CardGameSession').PuzzleModeConfig | null;
+    enemyHealthMultiplier?: number;
 }
 
 interface PendingPuzzleStart {

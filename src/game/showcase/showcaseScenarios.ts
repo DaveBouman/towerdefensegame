@@ -124,6 +124,10 @@ export const SHOWCASE_HAND_CARDS: readonly {
 
 export const SHOWCASE_BOARD_CHAIN_START = { row: 2, col: 0 };
 
+/** Smokebinder on the board shot; inflated HP so Attack still plays the full route. */
+export const SHOWCASE_BOARD_ENEMY_ID = 'smokebinder';
+export const SHOWCASE_BOARD_ENEMY_HP_MULTIPLIER = 5;
+
 export const showcasePuzzleMode = (): PuzzleModeConfig => ({
     handCards: [ ...SHOWCASE_HAND_CARDS ],
     boardCards: SHOWCASE_FULL_BOARD,
