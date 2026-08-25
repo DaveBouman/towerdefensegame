@@ -197,11 +197,15 @@ export const useShowcaseCapture = (target: ShowcaseCaptureTarget): void =>
         if (captureId === 'board' || captureId === 'multi' || captureId === 'boss')
         {
             const puzzleMode = captureId === 'board' ? showcasePuzzleMode() : null;
+            // Board capture needs a sponge enemy — the showcase route deals 100+ damage
+            // and would wipe a normal foe before the Strike loop-back plays out.
             const enemyIds = captureId === 'multi'
                 ? [ 'smokebinder', 'saboteur' ]
                 : captureId === 'boss'
                     ? [ 'warden' ]
-                    : [ 'smokebinder' ];
+                    : captureId === 'board'
+                        ? [ 'training-dummy' ]
+                        : [ 'smokebinder' ];
 
             target.setPhase('battle');
             const payload = {
