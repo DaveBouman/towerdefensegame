@@ -14,7 +14,7 @@ Steam wants **at least ~5–6 strong screenshots**. These six match [STEAM_PAGE_
 
 | # | Capture ID | Upload as |
 |---|------------|-----------|
-| 1 | `board` | Core combat — mid-row leap + corner hook, hand + intents |
+| 1 | `board` | Core combat — leaps, corners, diagonals, double-Strike route, hand + intents |
 | 2 | `combo` | Combo payoff — fire alternation |
 | 3 | `map` | Branching run map |
 | 4 | `shop` | Ripperdoc shop open |

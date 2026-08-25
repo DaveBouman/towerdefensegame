@@ -4,6 +4,7 @@ import { BoardModel, createEmptyBoard } from '../cardGame/domain/BoardModel';
 import { createCardInstance } from '../cardGame/domain/createCardInstance';
 import { GRID_CONFIG } from '../config/gridConfig';
 import {
+    SHOWCASE_BOARD_CHAIN_IDS,
     SHOWCASE_BOARD_CHAIN_START,
     SHOWCASE_FULL_BOARD,
     SHOWCASE_HAND_CARDS,
@@ -11,7 +12,7 @@ import {
 
 describe('showcaseScenarios', () =>
 {
-    it('board capture chain connects every placed card', () =>
+    it('board capture walks the showcase route with leaps, corners, and combos', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
 
@@ -24,8 +25,30 @@ describe('showcaseScenarios', () =>
         }
 
         const chain = planAttack(board, SHOWCASE_BOARD_CHAIN_START).chain;
+        const chainIds = chain.map((step) => step.definitionId);
+        const occupiedRows = new Set(SHOWCASE_FULL_BOARD.map((spec) => spec.row));
 
-        expect(chain.length).toBe(SHOWCASE_FULL_BOARD.length);
+        expect(chainIds).toEqual([ ...SHOWCASE_BOARD_CHAIN_IDS ]);
+        expect(occupiedRows.size).toBeGreaterThanOrEqual(4);
+        expect(SHOWCASE_FULL_BOARD.length).toBeLessThan(GRID_CONFIG.rows * GRID_CONFIG.cols);
+        expect(chainIds).toContain('skewer');
+        expect(chainIds).toContain('attack-leap');
+        expect(chainIds).toContain('lacerate');
+        expect(chainIds).toContain('phase-relay');
+        expect(chainIds).toContain('white-hot');
+        expect(chainIds).toContain('scorch');
+        expect(chainIds).toContain('bramble');
+        expect(chainIds).toContain('shiv');
+        expect(chainIds).toContain('corner-strike');
+        expect(chainIds).toContain('switchback');
+        expect(chainIds.filter((id) => id === 'attack-special')).toHaveLength(2);
+
+        const diagonalArrows = SHOWCASE_FULL_BOARD.filter((spec) =>
+            spec.arrow === 'up-left'
+            || spec.arrow === 'up-right'
+            || spec.arrow === 'down-left'
+            || spec.arrow === 'down-right');
+        expect(diagonalArrows.length).toBeGreaterThanOrEqual(6);
     });
 
     it('board capture includes a visible hand', () =>
