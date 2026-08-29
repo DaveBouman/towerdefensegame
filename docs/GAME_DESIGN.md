@@ -368,6 +368,12 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-29 | **Hand deal-in fly.** After enemy response (mid-round refill and energy renew), hand cards fly from the deck into the rail with a staggered settle. |
+| 2026-08-29 | **Docked pile peeks.** Deck/Discard sit in bottom corners half off-screen; hover slides them fully up; click enlarges then opens the inspector. |
+| 2026-08-29 | **Piles seat with the hand.** Deck left / Discard right of the hand on a shared baseline (no more floating mid-side). Slightly smaller trays so they read as hand companions. |
+| 2026-08-29 | **Mixed cyber card backs.** Deck/Discard stacks randomly mix `cyber-node` and `cyber-signal` per layer (cosmetic salt only — not game RNG, not tied to pile kind or card identity). |
+| 2026-08-29 | **Card-back variants + larger piles.** Four simple backs in `public/assets/cards/`; default is bold diamond (less smear). Deck/Discard stack size matches hand cards. |
+| 2026-08-29 | **Card-back art.** Simple painted Signal Chain back (`public/assets/cards/card-back.png`) on Deck/Discard stacks; deck/discard accent rim still tints per pile. |
 | 2026-08-29 | **Larger pile cards.** Deck/Discard backs sized near hand cards with bevel + pattern; quieter tray chrome so the stack reads as cards, not UI chips. |
 | 2026-08-29 | **Board-game pile stacks.** Deck / Discard show a thick stack of face-down card backs (depth scales with count); count is a corner badge, not the main visual. |
 | 2026-08-29 | **Exhaust as graveyard badge.** Removed the second pile widget; Discard shows an **EX** count chip (click to inspect). Exhausted cards still fly to the badge on board wipe. |

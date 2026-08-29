@@ -255,16 +255,42 @@ export const updateCardGraphicDirection = (
     graphic.setData(CARD_DIRECTION_MARK_KEY, mark);
 };
 
-/** Face-down stack card — bevel + pattern so piles feel like real cards, not chips. */
+export const CARD_BACK_TEXTURE_KEY = 'card-back';
+
+/** Cosmetic pile variants — never tied to card identity or pile kind. */
+export const CARD_BACK_VARIANT_KEYS = [
+    'card-back-cyber-node',
+    'card-back-cyber-signal',
+] as const;
+
+/**
+ * Stable cosmetic pick for a stack layer. Uses a visual salt only — not the game RNG —
+ * so the mix looks random and cannot encode deck/discard contents.
+ */
+export const pickCardBackTextureKey = (layerIndex: number, visualSalt: number): string =>
+{
+    const h = Math.imul(layerIndex + 1 + (visualSalt | 0) * 17, 0x9e3779b1) >>> 0;
+    const key = CARD_BACK_VARIANT_KEYS[h & 1]!;
+
+    return key;
+};
+
+/** Face-down stack card — painted back art when loaded, procedural fallback otherwise. */
 export const buildCardBackGraphic = (
     scene: Phaser.Scene,
     options: CardVisualOptions,
     accentColor: number = CYBER.cyan,
+    textureKey: string = CARD_BACK_TEXTURE_KEY,
 ): CardGraphic =>
 {
     const { width, height, interactive = false } = options;
     const container = scene.add.container(0, 0);
     const stroke = Math.max(2, Math.round(width * 0.035));
+    const artKey = scene.textures.exists(textureKey)
+        ? textureKey
+        : scene.textures.exists(CARD_BACK_TEXTURE_KEY)
+            ? CARD_BACK_TEXTURE_KEY
+            : null;
 
     const shadow = scene.add.rectangle(
         width / 2 + 2,
@@ -272,78 +298,87 @@ export const buildCardBackGraphic = (
         width,
         height,
         0x000000,
-        0.35,
+        0.4,
     );
+
     const glow = scene.add.rectangle(
         width / 2,
         height / 2,
-        width + 10,
-        height + 10,
+        width + 8,
+        height + 8,
         accentColor,
-        0.12,
-    );
-    const body = scene.add.rectangle(width / 2, height / 2, width, height, CYBER.cardBack, 1);
-
-    body.setStrokeStyle(stroke, CYBER.cardBackBorder, 1);
-
-    // Bevel: light top edge, dark bottom — same language as face cards.
-    const bevel = scene.add.graphics();
-
-    bevel.lineStyle(2, 0xffffff, 0.14);
-    bevel.strokeRect(2, 2, width - 4, height - 4);
-    bevel.lineStyle(2, 0x000000, 0.35);
-    bevel.beginPath();
-    bevel.moveTo(3, height - 3);
-    bevel.lineTo(width - 3, height - 3);
-    bevel.lineTo(width - 3, 3);
-    bevel.strokePath();
-
-    const inset = Math.round(width * 0.1);
-    const inner = scene.add.rectangle(
-        width / 2,
-        height / 2,
-        width - inset * 2,
-        height - inset * 2,
-        CYBER.cardInner,
-        0.95,
+        0.14,
     );
 
-    inner.setStrokeStyle(1, accentColor, 0.28);
+    const hitBody = scene.add.rectangle(width / 2, height / 2, width, height, CYBER.cardBack, 0.001);
 
-    const pattern = scene.add.graphics();
+    hitBody.setStrokeStyle(stroke, accentColor, 0.85);
 
-    pattern.lineStyle(1, accentColor, 0.12);
-
-    for (let y = inset + 6; y < height - inset - 4; y += 7)
+    if (artKey)
     {
-        pattern.beginPath();
-        pattern.moveTo(inset + 4, y);
-        pattern.lineTo(width - inset - 4, y);
-        pattern.strokePath();
+        const art = scene.add.image(width / 2, height / 2, artKey);
+
+        art.setDisplaySize(width - 2, height - 2);
+        art.setOrigin(0.5);
+
+        const rim = scene.add.graphics();
+
+        rim.lineStyle(stroke, accentColor, 0.75);
+        rim.strokeRect(1, 1, width - 2, height - 2);
+        drawCornerBrackets(rim, 3, 3, width - 6, height - 6, accentColor, {
+            arm: Math.min(12, Math.round(width * 0.14)),
+            alpha: 0.7,
+            lineWidth: 2,
+        });
+
+        container.add([ shadow, glow, art, rim, hitBody ]);
     }
+    else
+    {
+        const body = scene.add.rectangle(width / 2, height / 2, width, height, CYBER.cardBack, 1);
 
-    const accent = scene.add.rectangle(width / 2, inset - 1, width - inset * 2 - 4, 3, accentColor, 0.55);
-    const brackets = scene.add.graphics();
+        body.setStrokeStyle(stroke, CYBER.cardBackBorder, 1);
 
-    drawCornerBrackets(brackets, 4, 4, width - 8, height - 8, accentColor, {
-        arm: Math.min(14, Math.round(width * 0.16)),
-        alpha: 0.9,
-        lineWidth: 2,
-    });
+        const bevel = scene.add.graphics();
 
-    const mark = scene.add.text(width / 2, height / 2, '◈', {
-        ...uiDisplayTextStyle(Math.round(width * 0.32), `#${accentColor.toString(16).padStart(6, '0')}`, {
-            bold: true,
-            strokeColor: '#0a0610',
-        }),
-    }).setOrigin(0.5);
+        bevel.lineStyle(2, 0xffffff, 0.14);
+        bevel.strokeRect(2, 2, width - 4, height - 4);
 
-    container.add([ shadow, glow, body, bevel, inner, pattern, accent, brackets, mark ]);
+        const inset = Math.round(width * 0.1);
+        const inner = scene.add.rectangle(
+            width / 2,
+            height / 2,
+            width - inset * 2,
+            height - inset * 2,
+            CYBER.cardInner,
+            0.95,
+        );
+
+        inner.setStrokeStyle(1, accentColor, 0.28);
+
+        const accent = scene.add.rectangle(width / 2, inset - 1, width - inset * 2 - 4, 3, accentColor, 0.55);
+        const brackets = scene.add.graphics();
+
+        drawCornerBrackets(brackets, 4, 4, width - 8, height - 8, accentColor, {
+            arm: Math.min(14, Math.round(width * 0.16)),
+            alpha: 0.9,
+            lineWidth: 2,
+        });
+
+        const mark = scene.add.text(width / 2, height / 2, '◈', {
+            ...uiDisplayTextStyle(Math.round(width * 0.32), `#${accentColor.toString(16).padStart(6, '0')}`, {
+                bold: true,
+                strokeColor: '#0a0610',
+            }),
+        }).setOrigin(0.5);
+
+        container.add([ shadow, glow, body, bevel, inner, accent, brackets, mark, hitBody ]);
+    }
 
     if (interactive)
     {
-        body.setInteractive({ cursor: getGameCursors().pointer });
+        hitBody.setInteractive({ cursor: getGameCursors().pointer });
     }
 
-    return { container, hitArea: body };
+    return { container, hitArea: hitBody };
 };

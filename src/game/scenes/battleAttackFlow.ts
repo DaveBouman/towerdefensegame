@@ -21,6 +21,7 @@ export interface BattleAttackFlowDeps
     enemySquad?: EnemySquadView;
     playerView?: PlayerHealthView;
     armorView?: ArmorView;
+    deckView?: CardPileView;
     graveyardView?: CardPileView;
     exhaustView?: CardPileView;
     getRerollModeActive: () => boolean;
@@ -246,6 +247,7 @@ export const resolveEnemyPhase = (deps: BattleAttackFlowDeps): void =>
         enemySquad: deps.enemySquad,
         playerView: deps.playerView,
         armorView: deps.armorView,
+        deckView: deps.deckView,
         graveyardView: deps.graveyardView,
         exhaustView: deps.exhaustView,
         presenter: deps.presenter,

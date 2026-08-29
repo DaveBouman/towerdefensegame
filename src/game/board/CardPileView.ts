@@ -1,5 +1,5 @@
 import { getGameCursors } from '../ui/gameCursors';
-import { buildCardBackGraphic } from '../cards/CardRenderer';
+import { buildCardBackGraphic, pickCardBackTextureKey } from '../cards/CardRenderer';
 import { PILE_CARD_HEIGHT, PILE_CARD_WIDTH } from '../cards/cardVisuals';
 import { CYBER } from '../config/cyberpunkTheme';
 import { drawCornerBrackets, drawNeonPanel } from '../config/cyberpunkUiGraphics';
@@ -68,6 +68,15 @@ export class CardPileView
     private exhaustCount = 0;
     private readonly kind: 'deck' | 'graveyard' | 'exhaust';
     private readonly accent: number;
+    private readonly cardW: number;
+    private readonly cardH: number;
+    private readonly frameH: number;
+    private restX: number;
+    private restY: number;
+    private revealY: number;
+    private hovered = false;
+    /** Cosmetic only — reshuffled each battle so stack art cannot encode pile contents. */
+    private readonly visualSalt: number;
     private exhaustBadge?: Phaser.GameObjects.Container;
     private exhaustBadgeBg?: Phaser.GameObjects.Rectangle;
     private exhaustBadgeText?: Phaser.GameObjects.Text;
@@ -83,6 +92,8 @@ export class CardPileView
     )
     {
         this.kind = kind;
+        // Presentation-only salt (not game RNG): mixed backs with no gameplay meaning.
+        this.visualSalt = Math.floor(Math.random() * 0xffff);
         const { pileWidth, pileHeight } = layout;
         const fill = kind === 'deck'
             ? CYBER.deckFill
@@ -95,13 +106,27 @@ export class CardPileView
                 ? CYBER.exhaustBorder
                 : CYBER.graveBorder;
         const frameW = pileWidth + 10;
-        const frameH = pileHeight + 22;
+        // Tighter bottom — label lives in the top peek, not under the tray.
+        const frameH = pileHeight + 8;
+        this.frameH = frameH;
+        this.restX = x;
+        this.restY = y;
+        this.revealY = y - Math.round(frameH * 0.55);
+        // Scale stack cards to the tray so layout can shrink piles beside a wide hand.
+        const maxStackDepthX = (MAX_VISIBLE_STACK - 1) * STACK_OFFSET_X;
+        const maxStackDepthY = (MAX_VISIBLE_STACK - 1) * STACK_OFFSET_Y;
+        this.cardW = Math.max(
+            40,
+            Math.min(PILE_CARD_WIDTH, pileWidth - WELL_PAD * 2 - maxStackDepthX),
+        );
+        this.cardH = Math.round(this.cardW * (PILE_CARD_HEIGHT / PILE_CARD_WIDTH));
         const cardOptions = {
-            width: PILE_CARD_WIDTH,
-            height: PILE_CARD_HEIGHT,
+            width: this.cardW,
+            height: this.cardH,
         };
 
         this.container = scene.add.container(x, y);
+        this.container.setDepth(40);
 
         const frame = scene.add.graphics();
 
@@ -116,16 +141,15 @@ export class CardPileView
             lineWidth: 1.5,
         });
 
-        const maxStackDepthX = (MAX_VISIBLE_STACK - 1) * STACK_OFFSET_X;
-        const maxStackDepthY = (MAX_VISIBLE_STACK - 1) * STACK_OFFSET_Y;
-        const stackX = Math.round((frameW - PILE_CARD_WIDTH - maxStackDepthX) / 2);
-        const stackY = Math.round((pileHeight - PILE_CARD_HEIGHT - maxStackDepthY) / 2) + WELL_PAD - 2;
+        const stackX = Math.round((frameW - this.cardW - maxStackDepthX) / 2);
+        // Leave room for the title in the visible peek (top of the docked tray).
+        const stackY = Math.round((pileHeight - this.cardH - maxStackDepthY) / 2) + WELL_PAD + 8;
 
         this.stackShadow = scene.add.rectangle(
-            stackX + PILE_CARD_WIDTH / 2 + 4,
-            stackY + PILE_CARD_HEIGHT / 2 + 5,
-            PILE_CARD_WIDTH + 4,
-            PILE_CARD_HEIGHT + 4,
+            stackX + this.cardW / 2 + 4,
+            stackY + this.cardH / 2 + 5,
+            this.cardW + 4,
+            this.cardH + 4,
             0x000000,
             0.35,
         );
@@ -144,12 +168,13 @@ export class CardPileView
             this.stackContainer.add(slot);
         }
 
-        this.emptyHint = scene.add.text(frameW / 2, stackY + PILE_CARD_HEIGHT / 2, '—', {
+        this.emptyHint = scene.add.text(frameW / 2, stackY + this.cardH / 2, '—', {
             ...uiTextStyle(18, '#5a5060', { bold: true }),
         }).setOrigin(0.5);
 
-        this.titleText = scene.add.text(frameW / 2, pileHeight + 10, label, {
-            ...uiTextStyle(13, kind === 'deck' ? '#7af0ff' : kind === 'exhaust' ? '#d8b8ff' : '#ffd4b8', { bold: true }),
+        // Title sits in the peek zone so it stays readable while docked.
+        this.titleText = scene.add.text(frameW / 2, 5, label, {
+            ...uiTextStyle(12, kind === 'deck' ? '#7af0ff' : kind === 'exhaust' ? '#d8b8ff' : '#ffd4b8', { bold: true }),
         }).setOrigin(0.5, 0);
 
         const countBg = scene.add.rectangle(0, 0, COUNT_BADGE_W, COUNT_BADGE_H, 0x0a0a14, 0.94);
@@ -161,7 +186,7 @@ export class CardPileView
         }).setOrigin(0.5);
 
         this.countBadge = scene.add.container(
-            stackX + PILE_CARD_WIDTH - 2,
+            stackX + this.cardW - 2,
             stackY + 8,
             [ countBg, this.countBadgeText ],
         );
@@ -190,6 +215,7 @@ export class CardPileView
         this.frameHitArea = hitArea;
         this.container.add(hitArea);
 
+        this.container.bringToTop(this.titleText);
         this.container.bringToTop(this.countBadge);
 
         if (this.exhaustBadge)
@@ -226,6 +252,17 @@ export class CardPileView
         this.container.add(this.exhaustBadge);
     }
 
+    /** Dock position (peek). Hover slides the pile fully into view. */
+    setPosition (x: number, y: number): void
+    {
+        this.restX = x;
+        this.restY = y;
+        this.revealY = y - Math.round(this.frameH * 0.55);
+        this.scene.tweens.killTweensOf(this.container);
+        this.container.setPosition(x, this.hovered ? this.revealY : y);
+        this.container.setScale(this.hovered ? 1.06 : 1);
+    }
+
     /** Makes the pile clickable to inspect its contents. Pass `null` to disable. */
     setClickHandler (handler: (() => void) | null): void
     {
@@ -234,6 +271,7 @@ export class CardPileView
         if (!handler)
         {
             this.frameHitArea.disableInteractive();
+            this.collapseToDock();
 
             return;
         }
@@ -241,27 +279,54 @@ export class CardPileView
         this.frameHitArea.setInteractive({ cursor: getGameCursors().pointer });
         this.frameHitArea.on('pointerover', () =>
         {
+            this.hovered = true;
+            this.scene.tweens.killTweensOf(this.container);
             this.scene.tweens.add({
                 targets: this.container,
-                scaleX: 1.04,
-                scaleY: 1.04,
-                duration: 120,
-                ease: 'Quad.easeOut',
+                y: this.revealY,
+                scaleX: 1.06,
+                scaleY: 1.06,
+                duration: 180,
+                ease: 'Back.easeOut',
             });
         });
         this.frameHitArea.on('pointerout', () =>
         {
-            this.scene.tweens.add({
-                targets: this.container,
-                scaleX: 1,
-                scaleY: 1,
-                duration: 120,
-                ease: 'Quad.easeOut',
-            });
+            this.collapseToDock();
         });
         this.frameHitArea.on('pointerdown', () =>
         {
-            handler();
+            this.scene.tweens.killTweensOf(this.container);
+            this.scene.tweens.add({
+                targets: this.container,
+                y: this.revealY,
+                scaleX: 1.14,
+                scaleY: 1.14,
+                duration: 110,
+                ease: 'Back.easeOut',
+                yoyo: true,
+                hold: 40,
+                onComplete: () =>
+                {
+                    this.container.setScale(1.06);
+                    handler();
+                },
+            });
+        });
+    }
+
+    private collapseToDock (): void
+    {
+        this.hovered = false;
+        this.scene.tweens.killTweensOf(this.container);
+        this.scene.tweens.add({
+            targets: this.container,
+            x: this.restX,
+            y: this.restY,
+            scaleX: 1,
+            scaleY: 1,
+            duration: 160,
+            ease: 'Quad.easeIn',
         });
     }
 
@@ -304,8 +369,8 @@ export class CardPileView
         const depth = Math.max(0, stackDepthForCount(this.count) - 1);
 
         return {
-            x: matrix.tx + depth * STACK_OFFSET_X + PILE_CARD_WIDTH / 2,
-            y: matrix.ty + depth * STACK_OFFSET_Y + PILE_CARD_HEIGHT / 2,
+            x: matrix.tx + depth * STACK_OFFSET_X + this.cardW / 2,
+            y: matrix.ty + depth * STACK_OFFSET_Y + this.cardH / 2,
         };
     }
 
@@ -425,8 +490,8 @@ export class CardPileView
 
         const depth = stackDepthForCount(this.count);
         const cardOptions = {
-            width: PILE_CARD_WIDTH,
-            height: PILE_CARD_HEIGHT,
+            width: this.cardW,
+            height: this.cardH,
         };
 
         for (let i = 0; i < this.stackSlots.length; i++)
@@ -444,7 +509,13 @@ export class CardPileView
             slot.setPosition(i * STACK_OFFSET_X, i * STACK_OFFSET_Y);
             slot.removeAll(true);
 
-            const { container } = buildCardBackGraphic(this.scene, cardOptions, this.accent);
+            const backKey = pickCardBackTextureKey(i, this.visualSalt);
+            const { container } = buildCardBackGraphic(
+                this.scene,
+                cardOptions,
+                this.accent,
+                backKey,
+            );
 
             // Slightly dim lower cards so the top of the pile pops.
             const depthFade = 0.72 + (i / Math.max(1, depth - 1)) * 0.28;
@@ -457,16 +528,16 @@ export class CardPileView
         const topOffsetY = Math.max(0, depth - 1) * STACK_OFFSET_Y;
 
         this.countBadge.setPosition(
-            this.stackContainer.x + topOffsetX + PILE_CARD_WIDTH - 4,
+            this.stackContainer.x + topOffsetX + this.cardW - 4,
             this.stackContainer.y + topOffsetY + 10,
         );
         this.stackShadow.setPosition(
-            this.stackContainer.x + topOffsetX + PILE_CARD_WIDTH / 2 + 5,
-            this.stackContainer.y + topOffsetY + PILE_CARD_HEIGHT / 2 + 6,
+            this.stackContainer.x + topOffsetX + this.cardW / 2 + 5,
+            this.stackContainer.y + topOffsetY + this.cardH / 2 + 6,
         );
         this.stackShadow.setSize(
-            PILE_CARD_WIDTH + 6 + Math.max(0, depth - 1) * 0.5,
-            PILE_CARD_HEIGHT + 6,
+            this.cardW + 6 + Math.max(0, depth - 1) * 0.5,
+            this.cardH + 6,
         );
     }
 }

@@ -120,12 +120,29 @@ export const playCardPlaceSettle = (
     });
 };
 
-/** Staggered deal-in for hand cards after a redraw / energy refill. */
+/** Staggered deal-in — cards fly from the deck into the hand. */
 export const playHandDealIn = (
     scene: Phaser.Scene,
     slots: readonly Phaser.GameObjects.Container[],
+    options: {
+        handContainer?: Phaser.GameObjects.Container;
+        flyFromWorld?: { x: number; y: number };
+    } = {},
 ): void =>
 {
+    const { handContainer, flyFromWorld } = options;
+    let localFromX: number | null = null;
+    let localFromY: number | null = null;
+
+    if (handContainer?.active && flyFromWorld)
+    {
+        const local = { x: 0, y: 0 };
+
+        handContainer.getWorldTransformMatrix().applyInverse(flyFromWorld.x, flyFromWorld.y, local);
+        localFromX = local.x;
+        localFromY = local.y;
+    }
+
     slots.forEach((slot, index) =>
     {
         if (!slot.active)
@@ -133,18 +150,27 @@ export const playHandDealIn = (
             return;
         }
 
+        const baseX = slot.x;
         const baseY = slot.y;
+        const startX = localFromX ?? baseX;
+        const startY = localFromY ?? baseY + 56;
 
         scene.tweens.killTweensOf(slot);
+        slot.setPosition(startX, startY);
         slot.setAlpha(0);
-        slot.setY(baseY + 28);
+        slot.setScale(0.62);
+        slot.setAngle(localFromX === null ? 0 : (index - (slots.length - 1) / 2) * 4);
 
         scene.tweens.add({
             targets: slot,
-            alpha: 1,
+            x: baseX,
             y: baseY,
-            duration: 220,
-            delay: index * 28,
+            alpha: 1,
+            scaleX: 1,
+            scaleY: 1,
+            angle: 0,
+            duration: 320,
+            delay: index * 42,
             ease: 'Cubic.easeOut',
         });
     });

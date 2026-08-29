@@ -15,10 +15,11 @@ describe('boardLayout', () =>
         const gridCenter = layout.gridOffsetX + layout.gridWidth / 2;
         expect(gridCenter).toBeCloseTo(layout.canvasWidth / 2, 0);
         expect(layout.handY).toBeGreaterThan(layout.gridOffsetY + layout.gridHeight);
-        expect(layout.deckY + layout.pileHeight + 34).toBeLessThan(layout.handY);
-        expect(layout.deckY).toBeGreaterThan(layout.gridOffsetY);
-        expect(layout.deckX).toBeGreaterThanOrEqual(48);
+        // Piles dock bottom corners (half off-screen), far left / far right.
+        expect(layout.deckX).toBeLessThan(layout.handCenterX);
         expect(layout.graveyardX).toBeGreaterThan(layout.handCenterX);
         expect(layout.graveyardX).toBeGreaterThan(layout.deckX);
+        expect(layout.deckY).toBe(layout.graveyardY);
+        expect(layout.deckY).toBeGreaterThan(layout.canvasHeight - layout.pileHeight - 40);
     });
 });

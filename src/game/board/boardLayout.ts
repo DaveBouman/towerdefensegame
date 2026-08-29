@@ -84,17 +84,17 @@ export const computeBoardLayout = (
     const availableHeight = canvasHeight - hudTopInset - handBandHeight;
     const gridOffsetY = hudTopInset + Math.round(Math.max(0, availableHeight - gridHeight) / 2);
     const handWidth = HAND_CARD_WIDTH * GAME_RULES.handSize + HAND_CARD_GAP * (GAME_RULES.handSize - 1);
-    const pileWidth = 96;
-    const pileHeight = 132;
+    const handCenterX = Math.round(canvasWidth / 2 - handWidth / 2);
+    // Docked to bottom corners — half off-screen until hover reveals them.
+    const pileWidth = 86;
+    const pileHeight = 116;
     const pileFrameWidth = pileWidth + 10;
-    const pileFrameHeight = pileHeight + 24;
-    const playableTop = hudTopInset;
-    const playableBottom = handY;
-    const pileCenterY = playableTop + (playableBottom - playableTop) * (2 / 3);
-    const pileY = Math.round(Math.min(pileCenterY - pileFrameHeight / 2, handY - pileFrameHeight - 12));
-    const pileSideInset = Math.max(48, Math.round(canvasWidth * 0.05));
-    const deckX = pileSideInset;
-    const graveyardX = canvasWidth - pileFrameWidth - pileSideInset;
+    const pileFrameHeight = pileHeight + 8;
+    const sideInset = 14;
+    const deckX = sideInset;
+    const graveyardX = canvasWidth - pileFrameWidth - sideInset;
+    // ~52% of the tray hangs below the canvas so only a peek shows at rest.
+    const pileY = canvasHeight - Math.round(pileFrameHeight * 0.48);
 
     return {
         canvasWidth,
@@ -108,7 +108,7 @@ export const computeBoardLayout = (
         enemyY: Math.round(gridOffsetY + (gridHeight - enemySize) / 2),
         enemySize,
         handY,
-        handCenterX: Math.round(canvasWidth / 2 - handWidth / 2),
+        handCenterX,
         armorX: Math.round(gridOffsetX + gridWidth / 2),
         armorY: gridOffsetY + gridHeight + 16,
         playerX: Math.round(gridOffsetX - playerSize - playerGap),

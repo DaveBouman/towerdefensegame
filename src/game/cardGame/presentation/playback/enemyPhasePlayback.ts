@@ -15,6 +15,7 @@ export interface EnemyPhaseResolveDeps
     enemySquad: EnemySquadView;
     playerView?: PlayerHealthView;
     armorView?: ArmorView;
+    deckView?: CardPileView;
     graveyardView?: CardPileView;
     exhaustView?: CardPileView;
     presenter?: CardGamePresenter;
@@ -71,7 +72,7 @@ export function resolveEnemyPhasePlayback (deps: EnemyPhaseResolveDeps): void
 
         if (session.getEnergy() > 0)
         {
-            syncBoardAfterEnemyResponse(deps);
+            syncBoardAfterEnemyResponse(deps, { dealInHand: true });
             deps.onPhaseSettled({ kind: 'continue' });
             return;
         }
@@ -161,7 +162,10 @@ function syncBoardAfterEnemyResponse (
     const { session, enemySquad, handView, armorView } = deps;
 
     enemySquad.showAllIntents(session);
-    handView?.syncHand(session.getHand(), { dealIn: options.dealInHand === true });
+    handView?.syncHand(session.getHand(), {
+        dealIn: options.dealInHand === true,
+        flyFromWorld: options.dealInHand ? deps.deckView?.getReceivePosition() : undefined,
+    });
     armorView?.setArmor(session.getPlayer().shield);
     session.placeFieldBoost();
     deps.syncBoardFromSession();

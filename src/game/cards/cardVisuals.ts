@@ -175,6 +175,6 @@ export const HAND_CARD_WIDTH = 86;
 export const HAND_CARD_HEIGHT = 118;
 export const HAND_CARD_GAP = 14;
 
-/** Deck/discard stack cards — close to hand size so piles read as real cards. */
-export const PILE_CARD_WIDTH = 78;
-export const PILE_CARD_HEIGHT = 106;
+/** Deck/discard stack cards — sized for hand-rail seating; layout may shrink further. */
+export const PILE_CARD_WIDTH = 64;
+export const PILE_CARD_HEIGHT = 88;

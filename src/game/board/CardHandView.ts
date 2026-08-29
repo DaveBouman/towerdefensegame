@@ -55,17 +55,39 @@ export class CardHandView
         this.container.setPosition(x, y);
     }
 
-    syncHand (hand: readonly CardInstance[], options: { dealIn?: boolean } = {}): void
+    syncHand (
+        hand: readonly CardInstance[],
+        options: {
+            dealIn?: boolean;
+            flyFromWorld?: { x: number; y: number };
+        } = {},
+    ): void
     {
         this.cancelDrag();
         this.selectedIndices.clear();
+
+        const previousIds = new Set(this.hand.map((card) => card.instanceId));
+
         this.hand = [ ...hand ];
         this.renderHand();
         this.onRerollSelectionChange?.(0);
 
         if (options.dealIn)
         {
-            playHandDealIn(this.scene, this.slotContainers);
+            const dealSlots = this.slotContainers.filter((_, index) =>
+            {
+                const card = this.hand[index];
+
+                return card != null && !previousIds.has(card.instanceId);
+            });
+
+            if (dealSlots.length > 0)
+            {
+                playHandDealIn(this.scene, dealSlots, {
+                    handContainer: this.container,
+                    flyFromWorld: options.flyFromWorld,
+                });
+            }
         }
     }
 

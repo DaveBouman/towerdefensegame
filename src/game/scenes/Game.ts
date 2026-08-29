@@ -218,6 +218,7 @@ export class Game extends Scene
             enemySquad: this.enemySquad,
             playerView: this.playerView,
             armorView: this.armorView,
+            deckView: this.deckView,
             graveyardView: this.graveyardView,
             exhaustView: this.exhaustView,
             getRerollModeActive: () => this.rerollModeActive,
@@ -594,8 +595,8 @@ export class Game extends Scene
             enemy: this.enemySquad.firstView?.container ?? this.playerView.container,
             player: this.playerView.container,
             armor: this.armorView.container,
-            deck: this.deckView.container,
-            graveyard: this.graveyardView.container,
+            deck: this.deckView,
+            graveyard: this.graveyardView,
         });
         this.enemySquad.applyLayout(this.layout);
         this.syncBattleModifierLayout();

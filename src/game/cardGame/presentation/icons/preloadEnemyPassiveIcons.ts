@@ -39,6 +39,9 @@ const GAME_ICON_ENTRIES = [
     ...ENEMY_INTENT_ICON_ENTRIES,
     ...CARD_BEHAVIOR_ICON_ENTRIES,
     ...DIRECTION_ICON_ENTRIES,
+    { textureKey: 'card-back', url: '/assets/cards/card-back.png' },
+    { textureKey: 'card-back-cyber-node', url: '/assets/cards/card-back-cyber-node.png' },
+    { textureKey: 'card-back-cyber-signal', url: '/assets/cards/card-back-cyber-signal.png' },
 ];
 
 /** Registers Craftpix UI icon textures for combat panels and cards. */
