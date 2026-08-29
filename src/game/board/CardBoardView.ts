@@ -431,7 +431,18 @@ export class CardBoardView
                 const key = this.slotKey(slot);
 
                 nextKeys.add(key);
-                seamsByKey.set(key, this.seamsForSlot(slot, runKeys));
+
+                const nextSeams = this.seamsForSlot(slot, runKeys);
+                const previous = seamsByKey.get(key);
+
+                seamsByKey.set(key, previous
+                    ? {
+                        hideLeft: previous.hideLeft || nextSeams.hideLeft,
+                        hideRight: previous.hideRight || nextSeams.hideRight,
+                        hideTop: previous.hideTop || nextSeams.hideTop,
+                        hideBottom: previous.hideBottom || nextSeams.hideBottom,
+                    }
+                    : nextSeams);
             }
         }
 

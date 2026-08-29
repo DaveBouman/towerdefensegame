@@ -368,6 +368,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-29 | **Enemy presence idle.** Portraits bob/sway inside the frame (desynced per foe); frame and HP chrome stay planted. Pauses on hit flinch. |
 | 2026-08-29 | **Combo-trail storms.** One bolt threads through a whole run (stays in card faces). Rad storms continue into converted Defends (`RAD→2`); Fire into alternating Attack/Defend (`FIRE→n`). Attack/Defend still show type-stack `×`. |
 | 2026-08-29 | **Streak storms for all stacks.** Attack/Defend keep type-stack `×` labels; combo stacks (Rad, Fire, Siphon, …) get the same in-card storm with `RAD×2`-style labels. Preview: `?capture=cardart`. |
 | 2026-08-29 | **Streak storm lightning.** Attack streaks (2+) get irregular thunder-strike bolts (from above, forks, flicker/fade) instead of a left-to-right travel. Preview: `?capture=cardart`. |

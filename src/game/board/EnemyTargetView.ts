@@ -122,9 +122,14 @@ export class EnemyTargetView
     private readonly threatRing: Phaser.GameObjects.Rectangle;
     private readonly targetPromptBadge: Phaser.GameObjects.Text;
     private idleTween?: Phaser.Tweens.Tween;
+    private readonly presenceIdleTweens: Phaser.Tweens.Tween[] = [];
+    private presenceRoot?: Phaser.GameObjects.Container;
+    private presenceBaseX = 0;
+    private presenceBaseY = 0;
     private targetPromptTween?: Phaser.Tweens.Tween;
     private targetPromptActive = false;
     private selected = false;
+    private defeated = false;
     private readonly accentColor: number;
 
     constructor (
@@ -201,15 +206,14 @@ export class EnemyTargetView
             : getEnemyPortraitTextureKey(definitionId);
         const portraitInset = 3;
         const portraitSize = enemySize - portraitInset * 2;
+        this.presenceBaseX = enemySize / 2;
+        this.presenceBaseY = enemySize / 2;
+        this.presenceRoot = scene.add.container(this.presenceBaseX, this.presenceBaseY);
         let avatar: Phaser.GameObjects.GameObject;
 
         if (scene.textures.exists(portraitKey))
         {
-            const portrait = scene.add.image(
-                enemySize / 2,
-                enemySize / 2,
-                portraitKey,
-            );
+            const portrait = scene.add.image(0, 0, portraitKey);
 
             portrait.setDisplaySize(portraitSize, portraitSize);
             avatar = portrait;
@@ -221,13 +225,15 @@ export class EnemyTargetView
             drawEnemySilhouette(
                 glyph,
                 identity.silhouette,
-                enemySize / 2,
-                enemySize / 2,
+                0,
+                0,
                 enemySize * 0.38,
                 this.accentColor,
             );
             avatar = glyph;
         }
+
+        this.presenceRoot.add(avatar);
 
         this.flashOverlay = scene.add.rectangle(0, 0, enemySize, enemySize, 0xffffff, 0)
             .setOrigin(0, 0);
@@ -379,7 +385,7 @@ export class EnemyTargetView
             this.shieldRing,
             this.outline,
             this.body,
-            avatar,
+            this.presenceRoot,
             this.flashOverlay,
             frame,
             frameInner,
@@ -399,6 +405,7 @@ export class EnemyTargetView
         this.setHealth(enemy);
         this.updateShieldBadgePosition();
         this.startIdlePulse();
+        this.startPresenceIdle();
     }
 
     setEnemyLabel (label: string): void
@@ -1003,6 +1010,7 @@ export class EnemyTargetView
 
         const baseX = this.container.x;
 
+        this.pausePresenceIdle();
         this.scene.tweens.killTweensOf(this.container);
         this.container.setScale(1);
         this.container.setX(baseX);
@@ -1026,6 +1034,7 @@ export class EnemyTargetView
                 this.container.setX(baseX);
                 this.container.setScale(1);
                 this.flashOverlay.setFillStyle(0xffffff, 0);
+                this.resumePresenceIdle();
             },
         });
     }
@@ -1041,6 +1050,7 @@ export class EnemyTargetView
         const baseX = this.container.x;
         const kick = Math.round(5 * intensity);
 
+        this.pausePresenceIdle();
         this.scene.tweens.add({
             targets: this.container,
             x: baseX + kick,
@@ -1052,6 +1062,7 @@ export class EnemyTargetView
                 if (this.container.active)
                 {
                     this.container.setX(baseX);
+                    this.resumePresenceIdle();
                 }
             },
         });
@@ -1237,14 +1248,20 @@ export class EnemyTargetView
 
     setDefeated (defeated: boolean): void
     {
+        this.defeated = defeated;
         this.container.setAlpha(defeated ? 0.28 : 1);
 
         if (defeated)
         {
+            this.stopPresenceIdle();
             this.clearIntent();
             this.setTargetPrompt(false);
             this.setSelected(false);
             this.setTargetClickHandler(null);
+        }
+        else
+        {
+            this.startPresenceIdle();
         }
     }
 
@@ -1278,6 +1295,7 @@ export class EnemyTargetView
         this.thresholdText = undefined;
         this.shieldTween?.stop();
         this.idleTween?.stop();
+        this.stopPresenceIdle();
         this.targetPromptTween?.stop();
         this.container.destroy();
     }
@@ -1444,6 +1462,95 @@ export class EnemyTargetView
             repeat: -1,
             ease: 'Sine.easeInOut',
         });
+    }
+
+    /** Portrait bob/sway inside the frame — frame + HP chrome stay planted. */
+    private startPresenceIdle (): void
+    {
+        this.stopPresenceIdle();
+
+        if (!this.presenceRoot?.active || this.defeated)
+        {
+            return;
+        }
+
+        this.presenceRoot.setPosition(this.presenceBaseX, this.presenceBaseY);
+        this.presenceRoot.setScale(1);
+        this.presenceRoot.setAngle(0);
+
+        // Cosmetics only — desync multi-enemy fights.
+        const bobMs = 1500 + Math.random() * 700;
+        const swayMs = 2100 + Math.random() * 900;
+        const bobDelay = Math.random() * 800;
+        const swayDelay = Math.random() * 1100;
+
+        this.presenceIdleTweens.push(
+            this.scene.tweens.add({
+                targets: this.presenceRoot,
+                y: this.presenceBaseY - 3.5,
+                duration: bobMs,
+                delay: bobDelay,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+            }),
+            this.scene.tweens.add({
+                targets: this.presenceRoot,
+                x: this.presenceBaseX + 2.5,
+                angle: 1.8,
+                scaleX: 1.025,
+                scaleY: 0.985,
+                duration: swayMs,
+                delay: swayDelay,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut',
+            }),
+        );
+    }
+
+    private stopPresenceIdle (): void
+    {
+        while (this.presenceIdleTweens.length > 0)
+        {
+            this.presenceIdleTweens.pop()?.stop();
+        }
+
+        if (this.presenceRoot?.active)
+        {
+            this.scene.tweens.killTweensOf(this.presenceRoot);
+            this.presenceRoot.setPosition(this.presenceBaseX, this.presenceBaseY);
+            this.presenceRoot.setScale(1);
+            this.presenceRoot.setAngle(0);
+        }
+    }
+
+    private pausePresenceIdle (): void
+    {
+        for (const tween of this.presenceIdleTweens)
+        {
+            tween.pause();
+        }
+    }
+
+    private resumePresenceIdle (): void
+    {
+        if (this.defeated || !this.presenceRoot?.active)
+        {
+            return;
+        }
+
+        if (this.presenceIdleTweens.length === 0)
+        {
+            this.startPresenceIdle();
+
+            return;
+        }
+
+        for (const tween of this.presenceIdleTweens)
+        {
+            tween.resume();
+        }
     }
 
     private startShieldPulse (): void

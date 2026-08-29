@@ -263,6 +263,8 @@ export const findBoardChainHeads = (
 /**
  * Streak visuals from each local chain head — not mid-chain cards, and not only START.
  * Rad→Defend stays fused even when an Attack gap breaks the START route.
+ * Overlapping type-stacks keep the longest run (so a side branch cannot steal cards
+ * from a longer Attack/Defend streak).
  */
 export const findAllStreakBarRuns = (
     board: BoardModel,
@@ -279,5 +281,35 @@ export const findAllStreakBarRuns = (
         }
     }
 
-    return [ ...bySignature.values() ];
+    return dedupeOverlappingTypeStacks([ ...bySignature.values() ]);
+};
+
+/** Prefer longer type-stacks when two Attack/Defend runs share a slot. */
+export const dedupeOverlappingTypeStacks = (
+    runs: readonly StreakBarRun[],
+): StreakBarRun[] =>
+{
+    const combos = runs.filter((run) => run.kind === 'combo');
+    const typeStacks = runs
+        .filter((run) => run.kind === 'type-stack')
+        .slice()
+        .sort((a, b) => b.length - a.length || b.multiplier - a.multiplier);
+
+    const keptTypeStacks: StreakBarRun[] = [];
+    const claimedSlots = new Set<string>();
+
+    for (const run of typeStacks)
+    {
+        const keys = run.slots.map((slot) => `${slot.row},${slot.col}`);
+
+        if (keys.some((key) => claimedSlots.has(key)))
+        {
+            continue;
+        }
+
+        keys.forEach((key) => claimedSlots.add(key));
+        keptTypeStacks.push(run);
+    }
+
+    return [ ...keptTypeStacks, ...combos ];
 };
