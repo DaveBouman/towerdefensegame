@@ -1,6 +1,6 @@
 import { getCardDefinitionOrThrow } from '../config/cardRegistry';
 import type { ActivationStep } from '../domain/types';
-import { isEchoDefinition } from './AttackPipeline';
+import { isEchoDefinition } from './attackSequence';
 import { getEchoReplayTarget } from './echoReplay';
 
 /** Battle-mod cards to apply from a resolved chain, including echo replays. */

@@ -394,6 +394,7 @@ describe('AttackPipeline', () =>
         expect(chain.filter((step) => step.definitionId === 'loop-reset')).toHaveLength(2);
         expect(chain[1]!.exitArrow).toBe('left');
         expect(chain[3]!.exitArrow).toBe('right');
+        // Same Attack tile fires twice via loop — same-tile revisit still type-stacks.
         expect(planAttack(board, { row: 0, col: 0 }).totalDamage).toBe(11);
     });
 
@@ -550,24 +551,56 @@ describe('AttackPipeline', () =>
         expect(sequence.totalDamage).toBe(18);
     });
 
-    it('does not reset attack streak across jokers and other skills', () =>
+    it('does not type-stack through skills when attacks are not grid neighbors', () =>
     {
         const chain = [
             attackStep({ row: 0, col: 0 }, 5),
             jokerStep({ row: 0, col: 1 }),
             attackStep({ row: 0, col: 2 }, 5),
-            hazardStep({ row: 0, col: 3 }),
             attackStep({ row: 1, col: 0 }, 5),
         ];
 
         expect(computeStreakAtIndex(chain, 0)).toBe(1);
-        expect(computeStreakAtIndex(chain, 2)).toBe(2);
-        expect(computeStreakAtIndex(chain, 4)).toBe(3);
+        expect(computeStreakAtIndex(chain, 2)).toBe(1);
+        expect(computeStreakAtIndex(chain, 3)).toBe(1);
 
         const sequence = buildAttackSequence(chain);
 
-        expect(sequence.totalDamage).toBe(23);
-        expect(sequence.stackMultipliers).toEqual({ attack: 1.3 });
+        expect(sequence.totalDamage).toBe(15);
+        expect(sequence.stackMultipliers).toEqual({});
+    });
+
+    it('type-stacks adjacent attacks even when a skill sits elsewhere on the chain', () =>
+    {
+        const chain = [
+            attackStep({ row: 0, col: 0 }, 5),
+            jokerStep({ row: 1, col: 0 }),
+            attackStep({ row: 0, col: 1 }, 5),
+        ];
+
+        expect(computeStreakAtIndex(chain, 2)).toBe(2);
+
+        const sequence = buildAttackSequence(chain);
+
+        expect(sequence.totalDamage).toBe(11);
+        expect(sequence.stackMultipliers).toEqual({ attack: 1.15 });
+    });
+
+    it('does not type-stack a leap Attack onto a card two tiles away', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack-leap', 'right'));
+        board.placeCard({ row: 0, col: 2 }, createCardInstance('attack', 'up'));
+
+        const sequence = planAttack(board, { row: 0, col: 0 });
+
+        expect(sequence.chain.map((step) => step.slot)).toEqual([
+            { row: 0, col: 0 },
+            { row: 0, col: 2 },
+        ]);
+        expect(computeChainTypeMultipliers(sequence.chain)).toEqual({});
+        expect(sequence.totalDamage).toBe(10);
     });
 
     it('resets the streak when the stackable behavior changes', () =>
@@ -760,15 +793,18 @@ describe('AttackPipeline', () =>
         expect(buildAttackSequence(chain).totalDamage).toBe(20);
     });
 
-    it('applies boost after streak stacking on the buffed step', () =>
+    it('applies boost without type-stack when attacks are separated by a boost tile', () =>
     {
+        // Attack → Boost → Attack: stackable steps are one tile apart, so no ×1.15.
+        // Boost still doubles the second attack: 5 + 10 = 15.
         const chain = [
             attackStep({ row: 0, col: 0 }, 5),
             boostStep({ row: 0, col: 1 }),
             attackStep({ row: 0, col: 2 }, 5),
         ];
 
-        expect(buildAttackSequence(chain).totalDamage).toBe(17);
+        expect(computeStreakAtIndex(chain, 2)).toBe(1);
+        expect(buildAttackSequence(chain).totalDamage).toBe(15);
     });
 
     it('routes through a field boost on the board', () =>
@@ -782,7 +818,24 @@ describe('AttackPipeline', () =>
         const sequence = planAttack(board, { row: 0, col: 0 });
 
         expect(sequence.chain.map((step) => step.behaviorId)).toEqual([ 'attack', 'boost', 'attack' ]);
-        expect(sequence.totalDamage).toBe(17);
+        expect(computeChainTypeMultipliers(sequence.chain)).toEqual({});
+        expect(sequence.totalDamage).toBe(15);
+    });
+
+    it('boosts a type-stacked pair when attacks are grid neighbors', () =>
+    {
+        // Attack → Attack (adjacent, ×1.15 on second) with Boost before the pair:
+        // Boost doubles only the next consumer: first attack unboosted, second gets
+        // streak then boost — but boost sits before first attack here so first is ×2.
+        const chain = [
+            boostStep({ row: 0, col: 0 }),
+            attackStep({ row: 0, col: 1 }, 5),
+            attackStep({ row: 0, col: 2 }, 5),
+        ];
+
+        expect(computeStreakAtIndex(chain, 2)).toBe(2);
+        // Boost×2 on first attack only (boost consumed): 10 + round(5*1.15) = 10+6 = 16
+        expect(buildAttackSequence(chain).totalDamage).toBe(16);
     });
 
     it('doubles fire damage and alternation bonus on the boosted special step only', () =>

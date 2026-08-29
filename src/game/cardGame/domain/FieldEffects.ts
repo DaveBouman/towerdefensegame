@@ -1,7 +1,8 @@
 import { isTrapPlacementColumn } from '../../config/gridConfig';
 import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import type { AttackSequence } from './types';
-import { getUnchainedHazardSlots } from '../combat/AttackPipeline';
+import { getUnchainedHazardSlots } from '../combat/attackSequence';
+import { slotsCanTypeStack } from '../combat/typeStack';
 import {
     applyLaneNullify,
     applyTileDampening,
@@ -285,9 +286,7 @@ export class FieldEffects
         }
 
         const isAdjacentToFieldNode = (candidate: SlotPosition): boolean =>
-            neighborSlots.some((occupied) =>
-                Math.abs(occupied.row - candidate.row) <= 1
-                && Math.abs(occupied.col - candidate.col) <= 1);
+            neighborSlots.some((occupied) => slotsCanTypeStack(occupied, candidate));
 
         const spacedSlots = emptySlots.filter((candidate) => !isAdjacentToFieldNode(candidate));
         const candidates = spacedSlots.length > 0 ? spacedSlots : emptySlots;

@@ -1,4 +1,3 @@
-import { GAME_RULES } from '../config/cardRegistry';
 import type { BoardModel } from '../domain/BoardModel';
 import type { ActivationStep, SlotPosition } from '../domain/types';
 import { countAlternatingAttackDefendAfter } from '../abilities/fireAlternation';
@@ -9,9 +8,11 @@ import {
     planChainPathPreview,
     tryBuildActivationStep,
 } from './chainPathfinding';
-
-/** Real type-stack damage/armor bonus (+15% per dupe). */
-const TYPE_STACK_BEHAVIORS = new Set([ 'attack', 'defend' ]);
+import {
+    isTypeStackBehavior,
+    slotsCanTypeStack,
+    typeStackMultiplier,
+} from './typeStack';
 
 export interface StreakBarStep
 {
@@ -33,16 +34,6 @@ export interface StreakBarRun
     label: string;
 }
 
-const streakToMultiplier = (streak: number): number =>
-{
-    if (streak <= 1)
-    {
-        return 1;
-    }
-
-    return 1 + (streak - 1) * GAME_RULES.typeStackBonus.perDuplicate;
-};
-
 const formatTypeStackLabel = (multiplier: number): string =>
     `×${multiplier.toFixed(2).replace(/\.?0+$/, '') || multiplier}`;
 
@@ -51,7 +42,7 @@ const asBehaviorChain = (steps: readonly StreakBarStep[]): ActivationStep[] =>
     steps as unknown as ActivationStep[];
 
 /**
- * Contiguous same-type attack/defend runs, plus logical combo trails:
+ * Adjacent same-type attack/defend runs (same tile or grid neighbors), plus combo trails:
  * - Rad → following Defends it converts (until an Attack)
  * - Fire → following alternating Attack/Defend that pay the fire bonus
  */
@@ -150,7 +141,7 @@ export const findStreakBarRuns = (
         if (runBehavior && runIndices.length >= minLength)
         {
             const length = runIndices.length;
-            const multiplier = streakToMultiplier(length);
+            const multiplier = typeStackMultiplier(length);
 
             runs.push({
                 behaviorId: runBehavior,
@@ -174,9 +165,10 @@ export const findStreakBarRuns = (
             continue;
         }
 
-        const behaviorId = steps[i]!.behaviorId;
+        const step = steps[i]!;
+        const behaviorId = step.behaviorId;
 
-        if (!TYPE_STACK_BEHAVIORS.has(behaviorId))
+        if (!isTypeStackBehavior(behaviorId))
         {
             flushTypeStack();
             continue;
@@ -184,7 +176,18 @@ export const findStreakBarRuns = (
 
         if (behaviorId === runBehavior)
         {
-            runIndices.push(i);
+            const previous = steps[runIndices[runIndices.length - 1]!]!;
+
+            if (slotsCanTypeStack(previous.slot, step.slot))
+            {
+                runIndices.push(i);
+                continue;
+            }
+
+            // Same type in chain order, but not grid neighbors (e.g. leap) — new run.
+            flushTypeStack();
+            runBehavior = behaviorId;
+            runIndices = [ i ];
             continue;
         }
 

@@ -205,7 +205,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | Chain start column | 0 | `gameRules.json` |
 | Max chain steps | 24 | `gameRules.json` |
 | Off-chain bonus | +2 damage (attack) / +2 armor (defend) on board but not in chain | `gameRules.json` |
-| Type streak | +15% per duplicate attack/defend in streak | `gameRules.json` |
+| Type streak | +15% per duplicate attack/defend when consecutive stackable steps are the **same tile** (revisit) or **grid-adjacent** (orthogonal/diagonal); leaps / distant same-type cards do not stack | `gameRules.json`, `typeStack.ts` |
 | Field boost | Random boost on empty tile; multiplies next chain step (boosts stack: ×2 each) | `gameRules.json` |
 | Resolution speed | Chain step 800ms, enemy turn 800ms (snappy) | `gameRules.json` |
 
@@ -368,6 +368,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-29 | **Type stacks need adjacency.** Attack/Defend +15% stacks only when consecutive stackable steps share a tile (revisit) or an edge/corner — not merely sequential on the arrow path (leaps do not stack). Shared logic in `typeStack.ts`; streak storms use the same rule. |
 | 2026-08-29 | **Enemy presence idle.** Portraits bob/sway inside the frame (desynced per foe); frame and HP chrome stay planted. Pauses on hit flinch. |
 | 2026-08-29 | **Combo-trail storms.** One bolt threads through a whole run (stays in card faces). Rad storms continue into converted Defends (`RAD→2`); Fire into alternating Attack/Defend (`FIRE→n`). Attack/Defend still show type-stack `×`. |
 | 2026-08-29 | **Streak storms for all stacks.** Attack/Defend keep type-stack `×` labels; combo stacks (Rad, Fire, Siphon, …) get the same in-card storm with `RAD×2`-style labels. Preview: `?capture=cardart`. |

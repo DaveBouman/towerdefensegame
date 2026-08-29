@@ -1,66 +1,20 @@
-import { GAME_RULES, getCardDefinitionOrThrow, type CardDefinition } from '../config/cardRegistry';
+import { getCardDefinitionOrThrow, type CardDefinition } from '../config/cardRegistry';
 import type { ActivationStep } from '../domain/types';
 import { getAllDefendIndicesReplacedByPoison } from '../abilities/poisonReplacement';
 import {
     getBoostMultiplierForStep,
     hasBoostBeforeStep,
-    isStreakNeutralBehavior,
     scaleBoostedValue,
 } from './chainBoost';
 import { applyBombConversion } from './bombConversion';
+import {
+    computeStreakAtIndex,
+    isTypeStackBehavior,
+    typeStackMultiplier,
+} from './typeStack';
 
-export { getBoostMultiplierForStep, isStreakNeutralBehavior } from './chainBoost';
-
-const STACKABLE_BEHAVIORS = new Set([ 'attack', 'defend' ]);
-
-const streakToMultiplier = (streak: number): number =>
-{
-    if (streak <= 1)
-    {
-        return 1;
-    }
-
-    return 1 + (streak - 1) * GAME_RULES.typeStackBonus.perDuplicate;
-};
-
-/** Consecutive streak length for a stackable step; skills in between do not reset it. */
-export const computeStreakAtIndex = (
-    chain: readonly ActivationStep[],
-    index: number,
-): number =>
-{
-    const step = chain[index];
-
-    if (!step || isStreakNeutralBehavior(step.behaviorId))
-    {
-        return 0;
-    }
-
-    let streakBehavior: string | null = null;
-    let streak = 0;
-
-    for (let i = 0; i <= index; i++)
-    {
-        const current = chain[i]!;
-
-        if (isStreakNeutralBehavior(current.behaviorId))
-        {
-            continue;
-        }
-
-        if (current.behaviorId === streakBehavior)
-        {
-            streak += 1;
-        }
-        else
-        {
-            streakBehavior = current.behaviorId;
-            streak = 1;
-        }
-    }
-
-    return streak;
-};
+export { getBoostMultiplierForStep } from './chainBoost';
+export { computeStreakAtIndex, isStreakNeutralBehavior } from './typeStack';
 
 export const isBoostDefinition = (definition: CardDefinition): boolean =>
     definition.behaviorId === 'boost';
@@ -74,7 +28,7 @@ export const computeChainTypeMultipliers = (
 
     chain.forEach((step, index) =>
     {
-        if (!STACKABLE_BEHAVIORS.has(step.behaviorId))
+        if (!isTypeStackBehavior(step.behaviorId))
         {
             return;
         }
@@ -92,7 +46,7 @@ export const computeChainTypeMultipliers = (
 
     for (const [ behaviorId, streak ] of peakStreak)
     {
-        const multiplier = streakToMultiplier(streak);
+        const multiplier = typeStackMultiplier(streak);
 
         if (multiplier > 1)
         {
@@ -106,12 +60,12 @@ export const computeChainTypeMultipliers = (
 const applyChainStacking = (chain: ActivationStep[]): ActivationStep[] =>
     chain.map((step, index) =>
     {
-        if (!STACKABLE_BEHAVIORS.has(step.behaviorId))
+        if (!isTypeStackBehavior(step.behaviorId))
         {
             return step;
         }
 
-        const multiplier = streakToMultiplier(computeStreakAtIndex(chain, index));
+        const multiplier = typeStackMultiplier(computeStreakAtIndex(chain, index));
 
         if (multiplier <= 1)
         {

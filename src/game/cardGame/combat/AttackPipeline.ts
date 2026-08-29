@@ -37,6 +37,13 @@ export {
 } from './chainResolve';
 
 export {
+    areSlotsAdjacent,
+    isTypeStackBehavior,
+    slotsCanTypeStack,
+    typeStackMultiplier,
+} from './typeStack';
+
+export {
     isEchoDefinition,
     collectDisarmResults,
     buildAttackSequence,

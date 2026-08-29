@@ -1,13 +1,8 @@
 import { GAME_RULES } from '../config/cardRegistry';
 import type { ActivationStep } from '../domain/types';
 
-const STACKABLE_BEHAVIORS = new Set([ 'attack', 'defend' ]);
-
 /** Skills that let boosts keep propagating (do not consume the pending stack). */
 const BOOST_PASS_THROUGH_BEHAVIORS = new Set([ 'joker', 'boost' ]);
-
-export const isStreakNeutralBehavior = (behaviorId: string): boolean =>
-    !STACKABLE_BEHAVIORS.has(behaviorId);
 
 export const stepConsumesBoost = (step: ActivationStep): boolean =>
     !BOOST_PASS_THROUGH_BEHAVIORS.has(step.behaviorId);

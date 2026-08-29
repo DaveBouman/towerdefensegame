@@ -1,6 +1,7 @@
 import { getCardDefinitionOrThrow } from '../config/cardRegistry';
 import type { ActivationStep } from '../domain/types';
-import { isEchoDefinition, resolveChainSteps } from './AttackPipeline';
+import { isEchoDefinition } from './attackSequence';
+import { resolveChainSteps } from './chainResolve';
 
 export interface EchoReplayTarget {
     step: ActivationStep;

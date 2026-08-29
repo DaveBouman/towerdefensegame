@@ -1,5 +1,5 @@
 import { GRID_CONFIG } from '../../config/gridConfig';
-import { getUnchainedHazardSlots } from '../combat/AttackPipeline';
+import { getUnchainedHazardSlots } from '../combat/attackSequence';
 import type { BoardModel } from '../domain/BoardModel';
 import { slotKey } from '../domain/cardDirections';
 import type {
