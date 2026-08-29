@@ -8,7 +8,7 @@ import { playBattleModifierFloatingLabel } from './battleModifierFloatingLabel';
 import { boostedBuffVisual } from './visualEffects/boostedBuffVisual';
 import { getCardVisualEffectOrThrow } from './visualEffects/visualEffectRegistry';
 import { scaleBoostedDelta } from '../combat/chainBoost';
-import { findStreakBarRuns } from '../combat/streakBarRuns';
+import { findAllStreakBarRuns } from '../combat/streakBarRuns';
 import type { ArmorView } from '../../board/ArmorView';
 import type { CardBoardView } from '../../board/CardBoardView';
 import type { CardHandView } from '../../board/CardHandView';
@@ -116,11 +116,9 @@ export class CardGamePresenter
 
         if (planned?.chain.length)
         {
-            this.boardView.setStreakBars(findStreakBarRuns(
-                planned.chain.map((step) => ({
-                    slot: step.slot,
-                    behaviorId: step.behaviorId,
-                })),
+            this.boardView.setStreakBars(findAllStreakBarRuns(
+                this.session.board,
+                chainStart,
             ));
         }
 

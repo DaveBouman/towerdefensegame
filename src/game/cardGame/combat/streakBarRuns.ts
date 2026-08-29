@@ -1,7 +1,14 @@
 import { GAME_RULES } from '../config/cardRegistry';
+import type { BoardModel } from '../domain/BoardModel';
 import type { ActivationStep, SlotPosition } from '../domain/types';
 import { countAlternatingAttackDefendAfter } from '../abilities/fireAlternation';
 import { getDefendIndicesReplacedByPoison } from '../abilities/poisonReplacement';
+import {
+    createChainWalkState,
+    getNextChainSlotFromStep,
+    planChainPathPreview,
+    tryBuildActivationStep,
+} from './chainPathfinding';
 
 /** Real type-stack damage/armor bonus (+15% per dupe). */
 const TYPE_STACK_BEHAVIORS = new Set([ 'attack', 'defend' ]);
@@ -189,4 +196,88 @@ export const findStreakBarRuns = (
     flushTypeStack();
 
     return runs;
+};
+
+const runSignature = (run: StreakBarRun): string =>
+    `${run.kind}:${run.behaviorId}:${run.slots.map((slot) => `${slot.row},${slot.col}`).join(';')}`;
+
+const sameSlot = (a: SlotPosition, b: SlotPosition): boolean =>
+    a.row === b.row && a.col === b.col;
+
+/**
+ * First cards of each local arrow-chain: occupied tiles that nothing else routes into.
+ * Always includes `primaryStart` when occupied so the START route is considered.
+ */
+export const findBoardChainHeads = (
+    board: BoardModel,
+    primaryStart: SlotPosition,
+): SlotPosition[] =>
+{
+    const occupied: SlotPosition[] = [];
+    const pointedTo = new Set<string>();
+
+    for (let row = 0; row < board.rows; row++)
+    {
+        for (let col = 0; col < board.cols; col++)
+        {
+            const slot = { row, col };
+            const card = board.getCardAt(slot);
+
+            if (!card)
+            {
+                continue;
+            }
+
+            occupied.push(slot);
+
+            const walkState = createChainWalkState();
+            const step = tryBuildActivationStep(board, slot, walkState);
+
+            if (!step)
+            {
+                continue;
+            }
+
+            const next = getNextChainSlotFromStep(board, step);
+
+            if (next)
+            {
+                pointedTo.add(`${next.row},${next.col}`);
+            }
+        }
+    }
+
+    const heads = occupied.filter((slot) => !pointedTo.has(`${slot.row},${slot.col}`));
+
+    if (
+        board.getCardAt(primaryStart)
+        && !heads.some((slot) => sameSlot(slot, primaryStart))
+    )
+    {
+        heads.unshift({ ...primaryStart });
+    }
+
+    return heads;
+};
+
+/**
+ * Streak visuals from each local chain head — not mid-chain cards, and not only START.
+ * Rad→Defend stays fused even when an Attack gap breaks the START route.
+ */
+export const findAllStreakBarRuns = (
+    board: BoardModel,
+    primaryStart: SlotPosition,
+): StreakBarRun[] =>
+{
+    const bySignature = new Map<string, StreakBarRun>();
+
+    for (const head of findBoardChainHeads(board, primaryStart))
+    {
+        for (const run of findStreakBarRuns(planChainPathPreview(board, head).steps))
+        {
+            bySignature.set(runSignature(run), run);
+        }
+    }
+
+    return [ ...bySignature.values() ];
 };

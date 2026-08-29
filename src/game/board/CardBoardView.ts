@@ -3,7 +3,8 @@ import { uiTextStyle, uiDisplayTextStyle } from '../config/uiTypography';
 import { CYBER } from '../config/cyberpunkTheme';
 import { drawCornerBrackets, drawNeonPanel } from '../config/cyberpunkUiGraphics';
 import { GRID_CONFIG } from '../config/gridConfig';
-import { buildCardGraphic, updateCardGraphicDirection } from '../cards/CardRenderer';
+import { buildCardGraphic, setCardChainChromeMuted, updateCardGraphicDirection } from '../cards/CardRenderer';
+import type { CardStreakSeams } from '../cards/CardRenderer';
 import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
 import { getJokerDirectionChoices } from '../cardGame/combat/AttackPipeline';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
@@ -238,23 +239,22 @@ export class CardBoardView
         this.redrawChainPath();
     }
 
-    /** Type-stack runs — attack streaks get a traveling lightning bolt (no fat bar). */
+    /** Type-stack / combo runs — mute only cards currently in a streak. */
     setStreakBars (runs: readonly StreakBarRun[]): void
     {
-        this.clearStreakBarCardDim();
         this.streakBarRuns = runs.map((run) => ({
             ...run,
             slots: run.slots.map((slot) => ({ ...slot })),
         }));
+        this.syncStreakCardChrome();
         this.redrawStreakBars();
-        this.applyStreakBarCardDim();
     }
 
     clearStreakBars (): void
     {
         this.stopStreakLightning();
-        this.clearStreakBarCardDim();
         this.streakBarRuns = [];
+        this.syncStreakCardChrome();
         this.streakBarGfx.clear();
         this.streakBarLabels.removeAll(true);
     }
@@ -383,39 +383,72 @@ export class CardBoardView
         return `${slot.row}:${slot.col}`;
     }
 
-    private clearStreakBarCardDim (): void
+    private setSlotChainChrome (key: string, seams: CardStreakSeams | null): void
     {
-        for (const key of this.streakBarDimSlots)
-        {
-            const [ rowText, colText ] = key.split(':');
-            const row = Number(rowText);
-            const col = Number(colText);
-            const wrapper = this.cardContainers[row]?.[col];
+        const [ rowText, colText ] = key.split(':');
+        const row = Number(rowText);
+        const col = Number(colText);
+        const wrapper = this.cardContainers[row]?.[col];
+        const graphic = wrapper?.getData('cardGraphic') as Phaser.GameObjects.Container | undefined;
 
-            wrapper?.setAlpha(1);
+        if (!wrapper || !graphic)
+        {
+            return;
         }
 
-        this.streakBarDimSlots.clear();
+        wrapper.setAlpha(1);
+        setCardChainChromeMuted(graphic, seams);
     }
 
-    private applyStreakBarCardDim (): void
+    private seamsForSlot (
+        slot: SlotPosition,
+        runKeys: ReadonlySet<string>,
+    ): CardStreakSeams
     {
+        return {
+            hideLeft: runKeys.has(this.slotKey({ row: slot.row, col: slot.col - 1 })),
+            hideRight: runKeys.has(this.slotKey({ row: slot.row, col: slot.col + 1 })),
+            hideTop: runKeys.has(this.slotKey({ row: slot.row - 1, col: slot.col })),
+            hideBottom: runKeys.has(this.slotKey({ row: slot.row + 1, col: slot.col })),
+        };
+    }
+
+    /**
+     * Only shared edges between neighbors in the same streak open up —
+     * outer perimeter stays so the run reads as one larger card.
+     */
+    private syncStreakCardChrome (): void
+    {
+        const nextKeys = new Set<string>();
+        const seamsByKey = new Map<string, CardStreakSeams>();
+
         for (const run of this.streakBarRuns)
         {
+            const runKeys = new Set(run.slots.map((slot) => this.slotKey(slot)));
+
             for (const slot of run.slots)
             {
                 const key = this.slotKey(slot);
-                const wrapper = this.cardContainers[slot.row]?.[slot.col];
 
-                if (!wrapper)
-                {
-                    continue;
-                }
-
-                wrapper.setAlpha(0.88);
-                this.streakBarDimSlots.add(key);
+                nextKeys.add(key);
+                seamsByKey.set(key, this.seamsForSlot(slot, runKeys));
             }
         }
+
+        for (const key of this.streakBarDimSlots)
+        {
+            if (!nextKeys.has(key))
+            {
+                this.setSlotChainChrome(key, null);
+            }
+        }
+
+        for (const key of nextKeys)
+        {
+            this.setSlotChainChrome(key, seamsByKey.get(key) ?? null);
+        }
+
+        this.streakBarDimSlots = nextKeys;
     }
 
     private stopStreakLightning (): void
@@ -1326,8 +1359,7 @@ export class CardBoardView
             }
         }
 
-        this.streakBarDimSlots.clear();
-        this.applyStreakBarCardDim();
+        this.syncStreakCardChrome();
         this.redrawStreakBars();
         this.bringChainStartToFront();
     }

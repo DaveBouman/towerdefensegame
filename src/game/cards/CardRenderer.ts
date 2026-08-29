@@ -24,6 +24,32 @@ export interface CardGraphic {
 }
 
 const CARD_DIRECTION_MARK_KEY = 'directionMark';
+const CARD_CHROME_KEY = 'cardChrome';
+
+interface CardChromeRefs
+{
+    body: Phaser.GameObjects.Rectangle;
+    glow: Phaser.GameObjects.Rectangle;
+    bevel: Phaser.GameObjects.Rectangle;
+    brackets: Phaser.GameObjects.Graphics;
+    rarityBrackets: Phaser.GameObjects.Graphics;
+    edgeGfx: Phaser.GameObjects.Graphics;
+    width: number;
+    height: number;
+    borderWidth: number;
+    borderColor: number;
+    glowAlpha: number;
+    bevelAlpha: number;
+}
+
+/** Which sides sit against another card in the same streak (those seams are omitted). */
+export interface CardStreakSeams
+{
+    hideLeft: boolean;
+    hideRight: boolean;
+    hideTop: boolean;
+    hideBottom: boolean;
+}
 
 const cardKindIconSize = (width: number): number =>
     Math.max(18, Math.round(width * 0.26));
@@ -88,6 +114,7 @@ export const buildCardGraphic = (
 
     const brackets = scene.add.graphics();
     const rarityBrackets = scene.add.graphics();
+    const edgeGfx = scene.add.graphics();
 
     drawCornerBrackets(brackets, 3, 3, width - 6, height - 6, style.border, {
         arm: Math.min(11, Math.round(width * 0.14)),
@@ -103,7 +130,7 @@ export const buildCardGraphic = (
         });
     }
 
-    layers.push(bevel, brackets, rarityBrackets);
+    layers.push(bevel, brackets, rarityBrackets, edgeGfx);
 
     if (owned)
     {
@@ -226,7 +253,84 @@ export const buildCardGraphic = (
         body.setInteractive({ cursor: getGameCursors().pointer });
     }
 
+    const bevelAlpha = hasFrontArt ? 0.02 : (tier >= 2 ? 0.04 : 0.025);
+
+    container.setData(CARD_CHROME_KEY, {
+        body,
+        glow,
+        bevel,
+        brackets,
+        rarityBrackets,
+        edgeGfx,
+        width,
+        height,
+        borderWidth,
+        borderColor: style.border,
+        glowAlpha,
+        bevelAlpha,
+    } satisfies CardChromeRefs);
+
     return { container, hitArea: body };
+};
+
+/**
+ * Open-border chrome for streak cards: only omit sides that share an edge with
+ * another card in the same streak so left/right (or up/down) neighbors fuse.
+ * Pass `null` to restore the normal full frame.
+ */
+export const setCardChainChromeMuted = (
+    graphic: Phaser.GameObjects.Container,
+    seams: CardStreakSeams | null,
+): void =>
+{
+    const chrome = graphic.getData(CARD_CHROME_KEY) as CardChromeRefs | undefined;
+
+    if (!chrome?.body?.active)
+    {
+        return;
+    }
+
+    chrome.edgeGfx.clear();
+
+    if (!seams)
+    {
+        chrome.body.setStrokeStyle(chrome.borderWidth, chrome.borderColor, 1);
+        chrome.bevel.setAlpha(chrome.bevelAlpha);
+        chrome.brackets.setAlpha(1);
+        chrome.rarityBrackets.setAlpha(1);
+
+        return;
+    }
+
+    chrome.body.setStrokeStyle(0);
+    chrome.bevel.setAlpha(0);
+    chrome.brackets.setAlpha(0);
+    chrome.rarityBrackets.setAlpha(0);
+
+    const { width, height, borderWidth, borderColor } = chrome;
+    const inset = borderWidth / 2;
+
+    chrome.edgeGfx.lineStyle(borderWidth, borderColor, 1);
+
+    if (!seams.hideTop)
+    {
+        chrome.edgeGfx.lineBetween(0, inset, width, inset);
+    }
+
+    if (!seams.hideBottom)
+    {
+        chrome.edgeGfx.lineBetween(0, height - inset, width, height - inset);
+    }
+
+    if (!seams.hideLeft)
+    {
+        chrome.edgeGfx.lineBetween(inset, 0, inset, height);
+    }
+
+    if (!seams.hideRight)
+    {
+        chrome.edgeGfx.lineBetween(width - inset, 0, width - inset, height);
+    }
 };
 
 /** Replaces the card's direction mark (used when Reroute resolves to a chosen arrow). */

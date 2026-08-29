@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { findStreakBarRuns } from './streakBarRuns';
+import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
+import { createCardInstance } from '../domain/createCardInstance';
+import { GRID_CONFIG } from '../../config/gridConfig';
+import { findAllStreakBarRuns, findBoardChainHeads, findStreakBarRuns } from './streakBarRuns';
 
 describe('findStreakBarRuns', () =>
 {
@@ -34,11 +37,6 @@ describe('findStreakBarRuns', () =>
         expect(runs[0]?.behaviorId).toBe('poison');
         expect(runs[0]?.length).toBe(3);
         expect(runs[0]?.label).toBe('RAD→2');
-        expect(runs[0]?.slots).toEqual([
-            { row: 0, col: 0 },
-            { row: 0, col: 1 },
-            { row: 0, col: 2 },
-        ]);
     });
 
     it('extends Fire combo through alternating Attack/Defend', () =>
@@ -73,5 +71,39 @@ describe('findStreakBarRuns', () =>
             { slot: { row: 0, col: 0 }, behaviorId: 'attack' },
             { slot: { row: 0, col: 1 }, behaviorId: 'defend' },
         ])).toEqual([]);
+    });
+});
+
+describe('findAllStreakBarRuns', () =>
+{
+    it('starts each local chain at its head, not mid-chain cards', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        // gap — START chain dies
+        board.placeCard({ row: 0, col: 2 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 3 }, createCardInstance('poison', 'right'));
+        board.placeCard({ row: 0, col: 4 }, createCardInstance('defend', 'down'));
+        board.placeCard({ row: 1, col: 4 }, createCardInstance('defend', 'left'));
+
+        const heads = findBoardChainHeads(board, { row: 0, col: 0 });
+
+        expect(heads.some((slot) => slot.row === 0 && slot.col === 0)).toBe(true);
+        expect(heads.some((slot) => slot.row === 0 && slot.col === 2)).toBe(true);
+        // Rad is pointed at by the Attack at col 2 — not a head
+        expect(heads.some((slot) => slot.row === 0 && slot.col === 3)).toBe(false);
+        // Defends are mid-chain
+        expect(heads.some((slot) => slot.row === 0 && slot.col === 4)).toBe(false);
+
+        const runs = findAllStreakBarRuns(board, { row: 0, col: 0 });
+        const rad = runs.find((run) => run.behaviorId === 'poison');
+
+        expect(rad?.label).toBe('RAD→2');
+        expect(rad?.slots).toEqual([
+            { row: 0, col: 3 },
+            { row: 0, col: 4 },
+            { row: 1, col: 4 },
+        ]);
     });
 });

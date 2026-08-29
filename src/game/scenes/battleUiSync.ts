@@ -9,7 +9,7 @@ import type { PlayerHealthView } from '../board/PlayerHealthView';
 import type { CardGameSession } from '../cardGame/domain/CardGameSession';
 import type { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { planChainPathPreview } from '../cardGame/combat/AttackPipeline';
-import { findStreakBarRuns } from '../cardGame/combat/streakBarRuns';
+import { findAllStreakBarRuns } from '../cardGame/combat/streakBarRuns';
 import { playFloatingText } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import { EventBus } from '../EventBus';
@@ -195,7 +195,10 @@ export const emitAttackReadiness = (deps: BattleUiSyncDeps): void =>
             deps.session.board,
             deps.session.getChainStartSlot(),
         );
-        const streakBars = findStreakBarRuns(preview.steps);
+        const streakBars = findAllStreakBarRuns(
+            deps.session.board,
+            deps.session.getChainStartSlot(),
+        );
 
         if (streakBars.length > 0)
         {
