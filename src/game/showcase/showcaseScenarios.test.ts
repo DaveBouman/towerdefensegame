@@ -20,13 +20,13 @@ describe('showcaseScenarios', () =>
         expect(parseCaptureId('cardart')).toBe('cardart');
     });
 
-    it('cardart board favors a three-attack streak for the bar overlay', () =>
+    it('cardart board shows attack type-stack and rad→defend trail', () =>
     {
-        expect(SHOWCASE_CARD_ART_BOARD.length).toBeGreaterThanOrEqual(3);
-        expect(SHOWCASE_CARD_ART_HAND.length).toBeGreaterThanOrEqual(4);
-        const opening = SHOWCASE_CARD_ART_BOARD.slice(0, 3);
-
-        expect(opening.every((spec) => spec.definitionId.startsWith('attack'))).toBe(true);
+        expect(SHOWCASE_CARD_ART_BOARD.slice(0, 3).every((spec) =>
+            spec.definitionId.startsWith('attack'))).toBe(true);
+        expect(SHOWCASE_CARD_ART_BOARD.some((spec) => spec.definitionId === 'poison')).toBe(true);
+        expect(SHOWCASE_CARD_ART_BOARD.filter((spec) => spec.definitionId === 'defend').length)
+            .toBeGreaterThanOrEqual(2);
     });
     it('board capture walks the showcase route with leaps, corners, and combos', () =>
     {

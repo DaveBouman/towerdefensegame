@@ -17,6 +17,21 @@ import { JokerDirectionPicker } from './JokerDirectionPicker';
 import { playCardPlaceSettle } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import type { StreakBarRun } from '../cardGame/combat/streakBarRuns';
 
+const STREAK_STORM_COLORS: Record<string, { glow: number; label: string }> = {
+    attack: { glow: CYBER.attackGlow, label: '#ffb8dc' },
+    defend: { glow: CYBER.defendGlow, label: '#ffd4a0' },
+    poison: { glow: 0x00ff9d, label: '#b8ffe0' },
+    fire: { glow: 0xff6b35, label: '#ffc8a0' },
+    siphon: { glow: 0x55efc4, label: '#b8ffe8' },
+    thorns: { glow: 0xc44dff, label: '#e0c8ff' },
+    echo: { glow: 0x5ce1e6, label: '#b8f8ff' },
+    redline: { glow: 0xff4a6a, label: '#ffb8c8' },
+    'battle-mod': { glow: 0xfcee0a, label: '#fff9b0' },
+};
+
+const streakStormColor = (behaviorId: string): { glow: number; label: string } =>
+    STREAK_STORM_COLORS[behaviorId] ?? { glow: CYBER.magenta, label: '#ffd0ea' };
+
 const SLOT_FILL = CYBER.slotFill;
 const SLOT_BORDER = CYBER.slotBorder;
 const SLOT_DROP = CYBER.slotDrop;
@@ -98,8 +113,8 @@ export class CardBoardView
     private chainPathTentativeFrom: number | null = null;
     private streakBarRuns: StreakBarRun[] = [];
     private streakBarDimSlots = new Set<string>();
-    private streakStormTimer?: Phaser.Time.TimerEvent;
-    private streakStormFade?: Phaser.Tweens.Tween;
+    private readonly streakStormTimers: (Phaser.Time.TimerEvent | undefined)[] = [];
+    private readonly streakStormStrikeGfx: Phaser.GameObjects.Graphics[] = [];
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -405,10 +420,25 @@ export class CardBoardView
 
     private stopStreakLightning (): void
     {
-        this.streakStormTimer?.remove(false);
-        this.streakStormTimer = undefined;
-        this.streakStormFade?.stop();
-        this.streakStormFade = undefined;
+        for (let i = 0; i < this.streakStormTimers.length; i++)
+        {
+            this.streakStormTimers[i]?.remove(false);
+            this.streakStormTimers[i] = undefined;
+        }
+
+        this.streakStormTimers.length = 0;
+
+        while (this.streakStormStrikeGfx.length > 0)
+        {
+            const gfx = this.streakStormStrikeGfx.pop();
+
+            if (gfx?.active)
+            {
+                this.scene.tweens.killTweensOf(gfx);
+                gfx.destroy();
+            }
+        }
+
         this.streakBarGfx.clear();
         this.streakBarGfx.setAlpha(1);
     }
@@ -417,95 +447,110 @@ export class CardBoardView
     {
         this.stopStreakLightning();
 
-        const attackRuns = this.streakBarRuns.filter((run) => run.behaviorId === 'attack' && run.slots.length >= 2);
+        const activeRuns = this.streakBarRuns.filter((run) => run.slots.length >= 2);
 
-        if (attackRuns.length === 0)
+        if (activeRuns.length === 0)
         {
             return;
         }
 
-        this.scheduleStormStrike(true);
-    }
-
-    private scheduleStormStrike (immediate: boolean): void
-    {
-        const attackRuns = this.streakBarRuns.filter((run) => run.behaviorId === 'attack' && run.slots.length >= 2);
-
-        if (attackRuns.length === 0)
+        // Each streak set gets its own randomized storm clock.
+        activeRuns.forEach((run, index) =>
         {
-            return;
-        }
-
-        // Cosmetics only — not game RNG.
-        const delay = immediate ? 120 : 380 + Math.random() * 1100;
-
-        this.streakStormTimer = this.scene.time.delayedCall(delay, () =>
-        {
-            this.fireStormStrike(attackRuns);
-            this.scheduleStormStrike(false);
+            this.scheduleRunStormStrike(run, true, index);
         });
     }
 
-    private fireStormStrike (attackRuns: readonly StreakBarRun[]): void
+    private scheduleRunStormStrike (
+        run: StreakBarRun,
+        immediate: boolean,
+        setIndex: number,
+    ): void
     {
-        this.streakStormFade?.stop();
-        this.streakBarGfx.clear();
-        this.streakBarGfx.setAlpha(1);
-        this.container.bringToTop(this.streakBarGfx);
-        this.container.bringToTop(this.streakBarLabels);
+        const runStillPresent = (): boolean => this.streakBarRuns.some((candidate) =>
+            candidate.behaviorId === run.behaviorId
+            && candidate.slots.length === run.slots.length
+            && candidate.slots.every((slot, i) =>
+                slot.row === run.slots[i]?.row && slot.col === run.slots[i]?.col));
 
-        for (const run of attackRuns)
+        if (!runStillPresent())
         {
-            const centers = run.slots.map((slot) => this.slotCenter(slot));
-            const boltCount = 2 + Math.floor(Math.random() * 3);
-
-            for (let b = 0; b < boltCount; b++)
-            {
-                this.drawStormBolt(centers);
-            }
-
-            // Soft flash wash — clipped to each card face.
-            for (const point of centers)
-            {
-                const rect = this.cardInnerRect(point);
-
-                this.streakBarGfx.fillStyle(CYBER.attackGlow, 0.14 + Math.random() * 0.1);
-                this.streakBarGfx.fillRoundedRect(
-                    rect.left,
-                    rect.top,
-                    rect.width,
-                    rect.height,
-                    4,
-                );
-            }
+            return;
         }
 
-        // Flicker once, then die out like a real strike.
-        this.scene.time.delayedCall(45, () =>
+        // Cosmetics only — not game RNG. Each set has its own beat.
+        const delay = immediate
+            ? 350 + setIndex * 420 + Math.random() * 900
+            : 1200 + Math.random() * 2400;
+
+        this.streakStormTimers[setIndex]?.remove(false);
+
+        this.streakStormTimers[setIndex] = this.scene.time.delayedCall(delay, () =>
         {
-            if (!this.streakBarGfx.active || this.streakBarRuns.length === 0)
+            if (!runStillPresent())
             {
                 return;
             }
 
-            this.streakBarGfx.setAlpha(0.25);
-            this.scene.time.delayedCall(35, () =>
+            this.fireRunStormStrike(run);
+            this.scheduleRunStormStrike(run, false, setIndex);
+        });
+    }
+
+    private fireRunStormStrike (run: StreakBarRun): void
+    {
+        const gfx = this.scene.add.graphics();
+        const centers = run.slots.map((slot) => this.slotCenter(slot));
+        const palette = streakStormColor(run.behaviorId);
+
+        this.container.add(gfx);
+        this.container.bringToTop(gfx);
+        this.container.bringToTop(this.streakBarLabels);
+        this.streakStormStrikeGfx.push(gfx);
+
+        this.drawThroughBolt(gfx, centers, palette.glow);
+
+        for (const point of centers)
+        {
+            const rect = this.cardInnerRect(point);
+
+            gfx.fillStyle(palette.glow, 0.12 + Math.random() * 0.08);
+            gfx.fillRoundedRect(rect.left, rect.top, rect.width, rect.height, 4);
+        }
+
+        gfx.setAlpha(1);
+
+        this.scene.time.delayedCall(90, () =>
+        {
+            if (!gfx.active)
             {
-                if (!this.streakBarGfx.active)
+                return;
+            }
+
+            gfx.setAlpha(0.3);
+            this.scene.time.delayedCall(70, () =>
+            {
+                if (!gfx.active)
                 {
                     return;
                 }
 
-                this.streakBarGfx.setAlpha(1);
-                this.streakStormFade = this.scene.tweens.add({
-                    targets: this.streakBarGfx,
+                gfx.setAlpha(1);
+                this.scene.tweens.add({
+                    targets: gfx,
                     alpha: 0,
-                    duration: 180,
+                    duration: 420,
                     ease: 'Cubic.easeOut',
                     onComplete: () =>
                     {
-                        this.streakBarGfx.clear();
-                        this.streakBarGfx.setAlpha(1);
+                        const index = this.streakStormStrikeGfx.indexOf(gfx);
+
+                        if (index >= 0)
+                        {
+                            this.streakStormStrikeGfx.splice(index, 1);
+                        }
+
+                        gfx.destroy();
                     },
                 });
             });
@@ -547,79 +592,146 @@ export class CardBoardView
         };
     }
 
-    /** Jagged bolt confined to a card face (storm crack, not sky-to-board). */
-    private drawStormBolt (centers: readonly { x: number; y: number }[]): void
+    private pointAlongCenters (
+        centers: readonly { x: number; y: number }[],
+        t: number,
+    ): { x: number; y: number }
+    {
+        if (centers.length === 1)
+        {
+            return { ...centers[0]! };
+        }
+
+        let total = 0;
+        const lengths: number[] = [];
+
+        for (let i = 1; i < centers.length; i++)
+        {
+            const len = Math.hypot(
+                centers[i]!.x - centers[i - 1]!.x,
+                centers[i]!.y - centers[i - 1]!.y,
+            );
+
+            lengths.push(len);
+            total += len;
+        }
+
+        const target = Math.max(0, Math.min(1, t)) * Math.max(total, 1);
+        let walked = 0;
+
+        for (let i = 0; i < lengths.length; i++)
+        {
+            const seg = lengths[i]!;
+            const from = centers[i]!;
+            const to = centers[i + 1]!;
+
+            if (walked + seg >= target || i === lengths.length - 1)
+            {
+                const local = seg <= 0 ? 0 : (target - walked) / seg;
+                const clamped = Math.max(0, Math.min(1, local));
+
+                return {
+                    x: from.x + (to.x - from.x) * clamped,
+                    y: from.y + (to.y - from.y) * clamped,
+                };
+            }
+
+            walked += seg;
+        }
+
+        return { ...centers[centers.length - 1]! };
+    }
+
+    private nearestCardCenter (
+        point: { x: number; y: number },
+        centers: readonly { x: number; y: number }[],
+    ): { x: number; y: number }
+    {
+        let best = centers[0]!;
+        let bestDist = Number.POSITIVE_INFINITY;
+
+        for (const center of centers)
+        {
+            const dist = Math.hypot(point.x - center.x, point.y - center.y);
+
+            if (dist < bestDist)
+            {
+                bestDist = dist;
+                best = center;
+            }
+        }
+
+        return best;
+    }
+
+    /** One continuous storm bolt threading through every card in the run (stays inside faces). */
+    private drawThroughBolt (
+        gfx: Phaser.GameObjects.Graphics,
+        centers: readonly { x: number; y: number }[],
+        glow: number,
+    ): void
     {
         if (centers.length === 0)
         {
             return;
         }
 
-        const host = centers[Math.floor(Math.random() * centers.length)]!;
-        const rect = this.cardInnerRect(host);
-        // Mostly top→bottom cracks; sometimes corner-to-corner inside the same card.
-        const vertical = Math.random() > 0.3;
-        const start = vertical
-            ? {
-                x: rect.left + Math.random() * rect.width,
-                y: rect.top + Math.random() * rect.height * 0.18,
-            }
-            : {
-                x: Math.random() > 0.5 ? rect.left : rect.right,
-                y: rect.top + Math.random() * rect.height * 0.35,
-            };
-        const end = vertical
-            ? {
-                x: rect.left + Math.random() * rect.width,
-                y: rect.bottom - Math.random() * rect.height * 0.18,
-            }
-            : {
-                x: Math.random() > 0.5 ? rect.left : rect.right,
-                y: rect.bottom - Math.random() * rect.height * 0.3,
-            };
+        const samples = Math.max(10, centers.length * 6);
+        const path: { x: number; y: number }[] = [];
 
-        const segments = 5 + Math.floor(Math.random() * 4);
-        const path: { x: number; y: number }[] = [ start ];
-
-        for (let i = 1; i < segments; i++)
+        for (let i = 0; i <= samples; i++)
         {
-            const t = i / segments;
-            const baseX = start.x + (end.x - start.x) * t;
-            const baseY = start.y + (end.y - start.y) * t;
-            const jitterX = rect.width * (0.08 + Math.random() * 0.18);
-            const jitterY = rect.height * (0.04 + Math.random() * 0.1);
+            const t = i / samples;
+            const along = this.pointAlongCenters(centers, t);
+            const host = this.nearestCardCenter(along, centers);
+            const rect = this.cardInnerRect(host);
+            const zig = (i === 0 || i === samples)
+                ? 0
+                : (i % 2 === 0 ? 1 : -1) * (rect.width * (0.12 + Math.random() * 0.16));
+            const angle = i < samples
+                ? Math.atan2(
+                    this.pointAlongCenters(centers, Math.min(1, t + 1 / samples)).y - along.y,
+                    this.pointAlongCenters(centers, Math.min(1, t + 1 / samples)).x - along.x,
+                )
+                : 0;
+            const perp = angle + Math.PI / 2;
 
             path.push(this.clampToCardInner({
-                x: baseX + (Math.random() - 0.5) * jitterX * 2,
-                y: baseY + (Math.random() - 0.5) * jitterY * 2,
+                x: along.x + Math.cos(perp) * zig,
+                y: along.y + Math.sin(perp) * zig * 0.85,
             }, host));
         }
 
-        path.push(this.clampToCardInner(end, host));
+        this.strokeBoltPath(gfx, path, false, glow);
 
-        if (Math.random() > 0.4 && path.length > 3)
+        if (Math.random() > 0.4 && path.length > 6)
         {
-            const forkAt = 2 + Math.floor(Math.random() * (path.length - 3));
+            const forkAt = 3 + Math.floor(Math.random() * (path.length - 6));
             const origin = path[forkAt]!;
+            const host = this.nearestCardCenter(origin, centers);
+            const rect = this.cardInnerRect(host);
             const forkEnd = this.clampToCardInner({
-                x: origin.x + (Math.random() - 0.5) * rect.width * 0.55,
-                y: origin.y + rect.height * (0.12 + Math.random() * 0.28),
+                x: origin.x + (Math.random() - 0.5) * rect.width * 0.7,
+                y: origin.y + rect.height * (0.15 + Math.random() * 0.35),
             }, host);
 
-            this.strokeBoltPath([
+            this.strokeBoltPath(gfx, [
                 origin,
                 this.clampToCardInner({
-                    x: (origin.x + forkEnd.x) / 2 + (Math.random() - 0.5) * 8,
+                    x: (origin.x + forkEnd.x) / 2 + (Math.random() - 0.5) * 10,
                     y: (origin.y + forkEnd.y) / 2,
                 }, host),
                 forkEnd,
-            ], true);
+            ], true, glow);
         }
-
-        this.strokeBoltPath(path, false);
     }
 
-    private strokeBoltPath (path: readonly { x: number; y: number }[], branch: boolean): void
+    private strokeBoltPath (
+        gfx: Phaser.GameObjects.Graphics,
+        path: readonly { x: number; y: number }[],
+        branch: boolean,
+        glow: number,
+    ): void
     {
         if (path.length < 2)
         {
@@ -630,34 +742,34 @@ export class CardBoardView
         const inner = branch ? 1.2 : 2.2;
         const outerAlpha = branch ? 0.35 : 0.55;
 
-        this.streakBarGfx.lineStyle(outer, CYBER.attackGlow, outerAlpha);
-        this.streakBarGfx.beginPath();
-        this.streakBarGfx.moveTo(path[0]!.x, path[0]!.y);
+        gfx.lineStyle(outer, glow, outerAlpha);
+        gfx.beginPath();
+        gfx.moveTo(path[0]!.x, path[0]!.y);
 
         for (let i = 1; i < path.length; i++)
         {
-            this.streakBarGfx.lineTo(path[i]!.x, path[i]!.y);
+            gfx.lineTo(path[i]!.x, path[i]!.y);
         }
 
-        this.streakBarGfx.strokePath();
+        gfx.strokePath();
 
-        this.streakBarGfx.lineStyle(inner, 0xffffff, branch ? 0.7 : 0.95);
-        this.streakBarGfx.beginPath();
-        this.streakBarGfx.moveTo(path[0]!.x, path[0]!.y);
+        gfx.lineStyle(inner, 0xffffff, branch ? 0.7 : 0.95);
+        gfx.beginPath();
+        gfx.moveTo(path[0]!.x, path[0]!.y);
 
         for (let i = 1; i < path.length; i++)
         {
-            this.streakBarGfx.lineTo(path[i]!.x, path[i]!.y);
+            gfx.lineTo(path[i]!.x, path[i]!.y);
         }
 
-        this.streakBarGfx.strokePath();
+        gfx.strokePath();
 
         const tip = path[path.length - 1]!;
 
-        this.streakBarGfx.fillStyle(0xffffff, 0.85);
-        this.streakBarGfx.fillCircle(tip.x, tip.y, branch ? 2 : 4);
-        this.streakBarGfx.fillStyle(CYBER.attackGlow, 0.4);
-        this.streakBarGfx.fillCircle(tip.x, tip.y, branch ? 5 : 10);
+        gfx.fillStyle(0xffffff, 0.85);
+        gfx.fillCircle(tip.x, tip.y, branch ? 2 : 4);
+        gfx.fillStyle(glow, 0.4);
+        gfx.fillCircle(tip.x, tip.y, branch ? 5 : 10);
     }
 
     private redrawStreakBars (): void
@@ -687,10 +799,9 @@ export class CardBoardView
             const midB = points[Math.ceil(midIndex)]!;
             const labelX = (midA.x + midB.x) / 2;
             const labelY = (midA.y + midB.y) / 2 - this.layout.tileSize * 0.38;
-            const multText = `×${run.multiplier.toFixed(2).replace(/\.?0+$/, '') || run.multiplier}`;
-            const isAttack = run.behaviorId === 'attack';
-            const label = this.scene.add.text(labelX, labelY, multText, {
-                ...uiDisplayTextStyle(15, isAttack ? '#ffb8dc' : '#ffd4a0', { bold: true }),
+            const palette = streakStormColor(run.behaviorId);
+            const label = this.scene.add.text(labelX, labelY, run.label, {
+                ...uiDisplayTextStyle(run.kind === 'combo' ? 13 : 15, palette.label, { bold: true }),
             }).setOrigin(0.5);
 
             this.streakBarLabels.add(label);

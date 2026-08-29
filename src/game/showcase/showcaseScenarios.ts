@@ -137,21 +137,19 @@ export const showcasePuzzleMode = (): PuzzleModeConfig => ({
 });
 
 /**
- * Portrait painted-front preview board — three Attacks in a row become a streak bar.
+ * Streak storm preview — Attack type-stack + Rad→Defend armor trail.
  * Open via http://localhost:8080/?capture=cardart
  *
- *   attack→  attack→  attack→  defend→  attack↓
- *   ·        ·        ·        ·        defend↓
- *   ·        ·        ·        ·        attack
+ *   attack→  attack→  attack→  poison→  defend↓
+ *   ·        ·        ·        ·        defend
  */
 export const SHOWCASE_CARD_ART_BOARD: ShowcaseBoardCard[] = [
     { row: 0, col: 0, definitionId: 'attack', arrow: 'right' },
     { row: 0, col: 1, definitionId: 'attack', arrow: 'right' },
     { row: 0, col: 2, definitionId: 'attack', arrow: 'right' },
-    { row: 0, col: 3, definitionId: 'defend', arrow: 'right' },
-    { row: 0, col: 4, definitionId: 'attack', arrow: 'down' },
-    { row: 1, col: 4, definitionId: 'defend', arrow: 'down' },
-    { row: 2, col: 4, definitionId: 'attack', arrow: 'left' },
+    { row: 0, col: 3, definitionId: 'poison', arrow: 'right' },
+    { row: 0, col: 4, definitionId: 'defend', arrow: 'down' },
+    { row: 1, col: 4, definitionId: 'defend', arrow: 'left' },
 ];
 
 export const SHOWCASE_CARD_ART_HAND: readonly {

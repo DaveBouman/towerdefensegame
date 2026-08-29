@@ -45,7 +45,7 @@ Quick URLs (dev server):
 
 | Capture ID | What to frame |
 |------------|---------------|
-| `cardart` | Three Attacks in a row → traveling streak **lightning** + type-stack multiplier |
+| `cardart` | Attack `×1.3` + Rad→Defend trail (`RAD→2`) with one bolt through the cards |
 
 ```
 http://localhost:8080/?capture=cardart
