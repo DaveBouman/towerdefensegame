@@ -2,6 +2,7 @@ import { GAME_RULES, getCardDefinitionOrThrow, getChainStepDistance, type CardDe
 import type { BoardModel } from '../domain/BoardModel';
 import {
     cornerFirstStep,
+    getInBoundsDirectionsAtDistance,
     getNextSlot,
     getSlotAtStepDistance,
     getSlotAtStepDistanceWithWrap,
@@ -297,6 +298,102 @@ export const planActivationChain = (
     }
 
     return chain;
+};
+
+export interface ChainPathPreview
+{
+    slots: SlotPosition[];
+    /** Index of the first Reroute whose exit is guessed for preview (null = fully known). */
+    tentativeFromIndex: number | null;
+}
+
+const tentativeJokerExit = (
+    board: BoardModel,
+    slot: SlotPosition,
+): CardDirection | null =>
+{
+    const stepDistance = getChainStepDistance(getCardDefinitionOrThrow('joker'));
+    const inBounds = getInBoundsDirectionsAtDistance(slot, board.rows, board.cols, stepDistance);
+    const withCard = inBounds.filter((direction) =>
+        getNextChainSlot(board, slot, direction, stepDistance) !== null,
+    );
+    const choices = withCard.length > 0 ? withCard : inBounds;
+
+    return choices[0] ?? null;
+};
+
+/**
+ * Idle path glow: same walk as combat planning, but continues past unset Reroute
+ * using the first valid exit so the line does not die at the `?` card.
+ */
+export const planChainPathPreview = (
+    board: BoardModel,
+    startSlot: SlotPosition = GAME_RULES.activationStart,
+): ChainPathPreview =>
+{
+    const slots: SlotPosition[] = [];
+    const walkState = createChainWalkState();
+    let current: SlotPosition | null = findChainStart(board, startSlot);
+    let forcedExit: CardDirection | null = null;
+    let tentativeFromIndex: number | null = null;
+
+    while (current && slots.length < GAME_RULES.maxChainSteps)
+    {
+        const built = tryBuildActivationStep(board, current, walkState);
+
+        if (!built)
+        {
+            break;
+        }
+
+        const step: ActivationStep = forcedExit
+            ? { ...built, exitArrow: forcedExit }
+            : built;
+
+        forcedExit = null;
+        slots.push({ ...step.slot });
+
+        const definition = getCardDefinitionOrThrow(step.definitionId);
+
+        if (isJokerDefinition(definition))
+        {
+            if (!step.card.jokerDirectionChosen)
+            {
+                if (tentativeFromIndex === null)
+                {
+                    tentativeFromIndex = slots.length - 1;
+                }
+
+                const guess = tentativeJokerExit(board, step.slot);
+
+                if (!guess)
+                {
+                    break;
+                }
+
+                current = getNextChainSlot(
+                    board,
+                    step.slot,
+                    guess,
+                    getChainStepDistance(definition),
+                );
+                continue;
+            }
+
+            const advance = advanceFromStep(board, step);
+
+            current = advance.next;
+            forcedExit = advance.forcedExit;
+            continue;
+        }
+
+        const advance = advanceFromStep(board, step);
+
+        current = advance.next;
+        forcedExit = advance.forcedExit;
+    }
+
+    return { slots, tentativeFromIndex };
 };
 
 export const getNextChainSlotFromStep = (

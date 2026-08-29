@@ -208,7 +208,7 @@ export class PlayerHealthView
         playHitFlashTween(this.scene, this.container, this.body, CYBER.player);
     }
 
-    showDamageNumber (damage: number): void
+    showDamageNumber (damage: number, tier?: { color: string; fontSize: number }): void
     {
         if (damage <= 0)
         {
@@ -221,7 +221,8 @@ export class PlayerHealthView
             this.body.width / 2,
             -8,
             `-${damage}`,
-            '#ff3b6b',
+            tier?.color ?? '#ff3b6b',
+            tier ? { fontSize: tier.fontSize } : undefined,
         );
     }
 

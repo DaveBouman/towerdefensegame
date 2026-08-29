@@ -4,9 +4,10 @@ import { getCardDefinitionOrThrow, isCardNonRerollable, isCardUnplayable } from 
 import { buildCardGraphic } from '../cards/CardRenderer';
 import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
 import { CYBER } from '../config/cyberpunkTheme';
-import { drawCornerBrackets, drawNeonPanel } from '../config/cyberpunkUiGraphics';
+import { drawCornerBrackets } from '../config/cyberpunkUiGraphics';
 import { HAND_CARD_GAP, HAND_CARD_HEIGHT, HAND_CARD_WIDTH } from '../cards/cardVisuals';
 import type { BoardLayout } from './boardLayout';
+import { playHandDealIn } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 
 export interface CardHandDragHandlers {
     onDragMove: (worldX: number, worldY: number) => void;
@@ -54,13 +55,18 @@ export class CardHandView
         this.container.setPosition(x, y);
     }
 
-    syncHand (hand: readonly CardInstance[]): void
+    syncHand (hand: readonly CardInstance[], options: { dealIn?: boolean } = {}): void
     {
         this.cancelDrag();
         this.selectedIndices.clear();
         this.hand = [ ...hand ];
         this.renderHand();
         this.onRerollSelectionChange?.(0);
+
+        if (options.dealIn)
+        {
+            playHandDealIn(this.scene, this.slotContainers);
+        }
     }
 
     containsPoint (worldX: number, worldY: number): boolean
@@ -233,7 +239,21 @@ export class CardHandView
         const dockX = -padX;
         const dockY = -padY + HAND_FAN_DROP;
 
-        drawNeonPanel(this.handDock, dockX, dockY, dockW, dockH, 0x120c16, CYBER.magenta, 0.78, 0.38);
+        this.handDock.clear();
+        // Soft drop shadow under the shelf.
+        this.handDock.fillStyle(0x000000, 0.4);
+        this.handDock.fillRoundedRect(dockX + 4, dockY + 8, dockW, dockH, 10);
+        // Dock plate.
+        this.handDock.fillStyle(0x120c16, 0.86);
+        this.handDock.fillRoundedRect(dockX, dockY, dockW, dockH, 8);
+        this.handDock.lineStyle(2, CYBER.magenta, 0.45);
+        this.handDock.strokeRoundedRect(dockX + 1, dockY + 1, dockW - 2, dockH - 2, 8);
+        // Inner rim + bottom shelf lip.
+        this.handDock.lineStyle(1, CYBER.gold, 0.28);
+        this.handDock.strokeRoundedRect(dockX + 6, dockY + 6, dockW - 12, dockH - 12, 6);
+        this.handDock.fillStyle(CYBER.magenta, 0.22);
+        this.handDock.fillRect(dockX + 10, dockY + dockH - 8, dockW - 20, 3);
+
         drawCornerBrackets(
             this.handBrackets,
             dockX + 4,
@@ -241,7 +261,7 @@ export class CardHandView
             dockW - 8,
             dockH - 8,
             CYBER.gold,
-            { arm: 10, alpha: 0.55 },
+            { arm: 12, alpha: 0.65, lineWidth: 2 },
         );
     }
 

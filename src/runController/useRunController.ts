@@ -745,7 +745,11 @@ export const useRunController = () =>
     const startNewRun = useCallback((nextSeed?: string): void =>
     {
         setPauseMenuOpen(false);
-        resetRun(normalizeSeed(nextSeed ?? createRandomSeed()), 'map');
+        // Button onClick may pass a MouseEvent; only treat real strings as seeds.
+        const seed = typeof nextSeed === 'string' && nextSeed.trim().length > 0
+            ? normalizeSeed(nextSeed)
+            : createRandomSeed();
+        resetRun(seed, 'map');
     }, [ resetRun ]);
 
     const returnToMenu = useCallback((): void =>

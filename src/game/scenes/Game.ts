@@ -1,4 +1,5 @@
 import { getGameCursors, subscribeGameCursors } from '../ui/gameCursors';
+import { readChainPathLitEnabled } from '../ui/chainPathSettings';
 import { applyBoardLayout, computeBoardLayout, type BoardLayout } from '../board/boardLayout';
 import { BattlefieldBackgroundView } from '../board/BattlefieldBackgroundView';
 import { MapBackgroundView } from '../board/MapBackgroundView';
@@ -143,6 +144,7 @@ export class Game extends Scene
         EventBus.on(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
         EventBus.on(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
         EventBus.on(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
+        EventBus.on(GAME_EVENTS.CHAIN_PATH_LIT, this.onChainPathLit, this);
         EventBus.on(GAME_EVENTS.UI_OVERLAY_ACTIVE, this.onUiOverlayActive, this);
         EventBus.on(GAME_EVENTS.RUN_PHASE, this.onRunPhase, this);
         CardGameEventBus.on(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
@@ -496,8 +498,8 @@ export class Game extends Scene
         this.battleModifierView.setModifiers(this.session.getBattleModifiers());
         this.armorView = new ArmorView(this, layout, 0);
         this.deckView = new CardPileView(this, layout, layout.deckX, layout.deckY, 'Deck', 'deck');
-        this.graveyardView = new CardPileView(this, layout, layout.graveyardX, layout.graveyardY, 'Graveyard', 'graveyard');
-        this.exhaustView = new CardPileView(this, layout, layout.exhaustX, layout.exhaustY, 'Exhaust', 'exhaust');
+        this.graveyardView = new CardPileView(this, layout, layout.graveyardX, layout.graveyardY, 'Discard', 'graveyard');
+        this.exhaustView = undefined;
         this.syncPileClickHandlers();
         this.syncPileViews();
 
@@ -579,8 +581,7 @@ export class Game extends Scene
     private onResize = (gameSize: Phaser.Structs.Size): void =>
     {
         if (!this.layout || !this.boardView || !this.handView || !this.enemySquad
-            || !this.playerView || !this.armorView || !this.deckView || !this.graveyardView
-            || !this.exhaustView)
+            || !this.playerView || !this.armorView || !this.deckView || !this.graveyardView)
         {
             return;
         }
@@ -595,7 +596,6 @@ export class Game extends Scene
             armor: this.armorView.container,
             deck: this.deckView.container,
             graveyard: this.graveyardView.container,
-            exhaust: this.exhaustView.container,
         });
         this.enemySquad.applyLayout(this.layout);
         this.syncBattleModifierLayout();
@@ -708,6 +708,7 @@ export class Game extends Scene
         EventBus.off(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
         EventBus.off(GAME_EVENTS.REROLL_CONFIRM, this.onRerollConfirm, this);
         EventBus.off(GAME_EVENTS.REROLL_CANCEL, this.onRerollCancel, this);
+        EventBus.off(GAME_EVENTS.CHAIN_PATH_LIT, this.onChainPathLit, this);
         EventBus.off(GAME_EVENTS.UI_OVERLAY_ACTIVE, this.onUiOverlayActive, this);
         EventBus.off(GAME_EVENTS.RUN_PHASE, this.onRunPhase, this);
         CardGameEventBus.off(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
@@ -799,6 +800,16 @@ export class Game extends Scene
     private onAttack = (): void =>
     {
         handleAttack(this.battleAttackFlowDeps());
+    };
+
+    private onChainPathLit = (): void =>
+    {
+        if (!readChainPathLitEnabled())
+        {
+            this.boardView?.clearChainPath();
+        }
+
+        this.emitAttackReadiness();
     };
 
     private onEndTurn = (): void =>

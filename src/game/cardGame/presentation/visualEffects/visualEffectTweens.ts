@@ -95,6 +95,61 @@ export const playCardGlowPulse = (
     return { scaleTween, overlayTween };
 };
 
+/** Short settle when a card snaps onto a board tile. */
+export const playCardPlaceSettle = (
+    scene: Phaser.Scene,
+    wrapper: Phaser.GameObjects.Container,
+): void =>
+{
+    if (!wrapper.active)
+    {
+        return;
+    }
+
+    scene.tweens.killTweensOf(wrapper);
+    wrapper.setScale(0.86);
+    wrapper.setAlpha(0.7);
+
+    scene.tweens.add({
+        targets: wrapper,
+        scaleX: 1,
+        scaleY: 1,
+        alpha: 1,
+        duration: 160,
+        ease: 'Back.easeOut',
+    });
+};
+
+/** Staggered deal-in for hand cards after a redraw / energy refill. */
+export const playHandDealIn = (
+    scene: Phaser.Scene,
+    slots: readonly Phaser.GameObjects.Container[],
+): void =>
+{
+    slots.forEach((slot, index) =>
+    {
+        if (!slot.active)
+        {
+            return;
+        }
+
+        const baseY = slot.y;
+
+        scene.tweens.killTweensOf(slot);
+        slot.setAlpha(0);
+        slot.setY(baseY + 28);
+
+        scene.tweens.add({
+            targets: slot,
+            alpha: 1,
+            y: baseY,
+            duration: 220,
+            delay: index * 28,
+            ease: 'Cubic.easeOut',
+        });
+    });
+};
+
 export const playHitFlash = (
     scene: Phaser.Scene,
     container: Phaser.GameObjects.Container,

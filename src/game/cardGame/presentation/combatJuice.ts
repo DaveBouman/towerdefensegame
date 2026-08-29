@@ -8,19 +8,19 @@ export interface DamageTierStyle {
 const DAMAGE_TIERS: readonly { min: number; style: DamageTierStyle }[] = [
     {
         min: 40,
-        style: { color: '#ff2d2d', fontSize: 38, shakeIntensity: 0.024, hitstopMs: 70 },
+        style: { color: '#ff2d2d', fontSize: 40, shakeIntensity: 0.028, hitstopMs: 88 },
     },
     {
         min: 20,
-        style: { color: '#ff9f43', fontSize: 32, shakeIntensity: 0.016, hitstopMs: 48 },
+        style: { color: '#ff9f43', fontSize: 34, shakeIntensity: 0.018, hitstopMs: 56 },
     },
     {
         min: 10,
-        style: { color: '#ffe066', fontSize: 28, shakeIntensity: 0.010, hitstopMs: 28 },
+        style: { color: '#ffe066', fontSize: 28, shakeIntensity: 0.011, hitstopMs: 32 },
     },
     {
         min: 0,
-        style: { color: '#ff7675', fontSize: 24, shakeIntensity: 0.005, hitstopMs: 0 },
+        style: { color: '#ff7675', fontSize: 22, shakeIntensity: 0.004, hitstopMs: 0 },
     },
 ];
 
@@ -34,10 +34,10 @@ export const getCameraShakeParams = (
         return { duration: 0, intensity: 0 };
     }
 
-    const clamped = Math.min(0.035, Math.max(0.004, intensity));
+    const clamped = Math.min(0.04, Math.max(0.0035, intensity));
 
     return {
-        duration: Math.min(360, Math.round(80 + clamped * 6500)),
+        duration: Math.min(400, Math.round(70 + clamped * 7200)),
         intensity: clamped,
     };
 };
@@ -67,7 +67,8 @@ export const getDamageTierStyle = (damage: number): DamageTierStyle =>
     return DAMAGE_TIERS[DAMAGE_TIERS.length - 1]!.style;
 };
 
-export const KILL_CAMERA_SHAKE = 0.022;
+/** Kill punch — stronger than a big hit so wipe moments land. */
+export const KILL_CAMERA_SHAKE = 0.03;
 
 /** Later chain steps snap a bit faster — gentle acceleration, not a blur. */
 export const getChainPaceMultiplier = (stepIndex: number): number =>
@@ -88,24 +89,24 @@ export const getBigMomentHoldMs = (moment: ChainMomentInput): number =>
 {
     if (moment.killed)
     {
-        return 160;
+        return 200;
     }
 
     if (moment.abilityDetonation)
     {
-        return 110;
+        return 120;
     }
 
     const damage = moment.damage ?? 0;
 
     if (damage >= 20)
     {
-        return 80;
+        return 95;
     }
 
     if (damage >= 10)
     {
-        return 36;
+        return 42;
     }
 
     return 0;

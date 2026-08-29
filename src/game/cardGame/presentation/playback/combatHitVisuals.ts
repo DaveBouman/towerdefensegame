@@ -110,11 +110,12 @@ function applyEnemyHitResultInner (
         }
     }
 
-    if (result.enemyKilled)
-    {
-        shakeCamera(scene, KILL_CAMERA_SHAKE);
-        requestHitstop?.(70);
-    }
+        if (result.enemyKilled)
+        {
+            shakeCamera(scene, KILL_CAMERA_SHAKE);
+            requestHitstop?.(95);
+            enemyView?.playDamageFlinch(1.4);
+        }
 
     if ((result.healOnKill ?? 0) > 0)
     {

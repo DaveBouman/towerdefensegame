@@ -16,6 +16,7 @@ import type { PlayerHealthView } from '../../board/PlayerHealthView';
 import { playEnemyTurnStep } from './playback/enemyTurnPlayback';
 import { runChainPlayback } from './playback/chainPlayback';
 import type { BattleModifierStatusView } from '../../board/BattleModifierStatusView';
+import { readChainPathLitEnabled } from '../../ui/chainPathSettings';
 
 export class CardGamePresenter
 {
@@ -109,7 +110,24 @@ export class CardGamePresenter
 
     playAttack (chainStart: SlotPosition, onComplete: (sequence: AttackSequence) => void): void
     {
-        runChainPlayback(this.getChainPlaybackDeps(), chainStart, onComplete);
+        const planned = this.session.planAttack();
+        const slots = planned?.chain.map((step) => step.slot) ?? [ chainStart ];
+
+        if (readChainPathLitEnabled())
+        {
+            this.boardView.setChainPathPreview(slots);
+            this.boardView.advanceChainPath(chainStart);
+        }
+        else
+        {
+            this.boardView.clearChainPath();
+        }
+
+        runChainPlayback(this.getChainPlaybackDeps(), chainStart, (sequence) =>
+        {
+            this.boardView.clearChainPath();
+            onComplete(sequence);
+        });
     }
 
     playEnemyTurn (action: EnemyTurnAction, onComplete: () => void): void
@@ -152,12 +170,27 @@ export class CardGamePresenter
                     battleModifierView: this.battleModifierView,
                     setDisplayedArmor: (armor) => this.setDisplayedArmor(armor),
                     syncBattleModifierStatus: () => this.syncBattleModifierStatus(),
+                    requestHitstop: (ms) => this.requestHitstop(ms),
                 },
                 step,
                 turnMs,
                 enemyView,
                 instanceId,
-                playStep,
+                () =>
+                {
+                    const hold = this.pendingHitstopMs;
+
+                    this.pendingHitstopMs = 0;
+
+                    if (hold > 0)
+                    {
+                        this.scene.time.delayedCall(hold, playStep);
+                    }
+                    else
+                    {
+                        playStep();
+                    }
+                },
             );
         };
 
@@ -215,6 +248,12 @@ export class CardGamePresenter
 
         this.boardView.bringCardToFront(step.slot);
         this.boardView.setActiveCoordinate(step.slot);
+
+        if (readChainPathLitEnabled())
+        {
+            this.boardView.advanceChainPath(step.slot);
+        }
+
         getCardVisualEffectOrThrow(step.visualId).activate(this.scene, target);
         playCardAbilitySfx(step.visualId, step.behaviorId);
         this.activeVisualSlot = { slot: { ...step.slot }, visualId: step.visualId };

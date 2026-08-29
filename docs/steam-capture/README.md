@@ -49,6 +49,7 @@ All scenarios use run seed **`STEAM-CAPTURE`** (deterministic shop/reward/map ro
 
 ## Tips
 
-- Static chain: don’t press Attack; capture with board + intents only.
+- Static chain: don’t press Attack; capture with board + path glow + intents only.
+- Turn **Path on** in the battle HUD if you want the route overlay for the shot.
 - For juice: run `board` or `combo`, press Attack once, screenshot mid-resolution.
-- Optional HUD clutter: hide menu button in a later pass if needed.
+- Capture mode hides menu, recap, body-mod panel, and HUD hint text automatically.

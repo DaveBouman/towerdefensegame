@@ -12,6 +12,8 @@ export {
     getNextChainSlot,
     getCornerNextSlot,
     planActivationChain,
+    planChainPathPreview,
+    type ChainPathPreview,
     getNextChainSlotFromStep,
 } from './chainPathfinding';
 

@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-08-25
+**Last updated:** 2026-08-29
 
 ---
 
@@ -352,7 +352,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | Run flow (phases, carry-over HP, deck, rewards) | `src/App.tsx` |
 | Change balance numbers | `src/game/cardGame/config/gameRules.json` |
 | Add/edit cards | `src/game/cardGame/config/cards.json`, `cardRegistry.ts`. Optional `chainStepMsMultiplier` on a card; behavior defaults in `gameRules.json` `chainStepMsByBehavior`. |
-| Exhaust pile | `DeckHand` exhaust list; Phaser `CardPileView` kind `exhaust`; inspector via `PILE_VIEW_OPEN` |
+| Exhaust pile | `DeckHand` exhaust list; Discard pile **EX** badge on `CardPileView` (`setExhaustCount`); inspector via `PILE_VIEW_OPEN` |
 | Add/edit enemies | `src/game/cardGame/config/enemies.json`, `enemyCatalog.ts`, `enemyPassives/`; in-fight look: `presentation/enemyIdentity.ts` + `public/assets/enemies/` |
 | Chain behavior | `src/game/cardGame/combat/AttackPipeline.ts` |
 | New card ability | `src/game/cardGame/effects/` (behaviors), `abilities/` (chain abilities: rad/fire/bleed/fortify/overload) + register in `chainAbilityRegistry.ts` |
@@ -368,6 +368,11 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-29 | **Larger pile cards.** Deck/Discard backs sized near hand cards with bevel + pattern; quieter tray chrome so the stack reads as cards, not UI chips. |
+| 2026-08-29 | **Board-game pile stacks.** Deck / Discard show a thick stack of face-down card backs (depth scales with count); count is a corner badge, not the main visual. |
+| 2026-08-29 | **Exhaust as graveyard badge.** Removed the second pile widget; Discard shows an **EX** count chip (click to inspect). Exhausted cards still fly to the badge on board wipe. |
+| 2026-08-29 | **Chain path glow is opt-in.** HUD **Path on/off** (off by default, remembered). Thinner stroke. Idle preview continues past unset **Reroute** with a soft guessed exit so the line does not die at `?`. |
+| 2026-08-29 | **Floor 1 visual punch (no new art).** Board tiles 80→96 (~+20%). Deeper procedural arena (layered washes, board pedestal, vignette, stronger glow). Card frames gain bevel + uncommon/rare rarity rims from tier alone. Chain path preview glows on the board (brightens during Attack). Enemy frames/intent chips stronger. Hand dock shelf+shadow. `?capture=` hides menu/recap/hints for cleaner Steam shots. |
 | 2026-08-25 | **Ripperdoc storefront.** Shop is no longer a flat list: header vitals, card/body-mod product tiles on the slab, and a clinic services bay with icons. |
 | 2026-08-25 | **Ripperdoc offer previews.** Shop rows show the card chip for card stock, a tinted implant tile for body mods, and Craftpix service icons for heal / remove / reroute / upgrade — less “boxes of text.” |
 | 2026-08-22 | **Dead-code cleanup.** Removed unused Craftpix-era SVG dump (~17MB), Phaser template assets, orphan armor helper, empty `runModifiers` scaffold, never-shown FloorBanner, unwired Loop Hunter passive stack, and deprecated aliases. Dev/build no longer call Phaser `log.js`. |

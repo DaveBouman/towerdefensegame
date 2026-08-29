@@ -23,7 +23,7 @@ import { attachEnemyPassiveTooltip } from '../cardGame/presentation/tooltips/Ene
 import { attachEnemyIntentTooltip } from '../cardGame/presentation/tooltips/EnemyIntentTooltipController';
 import { attachDomTooltip } from '../cardGame/presentation/tooltips/GameTooltipController';
 import { resolveOverclockTooltip } from '../cardGame/presentation/tooltips/enemyStatusTooltipRegistry';
-import { playFloatingText, playHitFlash as playHitFlashTween } from '../cardGame/presentation/visualEffects/visualEffectTweens';
+import { playFloatingText } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import { playPoisonApplyEffect } from '../cardGame/presentation/visualEffects/elementHitEffects';
 import {
     COMBAT_TRAIT_ICON_GAP,
@@ -143,28 +143,37 @@ export class EnemyTargetView
         this.threatRing = scene.add.rectangle(
             enemySize / 2,
             enemySize / 2,
-            enemySize + 22,
-            enemySize + 22,
+            enemySize + 28,
+            enemySize + 28,
             0x000000,
             0,
         );
-        this.threatRing.setStrokeStyle(3, this.accentColor, 0.5);
+        this.threatRing.setStrokeStyle(4, this.accentColor, 0.62);
 
         this.shieldRing = scene.add.rectangle(
             enemySize / 2,
             enemySize / 2,
-            enemySize + 10,
-            enemySize + 10,
+            enemySize + 14,
+            enemySize + 14,
             0x000000,
             0,
         );
         this.shieldRing.setStrokeStyle(3, ENEMY_SHIELD_COLOR, 0.95);
         this.shieldRing.setVisible(false);
 
+        const outerGlow = scene.add.rectangle(
+            enemySize / 2,
+            enemySize / 2,
+            enemySize + 18,
+            enemySize + 18,
+            this.accentColor,
+            0.12,
+        );
+
         this.outline = scene.add.rectangle(0, 0, enemySize, enemySize);
 
         this.outline.setOrigin(0, 0);
-        this.outline.setStrokeStyle(2, this.accentColor, 0.95);
+        this.outline.setStrokeStyle(3, this.accentColor, 1);
         this.outline.setFillStyle(0x000000, 0);
 
         // Solid dark plate behind the portrait — accent stays on the frame only.
@@ -173,11 +182,15 @@ export class EnemyTargetView
         this.body.setOrigin(0, 0);
 
         const frame = scene.add.graphics();
+        const frameInner = scene.add.graphics();
 
         drawCornerBrackets(frame, 2, 2, enemySize - 4, enemySize - 4, this.accentColor, {
-            arm: Math.round(enemySize * 0.14),
-            alpha: 0.9,
+            arm: Math.round(enemySize * 0.16),
+            alpha: 0.95,
+            lineWidth: 2,
         });
+        frameInner.lineStyle(1, CYBER.gold, 0.35);
+        frameInner.strokeRect(5, 5, enemySize - 10, enemySize - 10);
 
         const steamFace = getSteamFriendForEnemy(definitionId);
         const steamKey = steamFace
@@ -361,6 +374,7 @@ export class EnemyTargetView
             resolveOverclockTooltip(this.displayedOverclock, this.displayedNextOverclock));
 
         container.add([
+            outerGlow,
             this.threatRing,
             this.shieldRing,
             this.outline,
@@ -368,6 +382,7 @@ export class EnemyTargetView
             avatar,
             this.flashOverlay,
             frame,
+            frameInner,
             this.shieldBarBg,
             this.shieldBarFill,
             healthBarBg,
@@ -534,7 +549,19 @@ export class EnemyTargetView
 
         const threat = getIntentThreatLevel(action);
 
-        if (isHighThreatIntent(threat) && phase === 'upcoming')
+        if (phase === 'executing')
+        {
+            this.scene.tweens.add({
+                targets: this.intentContainer,
+                scaleX: fitScale * 1.12,
+                scaleY: fitScale * 1.12,
+                duration: 140,
+                yoyo: true,
+                ease: 'Back.easeOut',
+            });
+            this.playEnemyAttackPulse();
+        }
+        else if (isHighThreatIntent(threat))
         {
             this.scene.tweens.add({
                 targets: this.intentContainer,
@@ -723,6 +750,19 @@ export class EnemyTargetView
     {
         const centerX = x + stepWidth / 2;
         const iconCenterY = rowTop + metrics.iconSize / 2;
+        const platePadX = 6;
+        const platePadY = 4;
+        const plate = this.scene.add.rectangle(
+            centerX,
+            rowTop + rowHeight / 2,
+            stepWidth + platePadX,
+            rowHeight + platePadY,
+            0x0a0a14,
+            phase === 'executing' ? 0.92 : 0.78,
+        );
+
+        plate.setStrokeStyle(1, visual.tint, phase === 'executing' ? 0.85 : 0.55);
+
         const hitArea = this.scene.add.rectangle(
             centerX,
             rowTop + rowHeight / 2,
@@ -734,7 +774,7 @@ export class EnemyTargetView
 
         attachEnemyIntentTooltip(this.scene, hitArea, visual.step, phase);
 
-        const parts: Phaser.GameObjects.GameObject[] = [ hitArea ];
+        const parts: Phaser.GameObjects.GameObject[] = [ plate, hitArea ];
 
         if (this.scene.textures.exists(visual.textureKey))
         {
@@ -956,8 +996,64 @@ export class EnemyTargetView
 
     playHitFlash (): void
     {
-        playHitFlashTween(this.scene, this.container, this.flashOverlay, 0xffffff, {
-            restoreAlpha: 0,
+        if (!this.container.active)
+        {
+            return;
+        }
+
+        const baseX = this.container.x;
+
+        this.scene.tweens.killTweensOf(this.container);
+        this.container.setScale(1);
+        this.container.setX(baseX);
+        this.flashOverlay.setFillStyle(0xffffff, 0.98);
+
+        this.scene.tweens.add({
+            targets: this.container,
+            x: baseX + 7,
+            scaleX: 1.1,
+            scaleY: 1.06,
+            duration: 70,
+            ease: 'Back.easeOut',
+            yoyo: true,
+            onComplete: () =>
+            {
+                if (!this.container.active)
+                {
+                    return;
+                }
+
+                this.container.setX(baseX);
+                this.container.setScale(1);
+                this.flashOverlay.setFillStyle(0xffffff, 0);
+            },
+        });
+    }
+
+    /** Brief knockback for non-flash damage moments (poison tick, etc.). */
+    playDamageFlinch (intensity = 1): void
+    {
+        if (!this.container.active)
+        {
+            return;
+        }
+
+        const baseX = this.container.x;
+        const kick = Math.round(5 * intensity);
+
+        this.scene.tweens.add({
+            targets: this.container,
+            x: baseX + kick,
+            duration: 50,
+            ease: 'Quad.easeOut',
+            yoyo: true,
+            onComplete: () =>
+            {
+                if (this.container.active)
+                {
+                    this.container.setX(baseX);
+                }
+            },
         });
     }
 
@@ -1320,7 +1416,7 @@ export class EnemyTargetView
 
         this.shieldTween?.stop();
         this.shieldTween = undefined;
-        this.outline.setStrokeStyle(2, this.accentColor, 0.95);
+        this.outline.setStrokeStyle(3, this.accentColor, 1);
     }
 
     private applyThreatRingStyle (): void
@@ -1332,7 +1428,7 @@ export class EnemyTargetView
 
         this.threatRing.setScale(1);
         this.threatRing.setAlpha(1);
-        this.threatRing.setStrokeStyle(3, this.selected ? 0xfcee0a : this.accentColor, this.selected ? 1 : 0.5);
+        this.threatRing.setStrokeStyle(4, this.selected ? 0xfcee0a : this.accentColor, this.selected ? 1 : 0.62);
         this.threatRing.setVisible(this.selected || this.displayedShield > 0);
     }
 

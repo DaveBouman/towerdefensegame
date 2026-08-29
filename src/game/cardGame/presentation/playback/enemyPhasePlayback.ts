@@ -77,7 +77,9 @@ export function resolveEnemyPhasePlayback (deps: EnemyPhaseResolveDeps): void
         }
 
         const graveyardTarget = deps.graveyardView?.getReceivePosition() ?? { x: 0, y: 0 };
-        const exhaustTarget = deps.exhaustView?.getReceivePosition() ?? graveyardTarget;
+        const exhaustTarget = deps.graveyardView?.getExhaustReceivePosition()
+            ?? deps.exhaustView?.getReceivePosition()
+            ?? graveyardTarget;
         const keepIds = session.getLatchKeepInstanceIds();
 
         boardView.animateCardsToPiles(
@@ -88,10 +90,12 @@ export function resolveEnemyPhasePlayback (deps: EnemyPhaseResolveDeps): void
                 session.tickDampenField();
                 deps.syncBoardFromSession();
                 deps.graveyardView?.pulse();
+                deps.graveyardView?.pulseExhaustBadge();
                 deps.exhaustView?.pulse();
                 deps.syncPileViews();
                 session.finishPlayerRound();
-                syncBoardAfterEnemyResponse(deps);
+                boardView.playRoundResetFlash();
+                syncBoardAfterEnemyResponse(deps, { dealInHand: true });
                 deps.onPhaseSettled({ kind: 'continue' });
             },
             keepIds,
@@ -149,12 +153,15 @@ export function resolveEnemyPhasePlayback (deps: EnemyPhaseResolveDeps): void
 }
 
 /** Sync board/hand/intents after an enemy response when the fight continues. */
-function syncBoardAfterEnemyResponse (deps: EnemyPhaseResolveDeps): void
+function syncBoardAfterEnemyResponse (
+    deps: EnemyPhaseResolveDeps,
+    options: { dealInHand?: boolean } = {},
+): void
 {
     const { session, enemySquad, handView, armorView } = deps;
 
     enemySquad.showAllIntents(session);
-    handView?.syncHand(session.getHand());
+    handView?.syncHand(session.getHand(), { dealIn: options.dealInHand === true });
     armorView?.setArmor(session.getPlayer().shield);
     session.placeFieldBoost();
     deps.syncBoardFromSession();

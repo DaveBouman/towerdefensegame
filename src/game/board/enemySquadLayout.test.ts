@@ -9,7 +9,7 @@ const BASE_LAYOUT: BoardLayout = {
     gridOffsetY: 80,
     gridWidth: 400,
     gridHeight: 400,
-    tileSize: 80,
+    tileSize: 96,
     enemyX: 640,
     enemyY: 220,
     enemySize: 120,

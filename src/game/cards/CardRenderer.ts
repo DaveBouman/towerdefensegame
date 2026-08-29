@@ -47,9 +47,19 @@ export const buildCardGraphic = (
     const isLoopReset = definition.behaviorId === 'loop-reset';
     const leapDistance = getChainStepDistance(definition);
     const owned = isEnemyOwnedCard(card) || isFieldOwnedCard(card);
-    const borderWidth = owned ? 3 : 2;
+    const tier = definition.tier ?? 1;
+    const borderWidth = owned ? 3 : (tier >= 3 ? 3 : 2);
+    const rarityGlow = tier >= 3 ? CYBER.purple : (tier === 2 ? CYBER.gold : style.border);
+    const glowAlpha = tier >= 3 ? 0.22 : (tier === 2 ? 0.16 : 0.12);
 
-    const glow = scene.add.rectangle(width / 2, height / 2, width + 8, height + 8, style.border, 0.12);
+    const glow = scene.add.rectangle(
+        width / 2,
+        height / 2,
+        width + (tier >= 2 ? 12 : 8),
+        height + (tier >= 2 ? 12 : 8),
+        rarityGlow,
+        glowAlpha,
+    );
     const body = scene.add.rectangle(width / 2, height / 2, width, height, style.fill);
 
     body.setStrokeStyle(borderWidth, style.border, 1);
@@ -63,13 +73,33 @@ export const buildCardGraphic = (
         0.88,
     );
 
+    // Soft bevel plate so cards read thicker without painted art.
+    const bevel = scene.add.rectangle(
+        width / 2,
+        height / 2,
+        width - 4,
+        height - 4,
+        0xffffff,
+        tier >= 2 ? 0.04 : 0.025,
+    );
+
     const accent = scene.add.rectangle(width / 2, 5, width - 18, 2, style.border, 0.55);
     const brackets = scene.add.graphics();
+    const rarityBrackets = scene.add.graphics();
 
     drawCornerBrackets(brackets, 3, 3, width - 6, height - 6, style.border, {
         arm: Math.min(11, Math.round(width * 0.14)),
         alpha: 0.95,
     });
+
+    if (tier >= 2)
+    {
+        drawCornerBrackets(rarityBrackets, 1, 1, width - 2, height - 2, rarityGlow, {
+            arm: Math.min(14, Math.round(width * 0.16)),
+            alpha: tier >= 3 ? 0.85 : 0.55,
+            lineWidth: tier >= 3 ? 2 : 1,
+        });
+    }
 
     if (owned)
     {
@@ -172,7 +202,7 @@ export const buildCardGraphic = (
         },
     ).setOrigin(0.5);
 
-    container.add([ glow, body, inner, accent, brackets, ...cardDecor, power ]);
+    container.add([ glow, body, bevel, inner, accent, brackets, rarityBrackets, ...cardDecor, power ]);
 
     if (leapDistance > 1)
     {
@@ -225,7 +255,7 @@ export const updateCardGraphicDirection = (
     graphic.setData(CARD_DIRECTION_MARK_KEY, mark);
 };
 
-/** Face-down stack card — same chrome as hand cards, used on the draw pile. */
+/** Face-down stack card — bevel + pattern so piles feel like real cards, not chips. */
 export const buildCardBackGraphic = (
     scene: Phaser.Scene,
     options: CardVisualOptions,
@@ -234,34 +264,81 @@ export const buildCardBackGraphic = (
 {
     const { width, height, interactive = false } = options;
     const container = scene.add.container(0, 0);
+    const stroke = Math.max(2, Math.round(width * 0.035));
 
-    const glow = scene.add.rectangle(width / 2, height / 2, width + 8, height + 8, accentColor, 0.1);
+    const shadow = scene.add.rectangle(
+        width / 2 + 2,
+        height / 2 + 3,
+        width,
+        height,
+        0x000000,
+        0.35,
+    );
+    const glow = scene.add.rectangle(
+        width / 2,
+        height / 2,
+        width + 10,
+        height + 10,
+        accentColor,
+        0.12,
+    );
     const body = scene.add.rectangle(width / 2, height / 2, width, height, CYBER.cardBack, 1);
 
-    body.setStrokeStyle(2, CYBER.cardBackBorder, 1);
+    body.setStrokeStyle(stroke, CYBER.cardBackBorder, 1);
 
+    // Bevel: light top edge, dark bottom — same language as face cards.
+    const bevel = scene.add.graphics();
+
+    bevel.lineStyle(2, 0xffffff, 0.14);
+    bevel.strokeRect(2, 2, width - 4, height - 4);
+    bevel.lineStyle(2, 0x000000, 0.35);
+    bevel.beginPath();
+    bevel.moveTo(3, height - 3);
+    bevel.lineTo(width - 3, height - 3);
+    bevel.lineTo(width - 3, 3);
+    bevel.strokePath();
+
+    const inset = Math.round(width * 0.1);
     const inner = scene.add.rectangle(
         width / 2,
         height / 2,
-        width - 10,
-        height - 10,
+        width - inset * 2,
+        height - inset * 2,
         CYBER.cardInner,
-        0.9,
+        0.95,
     );
 
-    const accent = scene.add.rectangle(width / 2, 5, width - 18, 2, accentColor, 0.45);
+    inner.setStrokeStyle(1, accentColor, 0.28);
+
+    const pattern = scene.add.graphics();
+
+    pattern.lineStyle(1, accentColor, 0.12);
+
+    for (let y = inset + 6; y < height - inset - 4; y += 7)
+    {
+        pattern.beginPath();
+        pattern.moveTo(inset + 4, y);
+        pattern.lineTo(width - inset - 4, y);
+        pattern.strokePath();
+    }
+
+    const accent = scene.add.rectangle(width / 2, inset - 1, width - inset * 2 - 4, 3, accentColor, 0.55);
     const brackets = scene.add.graphics();
 
-    drawCornerBrackets(brackets, 3, 3, width - 6, height - 6, accentColor, {
-        arm: Math.min(11, Math.round(width * 0.14)),
-        alpha: 0.85,
+    drawCornerBrackets(brackets, 4, 4, width - 8, height - 8, accentColor, {
+        arm: Math.min(14, Math.round(width * 0.16)),
+        alpha: 0.9,
+        lineWidth: 2,
     });
 
     const mark = scene.add.text(width / 2, height / 2, '◈', {
-        ...uiDisplayTextStyle(Math.round(width * 0.28), `#${accentColor.toString(16).padStart(6, '0')}`, { bold: true }),
+        ...uiDisplayTextStyle(Math.round(width * 0.32), `#${accentColor.toString(16).padStart(6, '0')}`, {
+            bold: true,
+            strokeColor: '#0a0610',
+        }),
     }).setOrigin(0.5);
 
-    container.add([ glow, body, inner, accent, brackets, mark ]);
+    container.add([ shadow, glow, body, bevel, inner, pattern, accent, brackets, mark ]);
 
     if (interactive)
     {

@@ -8,11 +8,13 @@ import type { EnemySquadView } from '../board/EnemySquadView';
 import type { PlayerHealthView } from '../board/PlayerHealthView';
 import type { CardGameSession } from '../cardGame/domain/CardGameSession';
 import type { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
+import { planChainPathPreview } from '../cardGame/combat/AttackPipeline';
 import { playFloatingText } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
 import { unlockEnemies } from '../run/enemyBestiary';
+import { readChainPathLitEnabled } from '../ui/chainPathSettings';
 
 /** Shared view/session handles for battle UI sync helpers. */
 export interface BattleUiSyncDeps
@@ -46,6 +48,7 @@ export const syncPileClickHandlers = (deps: BattlePileClickSyncDeps): void =>
     {
         deps.deckView?.setClickHandler(null);
         deps.graveyardView?.setClickHandler(null);
+        deps.graveyardView?.setExhaustClickHandler(null);
         deps.exhaustView?.setClickHandler(null);
 
         return;
@@ -53,6 +56,7 @@ export const syncPileClickHandlers = (deps: BattlePileClickSyncDeps): void =>
 
     deps.deckView?.setClickHandler(() => deps.openPileView('deck'));
     deps.graveyardView?.setClickHandler(() => deps.openPileView('graveyard'));
+    deps.graveyardView?.setExhaustClickHandler(() => deps.openPileView('exhaust'));
     deps.exhaustView?.setClickHandler(() => deps.openPileView('exhaust'));
 };
 
@@ -84,6 +88,7 @@ export const syncPileViews = (
 
     deps.deckView?.setStack(deckSize, deps.session.getDeckTopCard() ?? null);
     deps.graveyardView?.setStack(discardSize, deps.session.getDiscardTopCard() ?? null);
+    deps.graveyardView?.setExhaustCount(exhaustSize);
     deps.exhaustView?.setStack(exhaustSize, deps.session.getExhaustTopCard() ?? null);
 };
 
@@ -119,6 +124,7 @@ export const handlePilesChanged = (
 
     deps.deckView?.setStack(deckSize, deps.session.getDeckTopCard() ?? null);
     deps.graveyardView?.setStack(discardSize, deps.session.getDiscardTopCard() ?? null);
+    deps.graveyardView?.setExhaustCount(exhaustSize);
     deps.exhaustView?.setStack(exhaustSize, deps.session.getExhaustTopCard() ?? null);
 };
 
@@ -181,6 +187,31 @@ export const emitAttackReadiness = (deps: BattleUiSyncDeps): void =>
     const chainStart = deps.session.getChainStartSlot();
 
     deps.boardView?.setChainStartPickable(chainStartPickable);
+
+    if (deps.boardView && !deps.session.isBusy() && !deps.session.isEnemyDefeated())
+    {
+        if (!readChainPathLitEnabled())
+        {
+            deps.boardView.clearChainPath();
+        }
+        else
+        {
+            const preview = planChainPathPreview(
+                deps.session.board,
+                deps.session.getChainStartSlot(),
+            );
+
+            if (preview.slots.length >= 2)
+            {
+                deps.boardView.setChainPathPreview(preview.slots, preview.tentativeFromIndex);
+            }
+            else
+            {
+                deps.boardView.clearChainPath();
+            }
+        }
+    }
+
     EventBus.emit(GAME_EVENTS.CHAIN_START_STATE, {
         pickable: chainStartPickable,
         row: chainStart.row,

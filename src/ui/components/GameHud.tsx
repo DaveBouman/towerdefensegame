@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { EventBus } from '../../game/EventBus';
 import type { AttackReadiness, RerollState, TurnState } from '../../game/cardGame/domain/types';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
+import {
+    readChainPathLitEnabled,
+    writeChainPathLitEnabled,
+} from '../../game/ui/chainPathSettings';
 
 const REJECT_MESSAGES: Record<NonNullable<AttackReadiness['reason']>, string> = {
     'attack-in-progress': 'Attack already in progress…',
@@ -33,7 +37,7 @@ const DEFAULT_CHAIN_START_STATE = {
     rowLabel: 'A',
 };
 
-export const GameHud = () =>
+export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
 {
     const [ readiness, setReadiness ] = useState<AttackReadiness>({
         canAttack: false,
@@ -43,6 +47,7 @@ export const GameHud = () =>
     const [ turnState, setTurnState ] = useState<TurnState>(DEFAULT_TURN_STATE);
     const [ chainStart, setChainStart ] = useState(DEFAULT_CHAIN_START_STATE);
     const [ rejectMessage, setRejectMessage ] = useState<string | null>(null);
+    const [ pathLit, setPathLit ] = useState(readChainPathLitEnabled);
 
     useEffect(() =>
     {
@@ -110,7 +115,7 @@ export const GameHud = () =>
         && turnState.energy > 0;
 
     return (
-        <aside className="game-hud">
+        <aside className={`game-hud${captureMode ? ' game-hud--capture' : ''}`}>
             <div
                 className="game-hud__energy"
                 title="Energy: each Attack spends 1. After each enemy response they overclock (+attack for the rest of the fight). When empty, the board clears and energy refills."
@@ -132,22 +137,35 @@ export const GameHud = () =>
                     {turnState.energy}/{turnState.maxEnergy}
                 </span>
             </div>
-            {showChainStartHint && (
+            {!captureMode && showChainStartHint && (
                 <p className="game-hud__chain-start-hint" role="status">
                     Chain starts on row <strong>{chainStart.rowLabel}</strong>
                     {' '}— click any highlighted <strong>START</strong> column tile to move it
                 </p>
             )}
-            <p className="game-hud__deploy-hint">
-                {rerollState.rerollModeActive
-                    ? 'Click hand cards to select, then confirm reroll.'
-                    : needsTarget
-                        ? 'Multiple hostiles detected — click an enemy panel to lock your target, then Attack.'
-                        : turnState.energy > 0
-                            ? 'Place cards and attack — the enemy strikes back after each attack, then overclocks. Extra attacks this round also make them hit harder.'
-                            : 'Out of energy — the enemy acts, then the board clears and energy refills.'}
-            </p>
-            {needsTarget && (
+            {!captureMode && (
+                <p
+                    className="game-hud__deploy-hint"
+                    title={
+                        rerollState.rerollModeActive
+                            ? 'Click hand cards to select, then confirm reroll.'
+                            : needsTarget
+                                ? 'Multiple hostiles detected — click an enemy panel to lock your target, then Attack.'
+                                : turnState.energy > 0
+                                    ? 'Place cards and attack — the enemy strikes back after each attack, then overclocks. Extra attacks this round also make them hit harder.'
+                                    : 'Out of energy — the enemy acts, then the board clears and energy refills.'
+                    }
+                >
+                    {rerollState.rerollModeActive
+                        ? 'Click hand cards to select, then confirm reroll.'
+                        : needsTarget
+                            ? 'Multiple hostiles detected — click an enemy panel to lock your target, then Attack.'
+                            : turnState.energy > 0
+                                ? 'Place cards and attack — the enemy strikes back after each attack, then overclocks. Extra attacks this round also make them hit harder.'
+                                : 'Out of energy — the enemy acts, then the board clears and energy refills.'}
+                </p>
+            )}
+            {!captureMode && needsTarget && (
                 <p className="game-hud__target-prompt" role="status">
                     No target locked — click an enemy on the right
                 </p>
@@ -178,6 +196,28 @@ export const GameHud = () =>
                     onClick={() => EventBus.emit(GAME_EVENTS.REROLL_BEGIN)}
                 >
                     Floor reroll ({rerollState.rerollsRemaining}/{rerollState.maxRerollsPerFloor})
+                </button>
+            )}
+            {!captureMode && (
+                <button
+                    type="button"
+                    className={
+                        pathLit
+                            ? 'game-hud__path-lit game-hud__path-lit--on'
+                            : 'game-hud__path-lit'
+                    }
+                    title="Show the planned chain route on the board. Past Reroute uses a soft guess until you pick."
+                    aria-pressed={pathLit}
+                    onClick={() =>
+                    {
+                        const next = !pathLit;
+
+                        writeChainPathLitEnabled(next);
+                        setPathLit(next);
+                        EventBus.emit(GAME_EVENTS.CHAIN_PATH_LIT, next);
+                    }}
+                >
+                    Path {pathLit ? 'on' : 'off'}
                 </button>
             )}
             <button

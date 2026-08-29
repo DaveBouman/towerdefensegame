@@ -14,6 +14,7 @@ import type { CardInstance, SlotPosition } from '../cardGame/domain/types';
 import { boardColLabel } from './boardCoordinates';
 import type { BoardLayout } from './boardLayout';
 import { JokerDirectionPicker } from './JokerDirectionPicker';
+import { playCardPlaceSettle } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 
 const SLOT_FILL = CYBER.slotFill;
 const SLOT_BORDER = CYBER.slotBorder;
@@ -87,6 +88,11 @@ export class CardBoardView
     private readonly colAxisLabels: Phaser.GameObjects.Text[] = [];
     private activeCoordinate: SlotPosition | null = null;
     private readonly jokerDirectionPicker = new JokerDirectionPicker();
+    private readonly chainPathGfx: Phaser.GameObjects.Graphics;
+    private chainPathSlots: SlotPosition[] = [];
+    private chainPathVisited = 0;
+    private chainPathActive = false;
+    private chainPathTentativeFrom: number | null = null;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -98,6 +104,7 @@ export class CardBoardView
     {
         const { cols, rows, tileSize } = GRID_CONFIG;
         this.container = scene.add.container(layout.gridOffsetX, layout.gridOffsetY);
+        this.chainPathGfx = scene.add.graphics();
 
         const panelPad = 14;
         const panelW = cols * tileSize + panelPad * 2;
@@ -115,7 +122,7 @@ export class CardBoardView
             0.94,
             0.35,
         );
-        this.container.add(backdrop);
+        this.container.add([ backdrop, this.chainPathGfx ]);
 
         const slotBrackets = scene.add.graphics();
 
@@ -192,6 +199,138 @@ export class CardBoardView
         this.chainStartSlot = { ...slot };
         this.refreshAxisLegendStyles();
         this.updateChainStartSelection();
+    }
+
+    /** Idle preview of the planned route (dim). Cleared while attacking. */
+    setChainPathPreview (
+        slots: readonly SlotPosition[],
+        tentativeFromIndex: number | null = null,
+    ): void
+    {
+        this.chainPathSlots = slots.map((slot) => ({ ...slot }));
+        this.chainPathVisited = 0;
+        this.chainPathActive = false;
+        this.chainPathTentativeFrom = tentativeFromIndex;
+        this.redrawChainPath();
+    }
+
+    clearChainPath (): void
+    {
+        this.chainPathSlots = [];
+        this.chainPathVisited = 0;
+        this.chainPathActive = false;
+        this.chainPathTentativeFrom = null;
+        this.chainPathGfx.clear();
+    }
+
+    /** During Attack: brighten the path through the latest activated slot. */
+    advanceChainPath (slot: SlotPosition): void
+    {
+        if (this.chainPathSlots.length === 0)
+        {
+            return;
+        }
+
+        this.chainPathActive = true;
+        const index = this.chainPathSlots.findIndex(
+            (step) => step.row === slot.row && step.col === slot.col,
+        );
+
+        if (index >= 0)
+        {
+            this.chainPathVisited = Math.max(this.chainPathVisited, index + 1);
+        }
+
+        this.redrawChainPath();
+    }
+
+    private slotCenter (slot: SlotPosition): { x: number; y: number }
+    {
+        const { tileSize } = GRID_CONFIG;
+
+        return {
+            x: slot.col * tileSize + tileSize / 2,
+            y: slot.row * tileSize + tileSize / 2,
+        };
+    }
+
+    private redrawChainPath (): void
+    {
+        this.chainPathGfx.clear();
+
+        if (this.chainPathSlots.length < 2)
+        {
+            return;
+        }
+
+        this.container.bringToTop(this.chainPathGfx);
+
+        const points = this.chainPathSlots.map((slot) => this.slotCenter(slot));
+        const visited = this.chainPathActive
+            ? Math.max(1, Math.min(this.chainPathVisited, points.length))
+            : points.length;
+        const fork = this.chainPathTentativeFrom === null
+            ? points.length
+            : Math.max(0, Math.min(this.chainPathTentativeFrom, points.length - 1));
+        const previewAlpha = this.chainPathActive ? 0.18 : 0.32;
+        const activeAlpha = 0.75;
+
+        const strokeSegment = (
+            from: number,
+            to: number,
+            width: number,
+            color: number,
+            alpha: number,
+        ): void =>
+        {
+            if (to <= from)
+            {
+                return;
+            }
+
+            this.chainPathGfx.lineStyle(width, color, alpha);
+            this.chainPathGfx.beginPath();
+            this.chainPathGfx.moveTo(points[from]!.x, points[from]!.y);
+
+            for (let i = from + 1; i <= to; i++)
+            {
+                this.chainPathGfx.lineTo(points[i]!.x, points[i]!.y);
+            }
+
+            this.chainPathGfx.strokePath();
+        };
+
+        // Known route (thinner than first pass).
+        strokeSegment(0, Math.min(fork, points.length - 1), 5, CYBER.magenta, previewAlpha * 0.45);
+        strokeSegment(0, Math.min(fork, points.length - 1), 2, CYBER.gold, previewAlpha);
+
+        // Past unset Reroute: softer guess so it reads as provisional.
+        if (fork < points.length - 1)
+        {
+            strokeSegment(fork, points.length - 1, 4, CYBER.magenta, previewAlpha * 0.28);
+            strokeSegment(fork, points.length - 1, 1.5, CYBER.gold, previewAlpha * 0.55);
+        }
+
+        if (this.chainPathActive && visited > 1)
+        {
+            strokeSegment(0, visited - 1, 6, CYBER.cyan, activeAlpha * 0.28);
+            strokeSegment(0, visited - 1, 2.5, CYBER.chainStartSelected, activeAlpha);
+        }
+
+        for (let i = 0; i < points.length; i++)
+        {
+            const lit = !this.chainPathActive || i < visited;
+            const tentative = this.chainPathTentativeFrom !== null && i > this.chainPathTentativeFrom;
+            const point = points[i]!;
+
+            this.chainPathGfx.fillStyle(
+                lit ? CYBER.chainStartSelected : CYBER.magenta,
+                lit
+                    ? (this.chainPathActive ? 0.85 : tentative ? 0.28 : 0.4)
+                    : 0.15,
+            );
+            this.chainPathGfx.fillCircle(point.x, point.y, lit ? (tentative ? 2.5 : 3.5) : 2);
+        }
     }
 
     /** When true, all start-column tiles show pick hints (between attacks). */
@@ -543,7 +682,44 @@ export class CardBoardView
     placeCard (slot: SlotPosition, card: CardInstance): void
     {
         this.setSlotCard(slot, card);
+        this.playSlotPlaceSettle(slot);
         this.refreshChainStartHitAreas();
+    }
+
+    /** Settle tween for a card that just landed on a tile. */
+    playSlotPlaceSettle (slot: SlotPosition): void
+    {
+        const wrapper = this.cardContainers[slot.row]?.[slot.col];
+
+        if (wrapper)
+        {
+            playCardPlaceSettle(this.scene, wrapper);
+        }
+    }
+
+    /** Soft flash when the board clears into a new energy round. */
+    playRoundResetFlash (): void
+    {
+        const { cols, rows, tileSize } = GRID_CONFIG;
+        const flash = this.scene.add.rectangle(
+            (cols * tileSize) / 2,
+            (rows * tileSize) / 2,
+            cols * tileSize + 20,
+            rows * tileSize + 20,
+            CYBER.cyan,
+            0.22,
+        );
+
+        this.container.add(flash);
+        this.container.bringToTop(flash);
+
+        this.scene.tweens.add({
+            targets: flash,
+            alpha: 0,
+            duration: 280,
+            ease: 'Cubic.easeOut',
+            onComplete: () => flash.destroy(),
+        });
     }
 
     /** Marks board slots the player cannot place cards on. */
@@ -821,6 +997,7 @@ export class CardBoardView
         this.hideJokerDirectionPicker();
         this.chainStartTween?.stop();
         this.chainStartIdleTween?.stop();
+        this.clearChainPath();
         this.container.destroy();
     }
 

@@ -26,12 +26,15 @@ import { BodyModsPanel } from './BodyModsPanel';
 import { BATTLE_REWARD_RULES, PUZZLE_TRIAL_RULES } from '../../game/run/rewards';
 import { GAME_RULES } from '../../game/cardGame/config/cardRegistry';
 import { RUN_CONFIG } from '../../game/run/runMap';
+import { parseCaptureId } from '../../game/showcase/showcaseScenarios';
 import type { RunController } from '../../runController/useRunController';
 
 type RunPhaseScreensProps = RunController;
 
 export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
 {
+    const captureId = parseCaptureId(new URLSearchParams(window.location.search).get('capture'));
+    const captureMode = captureId !== null;
     const {
         phase,
         pauseMenuOpen,
@@ -93,10 +96,10 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
 
     return (
         <>
-            {phase !== 'victory' && phase !== 'defeat' && phase !== 'menu' && (
+            {!captureMode && phase !== 'victory' && phase !== 'defeat' && phase !== 'menu' && (
                 <GameMenuButton open={pauseMenuOpen} onClick={togglePauseMenu} />
             )}
-            {bodyMods.length > 0 && (phase === 'battle' || phase === 'puzzle') && (
+            {!captureMode && bodyMods.length > 0 && (phase === 'battle' || phase === 'puzzle') && (
                 <BodyModsPanel
                     bodyMods={bodyMods}
                     runAttackCount={runAttackCount}
@@ -125,20 +128,20 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
             )}
             {phase === 'battle' && (
                 <>
-                    <GameHud />
-                    <CombatRecapStrip lines={combatRecapLines} />
-                    {tutorial.showBattleCoach && (
+                    <GameHud captureMode={captureMode} />
+                    {!captureMode && <CombatRecapStrip lines={combatRecapLines} />}
+                    {!captureMode && tutorial.showBattleCoach && (
                         <TutorialCoachStrip onDismiss={tutorial.dismissBattleCoach} />
                     )}
-                    {tutorial.showOffChainTip && (
+                    {!captureMode && tutorial.showOffChainTip && (
                         <TutorialOffChainTipOverlay onDismiss={tutorial.dismissOffChainTip} />
                     )}
                 </>
             )}
             {phase === 'puzzle' && (
                 <>
-                    <GameHud />
-                    <PuzzleHud />
+                    <GameHud captureMode={captureMode} />
+                    {!captureMode && <PuzzleHud />}
                 </>
             )}
             <PileViewOverlay />
@@ -282,7 +285,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                     clutch={clutchVictory}
                     stats={runStats}
                     unlockedAscension={ascensionUnlockedToast}
-                    onRestart={startNewRun}
+                    onRestart={() => startNewRun()}
                     onMainMenu={returnToMenu}
                 />
             )}
@@ -290,7 +293,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                 <RunEndOverlay
                     variant="defeat"
                     stats={{ ...runStats, pathLength: path.length }}
-                    onRestart={startNewRun}
+                    onRestart={() => startNewRun()}
                     onMainMenu={returnToMenu}
                 />
             )}

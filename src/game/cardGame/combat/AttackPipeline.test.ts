@@ -1,7 +1,7 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import { GRID_CONFIG } from '../../config/gridConfig';
 import { GAME_RULES } from '../config/cardRegistry';
-import { planActivationChain, planAttack, computeOffChainBonuses, computeHazardDamage, computeSiphonHeal, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, getJokerDirectionChoices, getNextChainSlot, applyJokerChosenDirection, getNextChainSlotFromStep, resolveChainSteps, isBoostedChainStep } from './AttackPipeline';
+import { planActivationChain, planAttack, planChainPathPreview, computeOffChainBonuses, computeHazardDamage, computeSiphonHeal, computeChainTypeMultipliers, buildAttackSequence, computeStreakAtIndex, getJokerDirectionChoices, getNextChainSlot, applyJokerChosenDirection, getNextChainSlotFromStep, resolveChainSteps, isBoostedChainStep } from './AttackPipeline';
 import { BoardModel, createEmptyBoard } from '../domain/BoardModel';
 import { createCardInstance, resetCardInstanceCounter } from '../domain/createCardInstance';
 import type { ActivationStep, SlotPosition } from '../domain/types';
@@ -456,6 +456,21 @@ describe('AttackPipeline', () =>
 
         expect(chain).toHaveLength(2);
         expect(chain[1].definitionId).toBe('joker');
+    });
+
+    it('previews past an unset Reroute with a tentative exit', () =>
+    {
+        const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));
+
+        board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
+        board.placeCard({ row: 0, col: 1 }, createCardInstance('joker'));
+        board.placeCard({ row: 0, col: 3 }, createCardInstance('attack', 'left'));
+
+        const preview = planChainPathPreview(board, { row: 0, col: 0 });
+
+        expect(preview.slots.length).toBeGreaterThanOrEqual(3);
+        expect(preview.tentativeFromIndex).toBe(1);
+        expect(preview.slots[2]).toEqual({ row: 0, col: 3 });
     });
 
     it('lets the joker jump two spaces when a direction is chosen', () =>

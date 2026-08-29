@@ -4,7 +4,8 @@ import type { GridConfig, GridPixelSize } from '../grid/types';
 export const GRID_CONFIG: GridConfig = {
     cols: 5,
     rows: 5,
-    tileSize: 80,
+    /** Display size; ~20% larger than the original 80px tile for a hero board. */
+    tileSize: 96,
 };
 
 export const getGridPixelSize = (config: GridConfig = GRID_CONFIG): GridPixelSize => ({

@@ -23,6 +23,7 @@ export interface EnemyTurnPlaybackDeps
     battleModifierView?: BattleModifierStatusView;
     setDisplayedArmor: (armor: number) => void;
     syncBattleModifierStatus: () => void;
+    requestHitstop?: (ms: number) => void;
 }
 
 export function playEnemyTurnStep (
@@ -43,6 +44,7 @@ export function playEnemyTurnStep (
         armorView,
         setDisplayedArmor,
         syncBattleModifierStatus,
+        requestHitstop,
     } = deps;
 
     if (step.kind === 'attack')
@@ -66,9 +68,14 @@ export function playEnemyTurnStep (
                 const tier = getDamageTierStyle(result.healthDamage);
 
                 playerView.playHitFlash();
-                playerView.showDamageNumber(result.healthDamage);
-                shakeCamera(scene, tier.shakeIntensity * 1.25);
+                playerView.showDamageNumber(result.healthDamage, tier);
+                shakeCamera(scene, tier.shakeIntensity * 1.3);
                 playPlayerHitSfx(result.healthDamage);
+
+                if (tier.hitstopMs > 0)
+                {
+                    requestHitstop?.(tier.hitstopMs);
+                }
             }
 
             if (result.reflectedThorns)
@@ -82,6 +89,7 @@ export function playEnemyTurnStep (
                         playerView,
                         armorView,
                         setDisplayedArmor,
+                        requestHitstop,
                     },
                     result.reflectedThorns,
                     { behaviorId: 'thorns', visualId: 'thorns', definitionId: 'thorns' },

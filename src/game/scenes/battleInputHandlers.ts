@@ -43,6 +43,7 @@ export const handleCardDropped = (
     }
 
     deps.boardView.syncFromBoard(deps.session.board);
+    deps.boardView.playSlotPlaceSettle(slot);
     deps.emitAttackReadiness();
 
     return true;
@@ -100,6 +101,7 @@ export const handleBoardCardDropped = (
         }
 
         deps.boardView.syncFromBoard(deps.session.board);
+        deps.boardView.playSlotPlaceSettle(targetSlot);
         deps.emitAttackReadiness();
 
         return true;
@@ -111,6 +113,8 @@ export const handleBoardCardDropped = (
     }
 
     deps.boardView.syncFromBoard(deps.session.board);
+    deps.boardView.playSlotPlaceSettle(fromSlot);
+    deps.boardView.playSlotPlaceSettle(targetSlot);
     deps.emitAttackReadiness();
 
     return true;
