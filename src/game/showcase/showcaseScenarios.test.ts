@@ -6,12 +6,28 @@ import { GRID_CONFIG } from '../config/gridConfig';
 import {
     SHOWCASE_BOARD_CHAIN_IDS,
     SHOWCASE_BOARD_CHAIN_START,
+    SHOWCASE_CARD_ART_BOARD,
+    SHOWCASE_CARD_ART_HAND,
     SHOWCASE_FULL_BOARD,
     SHOWCASE_HAND_CARDS,
+    parseCaptureId,
 } from './showcaseScenarios';
 
 describe('showcaseScenarios', () =>
 {
+    it('parses cardart capture id', () =>
+    {
+        expect(parseCaptureId('cardart')).toBe('cardart');
+    });
+
+    it('cardart board favors a three-attack streak for the bar overlay', () =>
+    {
+        expect(SHOWCASE_CARD_ART_BOARD.length).toBeGreaterThanOrEqual(3);
+        expect(SHOWCASE_CARD_ART_HAND.length).toBeGreaterThanOrEqual(4);
+        const opening = SHOWCASE_CARD_ART_BOARD.slice(0, 3);
+
+        expect(opening.every((spec) => spec.definitionId.startsWith('attack'))).toBe(true);
+    });
     it('board capture walks the showcase route with leaps, corners, and combos', () =>
     {
         const board = new BoardModel(createEmptyBoard(GRID_CONFIG.rows, GRID_CONFIG.cols));

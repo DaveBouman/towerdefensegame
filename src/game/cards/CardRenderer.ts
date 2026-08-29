@@ -9,7 +9,7 @@ import { getCardBehaviorTextureKey } from '../../ui/icons/cardBehaviorIcons';
 import { ARROW_GLYPH, arrowLabelPosition, cornerEntryArrowPosition } from './cardArrows';
 import { createDirectionArrowImage, createLoopBadgeImage } from './directionArrowVisual';
 import type { CardDirection } from '../cardGame/domain/cardDirections';
-import { CARD_VISUALS } from './cardVisuals';
+import { CARD_VISUALS, getCardFrontArtKey } from './cardVisuals';
 import { formatCardPowerLabel } from './cardVisualUtils';
 
 export interface CardVisualOptions {
@@ -60,18 +60,21 @@ export const buildCardGraphic = (
         rarityGlow,
         glowAlpha,
     );
+    const frontArtKey = getCardFrontArtKey(visualKey, definition.behaviorId);
+    const hasFrontArt = frontArtKey !== null && scene.textures.exists(frontArtKey);
     const body = scene.add.rectangle(width / 2, height / 2, width, height, style.fill);
 
     body.setStrokeStyle(borderWidth, style.border, 1);
 
-    const inner = scene.add.rectangle(
-        width / 2,
-        height / 2,
-        width - 10,
-        height - 10,
-        CYBER.cardInner,
-        0.88,
-    );
+    const layers: Phaser.GameObjects.GameObject[] = [ glow, body ];
+
+    if (hasFrontArt)
+    {
+        const art = scene.add.image(width / 2, height / 2, frontArtKey!);
+        // Fit to the portrait card frame (taller than wide) — never force square.
+        art.setDisplaySize(width, height);
+        layers.push(art);
+    }
 
     // Soft bevel plate so cards read thicker without painted art.
     const bevel = scene.add.rectangle(
@@ -80,16 +83,15 @@ export const buildCardGraphic = (
         width - 4,
         height - 4,
         0xffffff,
-        tier >= 2 ? 0.04 : 0.025,
+        hasFrontArt ? 0.02 : (tier >= 2 ? 0.04 : 0.025),
     );
 
-    const accent = scene.add.rectangle(width / 2, 5, width - 18, 2, style.border, 0.55);
     const brackets = scene.add.graphics();
     const rarityBrackets = scene.add.graphics();
 
     drawCornerBrackets(brackets, 3, 3, width - 6, height - 6, style.border, {
         arm: Math.min(11, Math.round(width * 0.14)),
-        alpha: 0.95,
+        alpha: hasFrontArt ? 0.55 : 0.95,
     });
 
     if (tier >= 2)
@@ -101,11 +103,13 @@ export const buildCardGraphic = (
         });
     }
 
+    layers.push(bevel, brackets, rarityBrackets);
+
     if (owned)
     {
         const ownershipTint = scene.add.rectangle(width / 2, height / 2, width - 6, height - 6, style.border, 0.08);
 
-        container.add(ownershipTint);
+        layers.push(ownershipTint);
     }
 
     const isCornerTurn = definition.cornerTurn === true;
@@ -173,12 +177,12 @@ export const buildCardGraphic = (
     }
 
     const kindIconY = height * 0.3;
-    const kindLabelY = height * 0.44;
+    const kindLabelY = hasFrontArt ? height * 0.11 : height * 0.44;
     const kindIconSize = cardKindIconSize(width);
     const kindTextureKey = getCardBehaviorTextureKey(visualKey)
         ?? getCardBehaviorTextureKey(definition.behaviorId);
 
-    if (kindTextureKey && scene.textures.exists(kindTextureKey))
+    if (!hasFrontArt && kindTextureKey && scene.textures.exists(kindTextureKey))
     {
         const kindIcon = scene.add.image(width / 2, kindIconY, kindTextureKey);
         kindIcon.setDisplaySize(kindIconSize, kindIconSize);
@@ -195,14 +199,14 @@ export const buildCardGraphic = (
 
     const power = scene.add.text(
         width / 2,
-        height * 0.62,
+        hasFrontArt ? height * 0.88 : height * 0.62,
         formatCardPowerLabel(definition),
         {
-            ...uiDisplayTextStyle(22, style.powerColor, { bold: true }),
+            ...uiDisplayTextStyle(hasFrontArt ? 18 : 22, style.powerColor, { bold: true }),
         },
     ).setOrigin(0.5);
 
-    container.add([ glow, body, bevel, inner, accent, brackets, rarityBrackets, ...cardDecor, power ]);
+    container.add([ ...layers, ...cardDecor, power ]);
 
     if (leapDistance > 1)
     {

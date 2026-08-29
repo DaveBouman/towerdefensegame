@@ -41,6 +41,16 @@ Quick URLs (dev server):
 | 9 | `event` | Signal wheel event |
 | 10 | `rest` | Safehouse rest / upgrade |
 
+### Art preview
+
+| Capture ID | What to frame |
+|------------|---------------|
+| `cardart` | Three Attacks in a row → traveling streak **lightning** + type-stack multiplier |
+
+```
+http://localhost:8080/?capture=cardart
+```
+
 Capsule / library art: `npm run generate-steam-art` → `docs/steam-art/`.
 
 ## Seed

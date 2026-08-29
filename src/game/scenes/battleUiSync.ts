@@ -9,6 +9,7 @@ import type { PlayerHealthView } from '../board/PlayerHealthView';
 import type { CardGameSession } from '../cardGame/domain/CardGameSession';
 import type { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { planChainPathPreview } from '../cardGame/combat/AttackPipeline';
+import { findStreakBarRuns } from '../cardGame/combat/streakBarRuns';
 import { playFloatingText } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import { EventBus } from '../EventBus';
@@ -190,25 +191,32 @@ export const emitAttackReadiness = (deps: BattleUiSyncDeps): void =>
 
     if (deps.boardView && !deps.session.isBusy() && !deps.session.isEnemyDefeated())
     {
+        const preview = planChainPathPreview(
+            deps.session.board,
+            deps.session.getChainStartSlot(),
+        );
+        const streakBars = findStreakBarRuns(preview.steps);
+
+        if (streakBars.length > 0)
+        {
+            deps.boardView.setStreakBars(streakBars);
+        }
+        else
+        {
+            deps.boardView.clearStreakBars();
+        }
+
         if (!readChainPathLitEnabled())
         {
             deps.boardView.clearChainPath();
         }
+        else if (preview.slots.length >= 2)
+        {
+            deps.boardView.setChainPathPreview(preview.slots, preview.tentativeFromIndex);
+        }
         else
         {
-            const preview = planChainPathPreview(
-                deps.session.board,
-                deps.session.getChainStartSlot(),
-            );
-
-            if (preview.slots.length >= 2)
-            {
-                deps.boardView.setChainPathPreview(preview.slots, preview.tentativeFromIndex);
-            }
-            else
-            {
-                deps.boardView.clearChainPath();
-            }
+            deps.boardView.clearChainPath();
         }
     }
 

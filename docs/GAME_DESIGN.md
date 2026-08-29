@@ -368,6 +368,10 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-29 | **Streak storm lightning.** Attack streaks (2+) get irregular thunder-strike bolts (from above, forks, flicker/fade) instead of a left-to-right travel. Preview: `?capture=cardart`. |
+| 2026-08-29 | **Streak lightning.** Contiguous Attack runs (2+) keep cards visible; a jagged bolt travels the streak with the type-stack multiplier above. Dropped the fat bar + card top accent stripe. Preview: `?capture=cardart`. |
+| 2026-08-29 | **Streak bars.** Contiguous Attack/Defend runs (2+) along the chain dim their cards and read as one neon bar with the type-stack multiplier (`×1.15`, `×1.3`, …). Painted full-face fronts parked — too busy on-grid. Preview: `?capture=cardart`. |
+| 2026-08-29 | **Portrait card-front preview.** Attack/Defend use painted taller-than-wide fronts; open `?capture=cardart` on :8080 to review board + hand. |
 | 2026-08-29 | **Hand deal-in fly.** After enemy response (mid-round refill and energy renew), hand cards fly from the deck into the rail with a staggered settle. |
 | 2026-08-29 | **Docked pile peeks.** Deck/Discard sit in bottom corners half off-screen; hover slides them fully up; click enlarges then opens the inspector. |
 | 2026-08-29 | **Piles seat with the hand.** Deck left / Discard right of the hand on a shared baseline (no more floating mid-side). Slightly smaller trays so they read as hand companions. |

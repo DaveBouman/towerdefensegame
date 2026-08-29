@@ -178,3 +178,17 @@ export const HAND_CARD_GAP = 14;
 /** Deck/discard stack cards — sized for hand-rail seating; layout may shrink further. */
 export const PILE_CARD_WIDTH = 64;
 export const PILE_CARD_HEIGHT = 88;
+
+/**
+ * Optional painted portrait fronts (taller than wide — never square).
+ * Empty for now — full-face art read too busy on the board; keep assets for later.
+ */
+export const CARD_FRONT_ART_KEYS: Record<string, string> = {};
+
+export const CARD_FRONT_ART_ENTRIES = [
+    { textureKey: 'card-front-attack', url: '/assets/cards/card-front-attack.png' },
+    { textureKey: 'card-front-defend', url: '/assets/cards/card-front-defend.png' },
+] as const;
+
+export const getCardFrontArtKey = (visualKey: string, behaviorId: string): string | null =>
+    CARD_FRONT_ART_KEYS[visualKey] ?? CARD_FRONT_ART_KEYS[behaviorId] ?? null;

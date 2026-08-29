@@ -27,7 +27,8 @@ export type ShowcaseCaptureId =
     | 'multi'
     | 'event'
     | 'rest'
-    | 'boss';
+    | 'boss'
+    | 'cardart';
 
 export interface ShowcaseBoardCard {
     row: number;
@@ -135,6 +136,45 @@ export const showcasePuzzleMode = (): PuzzleModeConfig => ({
     damageTarget: 999,
 });
 
+/**
+ * Portrait painted-front preview board — three Attacks in a row become a streak bar.
+ * Open via http://localhost:8080/?capture=cardart
+ *
+ *   attack→  attack→  attack→  defend→  attack↓
+ *   ·        ·        ·        ·        defend↓
+ *   ·        ·        ·        ·        attack
+ */
+export const SHOWCASE_CARD_ART_BOARD: ShowcaseBoardCard[] = [
+    { row: 0, col: 0, definitionId: 'attack', arrow: 'right' },
+    { row: 0, col: 1, definitionId: 'attack', arrow: 'right' },
+    { row: 0, col: 2, definitionId: 'attack', arrow: 'right' },
+    { row: 0, col: 3, definitionId: 'defend', arrow: 'right' },
+    { row: 0, col: 4, definitionId: 'attack', arrow: 'down' },
+    { row: 1, col: 4, definitionId: 'defend', arrow: 'down' },
+    { row: 2, col: 4, definitionId: 'attack', arrow: 'left' },
+];
+
+export const SHOWCASE_CARD_ART_HAND: readonly {
+    definitionId: string;
+    arrow?: CardDirection;
+}[] = [
+    { definitionId: 'attack', arrow: 'up' },
+    { definitionId: 'attack', arrow: 'right' },
+    { definitionId: 'attack', arrow: 'down' },
+    { definitionId: 'defend', arrow: 'left' },
+    { definitionId: 'attack-special', arrow: 'down-right' },
+    { definitionId: 'defend-special', arrow: 'up-left' },
+];
+
+export const SHOWCASE_CARD_ART_CHAIN_START = { row: 0, col: 0 };
+
+export const showcaseCardArtPuzzleMode = (): PuzzleModeConfig => ({
+    handCards: [ ...SHOWCASE_CARD_ART_HAND ],
+    boardCards: SHOWCASE_CARD_ART_BOARD,
+    chainStart: SHOWCASE_CARD_ART_CHAIN_START,
+    damageTarget: 999,
+});
+
 const mockShopNode: RunMapNode = {
     id: 'steam-capture-shop',
     row: 4,
@@ -208,7 +248,7 @@ export const parseCaptureId = (raw: string | null): ShowcaseCaptureId | null =>
     }
 
     const ids: ShowcaseCaptureId[] = [
-        'board', 'combo', 'map', 'shop', 'reward', 'bodymod', 'multi', 'event', 'rest', 'boss',
+        'board', 'combo', 'map', 'shop', 'reward', 'bodymod', 'multi', 'event', 'rest', 'boss', 'cardart',
     ];
 
     return ids.includes(raw as ShowcaseCaptureId) ? raw as ShowcaseCaptureId : null;

@@ -16,6 +16,7 @@ import {
     showcaseGold,
     showcasePlayerHealth,
     showcasePuzzleMode,
+    showcaseCardArtPuzzleMode,
     SHOWCASE_BOARD_ENEMY_HP_MULTIPLIER,
     SHOWCASE_BOARD_ENEMY_ID,
 } from '../game/showcase/showcaseScenarios';
@@ -196,21 +197,27 @@ export const useShowcaseCapture = (target: ShowcaseCaptureTarget): void =>
             ascensionLevel: captureId === 'boss' ? 1 : 0,
         };
 
-        if (captureId === 'board' || captureId === 'multi' || captureId === 'boss')
+        if (captureId === 'board' || captureId === 'multi' || captureId === 'boss' || captureId === 'cardart')
         {
-            const puzzleMode = captureId === 'board' ? showcasePuzzleMode() : null;
+            const puzzleMode = captureId === 'board'
+                ? showcasePuzzleMode()
+                : captureId === 'cardart'
+                    ? showcaseCardArtPuzzleMode()
+                    : null;
             const enemyIds = captureId === 'multi'
                 ? [ 'smokebinder', 'saboteur' ]
                 : captureId === 'boss'
                     ? [ 'warden' ]
-                    : [ captureId === 'board' ? SHOWCASE_BOARD_ENEMY_ID : 'smokebinder' ];
+                    : [ (captureId === 'board' || captureId === 'cardart')
+                        ? SHOWCASE_BOARD_ENEMY_ID
+                        : 'smokebinder' ];
 
             target.setPhase('battle');
             const payload = {
                 ...battlePayload,
                 enemyIds,
                 puzzleMode,
-                enemyHealthMultiplier: captureId === 'board'
+                enemyHealthMultiplier: (captureId === 'board' || captureId === 'cardart')
                     ? SHOWCASE_BOARD_ENEMY_HP_MULTIPLIER
                     : undefined,
             };

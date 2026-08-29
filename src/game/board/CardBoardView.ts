@@ -1,5 +1,5 @@
 import { getGameCursors, setViewportGrabbingCursor } from '../ui/gameCursors';
-import { uiTextStyle } from '../config/uiTypography';
+import { uiTextStyle, uiDisplayTextStyle } from '../config/uiTypography';
 import { CYBER } from '../config/cyberpunkTheme';
 import { drawCornerBrackets, drawNeonPanel } from '../config/cyberpunkUiGraphics';
 import { GRID_CONFIG } from '../config/gridConfig';
@@ -15,6 +15,7 @@ import { boardColLabel } from './boardCoordinates';
 import type { BoardLayout } from './boardLayout';
 import { JokerDirectionPicker } from './JokerDirectionPicker';
 import { playCardPlaceSettle } from '../cardGame/presentation/visualEffects/visualEffectTweens';
+import type { StreakBarRun } from '../cardGame/combat/streakBarRuns';
 
 const SLOT_FILL = CYBER.slotFill;
 const SLOT_BORDER = CYBER.slotBorder;
@@ -89,10 +90,16 @@ export class CardBoardView
     private activeCoordinate: SlotPosition | null = null;
     private readonly jokerDirectionPicker = new JokerDirectionPicker();
     private readonly chainPathGfx: Phaser.GameObjects.Graphics;
+    private readonly streakBarGfx: Phaser.GameObjects.Graphics;
+    private readonly streakBarLabels: Phaser.GameObjects.Container;
     private chainPathSlots: SlotPosition[] = [];
     private chainPathVisited = 0;
     private chainPathActive = false;
     private chainPathTentativeFrom: number | null = null;
+    private streakBarRuns: StreakBarRun[] = [];
+    private streakBarDimSlots = new Set<string>();
+    private streakStormTimer?: Phaser.Time.TimerEvent;
+    private streakStormFade?: Phaser.Tweens.Tween;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -105,6 +112,8 @@ export class CardBoardView
         const { cols, rows, tileSize } = GRID_CONFIG;
         this.container = scene.add.container(layout.gridOffsetX, layout.gridOffsetY);
         this.chainPathGfx = scene.add.graphics();
+        this.streakBarGfx = scene.add.graphics();
+        this.streakBarLabels = scene.add.container(0, 0);
 
         const panelPad = 14;
         const panelW = cols * tileSize + panelPad * 2;
@@ -122,7 +131,7 @@ export class CardBoardView
             0.94,
             0.35,
         );
-        this.container.add([ backdrop, this.chainPathGfx ]);
+        this.container.add([ backdrop, this.chainPathGfx, this.streakBarGfx, this.streakBarLabels ]);
 
         const slotBrackets = scene.add.graphics();
 
@@ -212,6 +221,27 @@ export class CardBoardView
         this.chainPathActive = false;
         this.chainPathTentativeFrom = tentativeFromIndex;
         this.redrawChainPath();
+    }
+
+    /** Type-stack runs — attack streaks get a traveling lightning bolt (no fat bar). */
+    setStreakBars (runs: readonly StreakBarRun[]): void
+    {
+        this.clearStreakBarCardDim();
+        this.streakBarRuns = runs.map((run) => ({
+            ...run,
+            slots: run.slots.map((slot) => ({ ...slot })),
+        }));
+        this.redrawStreakBars();
+        this.applyStreakBarCardDim();
+    }
+
+    clearStreakBars (): void
+    {
+        this.stopStreakLightning();
+        this.clearStreakBarCardDim();
+        this.streakBarRuns = [];
+        this.streakBarGfx.clear();
+        this.streakBarLabels.removeAll(true);
     }
 
     clearChainPath (): void
@@ -331,6 +361,342 @@ export class CardBoardView
             );
             this.chainPathGfx.fillCircle(point.x, point.y, lit ? (tentative ? 2.5 : 3.5) : 2);
         }
+    }
+
+    private slotKey (slot: SlotPosition): string
+    {
+        return `${slot.row}:${slot.col}`;
+    }
+
+    private clearStreakBarCardDim (): void
+    {
+        for (const key of this.streakBarDimSlots)
+        {
+            const [ rowText, colText ] = key.split(':');
+            const row = Number(rowText);
+            const col = Number(colText);
+            const wrapper = this.cardContainers[row]?.[col];
+
+            wrapper?.setAlpha(1);
+        }
+
+        this.streakBarDimSlots.clear();
+    }
+
+    private applyStreakBarCardDim (): void
+    {
+        for (const run of this.streakBarRuns)
+        {
+            for (const slot of run.slots)
+            {
+                const key = this.slotKey(slot);
+                const wrapper = this.cardContainers[slot.row]?.[slot.col];
+
+                if (!wrapper)
+                {
+                    continue;
+                }
+
+                wrapper.setAlpha(0.88);
+                this.streakBarDimSlots.add(key);
+            }
+        }
+    }
+
+    private stopStreakLightning (): void
+    {
+        this.streakStormTimer?.remove(false);
+        this.streakStormTimer = undefined;
+        this.streakStormFade?.stop();
+        this.streakStormFade = undefined;
+        this.streakBarGfx.clear();
+        this.streakBarGfx.setAlpha(1);
+    }
+
+    private startStreakLightning (): void
+    {
+        this.stopStreakLightning();
+
+        const attackRuns = this.streakBarRuns.filter((run) => run.behaviorId === 'attack' && run.slots.length >= 2);
+
+        if (attackRuns.length === 0)
+        {
+            return;
+        }
+
+        this.scheduleStormStrike(true);
+    }
+
+    private scheduleStormStrike (immediate: boolean): void
+    {
+        const attackRuns = this.streakBarRuns.filter((run) => run.behaviorId === 'attack' && run.slots.length >= 2);
+
+        if (attackRuns.length === 0)
+        {
+            return;
+        }
+
+        // Cosmetics only — not game RNG.
+        const delay = immediate ? 120 : 380 + Math.random() * 1100;
+
+        this.streakStormTimer = this.scene.time.delayedCall(delay, () =>
+        {
+            this.fireStormStrike(attackRuns);
+            this.scheduleStormStrike(false);
+        });
+    }
+
+    private fireStormStrike (attackRuns: readonly StreakBarRun[]): void
+    {
+        this.streakStormFade?.stop();
+        this.streakBarGfx.clear();
+        this.streakBarGfx.setAlpha(1);
+        this.container.bringToTop(this.streakBarGfx);
+        this.container.bringToTop(this.streakBarLabels);
+
+        for (const run of attackRuns)
+        {
+            const centers = run.slots.map((slot) => this.slotCenter(slot));
+            const boltCount = 2 + Math.floor(Math.random() * 3);
+
+            for (let b = 0; b < boltCount; b++)
+            {
+                this.drawStormBolt(centers);
+            }
+
+            // Soft flash wash — clipped to each card face.
+            for (const point of centers)
+            {
+                const rect = this.cardInnerRect(point);
+
+                this.streakBarGfx.fillStyle(CYBER.attackGlow, 0.14 + Math.random() * 0.1);
+                this.streakBarGfx.fillRoundedRect(
+                    rect.left,
+                    rect.top,
+                    rect.width,
+                    rect.height,
+                    4,
+                );
+            }
+        }
+
+        // Flicker once, then die out like a real strike.
+        this.scene.time.delayedCall(45, () =>
+        {
+            if (!this.streakBarGfx.active || this.streakBarRuns.length === 0)
+            {
+                return;
+            }
+
+            this.streakBarGfx.setAlpha(0.25);
+            this.scene.time.delayedCall(35, () =>
+            {
+                if (!this.streakBarGfx.active)
+                {
+                    return;
+                }
+
+                this.streakBarGfx.setAlpha(1);
+                this.streakStormFade = this.scene.tweens.add({
+                    targets: this.streakBarGfx,
+                    alpha: 0,
+                    duration: 180,
+                    ease: 'Cubic.easeOut',
+                    onComplete: () =>
+                    {
+                        this.streakBarGfx.clear();
+                        this.streakBarGfx.setAlpha(1);
+                    },
+                });
+            });
+        });
+    }
+
+    private cardInnerRect (center: { x: number; y: number }): {
+        left: number;
+        right: number;
+        top: number;
+        bottom: number;
+        width: number;
+        height: number;
+    }
+    {
+        const size = this.layout.tileSize - SLOT_INSET * 2;
+        const pad = 7;
+
+        return {
+            left: center.x - size / 2 + pad,
+            right: center.x + size / 2 - pad,
+            top: center.y - size / 2 + pad,
+            bottom: center.y + size / 2 - pad,
+            width: size - pad * 2,
+            height: size - pad * 2,
+        };
+    }
+
+    private clampToCardInner (
+        point: { x: number; y: number },
+        center: { x: number; y: number },
+    ): { x: number; y: number }
+    {
+        const rect = this.cardInnerRect(center);
+
+        return {
+            x: Math.max(rect.left, Math.min(rect.right, point.x)),
+            y: Math.max(rect.top, Math.min(rect.bottom, point.y)),
+        };
+    }
+
+    /** Jagged bolt confined to a card face (storm crack, not sky-to-board). */
+    private drawStormBolt (centers: readonly { x: number; y: number }[]): void
+    {
+        if (centers.length === 0)
+        {
+            return;
+        }
+
+        const host = centers[Math.floor(Math.random() * centers.length)]!;
+        const rect = this.cardInnerRect(host);
+        // Mostly top→bottom cracks; sometimes corner-to-corner inside the same card.
+        const vertical = Math.random() > 0.3;
+        const start = vertical
+            ? {
+                x: rect.left + Math.random() * rect.width,
+                y: rect.top + Math.random() * rect.height * 0.18,
+            }
+            : {
+                x: Math.random() > 0.5 ? rect.left : rect.right,
+                y: rect.top + Math.random() * rect.height * 0.35,
+            };
+        const end = vertical
+            ? {
+                x: rect.left + Math.random() * rect.width,
+                y: rect.bottom - Math.random() * rect.height * 0.18,
+            }
+            : {
+                x: Math.random() > 0.5 ? rect.left : rect.right,
+                y: rect.bottom - Math.random() * rect.height * 0.3,
+            };
+
+        const segments = 5 + Math.floor(Math.random() * 4);
+        const path: { x: number; y: number }[] = [ start ];
+
+        for (let i = 1; i < segments; i++)
+        {
+            const t = i / segments;
+            const baseX = start.x + (end.x - start.x) * t;
+            const baseY = start.y + (end.y - start.y) * t;
+            const jitterX = rect.width * (0.08 + Math.random() * 0.18);
+            const jitterY = rect.height * (0.04 + Math.random() * 0.1);
+
+            path.push(this.clampToCardInner({
+                x: baseX + (Math.random() - 0.5) * jitterX * 2,
+                y: baseY + (Math.random() - 0.5) * jitterY * 2,
+            }, host));
+        }
+
+        path.push(this.clampToCardInner(end, host));
+
+        if (Math.random() > 0.4 && path.length > 3)
+        {
+            const forkAt = 2 + Math.floor(Math.random() * (path.length - 3));
+            const origin = path[forkAt]!;
+            const forkEnd = this.clampToCardInner({
+                x: origin.x + (Math.random() - 0.5) * rect.width * 0.55,
+                y: origin.y + rect.height * (0.12 + Math.random() * 0.28),
+            }, host);
+
+            this.strokeBoltPath([
+                origin,
+                this.clampToCardInner({
+                    x: (origin.x + forkEnd.x) / 2 + (Math.random() - 0.5) * 8,
+                    y: (origin.y + forkEnd.y) / 2,
+                }, host),
+                forkEnd,
+            ], true);
+        }
+
+        this.strokeBoltPath(path, false);
+    }
+
+    private strokeBoltPath (path: readonly { x: number; y: number }[], branch: boolean): void
+    {
+        if (path.length < 2)
+        {
+            return;
+        }
+
+        const outer = branch ? 3 : 5;
+        const inner = branch ? 1.2 : 2.2;
+        const outerAlpha = branch ? 0.35 : 0.55;
+
+        this.streakBarGfx.lineStyle(outer, CYBER.attackGlow, outerAlpha);
+        this.streakBarGfx.beginPath();
+        this.streakBarGfx.moveTo(path[0]!.x, path[0]!.y);
+
+        for (let i = 1; i < path.length; i++)
+        {
+            this.streakBarGfx.lineTo(path[i]!.x, path[i]!.y);
+        }
+
+        this.streakBarGfx.strokePath();
+
+        this.streakBarGfx.lineStyle(inner, 0xffffff, branch ? 0.7 : 0.95);
+        this.streakBarGfx.beginPath();
+        this.streakBarGfx.moveTo(path[0]!.x, path[0]!.y);
+
+        for (let i = 1; i < path.length; i++)
+        {
+            this.streakBarGfx.lineTo(path[i]!.x, path[i]!.y);
+        }
+
+        this.streakBarGfx.strokePath();
+
+        const tip = path[path.length - 1]!;
+
+        this.streakBarGfx.fillStyle(0xffffff, 0.85);
+        this.streakBarGfx.fillCircle(tip.x, tip.y, branch ? 2 : 4);
+        this.streakBarGfx.fillStyle(CYBER.attackGlow, 0.4);
+        this.streakBarGfx.fillCircle(tip.x, tip.y, branch ? 5 : 10);
+    }
+
+    private redrawStreakBars (): void
+    {
+        this.stopStreakLightning();
+        this.streakBarGfx.clear();
+        this.streakBarLabels.removeAll(true);
+
+        if (this.streakBarRuns.length === 0)
+        {
+            return;
+        }
+
+        this.container.bringToTop(this.streakBarGfx);
+        this.container.bringToTop(this.streakBarLabels);
+
+        for (const run of this.streakBarRuns)
+        {
+            if (run.slots.length < 2)
+            {
+                continue;
+            }
+
+            const points = run.slots.map((slot) => this.slotCenter(slot));
+            const midIndex = (points.length - 1) / 2;
+            const midA = points[Math.floor(midIndex)]!;
+            const midB = points[Math.ceil(midIndex)]!;
+            const labelX = (midA.x + midB.x) / 2;
+            const labelY = (midA.y + midB.y) / 2 - this.layout.tileSize * 0.38;
+            const multText = `×${run.multiplier.toFixed(2).replace(/\.?0+$/, '') || run.multiplier}`;
+            const isAttack = run.behaviorId === 'attack';
+            const label = this.scene.add.text(labelX, labelY, multText, {
+                ...uiDisplayTextStyle(15, isAttack ? '#ffb8dc' : '#ffd4a0', { bold: true }),
+            }).setOrigin(0.5);
+
+            this.streakBarLabels.add(label);
+        }
+
+        this.startStreakLightning();
     }
 
     /** When true, all start-column tiles show pick hints (between attacks). */
@@ -849,6 +1215,9 @@ export class CardBoardView
             }
         }
 
+        this.streakBarDimSlots.clear();
+        this.applyStreakBarCardDim();
+        this.redrawStreakBars();
         this.bringChainStartToFront();
     }
 

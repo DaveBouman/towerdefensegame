@@ -3,6 +3,7 @@ import { ENEMY_INTENT_ICON_ENTRIES } from '../../../../ui/icons/enemyIntentIcons
 import { ENEMY_PASSIVE_ICON_ENTRIES } from '../../../../ui/icons/enemyPassiveIcons';
 import { CARD_BEHAVIOR_ICON_ENTRIES } from '../../../../ui/icons/cardBehaviorIcons';
 import { DIRECTION_ICON_ENTRIES } from '../../../../ui/icons/directionIcons';
+import { CARD_FRONT_ART_ENTRIES } from '../../../cards/cardVisuals';
 
 const loadImageTexture = (
     scene: Phaser.Scene,
@@ -42,6 +43,7 @@ const GAME_ICON_ENTRIES = [
     { textureKey: 'card-back', url: '/assets/cards/card-back.png' },
     { textureKey: 'card-back-cyber-node', url: '/assets/cards/card-back-cyber-node.png' },
     { textureKey: 'card-back-cyber-signal', url: '/assets/cards/card-back-cyber-signal.png' },
+    ...CARD_FRONT_ART_ENTRIES,
 ];
 
 /** Registers Craftpix UI icon textures for combat panels and cards. */
