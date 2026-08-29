@@ -1,15 +1,17 @@
 import type { ActivationStep } from '../domain/types';
-import { hasAttackBetween, isTrailNeutralBehavior } from './chainTrailNeutrals';
 
 const ALTERNATING_BEHAVIORS = new Set([ 'attack', 'defend' ]);
 
-/** Attack/defend steps after `fromIndex` while behaviors strictly alternate (skills are skipped). */
-export const countAlternatingAttackDefendAfter = (
+/**
+ * Indices of attack/defend steps after `fromIndex` while behaviors strictly alternate
+ * (skills are skipped). Empty when the alternation never starts.
+ */
+export const getAlternatingAttackDefendIndicesAfter = (
     chain: readonly ActivationStep[],
     fromIndex: number,
-): number =>
+): number[] =>
 {
-    let runLength = 0;
+    const indices: number[] = [];
     let expectedNext: 'attack' | 'defend' | null = null;
 
     for (let i = fromIndex + 1; i < chain.length; i++)
@@ -23,24 +25,29 @@ export const countAlternatingAttackDefendAfter = (
 
         if (expectedNext === null)
         {
-            runLength = 1;
+            indices.push(i);
             expectedNext = behaviorId === 'attack' ? 'defend' : 'attack';
             continue;
         }
 
-        if (behaviorId === expectedNext)
-        {
-            runLength += 1;
-            expectedNext = behaviorId === 'attack' ? 'defend' : 'attack';
-        }
-        else
+        if (behaviorId !== expectedNext)
         {
             break;
         }
+
+        indices.push(i);
+        expectedNext = behaviorId === 'attack' ? 'defend' : 'attack';
     }
 
-    return runLength;
+    return indices;
 };
+
+/** Attack/defend steps after `fromIndex` while behaviors strictly alternate (skills are skipped). */
+export const countAlternatingAttackDefendAfter = (
+    chain: readonly ActivationStep[],
+    fromIndex: number,
+): number =>
+    getAlternatingAttackDefendIndicesAfter(chain, fromIndex).length;
 
 export const computeFireAlternationBonus = (
     alternatingSteps: number,

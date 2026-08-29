@@ -356,6 +356,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | Add/edit enemies | `src/game/cardGame/config/enemies.json`, `enemyCatalog.ts`, `enemyPassives/`; in-fight look: `presentation/enemyIdentity.ts` + `public/assets/enemies/` |
 | Chain behavior | `src/game/cardGame/combat/AttackPipeline.ts` |
 | New card ability | `src/game/cardGame/effects/` (behaviors), `abilities/` (chain abilities: rad/fire/bleed/fortify/overload) + register in `chainAbilityRegistry.ts` |
+| Combo storm trail (visual) | Append a detector in `combat/comboTrailRegistry.ts` (Rad/Fire live there); type stacks stay in `typeStack.ts` |
 | Bomb / trap conversion | `AttackPipeline.applyBombConversion` (runs first in `resolveChainSteps`) |
 | Enemy rad status | `CardGameSession.tickPoison`/`applyPoisonStacks` (via `abilityPoisonStacks`), display in `EnemyTargetView.setPoison` |
 | Enemy turn logic | `src/game/cardGame/combat/enemyTurn.ts` |
@@ -368,6 +369,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-29 | **Combo trail registry.** Rad/Fire storm trails register in `comboTrailRegistry.ts`; append a detector there when adding a combo visual. Damage abilities stay in `abilities/`. |
 | 2026-08-29 | **Type stacks need adjacency.** Attack/Defend +15% stacks only when consecutive stackable steps share a tile (revisit) or an edge/corner — not merely sequential on the arrow path (leaps do not stack). Shared logic in `typeStack.ts`; streak storms use the same rule. |
 | 2026-08-29 | **Enemy presence idle.** Portraits bob/sway inside the frame (desynced per foe); frame and HP chrome stay planted. Pauses on hit flinch. |
 | 2026-08-29 | **Combo-trail storms.** One bolt threads through a whole run (stays in card faces). Rad storms continue into converted Defends (`RAD→2`); Fire into alternating Attack/Defend (`FIRE→n`). Attack/Defend still show type-stack `×`. |

@@ -1,13 +1,12 @@
 import type { BoardModel } from '../domain/BoardModel';
 import type { ActivationStep, SlotPosition } from '../domain/types';
-import { countAlternatingAttackDefendAfter } from '../abilities/fireAlternation';
-import { getDefendIndicesReplacedByPoison } from '../abilities/poisonReplacement';
 import {
     createChainWalkState,
     getNextChainSlotFromStep,
     planChainPathPreview,
     tryBuildActivationStep,
 } from './chainPathfinding';
+import { collectComboTrails } from './comboTrailRegistry';
 import {
     isTypeStackBehavior,
     slotsCanTypeStack,
@@ -42,9 +41,8 @@ const asBehaviorChain = (steps: readonly StreakBarStep[]): ActivationStep[] =>
     steps as unknown as ActivationStep[];
 
 /**
- * Adjacent same-type attack/defend runs (same tile or grid neighbors), plus combo trails:
- * - Rad → following Defends it converts (until an Attack)
- * - Fire → following alternating Attack/Defend that pay the fire bonus
+ * Adjacent same-type attack/defend runs (same tile or grid neighbors), plus combo trails
+ * from `comboTrailRegistry` (Rad, Fire, …).
  */
 export const findStreakBarRuns = (
     steps: readonly StreakBarStep[],
@@ -52,85 +50,19 @@ export const findStreakBarRuns = (
 ): StreakBarRun[] =>
 {
     const runs: StreakBarRun[] = [];
-    const consumed = new Set<number>();
     const chain = asBehaviorChain(steps);
+    const { hits: comboHits, consumed } = collectComboTrails(steps, chain, minLength);
 
-    for (let i = 0; i < steps.length; i++)
+    for (const hit of comboHits)
     {
-        const step = steps[i]!;
-
-        if (step.behaviorId === 'poison')
-        {
-            const defendIndices = getDefendIndicesReplacedByPoison(chain, i);
-            const indices = [ i, ...defendIndices ];
-
-            if (indices.length >= minLength)
-            {
-                indices.forEach((index) => consumed.add(index));
-                const armorCount = defendIndices.length;
-
-                runs.push({
-                    behaviorId: 'poison',
-                    slots: indices.map((index) => ({ ...steps[index]!.slot })),
-                    length: indices.length,
-                    multiplier: 1,
-                    kind: 'combo',
-                    label: armorCount > 0 ? `RAD→${armorCount}` : `RAD×${indices.length}`,
-                });
-            }
-        }
-
-        if (step.behaviorId === 'fire')
-        {
-            const alternating = countAlternatingAttackDefendAfter(chain, i);
-
-            if (alternating >= 2)
-            {
-                const indices = [ i ];
-                let expectedNext: 'attack' | 'defend' | null = null;
-                let taken = 0;
-
-                for (let j = i + 1; j < steps.length && taken < alternating; j++)
-                {
-                    const behaviorId = steps[j]!.behaviorId;
-
-                    if (behaviorId !== 'attack' && behaviorId !== 'defend')
-                    {
-                        continue;
-                    }
-
-                    if (expectedNext === null)
-                    {
-                        indices.push(j);
-                        expectedNext = behaviorId === 'attack' ? 'defend' : 'attack';
-                        taken += 1;
-                        continue;
-                    }
-
-                    if (behaviorId !== expectedNext)
-                    {
-                        break;
-                    }
-
-                    indices.push(j);
-                    expectedNext = behaviorId === 'attack' ? 'defend' : 'attack';
-                    taken += 1;
-                }
-
-                if (indices.length >= minLength)
-                {
-                    indices.forEach((index) => consumed.add(index));
-                    runs.push({
-                        behaviorId: 'fire',
-                        slots: indices.map((index) => ({ ...steps[index]!.slot })),
-                        length: indices.length,
-                        multiplier: 1,
-                        kind: 'combo',
-                        label: `FIRE→${alternating}`,
-                    });
-                }
-            }
-        }
+        runs.push({
+            behaviorId: hit.behaviorId,
+            slots: hit.indices.map((index) => ({ ...steps[index]!.slot })),
+            length: hit.indices.length,
+            multiplier: 1,
+            kind: 'combo',
+            label: hit.label,
+        });
     }
 
     let runBehavior: string | null = null;
