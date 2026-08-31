@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-08-29
+**Last updated:** 2026-08-31
 
 ---
 
@@ -73,9 +73,10 @@ Helpers: `getFloorForColumn`, `getFloorColumnRange`, `RUN_CONFIG.mapFloorCount` 
 ### First-run teaching
 
 - `localStorage` flag via `src/ui/tutorial/Tutorial.tsx`.
-- Intro overlay before the first map pick; coach strip on the first battle; off-chain tip after dismissing the coach (round 1); reward/shop tip after the first win. Dismissible; skipped once seen.
+- **Training sim wizard** (`tutorial-wizard` + `TutorialCoachOverlay.tsx`): phased lesson on the training dummy — chain start, attack chain, energy (3 per round), board reset, Fire rhythm. Spotlight + arrow coach points at each click target. No enemy counterattack.
+- After the sim: map tip overlay (route, energy, rerolls); reward/shop tip after the first real win. Dismissible; skipped once seen. Settings → replay training sim.
 
-Flow: `menu (settings)` → `map (pick node)` → `battle` → `win → reward → map` / `lose → defeat` / `boss win → victory`.
+Flow: `menu` → `training sim` → `map (pick node)` → `battle` → `win → reward → map` / `lose → defeat` / `boss win → victory`.
 Non-battle nodes: `map (pick shop)` → `visit (ShopOverlay)` → `map`; `map (pick event)` → `visit (RunEventOverlay)` → `map`.
 Victory/defeat can return to the main menu or start a fresh run immediately.
 
@@ -347,7 +348,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | Look / neon palette | Magenta + amber chrome, warm near-black, cyan as a data accent. Tokens: `public/cyberpunk-theme.css`, Phaser `src/game/config/cyberpunkTheme.ts`. Combat arena: `BattlefieldBackgroundView.ts`. Map: `MapBackgroundView.ts`. |
 | Steam avatars | `src/game/desktop/steamAvatars.ts` + `signalChainDesktop.steam`. Web: Craftpix. Packaged: runner avatar via `electron/steam.cjs`; enemies need friends IPC. |
 | Desktop shell | `electron/main.cjs`, `electron/preload.cjs`, `npm run electron:start`, `npm run dist:win` |
-| First-run teaching | `src/ui/tutorial/Tutorial.tsx` |
+| First-run teaching | `src/ui/tutorial/Tutorial.tsx`, `TutorialCoachOverlay.tsx`, `src/game/run/tutorialWizard.ts` |
 | Floor helpers / per-floor rerolls | `runMap.ts` floors; `App.tsx` `floorRerollsRemaining`; `START_BATTLE.rerollsRemaining` |
 | Run flow (phases, carry-over HP, deck, rewards) | `src/App.tsx` |
 | Change balance numbers | `src/game/cardGame/config/gameRules.json` |
@@ -370,6 +371,13 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-31 | **Mid round chain start.** Training sim adds a step after the first energy attack: move chain start to row C mid round. Coach copy uses commas instead of em dashes. |
+| 2026-08-31 | **Training sim energy round.** Board persists between attacks during the 3-energy demo; strike→energy session handoff no longer re-applies a phase that wiped the grid each attack. Fire-synergy step uses the same board + Attack rings as the strike step. |
+| 2026-08-31 | **Live tutorial anchors.** Coach spotlight rects now come from Phaser `getBounds()` on chain-start hit areas, hand container, and grid panel — layout changes update automatically. |
+| 2026-08-31 | **Coach overlay for training sim.** Tutorial wizard uses a spotlight popup with arrow pointing at the next click target (chain column, hand, Attack, energy, board). |
+| 2026-08-31 | **Expanded training sim.** First-run wizard now walks chain start → attack chain → energy (3 strikes) → board round reset → Fire synergy, with a larger step panel. |
+| 2026-08-31 | **Total reset.** Settings → Danger zone: double-confirm wipe of all local save data (collection, bestiaries, ascension, training, settings). Abandons the current run. |
+| 2026-08-31 | **First-run training sim.** New players get a guided tutorial wizard (training-dummy puzzle) before the map: place cards, set chain start, Attack. Replaces passive intro/coach overlays; map + reward tips remain after. |
 | 2026-08-30 | **Manual button-prompt mode.** Settings → Controls: Auto detect or force Steam Deck / Xbox / PS5 / PS4 / Switch / keyboard glyphs (preview row). |
 | 2026-08-30 | **Input prompt glyphs (Deck-first).** Icons for Steam Deck / Xbox / PS4 / PS5 / Switch / keyboard. Auto-detects connected pad (e.g. DualSense on Deck → PS glyphs; Steam Input Xbox virtual → Xbox glyphs); optional settings override. |
 | 2026-08-29 | **Combo trail registry.** Rad/Fire storm trails register in `comboTrailRegistry.ts`; append a detector there when adding a combo visual. Damage abilities stay in `abilities/`. |

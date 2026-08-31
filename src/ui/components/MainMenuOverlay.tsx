@@ -30,6 +30,7 @@ import { MainMenuCredits } from './mainMenu/MainMenuCredits';
 import { MainMenuHome } from './mainMenu/MainMenuHome';
 import { MainMenuHowToPlay } from './mainMenu/MainMenuHowToPlay';
 import { MainMenuSettings } from './mainMenu/MainMenuSettings';
+import { TotalResetConfirm } from './mainMenu/TotalResetConfirm';
 import { NewRunConfirm } from './mainMenu/NewRunConfirm';
 import type { MenuMode, MenuScreen } from './mainMenu/menuShared';
 
@@ -41,6 +42,7 @@ interface MainMenuOverlayProps {
     onResume?: () => void;
     onNewRun?: (seed: string) => void;
     onReplayTutorial: () => void;
+    onTotalReset: () => void;
 }
 
 export const MainMenuOverlay = ({
@@ -51,6 +53,7 @@ export const MainMenuOverlay = ({
     onResume,
     onNewRun,
     onReplayTutorial,
+    onTotalReset,
 }: MainMenuOverlayProps) =>
 {
     const pause = mode === 'pause';
@@ -67,6 +70,7 @@ export const MainMenuOverlay = ({
     const [ fullscreen, setFullscreen ] = useState(false);
     const [ textScale, setTextScaleState ] = useState<TextScaleSize>(readTextScale);
     const [ tutorialArmed, setTutorialArmed ] = useState(false);
+    const [ totalResetStep, setTotalResetStep ] = useState<1 | 2>(1);
     const desktop = isDesktopShell();
 
     useEffect(() => subscribeSfxSettings(setAudio), []);
@@ -192,6 +196,32 @@ export const MainMenuOverlay = ({
         setDraftSeed(createRandomSeed());
     };
 
+    const openTotalReset = (): void =>
+    {
+        setTotalResetStep(1);
+        openScreen('confirm-total-reset');
+    };
+
+    const cancelTotalReset = (): void =>
+    {
+        setTotalResetStep(1);
+        openScreen('settings');
+    };
+
+    const confirmTotalReset = (): void =>
+    {
+        emitRunSfx('ui-select', { volume: 0.88, rate: 0.92 });
+        onTotalReset();
+        setProgress(getCollectionProgress());
+        setBestiaryProgress(getBestiaryProgress());
+        setBodyModProgress(getBodyModBestiaryProgress());
+        setAudio(getAudioSettings());
+        setTextScaleState(readTextScale());
+        setTutorialArmed(true);
+        setTotalResetStep(1);
+        setScreen('home');
+    };
+
     const archiveOpen = showCollection || showBestiary || showBodyModBestiary;
     const openArchives = (): void => openScreen('archives');
     const backFromSubscreen = (): void =>
@@ -261,6 +291,18 @@ export const MainMenuOverlay = ({
                         />
                     )}
 
+                    {screen === 'confirm-total-reset' && (
+                        <TotalResetConfirm
+                            step={totalResetStep}
+                            onBack={totalResetStep === 2
+                                ? () => setTotalResetStep(1)
+                                : cancelTotalReset}
+                            onContinue={() => setTotalResetStep(2)}
+                            onCancel={cancelTotalReset}
+                            onConfirm={confirmTotalReset}
+                        />
+                    )}
+
                     {screen === 'settings' && (
                         <MainMenuSettings
                             pause={pause}
@@ -274,6 +316,7 @@ export const MainMenuOverlay = ({
                             onTextScaleChange={setTextScaleState}
                             onTutorialArmed={() => setTutorialArmed(true)}
                             onReplayTutorial={onReplayTutorial}
+                            onOpenTotalReset={openTotalReset}
                         />
                     )}
 

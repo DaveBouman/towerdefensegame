@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { GAME_RULES } from '../../game/cardGame/config/cardRegistry';
-import { poisonStatusName } from '../../game/copy/strings';
 
 const TUTORIAL_STORAGE_KEY = 'card-chain-has-seen-tutorial';
 
-export type TutorialStep = 'intro' | 'battle-coach' | 'reward-tip' | 'done';
+export type TutorialStep = 'wizard' | 'map-tip' | 'reward-tip' | 'done';
 
 export const hasSeenTutorial = (): boolean =>
 {
@@ -42,86 +40,26 @@ export const clearTutorialSeen = (): void =>
     }
 };
 
-/** First-run map intro: chain combat + energy in a short overlay. */
-export const TutorialIntroOverlay = ({ onDismiss }: { onDismiss: () => void }) => (
+/** After the training sim: map, energy, and rerolls in a short overlay. */
+export const TutorialMapTipOverlay = ({ onDismiss }: { onDismiss: () => void }) => (
     <div className="tutorial-overlay">
         <div className="tutorial-overlay__panel">
-            <p className="tutorial-overlay__eyebrow">First run</p>
-            <h1 className="tutorial-overlay__title">Chain the grid</h1>
+            <p className="tutorial-overlay__eyebrow">Training complete</p>
+            <h1 className="tutorial-overlay__title">Pick your route</h1>
             <p className="tutorial-overlay__body">
-                Place cards so their arrows form a path. Your starter already seeds light
-                synergies — Fire, {poisonStatusName()}, Rupture, Bulwark, Surge — so chains can combo.
-                Click a column-0 tile to set chain start, then Attack.
+                Choose a node on the map to begin your run. Battles use the same chain rules you
+                just practiced — place cards, set chain start on column 0, then Attack.
             </p>
             <p className="tutorial-overlay__body">
                 Each Attack costs 1 energy. When energy runs out, the board clears and a new round
                 begins. Hand rerolls are shared across all fights on the current floor.
             </p>
             <button type="button" className="tutorial-overlay__button" onClick={onDismiss}>
-                Got it — pick a route
+                Got it — choose a node
             </button>
         </div>
     </div>
 );
-
-/** In-fight coach strip for the first battle. */
-export const TutorialCoachStrip = ({ onDismiss }: { onDismiss: () => void }) => (
-    <aside className="tutorial-coach">
-        <h2 className="tutorial-coach__title">Combat coach</h2>
-        <ol className="tutorial-coach__steps">
-            <li>Drag cards from your hand onto the board.</li>
-            <li>Click a column-0 tile to set where the chain starts.</li>
-            <li>Try a synergy: Fire then Attack/Defend, or {poisonStatusName()} then Defends.</li>
-            <li>Click Attack — the enemy responds after each strike.</li>
-        </ol>
-        <button
-            type="button"
-            className="tutorial-coach__dismiss"
-            onClick={(event) =>
-            {
-                event.stopPropagation();
-                onDismiss();
-            }}
-        >
-            Dismiss
-        </button>
-    </aside>
-);
-
-/** First-round tip: off-chain attack/defense cards still contribute. */
-export const TutorialOffChainTipOverlay = ({ onDismiss }: { onDismiss: () => void }) =>
-{
-    const { attackDamage, defendArmor } = GAME_RULES.offChainBonus;
-
-    return (
-        <div className="tutorial-overlay tutorial-overlay--battle">
-            <div className="tutorial-overlay__panel">
-                <p className="tutorial-overlay__eyebrow">Round 1 tip</p>
-                <h1 className="tutorial-overlay__title">Loose board cards</h1>
-                <p className="tutorial-overlay__body">
-                    Cards you place on the battlefield still help when you Attack — even if they
-                    are not linked into your chain. Only <strong>attack</strong> and{' '}
-                    <strong>defense</strong> cards count this way.
-                </p>
-                <p className="tutorial-overlay__body">
-                    Each loose attack adds +{attackDamage} damage. Each loose defense adds +{defendArmor}{' '}
-                    armor. Other card types must be in the chain to take effect.
-                </p>
-                <button
-                    type="button"
-                    className="tutorial-overlay__button"
-                    onClick={(event) =>
-                    {
-                        event.stopPropagation();
-                        onDismiss();
-                    }}
-                >
-                    Got it
-                </button>
-            </div>
-        </div>
-    );
-};
 
 /** One tip after the first victory about rewards and shops. */
 export const TutorialRewardTipOverlay = ({ onDismiss }: { onDismiss: () => void }) => (
@@ -143,24 +81,19 @@ export const TutorialRewardTipOverlay = ({ onDismiss }: { onDismiss: () => void 
 /** Hook: drives first-run teaching steps until dismissed / completed. */
 export const useTutorial = (): {
     step: TutorialStep;
-    showIntro: boolean;
-    showBattleCoach: boolean;
-    showOffChainTip: boolean;
+    needsTutorialWizard: boolean;
+    showMapTip: boolean;
     showRewardTip: boolean;
-    dismissIntro: () => void;
-    dismissBattleCoach: () => void;
-    dismissOffChainTip: () => void;
+    dismissMapTip: () => void;
     dismissRewardTip: () => void;
-    onFirstBattleStart: () => void;
+    onWizardComplete: () => void;
     onFirstBattleWon: () => void;
     replayTutorial: () => void;
 } =>
 {
     const [ step, setStep ] = useState<TutorialStep>(() =>
-        (hasSeenTutorial() ? 'done' : 'intro'));
-    const [ battleCoachVisible, setBattleCoachVisible ] = useState(false);
-    const [ offChainTipVisible, setOffChainTipVisible ] = useState(false);
-    const [ offChainTipEligible, setOffChainTipEligible ] = useState(false);
+        (hasSeenTutorial() ? 'done' : 'wizard'));
+    const [ mapTipVisible, setMapTipVisible ] = useState(false);
     const [ rewardTipVisible, setRewardTipVisible ] = useState(false);
 
     useEffect(() =>
@@ -171,54 +104,25 @@ export const useTutorial = (): {
         }
     }, [ step ]);
 
-    const dismissIntro = useCallback((): void =>
+    const onWizardComplete = useCallback((): void =>
     {
-        setStep('battle-coach');
+        setStep('map-tip');
+        setMapTipVisible(true);
     }, []);
 
-    const onFirstBattleStart = useCallback((): void =>
+    const dismissMapTip = useCallback((): void =>
     {
-        setStep((prev) =>
-        {
-            if (prev === 'battle-coach' || prev === 'intro')
-            {
-                setBattleCoachVisible(true);
-                setOffChainTipEligible(true);
-
-                return 'battle-coach';
-            }
-
-            return prev;
-        });
-    }, []);
-
-    const dismissBattleCoach = useCallback((): void =>
-    {
-        setBattleCoachVisible(false);
-
-        if (offChainTipEligible)
-        {
-            setOffChainTipVisible(true);
-        }
-    }, [ offChainTipEligible ]);
-
-    const dismissOffChainTip = useCallback((): void =>
-    {
-        setOffChainTipVisible(false);
-        setOffChainTipEligible(false);
+        setMapTipVisible(false);
+        setStep('reward-tip');
     }, []);
 
     const onFirstBattleWon = useCallback((): void =>
     {
         setStep((prev) =>
         {
-            if (prev === 'battle-coach' || prev === 'reward-tip')
+            if (prev === 'reward-tip' || prev === 'map-tip')
             {
-                setBattleCoachVisible(false);
-                setOffChainTipVisible(false);
-                setOffChainTipEligible(false);
                 setRewardTipVisible(true);
-
                 return 'reward-tip';
             }
 
@@ -236,24 +140,19 @@ export const useTutorial = (): {
     const replayTutorial = useCallback((): void =>
     {
         clearTutorialSeen();
-        setBattleCoachVisible(false);
-        setOffChainTipVisible(false);
-        setOffChainTipEligible(false);
+        setMapTipVisible(false);
         setRewardTipVisible(false);
-        setStep('intro');
+        setStep('wizard');
     }, []);
 
     return {
         step,
-        showIntro: step === 'intro',
-        showBattleCoach: battleCoachVisible,
-        showOffChainTip: offChainTipVisible,
+        needsTutorialWizard: step === 'wizard',
+        showMapTip: mapTipVisible,
         showRewardTip: rewardTipVisible,
-        dismissIntro,
-        dismissBattleCoach,
-        dismissOffChainTip,
+        dismissMapTip,
         dismissRewardTip,
-        onFirstBattleStart,
+        onWizardComplete,
         onFirstBattleWon,
         replayTutorial,
     };

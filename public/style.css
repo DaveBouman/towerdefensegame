@@ -2155,9 +2155,9 @@ html, body, #root {
     overflow-y: auto;
 }
 
-/* Settings is taller — pin to the top so content can scroll instead of clipping. */
+/* Settings: wider two-column grid — avoid inner panel scroll on desktop. */
 .main-menu:has(.main-menu__panel--settings) {
-    align-items: flex-start;
+    align-items: center;
     padding-top: max(16px, env(safe-area-inset-top, 0px));
     padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 }
@@ -2166,8 +2166,7 @@ html, body, #root {
     z-index: 1100;
     pointer-events: auto;
     background: rgba(2, 4, 8, 0.55);
-    /* Tall settings: top-align so the bottom isn’t clipped under the HUD. */
-    align-items: flex-start;
+    align-items: center;
     padding-top: max(16px, env(safe-area-inset-top, 0px));
     padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 }
@@ -2204,11 +2203,19 @@ html, body, #root {
 }
 
 .main-menu__panel--settings {
-    width: min(560px, calc(100% - 32px));
-    max-height: calc(100vh - 48px);
-    max-height: calc(100dvh - 48px);
-    padding-bottom: 20px;
-    overscroll-behavior: contain;
+    width: min(720px, calc(100vw - 32px));
+    max-height: none;
+    overflow: visible;
+    padding: 24px 28px 20px;
+    overscroll-behavior: auto;
+}
+
+.main-menu__panel--settings .main-menu__screen-title {
+    margin-bottom: 10px;
+}
+
+.main-menu__panel--settings .main-menu__eyebrow {
+    margin-bottom: 4px;
 }
 
 .main-menu__eyebrow {
@@ -2271,9 +2278,87 @@ html, body, #root {
 .main-menu__settings {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    margin-bottom: 28px;
+    gap: 10px;
+    margin-bottom: 8px;
     text-align: left;
+}
+
+.main-menu__settings-span {
+    margin-bottom: 2px;
+}
+
+.main-menu__settings-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 12px;
+}
+
+.main-menu__settings-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 45, 149, 0.16);
+    background: rgba(4, 10, 18, 0.45);
+}
+
+.main-menu__settings-card--danger {
+    border-color: rgba(255, 45, 149, 0.28);
+    background: rgba(28, 8, 16, 0.35);
+}
+
+.main-menu__settings-card .main-menu__audio-panel,
+.main-menu__settings-card .main-menu__display-panel {
+    padding: 0;
+    border: none;
+    background: transparent;
+    gap: 8px;
+}
+
+.main-menu__settings-card .main-menu__secondary {
+    width: 100%;
+}
+
+.main-menu__controls-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.main-menu__controls-inline .main-menu__resolution-select {
+    flex: 1;
+    min-width: 0;
+}
+
+.main-menu__controls-inline .main-menu__prompt-preview {
+    flex-shrink: 0;
+    margin-top: 0;
+    padding: 4px 6px;
+    gap: 4px;
+}
+
+.main-menu__hint--compact {
+    margin: 2px 0 0;
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+@media (max-width: 640px) {
+    .main-menu__settings-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .main-menu:has(.main-menu__panel--settings),
+    .main-menu--pause {
+        align-items: flex-start;
+    }
+
+    .main-menu__panel--settings {
+        max-height: calc(100dvh - 32px);
+        overflow: auto;
+    }
 }
 
 .main-menu__field {
@@ -2448,6 +2533,35 @@ html, body, #root {
     line-height: 1.45;
     color: #b8c8e0;
     text-align: left;
+}
+
+.main-menu__confirm-copy--danger {
+    color: #ffc8d8;
+}
+
+.main-menu__reset-list {
+    margin: 0 0 18px;
+    padding-left: 18px;
+    font-size: calc(14px * var(--text-scale));
+    line-height: 1.45;
+    color: #a8b8d0;
+    text-align: left;
+}
+
+.main-menu__field--danger {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.main-menu__secondary--danger {
+    border-color: rgba(255, 45, 149, 0.45);
+    color: #ffd0e0;
+}
+
+.main-menu__secondary--danger:hover {
+    background: rgba(72, 18, 36, 0.55);
+    border-color: rgba(255, 120, 170, 0.65);
 }
 
 .main-menu__seed-readonly {
@@ -4883,6 +4997,296 @@ button.pile-view__card {
     color: #d8ecff;
     font-size: 12px;
     cursor: var(--cursor-pointer, pointer);
+}
+
+.tutorial-wizard {
+    position: fixed;
+    left: 16px;
+    top: 72px;
+    z-index: 300;
+    width: min(360px, calc(100vw - 32px));
+    padding: 20px 22px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 45, 149, 0.35);
+    background: rgba(12, 18, 28, 0.96);
+    color: #d8e6ff;
+    pointer-events: auto;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.tutorial-wizard--expanded {
+    width: min(420px, calc(100vw - 32px));
+    padding: 22px 24px;
+}
+
+.tutorial-wizard__progress {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 14px;
+}
+
+.tutorial-wizard__dot {
+    flex: 1;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(159, 212, 255, 0.2);
+}
+
+.tutorial-wizard__dot--active {
+    background: rgba(159, 212, 255, 0.55);
+}
+
+.tutorial-wizard__dot--current {
+    background: #ff2d95;
+}
+
+.tutorial-wizard__eyebrow {
+    margin: 0 0 8px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #9fd4ff;
+}
+
+.tutorial-wizard__title {
+    margin: 0 0 10px;
+    font-size: 20px;
+    color: #fcee0a;
+}
+
+.tutorial-wizard__body {
+    margin: 0 0 12px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #c8d8f0;
+}
+
+.tutorial-wizard__energy {
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 45, 149, 0.25);
+    background: rgba(255, 45, 149, 0.08);
+    font-size: 13px;
+    color: #ffd8ec;
+}
+
+.tutorial-wizard__energy strong {
+    color: #fcee0a;
+    font-size: 16px;
+}
+
+.tutorial-wizard__hint {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #8aa8c8;
+}
+
+.tutorial-wizard__button {
+    margin-top: 4px;
+    padding: 10px 16px;
+    border: 1px solid rgba(255, 45, 149, 0.5);
+    border-radius: 8px;
+    background: rgba(255, 45, 149, 0.12);
+    color: #ffe8f5;
+    font-size: 14px;
+    cursor: var(--cursor-pointer, pointer);
+}
+
+.tutorial-wizard__button:hover {
+    background: rgba(255, 45, 149, 0.22);
+}
+
+.tutorial-coach-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 400;
+    pointer-events: none;
+}
+
+.tutorial-coach-overlay__dim {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 12, 20, 0.82);
+    pointer-events: auto;
+}
+
+.tutorial-coach-overlay__shade {
+    position: absolute;
+    background: rgba(8, 12, 20, 0.82);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.tutorial-coach-overlay__target {
+    position: absolute;
+    border: 3px solid #fcee0a;
+    border-radius: 12px;
+    box-shadow:
+        0 0 0 2px rgba(255, 45, 149, 0.85),
+        0 0 28px rgba(252, 238, 10, 0.55),
+        inset 0 0 18px rgba(252, 238, 10, 0.12);
+    pointer-events: none;
+    z-index: 2;
+    animation: tutorial-target-pulse 1.15s ease-in-out infinite;
+}
+
+.tutorial-coach-overlay__target--secondary {
+    border-color: #5ce1e6;
+    box-shadow:
+        0 0 0 2px rgba(92, 225, 230, 0.65),
+        0 0 24px rgba(92, 225, 230, 0.45),
+        inset 0 0 14px rgba(92, 225, 230, 0.1);
+}
+
+.tutorial-coach-overlay__target-label {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 10px);
+    transform: translateX(-50%);
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(252, 238, 10, 0.65);
+    background: rgba(12, 18, 28, 0.96);
+    color: #fcee0a;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.tutorial-coach-overlay__target-label--below {
+    bottom: auto;
+    top: calc(100% + 10px);
+}
+
+@keyframes tutorial-target-pulse {
+    0%,
+    100% {
+        box-shadow:
+            0 0 0 2px rgba(255, 45, 149, 0.85),
+            0 0 22px rgba(252, 238, 10, 0.45),
+            inset 0 0 18px rgba(252, 238, 10, 0.12);
+    }
+
+    50% {
+        box-shadow:
+            0 0 0 4px rgba(255, 45, 149, 0.95),
+            0 0 36px rgba(252, 238, 10, 0.75),
+            inset 0 0 24px rgba(252, 238, 10, 0.18);
+    }
+}
+
+.tutorial-coach-overlay__bubble {
+    position: absolute;
+    z-index: 3;
+    width: min(360px, calc(100% - 32px));
+    padding: 20px 22px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 45, 149, 0.4);
+    background: rgba(12, 18, 28, 0.97);
+    color: #d8e6ff;
+    pointer-events: auto;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+}
+
+.tutorial-coach-overlay__progress {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 14px;
+}
+
+.tutorial-coach-overlay__dot {
+    flex: 1;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(159, 212, 255, 0.2);
+}
+
+.tutorial-coach-overlay__dot--active {
+    background: rgba(159, 212, 255, 0.55);
+}
+
+.tutorial-coach-overlay__dot--current {
+    background: #ff2d95;
+}
+
+.tutorial-coach-overlay__eyebrow {
+    margin: 0 0 8px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #9fd4ff;
+}
+
+.tutorial-coach-overlay__title {
+    margin: 0 0 10px;
+    font-size: 20px;
+    color: #fcee0a;
+}
+
+.tutorial-coach-overlay__body {
+    margin: 0 0 12px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #c8d8f0;
+}
+
+.tutorial-coach-overlay__energy {
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 45, 149, 0.25);
+    background: rgba(255, 45, 149, 0.08);
+    font-size: 13px;
+    color: #ffd8ec;
+}
+
+.tutorial-coach-overlay__energy strong {
+    color: #fcee0a;
+    font-size: 16px;
+}
+
+.tutorial-coach-overlay__hint {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #8aa8c8;
+}
+
+.tutorial-coach-overlay__hint--next {
+    margin-top: 8px;
+    color: #ff9fd4;
+}
+
+.tutorial-coach-overlay__button {
+    margin-top: 4px;
+    padding: 10px 16px;
+    border: 1px solid rgba(255, 45, 149, 0.5);
+    border-radius: 8px;
+    background: rgba(255, 45, 149, 0.12);
+    color: #ffe8f5;
+    font-size: 14px;
+    cursor: var(--cursor-pointer, pointer);
+}
+
+.tutorial-coach-overlay__button:hover {
+    background: rgba(255, 45, 149, 0.22);
+}
+
+.tutorial-target-anchors {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.tutorial-target-anchor {
+    position: absolute;
+    pointer-events: none;
+    visibility: hidden;
 }
 
 /* --- Run juice & tension --- */

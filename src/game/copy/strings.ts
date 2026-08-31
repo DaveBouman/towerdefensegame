@@ -193,6 +193,21 @@ const EN = {
     'settings.controller.playstation4': 'PlayStation 4',
     'settings.controller.switch': 'Switch',
     'settings.controller.keyboard': 'Keyboard & mouse',
+    'settings.reset.eyebrow': 'Danger zone',
+    'settings.reset.button': 'Reset all saved data',
+    'settings.reset.hint': 'Wipes all local saves and abandons the current run.',
+    'settings.reset.confirm1.title': 'Reset everything?',
+    'settings.reset.confirm1.body': 'This erases all local save data on this device. Your current run will also be abandoned.',
+    'settings.reset.confirm1.continue': 'Yes, continue',
+    'settings.reset.confirm2.title': 'Are you absolutely sure?',
+    'settings.reset.confirm2.body': 'There is no undo. Collection unlocks, ascension tier, training progress, and all settings will be wiped.',
+    'settings.reset.confirm2.action': 'Reset everything',
+    'settings.reset.cancel': 'Cancel',
+    'settings.reset.item.collection': 'Card collection unlocks',
+    'settings.reset.item.bestiary': 'Enemy & body mod bestiary',
+    'settings.reset.item.ascension': 'Ascension progress',
+    'settings.reset.item.tutorial': 'Training sim progress',
+    'settings.reset.item.settings': 'Audio, display, cursor, and other settings',
 } as const;
 
 export type CopyKey = keyof typeof EN;

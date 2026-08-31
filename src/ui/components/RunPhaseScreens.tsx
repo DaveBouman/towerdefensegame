@@ -13,11 +13,11 @@ import { RunEventOverlay } from './RunEventOverlay';
 import { RestOverlay } from './RestOverlay';
 import { PileViewOverlay } from './PileViewOverlay';
 import {
-    TutorialIntroOverlay,
-    TutorialCoachStrip,
-    TutorialOffChainTipOverlay,
+    TutorialMapTipOverlay,
     TutorialRewardTipOverlay,
 } from '../tutorial/Tutorial';
+import { TutorialCoachOverlay } from '../tutorial/TutorialCoachOverlay';
+import { useTutorialWizard } from '../tutorial/useTutorialWizard';
 import { RunToast } from './RunToast';
 import { BattleIntroOverlay } from './BattleIntroOverlay';
 import { GameMenuButton } from './GameMenuButton';
@@ -90,9 +90,15 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
         closePauseMenu,
         startNewRun,
         returnToMenu,
+        resetAllProgress,
         togglePauseMenu,
         combatRecapLines,
     } = props;
+
+    const tutorialWizardActive = phase === 'puzzle'
+        && tutorial.needsTutorialWizard
+        && !captureMode;
+    const tutorialWizard = useTutorialWizard(tutorialWizardActive);
 
     return (
         <>
@@ -113,6 +119,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                     ascensionLevel={ascensionLevel}
                     onStart={startRunFromMenu}
                     onReplayTutorial={tutorial.replayTutorial}
+                    onTotalReset={resetAllProgress}
                 />
             )}
             {pauseMenuOpen && phase !== 'menu' && phase !== 'victory' && phase !== 'defeat' && (
@@ -124,29 +131,30 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                     onResume={closePauseMenu}
                     onNewRun={startNewRun}
                     onReplayTutorial={tutorial.replayTutorial}
+                    onTotalReset={resetAllProgress}
                 />
             )}
             {phase === 'battle' && (
                 <>
                     <GameHud captureMode={captureMode} />
                     {!captureMode && <CombatRecapStrip lines={combatRecapLines} />}
-                    {!captureMode && tutorial.showBattleCoach && (
-                        <TutorialCoachStrip onDismiss={tutorial.dismissBattleCoach} />
-                    )}
-                    {!captureMode && tutorial.showOffChainTip && (
-                        <TutorialOffChainTipOverlay onDismiss={tutorial.dismissOffChainTip} />
-                    )}
                 </>
             )}
             {phase === 'puzzle' && (
                 <>
                     <GameHud captureMode={captureMode} />
-                    {!captureMode && <PuzzleHud />}
+                    {tutorialWizardActive && (
+                        <TutorialCoachOverlay
+                            wizard={tutorialWizard}
+                            paused={pauseMenuOpen}
+                        />
+                    )}
+                    {!captureMode && !tutorial.needsTutorialWizard && <PuzzleHud />}
                 </>
             )}
             <PileViewOverlay />
-            {phase === 'map' && tutorial.showIntro && (
-                <TutorialIntroOverlay onDismiss={tutorial.dismissIntro} />
+            {phase === 'map' && tutorial.showMapTip && (
+                <TutorialMapTipOverlay onDismiss={tutorial.dismissMapTip} />
             )}
             {tutorial.showRewardTip && (
                 <TutorialRewardTipOverlay onDismiss={tutorial.dismissRewardTip} />
@@ -157,7 +165,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
             {battleIntroKind && (
                 <BattleIntroOverlay nodeKind={battleIntroKind} onDone={finishBattleIntro} />
             )}
-            {phase === 'map' && !tutorial.showIntro && (
+            {phase === 'map' && !tutorial.showMapTip && (
                 <RunMapOverlay
                     map={map}
                     path={path}

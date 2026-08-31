@@ -118,6 +118,7 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
         <aside className={`game-hud${captureMode ? ' game-hud--capture' : ''}`}>
             <div
                 className="game-hud__energy"
+                data-tutorial-target="energy"
                 title="Energy: each Attack spends 1. After each enemy response they overclock (+attack for the rest of the fight). When empty, the board clears and energy refills."
             >
                 <span className="game-hud__energy-label">Energy</span>
@@ -222,6 +223,7 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
             )}
             <button
                 type="button"
+                data-tutorial-target="attack"
                 className={
                     needsTarget
                         ? 'game-hud__attack game-hud__attack--needs-target'

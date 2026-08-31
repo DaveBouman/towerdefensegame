@@ -10,6 +10,7 @@ import { unlockCards } from '../game/run/cardCollection';
 import { unlockBodyMods } from '../game/run/bodyModBestiary';
 import { getRunMaxHealth, getVictoryGoldBonus } from '../game/run/runResources';
 import { getRunPuzzle, rollPuzzleCardReward } from '../game/run/runPuzzles';
+import { isTutorialWizardPuzzle } from '../game/run/tutorialWizard';
 import { HOT_ROUTE_VICTORY_GOLD } from '../game/run/routeModifiers';
 import { getFloorForColumn, RUN_CONFIG, type RunMapNode } from '../game/run/runMap';
 import { emitRunSfx } from '../game/audio/emitRunSfx';
@@ -90,6 +91,8 @@ export interface BattleBridgeActions {
     setPhase: (phase: RunPhase) => void;
     setFloorRerollsRemaining: (value: number) => void;
     completeWardenVictory: () => void;
+    onTutorialWizardComplete: () => void;
+    restartTutorialWizard: () => void;
 }
 
 export const useBattleBridge = (
@@ -294,6 +297,20 @@ export const useBattleBridge = (
             damageTarget: number;
         }): void =>
         {
+            if (isTutorialWizardPuzzle(puzzleId))
+            {
+                if (success)
+                {
+                    actions.onTutorialWizardComplete();
+                    actions.setPhase('map');
+                    return;
+                }
+
+                actions.setRunToast('Not enough damage — line up your chain and try again.');
+                actions.restartTutorialWizard();
+                return;
+            }
+
             const puzzle = getRunPuzzle(puzzleId);
             const effects = (success ? puzzle.successEffects : puzzle.failureEffects)
                 .filter((effect) => effect.kind !== 'add-card');

@@ -138,6 +138,52 @@ export const handleAttackResolved = (
     deps.playerView?.setHealth(deps.session.getPlayer());
     deps.syncLowHpVignette();
 
+    if (deps.session.isTutorialWizardMode())
+    {
+        deps.session.spendEnergy();
+
+        deps.boardView.syncFromBoard(deps.session.board);
+        deps.handView?.syncHand(deps.session.getHand());
+        deps.enemySquad.syncFromSession(deps.session);
+        deps.armorView?.setArmor(deps.session.getPlayer().shield);
+        deps.syncPileViews();
+
+        const phaseId = deps.session.getTutorialPhaseId();
+        const attacksThisRound = deps.session.getAttacksThisRound();
+
+        unlockPlayerInput(deps);
+
+        EventBus.emit(GAME_EVENTS.TUTORIAL_WIZARD_ATTACK, {
+            phaseId,
+            energy: deps.session.getEnergy(),
+            maxEnergy: deps.session.getMaxEnergy(),
+            attacksThisRound,
+        });
+
+        if (deps.session.hasEnergy())
+        {
+            return;
+        }
+
+        deps.session.clearBoard();
+
+        if (phaseId === 'strike')
+        {
+            deps.session.beginTutorialEnergyRound();
+        }
+
+        deps.handView?.syncHand(deps.session.getHand());
+        deps.boardView.syncFromBoard(deps.session.board);
+        deps.emitAttackReadiness();
+
+        EventBus.emit(GAME_EVENTS.TUTORIAL_WIZARD_ENERGY_DEPLETED, {
+            phaseId,
+            attacksThisRound,
+        });
+
+        return;
+    }
+
     if (deps.session.isPuzzleMode())
     {
         deps.session.spendEnergy();

@@ -1,3 +1,4 @@
+import { Geom } from 'phaser';
 import { getGameCursors, setViewportGrabbingCursor } from '../ui/gameCursors';
 import { uiTextStyle, uiDisplayTextStyle } from '../config/uiTypography';
 import { CYBER } from '../config/cyberpunkTheme';
@@ -207,6 +208,79 @@ export class CardBoardView
     getChainStartSlot (): SlotPosition
     {
         return { ...this.chainStartSlot };
+    }
+
+    /** Live bounds for the chain-start picker on a given row (matches the clickable hit area). */
+    getChainStartIndicatorBounds (row: number): Phaser.Geom.Rectangle
+    {
+        const indicator = this.chainStartIndicators.find((entry) => entry.slot.row === row);
+
+        if (!indicator)
+        {
+            return new Geom.Rectangle();
+        }
+
+        const ringBounds = indicator.ring.getBounds();
+
+        if (ringBounds.width > 0 && ringBounds.height > 0)
+        {
+            return ringBounds;
+        }
+
+        const matrix = indicator.hitArea.getWorldTransformMatrix();
+        const width = indicator.hitArea.width;
+        const height = indicator.hitArea.height;
+
+        return new Geom.Rectangle(
+            matrix.tx - width / 2,
+            matrix.ty - height / 2,
+            width,
+            height,
+        );
+    }
+
+    /** Live bounds for the full grid panel (includes neon frame padding). */
+    getTutorialGridBounds (): Phaser.Geom.Rectangle
+    {
+        return this.container.getBounds();
+    }
+
+    /** Live bounds for one board row — the chain line where cards are placed. */
+    getChainRowBounds (row: number): Phaser.Geom.Rectangle
+    {
+        const slots = this.slotBodies[row];
+
+        if (!slots || slots.length === 0)
+        {
+            return new Geom.Rectangle();
+        }
+
+        let union: Phaser.Geom.Rectangle | null = null;
+
+        for (const slot of slots)
+        {
+            const bounds = slot.getBounds();
+
+            if (bounds.width <= 0 || bounds.height <= 0)
+            {
+                continue;
+            }
+
+            if (!union)
+            {
+                union = new Geom.Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
+                continue;
+            }
+
+            const right = Math.max(union.x + union.width, bounds.x + bounds.width);
+            const bottom = Math.max(union.y + union.height, bounds.y + bounds.height);
+            union.x = Math.min(union.x, bounds.x);
+            union.y = Math.min(union.y, bounds.y);
+            union.width = right - union.x;
+            union.height = bottom - union.y;
+        }
+
+        return union ?? new Geom.Rectangle();
     }
 
     isDragging (): boolean

@@ -1,5 +1,6 @@
 import { getGameCursors, subscribeGameCursors } from '../ui/gameCursors';
 import { readChainPathLitEnabled } from '../ui/chainPathSettings';
+import { computeLiveTutorialTargets } from '../board/tutorialLiveBounds';
 import { applyBoardLayout, computeBoardLayout, type BoardLayout } from '../board/boardLayout';
 import { BattlefieldBackgroundView } from '../board/BattlefieldBackgroundView';
 import { MapBackgroundView } from '../board/MapBackgroundView';
@@ -24,6 +25,9 @@ import { GAME_EVENTS } from '../events/gameEvents';
 import { reseed } from '../random/rng';
 import { beginSteamFaceBattle } from '../desktop/steamAvatars';
 import { getRunPuzzle } from '../run/runPuzzles';
+import { getTutorialCoachChainStartHighlightRow, isTutorialWizardPuzzle, type TutorialWizardStep } from '../run/tutorialWizard';
+import { getTutorialWizardPhaseSpec } from '../run/tutorialWizardPhases';
+import { readPersistedTutorialWizardStep } from '../../ui/tutorial/tutorialWizardSession';
 import { getAscensionEnemyHealthMultiplier } from '../run/ascension';
 import { getRouteEnemyHealthMultiplier } from '../run/routeModifiers';
 import type { PuzzleModeConfig } from '../cardGame/domain/CardGameSession';
@@ -147,11 +151,90 @@ export class Game extends Scene
         EventBus.on(GAME_EVENTS.CHAIN_PATH_LIT, this.onChainPathLit, this);
         EventBus.on(GAME_EVENTS.UI_OVERLAY_ACTIVE, this.onUiOverlayActive, this);
         EventBus.on(GAME_EVENTS.RUN_PHASE, this.onRunPhase, this);
+        EventBus.on(GAME_EVENTS.TUTORIAL_WIZARD_APPLY_PHASE, this.onTutorialWizardApplyPhase, this);
+        EventBus.on(GAME_EVENTS.TUTORIAL_WIZARD_REQUEST_LAYOUT, this.emitTutorialWizardLayout, this);
+        EventBus.on(GAME_EVENTS.TUTORIAL_WIZARD_COMPLETE, this.onTutorialWizardComplete, this);
         CardGameEventBus.on(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
         CardGameEventBus.on(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
         CardGameEventBus.on(CARD_GAME_EVENTS.COMBATANTS_CHANGED, this.onCombatantsChanged, this);
         this.scale.on('resize', this.onResize, this);
     }
+
+    private onTutorialWizardApplyPhase = ({ stepId }: { stepId: TutorialWizardStep }): void =>
+    {
+        const spec = getTutorialWizardPhaseSpec(stepId);
+
+        if (!spec || !this.session?.isTutorialWizardMode())
+        {
+            return;
+        }
+
+        this.session.applyTutorialWizardPhase(spec);
+        this.boardView?.setChainStartSlot(this.session.getChainStartSlot());
+        this.boardView?.syncFromBoard(this.session.board);
+        this.handView?.syncHand(this.session.getHand());
+        this.enemySquad?.syncFromSession(this.session);
+        this.syncPileViews();
+        this.emitAttackReadiness();
+        this.emitTutorialWizardLayout();
+    };
+
+    private emitTutorialWizardLayout = (): void =>
+    {
+        if (!this.layout
+            || !this.session?.isTutorialWizardMode()
+            || !this.boardView
+            || !this.handView)
+        {
+            return;
+        }
+
+        const coachStep = readPersistedTutorialWizardStep();
+        const chainStartHighlightRow = getTutorialCoachChainStartHighlightRow(
+            coachStep,
+            this.session.getChainStartSlot().row,
+        );
+        const chainPlacementRow = this.session.getChainStartSlot().row;
+
+        const targets = computeLiveTutorialTargets({
+            boardView: this.boardView,
+            handView: this.handView,
+            canvas: this.game.canvas,
+            canvasWidth: this.scale.width,
+            canvasHeight: this.scale.height,
+            chainStartHighlightRow,
+            chainPlacementRow,
+        });
+
+        if (targets)
+        {
+            EventBus.emit(GAME_EVENTS.TUTORIAL_WIZARD_LAYOUT, {
+                ...targets,
+                handDragging: this.handView.isDragging(),
+            });
+        }
+    };
+
+    private onTutorialWizardComplete = (): void =>
+    {
+        if (!this.battleActive || !this.session?.isTutorialWizardMode())
+        {
+            return;
+        }
+
+        const puzzleId = this.activePuzzleId ?? 'tutorial-wizard';
+
+        this.time.delayedCall(600, () =>
+        {
+            this.endBattle();
+            EventBus.emit(GAME_EVENTS.PUZZLE_RESOLVED, {
+                puzzleId,
+                success: true,
+                damageDealt: 0,
+                damageTarget: 0,
+            });
+        });
+    };
 
     private onRunPhase = ({ phase }: { phase: string }): void =>
     {
@@ -360,10 +443,17 @@ export class Game extends Scene
     ): void
     {
         const puzzle = getRunPuzzle(puzzleId);
-        const puzzleMode: PuzzleModeConfig = {
-            handCards: puzzle.cards,
-            damageTarget: puzzle.damageTarget,
-        };
+        const puzzleMode: PuzzleModeConfig = isTutorialWizardPuzzle(puzzleId)
+            ? {
+                handCards: [],
+                damageTarget: 1,
+                tutorialWizard: true,
+                maxEnergy: 0,
+            }
+            : {
+                handCards: puzzle.cards,
+                damageTarget: puzzle.damageTarget,
+            };
 
         this.activePuzzleId = puzzleId;
         this.startBattle('training-dummy', startHealth, [], seed, bodyMods, puzzleMode, runAttackCount, 0);
@@ -373,7 +463,7 @@ export class Game extends Scene
             title: puzzle.title,
             hint: puzzle.hint,
             damageTarget: puzzle.damageTarget,
-            cardCount: puzzle.cards.length,
+            cardCount: isTutorialWizardPuzzle(puzzleId) ? 0 : puzzle.cards.length,
             isPuzzle: true,
         });
     }
@@ -443,6 +533,10 @@ export class Game extends Scene
             {
                 this.handView?.syncHand(this.session!.getHand());
             },
+            onDragStateChange: () =>
+            {
+                this.emitTutorialWizardLayout();
+            },
         }, () => !(this.boardView?.isDragging() ?? false) && !this.rerollModeActive, (selectedCount) =>
         {
             this.emitRerollState(selectedCount);
@@ -469,6 +563,7 @@ export class Game extends Scene
 
                 this.boardView?.setChainStartSlot(slot);
                 this.emitAttackReadiness();
+                this.emitTutorialWizardLayout();
             },
         });
 
@@ -531,6 +626,7 @@ export class Game extends Scene
         this.syncLowHpVignette();
         this.emitAttackReadiness();
         this.emitRerollState();
+        this.emitTutorialWizardLayout();
     }
 
     private ensureLowHpVignette (): void
@@ -602,6 +698,7 @@ export class Game extends Scene
         this.syncBattleModifierLayout();
         this.battleModifierView?.reposition(this.layout, this.session?.getCombatants().length ?? 1);
         this.mapBackground?.resize(gameSize.width, gameSize.height);
+        this.emitTutorialWizardLayout();
     };
 
     private endBattle (): void
@@ -712,6 +809,9 @@ export class Game extends Scene
         EventBus.off(GAME_EVENTS.CHAIN_PATH_LIT, this.onChainPathLit, this);
         EventBus.off(GAME_EVENTS.UI_OVERLAY_ACTIVE, this.onUiOverlayActive, this);
         EventBus.off(GAME_EVENTS.RUN_PHASE, this.onRunPhase, this);
+        EventBus.off(GAME_EVENTS.TUTORIAL_WIZARD_APPLY_PHASE, this.onTutorialWizardApplyPhase, this);
+        EventBus.off(GAME_EVENTS.TUTORIAL_WIZARD_REQUEST_LAYOUT, this.emitTutorialWizardLayout, this);
+        EventBus.off(GAME_EVENTS.TUTORIAL_WIZARD_COMPLETE, this.onTutorialWizardComplete, this);
         CardGameEventBus.off(CARD_GAME_EVENTS.PILES_CHANGED, this.onPilesChanged, this);
         CardGameEventBus.off(CARD_GAME_EVENTS.REROLLS_CHANGED, this.onRerollsChanged, this);
         CardGameEventBus.off(CARD_GAME_EVENTS.COMBATANTS_CHANGED, this.onCombatantsChanged, this);

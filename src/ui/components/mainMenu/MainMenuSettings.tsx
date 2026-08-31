@@ -67,6 +67,7 @@ interface MainMenuSettingsProps {
     onTextScaleChange: (size: TextScaleSize) => void;
     onTutorialArmed: () => void;
     onReplayTutorial: () => void;
+    onOpenTotalReset: () => void;
 }
 
 export const MainMenuSettings = ({
@@ -81,6 +82,7 @@ export const MainMenuSettings = ({
     onTextScaleChange,
     onTutorialArmed,
     onReplayTutorial,
+    onOpenTotalReset,
 }: MainMenuSettingsProps) =>
 {
     const desktop = isDesktopShell();
@@ -187,222 +189,238 @@ export const MainMenuSettings = ({
 
             <div className="main-menu__settings">
                 {pause && (
-                    <div className="main-menu__field">
+                    <div className="main-menu__field main-menu__settings-span">
                         <span className="main-menu__field-label">Current seed</span>
                         <p className="main-menu__seed-readonly" aria-label="Current run seed">
                             {seed}
                         </p>
-                        <p className="main-menu__hint">
+                        <p className="main-menu__hint main-menu__hint--compact">
                             To play a different seed, use New run.
                         </p>
                     </div>
                 )}
 
-                <div className="main-menu__field">
-                    <span className="main-menu__field-label">Audio</span>
-                    <div className="main-menu__audio-panel">
-                        <button
-                            type="button"
-                            className={`main-menu__mute${audio.muted ? ' main-menu__mute--on' : ''}`}
-                            aria-pressed={audio.muted}
-                            onClick={() =>
-                            {
-                                emitRunSfx('ui-click', { volume: 0.7 });
-                                setSfxMuted(!audio.muted);
-                            }}
-                        >
-                            {audio.muted ? 'Muted' : 'Audio on'}
-                        </button>
-                        <VolumeRow
-                            label="Master"
-                            value={audio.masterVolume}
-                            disabled={audio.muted}
-                            onChange={setMasterVolume}
-                        />
-                        <VolumeRow
-                            label="Music"
-                            value={audio.musicVolume}
-                            disabled={audio.muted}
-                            onChange={setMusicVolume}
-                        />
-                        <VolumeRow
-                            label="SFX"
-                            value={audio.sfxVolume}
-                            disabled={audio.muted}
-                            onChange={setSfxVolume}
-                        />
-                    </div>
-                </div>
+                <div className="main-menu__settings-grid">
+                    <section className="main-menu__settings-card" aria-labelledby="settings-audio">
+                        <span className="main-menu__field-label" id="settings-audio">Audio</span>
+                        <div className="main-menu__audio-panel">
+                            <button
+                                type="button"
+                                className={`main-menu__mute${audio.muted ? ' main-menu__mute--on' : ''}`}
+                                aria-pressed={audio.muted}
+                                onClick={() =>
+                                {
+                                    emitRunSfx('ui-click', { volume: 0.7 });
+                                    setSfxMuted(!audio.muted);
+                                }}
+                            >
+                                {audio.muted ? 'Muted' : 'Audio on'}
+                            </button>
+                            <VolumeRow
+                                label="Master"
+                                value={audio.masterVolume}
+                                disabled={audio.muted}
+                                onChange={setMasterVolume}
+                            />
+                            <VolumeRow
+                                label="Music"
+                                value={audio.musicVolume}
+                                disabled={audio.muted}
+                                onChange={setMusicVolume}
+                            />
+                            <VolumeRow
+                                label="SFX"
+                                value={audio.sfxVolume}
+                                disabled={audio.muted}
+                                onChange={setSfxVolume}
+                            />
+                        </div>
+                    </section>
 
-                <div className="main-menu__field">
-                    <span className="main-menu__field-label">Controls</span>
-                    <div className="main-menu__display-panel">
-                        <span className="main-menu__sublabel">{t('settings.controller.label')}</span>
-                        <select
-                            className="main-menu__resolution-select"
-                            aria-label={t('settings.controller.label')}
-                            value={promptChoice}
-                            onChange={(event) =>
-                            {
-                                choosePromptDevice(event.target.value as PromptDeviceChoice);
-                            }}
-                        >
-                            <option value="auto">{t('settings.controller.auto')}</option>
-                            {listInputPromptDevices().map((device) => (
-                                <option key={device} value={device}>
-                                    {t(PROMPT_DEVICE_LABEL_KEY[device])}
-                                </option>
-                            ))}
-                        </select>
-                        <div className="main-menu__prompt-preview" aria-hidden="true">
-                            <InputPromptIcon button="confirm" device={previewDevice} size={32} />
-                            <InputPromptIcon button="cancel" device={previewDevice} size={32} />
-                            <InputPromptIcon button="west" device={previewDevice} size={32} />
-                            <InputPromptIcon button="north" device={previewDevice} size={32} />
-                            <InputPromptIcon button="lb" device={previewDevice} size={32} />
-                            <InputPromptIcon button="rb" device={previewDevice} size={32} />
+                    <section className="main-menu__settings-card" aria-labelledby="settings-display">
+                        <span className="main-menu__field-label" id="settings-display">Display</span>
+                        <div className="main-menu__display-panel">
+                            <span className="main-menu__sublabel">Text size</span>
+                            <div
+                                className="main-menu__size-row"
+                                role="radiogroup"
+                                aria-label="Text size"
+                            >
+                                {TEXT_SCALE_SIZES.map((size) => (
+                                    <button
+                                        key={size}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={textScale === size}
+                                        className={`main-menu__size-option${textScale === size ? ' main-menu__size-option--active' : ''}`}
+                                        onClick={() => chooseTextScale(size)}
+                                    >
+                                        {size === 'small' ? 'Small' : size === 'medium' ? 'Medium' : 'Large'}
+                                    </button>
+                                ))}
+                            </div>
+                            <span className="main-menu__sublabel">{t('settings.cursor.label')}</span>
+                            <div
+                                className="main-menu__cursor-row"
+                                role="radiogroup"
+                                aria-label={t('settings.cursor.label')}
+                            >
+                                {CURSOR_COLORS.map((color) => (
+                                    <button
+                                        key={color}
+                                        type="button"
+                                        role="radio"
+                                        aria-checked={cursorColor === color}
+                                        className={[
+                                            'main-menu__cursor-option',
+                                            `main-menu__cursor-option--${color}`,
+                                            cursorColor === color ? 'main-menu__cursor-option--active' : '',
+                                        ].filter(Boolean).join(' ')}
+                                        onClick={() => chooseCursorColor(color)}
+                                    >
+                                        <span className="main-menu__cursor-swatch" aria-hidden="true" />
+                                        {CURSOR_COLOR_LABELS[color]}
+                                    </button>
+                                ))}
+                            </div>
+                            <button
+                                type="button"
+                                className={`main-menu__toggle${fullscreen ? ' main-menu__toggle--on' : ''}`}
+                                aria-pressed={fullscreen}
+                                onClick={() =>
+                                {
+                                    emitRunSfx('ui-click', { volume: 0.68 });
+                                    void setGameFullscreen(!fullscreen).then(onFullscreenChange);
+                                }}
+                            >
+                                {fullscreen ? 'Fullscreen on' : 'Fullscreen off'}
+                            </button>
+                            {desktop && (
+                                <>
+                                    <span className="main-menu__sublabel">{t('settings.resolution.label')}</span>
+                                    <select
+                                        className="main-menu__resolution-select"
+                                        aria-label={t('settings.resolution.label')}
+                                        value={displayPreset}
+                                        disabled={fullscreen}
+                                        onChange={(event) =>
+                                        {
+                                            chooseDisplayPreset(event.target.value as DisplayPresetId);
+                                        }}
+                                    >
+                                        {selectablePresets.map((preset) => (
+                                            <option key={preset.id} value={preset.id}>
+                                                {formatPresetLabel(preset)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="main-menu__hint main-menu__hint--compact">
+                                        {fullscreen
+                                            ? t('settings.resolution.fullscreenHint')
+                                            : t('settings.resolution.windowHint')}
+                                    </p>
+                                </>
+                            )}
                         </div>
-                        <p className="main-menu__hint">{t('settings.controller.hint')}</p>
-                    </div>
-                </div>
+                    </section>
 
-                <div className="main-menu__field">
-                    <span className="main-menu__field-label">Display</span>
-                    <div className="main-menu__display-panel">
-                        <span className="main-menu__sublabel">Text size</span>
-                        <div
-                            className="main-menu__size-row"
-                            role="radiogroup"
-                            aria-label="Text size"
-                        >
-                            {TEXT_SCALE_SIZES.map((size) => (
-                                <button
-                                    key={size}
-                                    type="button"
-                                    role="radio"
-                                    aria-checked={textScale === size}
-                                    className={`main-menu__size-option${textScale === size ? ' main-menu__size-option--active' : ''}`}
-                                    onClick={() => chooseTextScale(size)}
-                                >
-                                    {size === 'small' ? 'Small' : size === 'medium' ? 'Medium' : 'Large'}
-                                </button>
-                            ))}
-                        </div>
-                        <span className="main-menu__sublabel">{t('settings.cursor.label')}</span>
-                        <div
-                            className="main-menu__cursor-row"
-                            role="radiogroup"
-                            aria-label={t('settings.cursor.label')}
-                        >
-                            {CURSOR_COLORS.map((color) => (
-                                <button
-                                    key={color}
-                                    type="button"
-                                    role="radio"
-                                    aria-checked={cursorColor === color}
-                                    className={[
-                                        'main-menu__cursor-option',
-                                        `main-menu__cursor-option--${color}`,
-                                        cursorColor === color ? 'main-menu__cursor-option--active' : '',
-                                    ].filter(Boolean).join(' ')}
-                                    onClick={() => chooseCursorColor(color)}
-                                >
-                                    <span className="main-menu__cursor-swatch" aria-hidden="true" />
-                                    {CURSOR_COLOR_LABELS[color]}
-                                </button>
-                            ))}
-                        </div>
-                        <p className="main-menu__hint">{t('settings.cursor.hint')}</p>
-                        <button
-                            type="button"
-                            className={`main-menu__toggle${fullscreen ? ' main-menu__toggle--on' : ''}`}
-                            aria-pressed={fullscreen}
-                            onClick={() =>
-                            {
-                                emitRunSfx('ui-click', { volume: 0.68 });
-                                void setGameFullscreen(!fullscreen).then(onFullscreenChange);
-                            }}
-                        >
-                            {fullscreen ? 'Fullscreen on' : 'Fullscreen off'}
-                        </button>
-                        {desktop && (
-                            <>
-                                <span className="main-menu__sublabel">{t('settings.resolution.label')}</span>
+                    <section className="main-menu__settings-card" aria-labelledby="settings-controls">
+                        <span className="main-menu__field-label" id="settings-controls">Controls</span>
+                        <div className="main-menu__display-panel">
+                            <div className="main-menu__controls-inline">
                                 <select
                                     className="main-menu__resolution-select"
-                                    aria-label={t('settings.resolution.label')}
-                                    value={displayPreset}
-                                    disabled={fullscreen}
+                                    aria-label={t('settings.controller.label')}
+                                    title={t('settings.controller.hint')}
+                                    value={promptChoice}
                                     onChange={(event) =>
                                     {
-                                        chooseDisplayPreset(event.target.value as DisplayPresetId);
+                                        choosePromptDevice(event.target.value as PromptDeviceChoice);
                                     }}
                                 >
-                                    {selectablePresets.map((preset) => (
-                                        <option key={preset.id} value={preset.id}>
-                                            {formatPresetLabel(preset)}
+                                    <option value="auto">{t('settings.controller.auto')}</option>
+                                    {listInputPromptDevices().map((device) => (
+                                        <option key={device} value={device}>
+                                            {t(PROMPT_DEVICE_LABEL_KEY[device])}
                                         </option>
                                     ))}
                                 </select>
-                                <p className="main-menu__hint">
-                                    {fullscreen
-                                        ? t('settings.resolution.fullscreenHint')
-                                        : t('settings.resolution.windowHint')}
-                                </p>
-                            </>
-                        )}
-                    </div>
-                </div>
+                                <div className="main-menu__prompt-preview" aria-hidden="true">
+                                    <InputPromptIcon button="confirm" device={previewDevice} size={24} />
+                                    <InputPromptIcon button="cancel" device={previewDevice} size={24} />
+                                    <InputPromptIcon button="west" device={previewDevice} size={24} />
+                                    <InputPromptIcon button="north" device={previewDevice} size={24} />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
 
-                <div className="main-menu__field">
-                    <span className="main-menu__field-label">Steam</span>
-                    <div className="main-menu__display-panel">
+                    <section className="main-menu__settings-card" aria-labelledby="settings-steam">
+                        <span className="main-menu__field-label" id="settings-steam">Steam</span>
+                        <div className="main-menu__display-panel">
+                            <button
+                                type="button"
+                                className={`main-menu__toggle${steamFaces ? ' main-menu__toggle--on' : ''}`}
+                                aria-pressed={steamFaces}
+                                disabled={!steamReady}
+                                onClick={() =>
+                                {
+                                    if (!steamReady)
+                                    {
+                                        return;
+                                    }
+
+                                    emitRunSfx('ui-click', { volume: 0.68 });
+                                    const next = !steamFaces;
+
+                                    writeSteamFacesEnabled(next);
+                                    setSteamFaces(next);
+                                }}
+                            >
+                                {steamFaces ? t('settings.steam.on') : t('settings.steam.off')}
+                            </button>
+                            <p className="main-menu__hint main-menu__hint--compact">
+                                {steamReady ? t('settings.steam.hint') : t('settings.steam.unavailable')}
+                            </p>
+                        </div>
+                    </section>
+
+                    <section className="main-menu__settings-card" aria-labelledby="settings-teaching">
+                        <span className="main-menu__field-label" id="settings-teaching">Teaching</span>
                         <button
                             type="button"
-                            className={`main-menu__toggle${steamFaces ? ' main-menu__toggle--on' : ''}`}
-                            aria-pressed={steamFaces}
-                            disabled={!steamReady}
+                            className="main-menu__secondary"
                             onClick={() =>
                             {
-                                if (!steamReady)
-                                {
-                                    return;
-                                }
-
-                                emitRunSfx('ui-click', { volume: 0.68 });
-                                const next = !steamFaces;
-
-                                writeSteamFacesEnabled(next);
-                                setSteamFaces(next);
+                                emitRunSfx('ui-select', { volume: 0.72 });
+                                onReplayTutorial();
+                                onTutorialArmed();
                             }}
                         >
-                            {steamFaces ? t('settings.steam.on') : t('settings.steam.off')}
+                            Replay training sim
                         </button>
-                        <p className="main-menu__hint">
-                            {steamReady ? t('settings.steam.hint') : t('settings.steam.unavailable')}
-                        </p>
-                    </div>
-                </div>
+                        {tutorialArmed && (
+                            <p className="main-menu__hint main-menu__hint--compact">
+                                Tips show again on your next run.
+                            </p>
+                        )}
+                    </section>
 
-                <div className="main-menu__field">
-                    <span className="main-menu__field-label">Teaching</span>
-                    <button
-                        type="button"
-                        className="main-menu__secondary"
-                        onClick={() =>
-                        {
-                            emitRunSfx('ui-select', { volume: 0.72 });
-                            onReplayTutorial();
-                            onTutorialArmed();
-                        }}
-                    >
-                        Replay first-run tips
-                    </button>
-                    {tutorialArmed && (
-                        <p className="main-menu__hint">
-                            Tips will show again when you start the next run.
-                        </p>
-                    )}
+                    <section className="main-menu__settings-card main-menu__settings-card--danger" aria-labelledby="settings-reset">
+                        <span className="main-menu__field-label" id="settings-reset">{t('settings.reset.eyebrow')}</span>
+                        <button
+                            type="button"
+                            className="main-menu__secondary main-menu__secondary--danger"
+                            onClick={() =>
+                            {
+                                emitRunSfx('ui-click', { volume: 0.68, rate: 0.94 });
+                                onOpenTotalReset();
+                            }}
+                        >
+                            {t('settings.reset.button')}
+                        </button>
+                        <p className="main-menu__hint main-menu__hint--compact">{t('settings.reset.hint')}</p>
+                    </section>
                 </div>
             </div>
         </>

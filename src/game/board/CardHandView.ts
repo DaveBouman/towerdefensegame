@@ -1,3 +1,4 @@
+import { Geom } from 'phaser';
 import { setViewportGrabbingCursor } from '../ui/gameCursors';
 import type { CardInstance } from '../cardGame/domain/types';
 import { getCardDefinitionOrThrow, isCardNonRerollable, isCardUnplayable } from '../cardGame/config/cardRegistry';
@@ -15,6 +16,8 @@ export interface CardHandDragHandlers {
     onDragEnd: (handIndex: number, worldX: number, worldY: number) => boolean;
     /** Called after a successful board placement so the hand can refresh immediately. */
     onPlaced?: () => void;
+    /** Called when the player starts or stops dragging a hand card. */
+    onDragStateChange?: (dragging: boolean) => void;
 }
 
 const HAND_FAN_SPREAD = 0.055;
@@ -96,6 +99,49 @@ export class CardHandView
         const bounds = this.container.getBounds();
 
         return bounds.contains(worldX, worldY);
+    }
+
+    /** Live bounds for the hand dock + cards (moves with layout and deal animations). */
+    getTutorialHandBounds (): Phaser.Geom.Rectangle
+    {
+        const containerBounds = this.container.getBounds();
+
+        if (containerBounds.width > 12 && containerBounds.height > 12)
+        {
+            return containerBounds;
+        }
+
+        let union: Phaser.Geom.Rectangle | null = null;
+
+        for (const slot of this.slotContainers)
+        {
+            const slotBounds = slot.getBounds();
+
+            if (slotBounds.width <= 0 || slotBounds.height <= 0)
+            {
+                continue;
+            }
+
+            if (!union)
+            {
+                union = new Geom.Rectangle(
+                    slotBounds.x,
+                    slotBounds.y,
+                    slotBounds.width,
+                    slotBounds.height,
+                );
+                continue;
+            }
+
+            const right = Math.max(union.x + union.width, slotBounds.x + slotBounds.width);
+            const bottom = Math.max(union.y + union.height, slotBounds.y + slotBounds.height);
+            union.x = Math.min(union.x, slotBounds.x);
+            union.y = Math.min(union.y, slotBounds.y);
+            union.width = right - union.x;
+            union.height = bottom - union.y;
+        }
+
+        return union ?? containerBounds;
     }
 
     isDragging (): boolean
@@ -365,6 +411,7 @@ export class CardHandView
         this.scene.input.on('pointerup', this.onPointerUp);
         this.scene.input.on('pointerupoutside', this.onPointerUp);
         setViewportGrabbingCursor(true);
+        this.handlers.onDragStateChange?.(true);
     }
 
     private readonly onPointerMove = (pointer: Phaser.Input.Pointer): void =>
@@ -416,6 +463,7 @@ export class CardHandView
         this.dragProxy = undefined;
         this.draggingIndex = null;
         setViewportGrabbingCursor(false);
+        this.handlers.onDragStateChange?.(false);
 
         if (index !== null)
         {

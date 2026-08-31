@@ -3,6 +3,11 @@ import type { CardDirection } from '../cardGame/domain/cardDirections';
 import type { RunEventEffect } from './runEventTypes';
 import { rollCardReward } from './rewards';
 import { RUN_ECONOMY } from './config/runEconomy';
+import {
+    TUTORIAL_WIZARD_HINT,
+    TUTORIAL_WIZARD_PUZZLE_ID,
+    TUTORIAL_WIZARD_STEPS,
+} from './tutorialWizard';
 
 export interface PuzzleCardSpec {
     definitionId: string;
@@ -133,6 +138,16 @@ export const RUN_PUZZLES: Record<string, RunPuzzleDefinition> = {
         failureEffects: [
             { kind: 'damage', amount: pz.ruptureBleed.failDamage },
         ],
+    },
+    [TUTORIAL_WIZARD_PUZZLE_ID]: {
+        id: TUTORIAL_WIZARD_PUZZLE_ID,
+        title: 'Training Sim',
+        intro: TUTORIAL_WIZARD_STEPS['welcome'].body,
+        hint: TUTORIAL_WIZARD_HINT,
+        cards: [],
+        damageTarget: 1,
+        successEffects: [],
+        failureEffects: [],
     },
 };
 

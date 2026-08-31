@@ -22,7 +22,7 @@ export interface EnergyRoundHost
 export class EnergyRoundController
 {
     private energy: number;
-    private readonly maxEnergy: number;
+    private maxEnergy: number;
 
     constructor (
         private readonly host: EnergyRoundHost,
@@ -31,6 +31,12 @@ export class EnergyRoundController
     {
         this.maxEnergy = maxEnergy;
         this.energy = maxEnergy;
+    }
+
+    setMaxEnergy (maxEnergy: number): void
+    {
+        this.maxEnergy = Math.max(0, maxEnergy);
+        this.energy = Math.min(this.energy, this.maxEnergy);
     }
 
     getEnergy (): number

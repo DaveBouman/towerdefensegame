@@ -25,6 +25,7 @@ import { unlockBodyMods } from '../game/run/bodyModBestiary';
 import { unlockEnemies } from '../game/run/enemyBestiary';
 import { upgradeFirstCardInDeck } from '../game/run/cardUpgrades';
 import { readRunAscensionLevel, recordAscensionClear } from '../game/run/ascension';
+import { resetAllSavedData } from '../game/meta/resetAllSavedData';
 import { createEmptyRunStats, type RunStats } from '../game/run/runStats';
 import { scoreDeckArchetypes } from '../game/run/deckArchetypes';
 import { getCardSynergyHint } from '../game/run/rewards';
@@ -42,6 +43,7 @@ import {
 } from '../game/run/runMap';
 import { resolveSignalVisit } from '../game/run/signalEncounter';
 import { useTutorial } from '../ui/tutorial/Tutorial';
+import { TUTORIAL_WIZARD_PUZZLE_ID } from '../game/run/tutorialWizard';
 import {
     buildMapForSeed,
     rollRewardForNode,
@@ -156,11 +158,9 @@ export const useRunController = () =>
     useEffect(() =>
     {
         EventBus.emit(GAME_EVENTS.UI_OVERLAY_ACTIVE, {
-            blockPileInspection: pauseMenuOpen
-                || (phase === 'battle'
-                    && (tutorial.showBattleCoach || tutorial.showOffChainTip)),
+            blockPileInspection: pauseMenuOpen || tutorial.showMapTip || tutorial.showRewardTip,
         });
-    }, [ phase, pauseMenuOpen, tutorial.showBattleCoach, tutorial.showOffChainTip ]);
+    }, [ pauseMenuOpen, tutorial.showMapTip, tutorial.showRewardTip ]);
 
     useEffect(() =>
     {
@@ -228,6 +228,24 @@ export const useRunController = () =>
         return floorRerollsRef.current;
     }, []);
 
+    const onTutorialWizardComplete = useCallback((): void =>
+    {
+        tutorial.onWizardComplete();
+    }, [ tutorial ]);
+
+    const restartTutorialWizard = useCallback((): void =>
+    {
+        const payload = {
+            puzzleId: TUTORIAL_WIZARD_PUZZLE_ID,
+            startHealth: playerHealthRef.current,
+            seed: deriveSeed(seedRef.current, 'tutorial-wizard-retry'),
+            bodyMods: [] as string[],
+            runAttackCount: 0,
+        };
+
+        EventBus.emit(GAME_EVENTS.START_PUZZLE, payload);
+    }, []);
+
     useBattleBridge(
         {
             seed: seedRef,
@@ -265,6 +283,8 @@ export const useRunController = () =>
             setPhase,
             setFloorRerollsRemaining,
             completeWardenVictory,
+            onTutorialWizardComplete,
+            restartTutorialWizard,
         },
     );
 
@@ -294,7 +314,6 @@ export const useRunController = () =>
     {
         selectedNodeRef.current = node;
         setActiveBattleKind(node.kind);
-        tutorial.onFirstBattleStart();
         unlockEnemies(battleEnemyIds);
         const payload = {
             enemyId: battleEnemyIds[0],
@@ -758,6 +777,15 @@ export const useRunController = () =>
         resetRun(createRandomSeed(), 'menu');
     }, [ resetRun ]);
 
+    const resetAllProgress = useCallback((): void =>
+    {
+        resetAllSavedData();
+        setAscensionLevel(readRunAscensionLevel());
+        tutorial.replayTutorial();
+        setPauseMenuOpen(false);
+        resetRun(createRandomSeed(), 'menu');
+    }, [ resetRun, tutorial ]);
+
     const closePauseMenu = useCallback((): void =>
     {
         setPauseMenuOpen(false);
@@ -770,8 +798,33 @@ export const useRunController = () =>
 
     const startRunFromMenu = useCallback((nextSeed: string): void =>
     {
-        resetRun(normalizeSeed(nextSeed), 'map');
-    }, [ resetRun ]);
+        const normalized = normalizeSeed(nextSeed);
+
+        if (!tutorial.needsTutorialWizard)
+        {
+            resetRun(normalized, 'map');
+            return;
+        }
+
+        resetRun(normalized, 'puzzle');
+
+        const payload = {
+            puzzleId: TUTORIAL_WIZARD_PUZZLE_ID,
+            startHealth: MAX_HEALTH,
+            seed: deriveSeed(normalized, 'tutorial-wizard'),
+            bodyMods: [] as string[],
+            runAttackCount: 0,
+        };
+
+        if (sceneReadyRef.current)
+        {
+            EventBus.emit(GAME_EVENTS.START_PUZZLE, payload);
+        }
+        else
+        {
+            pendingPuzzleRef.current = payload;
+        }
+    }, [ resetRun, tutorial.needsTutorialWizard ]);
 
     const currentNodeId = path.length > 0 ? path[path.length - 1]! : null;
     const availableIds = useMemo(
@@ -873,6 +926,7 @@ export const useRunController = () =>
         closePauseMenu,
         startNewRun,
         returnToMenu,
+        resetAllProgress,
         togglePauseMenu,
         combatRecapLines,
         lowHealth,

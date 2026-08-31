@@ -1,6 +1,7 @@
 import { BODY_MOD_IDS } from '../../run/bodyMods';
 import type { RunDeckCard } from '../../run/runDeck';
 import { getBattleEnergyBonus, getRunMaxHealth } from '../../run/runResources';
+import { getTutorialWizardPhaseSpec } from '../../run/tutorialWizardPhases';
 import { EnemyOverclockTracker, getEnemyDamageRamp as computeEnemyDamageRamp } from './enemyOverclock';
 import { GRID_CONFIG } from '../../config/gridConfig';
 import {
@@ -82,6 +83,9 @@ export interface PuzzleModeConfig {
     }[];
     chainStart?: SlotPosition;
     damageTarget: number;
+    /** Guided first-run tutorial — multi-attack, no enemy counter, phased hands. */
+    tutorialWizard?: boolean;
+    maxEnergy?: number;
 }
 
 export class CardGameSession
@@ -103,6 +107,7 @@ export class CardGameSession
     private playerThorns = 0;
     private readonly puzzleMode: PuzzleModeConfig | null;
     private puzzleFinished = false;
+    private tutorialPhaseId: import('../../run/tutorialWizard').TutorialWizardStep | null = null;
     private readonly bodyMods: readonly string[];
     private readonly latchSlots: LatchSlots = {};
     private chainStart: SlotPosition = {
@@ -210,9 +215,11 @@ export class CardGameSession
         }
 
         const bonusEnergy = getBattleEnergyBonus(bodyMods);
-        const maxEnergy = puzzleMode
-            ? 1
-            : Math.max(1, Math.round(GAME_RULES.energyPerTurn) + bonusEnergy);
+        const maxEnergy = puzzleMode?.tutorialWizard
+            ? Math.max(0, puzzleMode.maxEnergy ?? GAME_RULES.energyPerTurn)
+            : puzzleMode
+                ? 1
+                : Math.max(1, Math.round(GAME_RULES.energyPerTurn) + bonusEnergy);
         this.energyRound = new EnergyRoundController({
             isPlayerDefeated: () => this.isPlayerDefeated(),
             isEnemyDefeated: () => this.isEnemyDefeated(),
@@ -715,6 +722,108 @@ export class CardGameSession
     isPuzzleMode (): boolean
     {
         return this.puzzleMode !== null;
+    }
+
+    isTutorialWizardMode (): boolean
+    {
+        return this.puzzleMode?.tutorialWizard === true;
+    }
+
+    getTutorialPhaseId (): import('../../run/tutorialWizard').TutorialWizardStep | null
+    {
+        return this.tutorialPhaseId;
+    }
+
+    applyTutorialWizardPhase (
+        spec: import('../../run/tutorialWizardPhases').TutorialWizardPhaseSpec,
+    ): void
+    {
+        if (!this.isTutorialWizardMode())
+        {
+            return;
+        }
+
+        this.tutorialPhaseId = spec.stepId;
+        this.puzzleFinished = false;
+
+        if (!spec.preserveBoard)
+        {
+            this.clearBoard();
+        }
+
+        if (!spec.preserveBoard)
+        {
+            this.deckHand.initPuzzleHand(
+                spec.handCards.map((cardSpec) => createCardInstance(
+                    cardSpec.definitionId,
+                    cardSpec.arrow,
+                    'player',
+                )),
+            );
+        }
+        else if (spec.handCards.length > 0)
+        {
+            this.deckHand.initPuzzleHand(
+                spec.handCards.map((cardSpec) => createCardInstance(
+                    cardSpec.definitionId,
+                    cardSpec.arrow,
+                    'player',
+                )),
+            );
+        }
+
+        if (!spec.preserveBoard && spec.boardCards?.length)
+        {
+            for (const boardSpec of spec.boardCards)
+            {
+                this.board.placeCard(
+                    { row: boardSpec.row, col: boardSpec.col },
+                    createCardInstance(
+                        boardSpec.definitionId,
+                        boardSpec.arrow,
+                        'player',
+                    ),
+                );
+            }
+        }
+
+        if (spec.chainStart)
+        {
+            this.setChainStartSlot(spec.chainStart);
+        }
+
+        this.energyRound.setMaxEnergy(Math.max(0, spec.maxEnergy));
+        this.energyRound.resetEnergy();
+    }
+
+    /** After the strike demo: start the 3-energy round (board already cleared). */
+    beginTutorialEnergyRound (): void
+    {
+        const spec = getTutorialWizardPhaseSpec('energy');
+
+        if (!spec || !this.isTutorialWizardMode())
+        {
+            return;
+        }
+
+        this.tutorialPhaseId = 'energy';
+        this.puzzleFinished = false;
+
+        this.deckHand.initPuzzleHand(
+            spec.handCards.map((cardSpec) => createCardInstance(
+                cardSpec.definitionId,
+                cardSpec.arrow,
+                'player',
+            )),
+        );
+
+        if (spec.chainStart)
+        {
+            this.setChainStartSlot(spec.chainStart);
+        }
+
+        this.energyRound.setMaxEnergy(Math.max(0, spec.maxEnergy));
+        this.energyRound.resetEnergy();
     }
 
     getPuzzleDamageTarget (): number | null
