@@ -1,0 +1,10 @@
+Input prompt glyphs (Xbox / PlayStation / Switch / keyboard / Steam Deck).
+
+Source pack: user-provided "button icons" set under Downloads
+(XGamepad, P4Gamepad, P5Gamepad, SGamepad, Keyboard_Mouse).
+
+Steam Deck uses the Xbox-layout face buttons (A/B/X/Y) via Steam Input, so
+`steamdeck/` is a copy of the curated `xbox/` Default set with stable filenames
+(confirm, cancel, west, north, …).
+
+Only the Default (gamepads) and Dark (keyboard) styles were vendored — not Alt/Retro variants.

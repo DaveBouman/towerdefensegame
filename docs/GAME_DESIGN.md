@@ -357,6 +357,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | Chain behavior | `src/game/cardGame/combat/AttackPipeline.ts` |
 | New card ability | `src/game/cardGame/effects/` (behaviors), `abilities/` (chain abilities: rad/fire/bleed/fortify/overload) + register in `chainAbilityRegistry.ts` |
 | Combo storm trail (visual) | Append a detector in `combat/comboTrailRegistry.ts` (Rad/Fire live there); type stacks stay in `typeStack.ts` |
+| Input prompt glyphs (Deck / pads) | `public/assets/input-prompts/` + `src/game/input/inputPrompts.ts` + `InputPromptIcon`. Auto-detect pad; override via `setInputPromptDeviceOverride`. **Steam Deck is primary.** |
 | Bomb / trap conversion | `AttackPipeline.applyBombConversion` (runs first in `resolveChainSteps`) |
 | Enemy rad status | `CardGameSession.tickPoison`/`applyPoisonStacks` (via `abilityPoisonStacks`), display in `EnemyTargetView.setPoison` |
 | Enemy turn logic | `src/game/cardGame/combat/enemyTurn.ts` |
@@ -369,6 +370,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-08-30 | **Manual button-prompt mode.** Settings → Controls: Auto detect or force Steam Deck / Xbox / PS5 / PS4 / Switch / keyboard glyphs (preview row). |
+| 2026-08-30 | **Input prompt glyphs (Deck-first).** Icons for Steam Deck / Xbox / PS4 / PS5 / Switch / keyboard. Auto-detects connected pad (e.g. DualSense on Deck → PS glyphs; Steam Input Xbox virtual → Xbox glyphs); optional settings override. |
 | 2026-08-29 | **Combo trail registry.** Rad/Fire storm trails register in `comboTrailRegistry.ts`; append a detector there when adding a combo visual. Damage abilities stay in `abilities/`. |
 | 2026-08-29 | **Type stacks need adjacency.** Attack/Defend +15% stacks only when consecutive stackable steps share a tile (revisit) or an edge/corner — not merely sequential on the arrow path (leaps do not stack). Shared logic in `typeStack.ts`; streak storms use the same rule. |
 | 2026-08-29 | **Enemy presence idle.** Portraits bob/sway inside the frame (desynced per foe); frame and HP chrome stay planted. Pauses on hit flinch. |

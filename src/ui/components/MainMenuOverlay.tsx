@@ -212,7 +212,12 @@ export const MainMenuOverlay = ({
             <div className={`main-menu${pause ? ' main-menu--pause' : ''}`}>
                 <div className="main-menu__glow" aria-hidden="true" />
                 {!archiveOpen && (
-                <div className="main-menu__panel cp-panel cp-panel--cyan">
+                <div className={[
+                    'main-menu__panel',
+                    'cp-panel',
+                    'cp-panel--cyan',
+                    screen === 'settings' ? 'main-menu__panel--settings' : '',
+                ].filter(Boolean).join(' ')}>
                     <CyberPanelChrome variant="cyan" />
 
                     {screen === 'home' && (

@@ -2146,21 +2146,39 @@ html, body, #root {
     inset: 0;
     z-index: 160;
     display: flex;
-    align-items: center;
+    align-items: safe center;
     justify-content: center;
     padding: 24px;
     font-family: var(--font-ui);
     pointer-events: none;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+/* Settings is taller — pin to the top so content can scroll instead of clipping. */
+.main-menu:has(.main-menu__panel--settings) {
+    align-items: flex-start;
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 }
 
 .main-menu--pause {
     z-index: 1100;
     pointer-events: auto;
     background: rgba(2, 4, 8, 0.55);
+    /* Tall settings: top-align so the bottom isn’t clipped under the HUD. */
+    align-items: flex-start;
+    padding-top: max(16px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 }
 
 .main-menu--pause .main-menu__panel {
     pointer-events: auto;
+}
+
+.main-menu--pause .main-menu__panel--settings {
+    margin-top: 8px;
+    margin-bottom: 8px;
 }
 
 .main-menu__glow {
@@ -2177,10 +2195,20 @@ html, body, #root {
     pointer-events: auto;
     width: min(440px, 100%);
     max-height: min(92vh, 860px);
+    max-height: min(92dvh, 860px);
     overflow: auto;
     padding: 36px 32px 28px;
     text-align: center;
     animation: panel-rise-in 420ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
+    margin-block: auto;
+}
+
+.main-menu__panel--settings {
+    width: min(560px, calc(100% - 32px));
+    max-height: calc(100vh - 48px);
+    max-height: calc(100dvh - 48px);
+    padding-bottom: 20px;
+    overscroll-behavior: contain;
 }
 
 .main-menu__eyebrow {
@@ -2695,6 +2723,18 @@ html, body, #root {
 .main-menu__resolution-select:focus-visible {
     outline: 2px solid rgba(255, 45, 149, 0.85);
     outline-offset: 2px;
+}
+
+.main-menu__prompt-preview {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 45, 149, 0.18);
+    background: rgba(6, 10, 18, 0.65);
 }
 
 .main-menu__manual {

@@ -22,6 +22,13 @@ import {
     writeSteamFacesEnabled,
 } from '../../../game/desktop/steamAvatars';
 import {
+    getInputPromptDeviceOverride,
+    listInputPromptDevices,
+    resolveActiveInputPromptDevice,
+    setInputPromptDeviceOverride,
+    type InputPromptDevice,
+} from '../../../game/input/inputPrompts';
+import {
     CURSOR_COLOR_LABELS,
     CURSOR_COLORS,
     readCursorColor,
@@ -33,8 +40,20 @@ import {
     type TextScaleSize,
     setTextScale,
 } from '../../../game/ui/textScale';
-import { t } from '../../../game/copy/strings';
+import { t, type CopyKey } from '../../../game/copy/strings';
+import { InputPromptIcon } from '../InputPromptIcon';
 import { BackButton, VolumeRow } from './menuShared';
+
+type PromptDeviceChoice = 'auto' | InputPromptDevice;
+
+const PROMPT_DEVICE_LABEL_KEY: Record<InputPromptDevice, CopyKey> = {
+    steamdeck: 'settings.controller.steamdeck',
+    xbox: 'settings.controller.xbox',
+    playstation5: 'settings.controller.playstation5',
+    playstation4: 'settings.controller.playstation4',
+    switch: 'settings.controller.switch',
+    keyboard: 'settings.controller.keyboard',
+};
 
 interface MainMenuSettingsProps {
     pause: boolean;
@@ -68,6 +87,9 @@ export const MainMenuSettings = ({
     const steamReady = isSteamBridgeAvailable();
     const [ steamFaces, setSteamFaces ] = useState(readSteamFacesEnabled);
     const [ cursorColor, setCursorColorState ] = useState(readCursorColor);
+    const [ promptChoice, setPromptChoice ] = useState<PromptDeviceChoice>(
+        () => getInputPromptDeviceOverride() ?? 'auto',
+    );
     const [ displayPreset, setDisplayPreset ] = useState<DisplayPresetId>('1280x720');
     const [ availablePresets, setAvailablePresets ] = useState<DisplayPresetId[]>(
         DISPLAY_PRESETS.map((preset) => preset.id),
@@ -92,6 +114,10 @@ export const MainMenuSettings = ({
 
     const selectablePresets = DISPLAY_PRESETS.filter((preset) =>
         availablePresets.includes(preset.id));
+
+    const previewDevice: InputPromptDevice = promptChoice === 'auto'
+        ? resolveActiveInputPromptDevice()
+        : promptChoice;
 
     const formatPresetLabel = (preset: DisplayPreset): string =>
     {
@@ -139,6 +165,18 @@ export const MainMenuSettings = ({
         emitRunSfx('ui-click', { volume: 0.64, rate: 1.06 });
         setCursorColor(color);
         setCursorColorState(color);
+    };
+
+    const choosePromptDevice = (next: PromptDeviceChoice): void =>
+    {
+        if (next === promptChoice)
+        {
+            return;
+        }
+
+        emitRunSfx('ui-click', { volume: 0.64, rate: 1.04 });
+        setInputPromptDeviceOverride(next === 'auto' ? null : next);
+        setPromptChoice(next);
     };
 
     return (
@@ -193,6 +231,38 @@ export const MainMenuSettings = ({
                             disabled={audio.muted}
                             onChange={setSfxVolume}
                         />
+                    </div>
+                </div>
+
+                <div className="main-menu__field">
+                    <span className="main-menu__field-label">Controls</span>
+                    <div className="main-menu__display-panel">
+                        <span className="main-menu__sublabel">{t('settings.controller.label')}</span>
+                        <select
+                            className="main-menu__resolution-select"
+                            aria-label={t('settings.controller.label')}
+                            value={promptChoice}
+                            onChange={(event) =>
+                            {
+                                choosePromptDevice(event.target.value as PromptDeviceChoice);
+                            }}
+                        >
+                            <option value="auto">{t('settings.controller.auto')}</option>
+                            {listInputPromptDevices().map((device) => (
+                                <option key={device} value={device}>
+                                    {t(PROMPT_DEVICE_LABEL_KEY[device])}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="main-menu__prompt-preview" aria-hidden="true">
+                            <InputPromptIcon button="confirm" device={previewDevice} size={32} />
+                            <InputPromptIcon button="cancel" device={previewDevice} size={32} />
+                            <InputPromptIcon button="west" device={previewDevice} size={32} />
+                            <InputPromptIcon button="north" device={previewDevice} size={32} />
+                            <InputPromptIcon button="lb" device={previewDevice} size={32} />
+                            <InputPromptIcon button="rb" device={previewDevice} size={32} />
+                        </div>
+                        <p className="main-menu__hint">{t('settings.controller.hint')}</p>
                     </div>
                 </div>
 

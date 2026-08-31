@@ -184,6 +184,15 @@ const EN = {
     'settings.resolution.fullscreenHint': 'Exit fullscreen to change window size.',
     'settings.cursor.label': 'Cursor color',
     'settings.cursor.hint': 'Idle is an outlined triangle. Hovering clickable UI adds chrome corner brackets.',
+    'settings.controller.label': 'Button prompts',
+    'settings.controller.auto': 'Auto — detect pad',
+    'settings.controller.hint': 'Steam Deck / Xbox layout by default. Pick a set if you use DualSense, Switch, or another pad on Deck or PC.',
+    'settings.controller.steamdeck': 'Steam Deck',
+    'settings.controller.xbox': 'Xbox',
+    'settings.controller.playstation5': 'PlayStation 5',
+    'settings.controller.playstation4': 'PlayStation 4',
+    'settings.controller.switch': 'Switch',
+    'settings.controller.keyboard': 'Keyboard & mouse',
 } as const;
 
 export type CopyKey = keyof typeof EN;
