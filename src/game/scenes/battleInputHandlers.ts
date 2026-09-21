@@ -12,7 +12,7 @@ export interface CardDropHandlerDeps
 {
     session?: CardGameSession;
     boardView?: CardBoardView;
-    emitAttackReadiness: () => void;
+    emitAttackReadiness: (options?: { soft?: boolean }) => void;
 }
 
 export const handleCardDropped = (
@@ -44,7 +44,7 @@ export const handleCardDropped = (
 
     deps.boardView.syncFromBoard(deps.session.board);
     deps.boardView.playSlotPlaceSettle(slot);
-    deps.emitAttackReadiness();
+    deps.emitAttackReadiness({ soft: true });
 
     return true;
 };
@@ -54,7 +54,7 @@ export interface BoardCardDropHandlerDeps
     session?: CardGameSession;
     boardView?: CardBoardView;
     handView?: CardHandView;
-    emitAttackReadiness: () => void;
+    emitAttackReadiness: (options?: { soft?: boolean }) => void;
 }
 
 export const handleBoardCardDropped = (
@@ -81,7 +81,7 @@ export const handleBoardCardDropped = (
 
         deps.boardView.syncFromBoard(deps.session.board);
         deps.handView.syncHand(deps.session.getHand());
-        deps.emitAttackReadiness();
+        deps.emitAttackReadiness({ soft: true });
 
         return true;
     }
@@ -102,7 +102,7 @@ export const handleBoardCardDropped = (
 
         deps.boardView.syncFromBoard(deps.session.board);
         deps.boardView.playSlotPlaceSettle(targetSlot);
-        deps.emitAttackReadiness();
+        deps.emitAttackReadiness({ soft: true });
 
         return true;
     }
@@ -115,7 +115,7 @@ export const handleBoardCardDropped = (
     deps.boardView.syncFromBoard(deps.session.board);
     deps.boardView.playSlotPlaceSettle(fromSlot);
     deps.boardView.playSlotPlaceSettle(targetSlot);
-    deps.emitAttackReadiness();
+    deps.emitAttackReadiness({ soft: true });
 
     return true;
 };
@@ -126,7 +126,7 @@ export interface RerollHandlerDeps
     handView?: CardHandView;
     setRerollModeActive: (active: boolean) => void;
     emitRerollState: (selectedCount?: number) => void;
-    emitAttackReadiness: () => void;
+    emitAttackReadiness: (options?: { soft?: boolean }) => void;
     syncPileViews: () => void;
 }
 

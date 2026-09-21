@@ -163,20 +163,30 @@ export const emitTurnState = (deps: Pick<BattleUiSyncDeps, 'session'>): void =>
     });
 };
 
-export const emitAttackReadiness = (deps: BattleUiSyncDeps): void =>
+export const emitAttackReadiness = (
+    deps: BattleUiSyncDeps,
+    options: { soft?: boolean } = {},
+): void =>
 {
     if (!deps.session)
     {
         return;
     }
 
-    deps.enemySquad?.syncFromSession(deps.session);
-    deps.enemySquad?.syncTargetPrompt(deps.session);
-    syncBattleModifierLayout(deps);
-    deps.battleModifierView?.setModifiers(deps.session.getBattleModifiers());
-    deps.playerView?.setThorns(deps.session.getPlayerThorns());
+    const soft = options.soft === true;
 
-    if (!deps.session.isBusy()
+    if (!soft)
+    {
+        deps.enemySquad?.syncFromSession(deps.session);
+        syncBattleModifierLayout(deps);
+        deps.battleModifierView?.setModifiers(deps.session.getBattleModifiers());
+        deps.playerView?.setThorns(deps.session.getPlayerThorns());
+    }
+
+    deps.enemySquad?.syncTargetPrompt(deps.session);
+
+    if (!soft
+        && !deps.session.isBusy()
         && !deps.session.isEnemyDefeated())
     {
         deps.enemySquad?.showAllIntents(deps.session);

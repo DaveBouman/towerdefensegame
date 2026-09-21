@@ -943,9 +943,9 @@ export class Game extends Scene
         emitRerollState(this.battleUiSyncDeps(), selectedCount);
     }
 
-    private emitAttackReadiness (): void
+    private emitAttackReadiness (options?: { soft?: boolean }): void
     {
-        emitAttackReadiness(this.battleUiSyncDeps());
+        emitAttackReadiness(this.battleUiSyncDeps(), options);
     }
 
     private onCardDropped (handIndex: number, worldX: number, worldY: number): boolean
@@ -954,7 +954,7 @@ export class Game extends Scene
             {
                 session: this.session,
                 boardView: this.boardView,
-                emitAttackReadiness: () => this.emitAttackReadiness(),
+                emitAttackReadiness: (opts) => this.emitAttackReadiness(opts),
             },
             handIndex,
             worldX,
@@ -969,7 +969,7 @@ export class Game extends Scene
                 session: this.session,
                 boardView: this.boardView,
                 handView: this.handView,
-                emitAttackReadiness: () => this.emitAttackReadiness(),
+                emitAttackReadiness: (opts) => this.emitAttackReadiness(opts),
             },
             fromSlot,
             worldX,

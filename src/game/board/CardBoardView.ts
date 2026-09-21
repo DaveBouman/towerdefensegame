@@ -35,6 +35,37 @@ const STREAK_STORM_COLORS: Record<string, { glow: number; label: string }> = {
 const streakStormColor = (behaviorId: string): { glow: number; label: string } =>
     STREAK_STORM_COLORS[behaviorId] ?? { glow: CYBER.magenta, label: '#ffd0ea' };
 
+const streakRunsEqual = (
+    current: readonly StreakBarRun[],
+    next: readonly StreakBarRun[],
+): boolean =>
+    current.length === next.length
+    && current.every((run, index) =>
+    {
+        const other = next[index];
+
+        return Boolean(other)
+            && run.behaviorId === other.behaviorId
+            && run.label === other.label
+            && run.kind === other.kind
+            && run.slots.length === other.slots.length
+            && run.slots.every((slot, slotIndex) =>
+                slot.row === other.slots[slotIndex]?.row
+                && slot.col === other.slots[slotIndex]?.col);
+    });
+
+/** Stable visual fingerprint so board sync can keep live wrappers. */
+const boardCardVisualKey = (card: CardInstance): string =>
+    [
+        card.instanceId,
+        card.arrow,
+        card.loopArrow ?? '',
+        card.jokerDirectionChosen ? '1' : '0',
+        card.spent ? '1' : '0',
+        card.exhausted ? '1' : '0',
+        card.settled && !card.relocated ? '1' : '0',
+    ].join('|');
+
 const SLOT_FILL = CYBER.slotFill;
 const SLOT_BORDER = CYBER.slotBorder;
 const SLOT_DROP = CYBER.slotDrop;
@@ -308,6 +339,18 @@ export class CardBoardView
         tentativeFromIndex: number | null = null,
     ): void
     {
+        if (
+            this.chainPathTentativeFrom === tentativeFromIndex
+            && this.chainPathSlots.length === slots.length
+            && this.chainPathSlots.every((slot, index) =>
+                slot.row === slots[index]?.row && slot.col === slots[index]?.col)
+            && !this.chainPathActive
+            && this.chainPathVisited === 0
+        )
+        {
+            return;
+        }
+
         this.chainPathSlots = slots.map((slot) => ({ ...slot }));
         this.chainPathVisited = 0;
         this.chainPathActive = false;
@@ -318,6 +361,11 @@ export class CardBoardView
     /** Type-stack / combo runs — mute only cards currently in a streak. */
     setStreakBars (runs: readonly StreakBarRun[]): void
     {
+        if (streakRunsEqual(this.streakBarRuns, runs))
+        {
+            return;
+        }
+
         this.streakBarRuns = runs.map((run) => ({
             ...run,
             slots: run.slots.map((slot) => ({ ...slot })),
@@ -1414,7 +1462,7 @@ export class CardBoardView
         }
     }
 
-    /** Rebuilds all card visuals from the board model — prevents ghost cards after moves/swaps/replaces. */
+    /** Rebuilds card visuals that changed — keeps existing wrappers so idle tweens stay live. */
     syncFromBoard (board: BoardModel): void
     {
         this.hideJokerDirectionPicker();
@@ -1427,33 +1475,34 @@ export class CardBoardView
         {
             for (let col = 0; col < cols; col++)
             {
-                this.cardContainers[row][col]?.destroy();
-                this.cardContainers[row][col] = null;
+                const slot = { row, col };
+                const card = board.getCardAt(slot);
+                const wrapper = this.cardContainers[row][col];
+                const nextKey = card ? boardCardVisualKey(card) : null;
+                const currentKey = wrapper?.getData('boardVisualKey') as string | undefined;
 
-                const slotBody = this.slotBodies[row][col];
-
-                slotBody.setVisible(true);
-                slotBody.setFillStyle(SLOT_FILL);
-                slotBody.setStrokeStyle(2, SLOT_BORDER, 0.9);
-            }
-        }
-
-        for (let row = 0; row < rows; row++)
-        {
-            for (let col = 0; col < cols; col++)
-            {
-                const card = board.getCardAt({ row, col });
-
-                if (card)
+                if (nextKey === null)
                 {
-                    this.setSlotCard({ row, col }, card, tileSize);
+                    if (wrapper)
+                    {
+                        this.setSlotCard(slot, null, tileSize);
+                    }
+
+                    continue;
                 }
+
+                if (wrapper && currentKey === nextKey)
+                {
+                    continue;
+                }
+
+                this.setSlotCard(slot, card, tileSize);
             }
         }
 
         this.syncStreakCardChrome();
-        this.redrawStreakBars();
         this.bringChainStartToFront();
+        this.refreshChainStartHitAreas();
     }
 
     /** Flies proxy cards to the graveyard or exhaust pile, then resets empty slots. Latch pins stay. */
@@ -1934,6 +1983,8 @@ export class CardBoardView
         wrapper.setData('slotRow', slot.row);
         wrapper.setData('slotCol', slot.col);
         wrapper.setData('cardGraphic', graphic);
+        wrapper.setData('instanceId', card.instanceId);
+        wrapper.setData('boardVisualKey', boardCardVisualKey(card));
         this.container.add(wrapper);
         this.container.bringToTop(wrapper);
 

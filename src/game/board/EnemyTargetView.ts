@@ -115,6 +115,7 @@ export class EnemyTargetView
     private passiveIconsContainer?: Phaser.GameObjects.Container;
     private intentContainer?: Phaser.GameObjects.Container;
     private intentTween?: Phaser.Tweens.Tween;
+    private lastIntentKey: string | null = null;
     private intentAnchorY = 0;
     private shieldTween?: Phaser.Tweens.Tween;
     private readonly enemySize: number;
@@ -491,7 +492,15 @@ export class EnemyTargetView
 
     showIntent (action: EnemyTurnAction, phase: 'upcoming' | 'executing' = 'upcoming'): void
     {
+        const intentKey = `${phase}:${JSON.stringify(action)}`;
+
+        if (this.lastIntentKey === intentKey && this.intentContainer?.active)
+        {
+            return;
+        }
+
         this.clearIntent();
+        this.lastIntentKey = intentKey;
 
         const steps = getEnemyIntentStepVisuals(action, phase);
 
@@ -816,6 +825,7 @@ export class EnemyTargetView
         this.intentTween = undefined;
         this.intentContainer?.destroy();
         this.intentContainer = undefined;
+        this.lastIntentKey = null;
     }
 
     setShield (shield: number): void
