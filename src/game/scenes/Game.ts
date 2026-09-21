@@ -687,7 +687,7 @@ export class Game extends Scene
         this.battlefieldBackground?.resize(gameSize.width, gameSize.height, this.layout);
         applyBoardLayout(this.layout, {
             board: this.boardView,
-            hand: this.handView.container,
+            hand: this.handView,
             enemy: this.enemySquad.firstView?.container ?? this.playerView.container,
             player: this.playerView.container,
             armor: this.armorView.container,

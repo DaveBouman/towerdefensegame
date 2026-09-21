@@ -36,6 +36,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "generate-sfx": "node scripts/generate-sfx.mjs",
+    "generate-app-icon": "node scripts/generate-app-icon.mjs",
     "trim-bgm": "node scripts/trim-bgm.mjs",
     "sync-fonts": "node scripts/sync-ui-fonts.mjs",
     "generate-steam-art": "node scripts/generate-steam-art.mjs",
@@ -78,11 +79,14 @@
     "productName": "Signal Chain",
     "copyright": "Copyright © Signal Chain",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "build"
     },
+    "icon": "build/icon.png",
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "build/icon.png",
       "package.json"
     ],
     "asar": true,

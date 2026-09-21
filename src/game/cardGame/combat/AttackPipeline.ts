@@ -59,3 +59,10 @@ export {
     getJokerDirectionChoices,
     applyJokerChosenDirection,
 } from './attackSequence';
+
+export {
+    isCardAnchored,
+    applyAnchoredBonuses,
+    markCardSettled,
+    markCardRelocated,
+} from './anchoredBonus';

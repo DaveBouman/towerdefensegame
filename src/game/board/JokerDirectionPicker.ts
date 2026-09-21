@@ -1,6 +1,5 @@
 import { getGameCursors } from '../ui/gameCursors';
 import { uiTextStyle } from '../config/uiTypography';
-import { GRID_CONFIG } from '../config/gridConfig';
 import { ARROW_GLYPH, arrowLabelPosition } from '../cards/cardArrows';
 import { createDirectionArrowImage } from '../cards/directionArrowVisual';
 import type { CardDirection } from '../cardGame/domain/cardDirections';
@@ -18,6 +17,7 @@ export class JokerDirectionPicker
         scene: Phaser.Scene,
         gridOffsetX: number,
         gridOffsetY: number,
+        tileSize: number,
         slot: SlotPosition,
         directions: readonly CardDirection[],
         onChoose: (direction: CardDirection) => void,
@@ -31,7 +31,6 @@ export class JokerDirectionPicker
             return;
         }
 
-        const { tileSize } = GRID_CONFIG;
         const cardSize = tileSize - 8;
         const centerX = gridOffsetX + slot.col * tileSize + tileSize / 2;
         const centerY = gridOffsetY + slot.row * tileSize + tileSize / 2;

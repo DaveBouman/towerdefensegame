@@ -22,6 +22,7 @@ const isDevMode = () =>
 
 const distDir = () => path.join(__dirname, '..', 'dist');
 const appIndexUrl = () => `${APP_SCHEME}://${APP_HOST}/index.html`;
+const appIconPath = () => path.join(__dirname, '..', 'build', 'icon.png');
 
 /** @type {import('electron').BrowserWindow | null} */
 let mainWindow = null;
@@ -208,6 +209,7 @@ const createWindow = () =>
         backgroundColor: '#0c0812',
         autoHideMenuBar: true,
         show: false,
+        icon: appIconPath(),
         webPreferences: {
             preload: path.join(__dirname, 'preload.cjs'),
             contextIsolation: true,
@@ -215,6 +217,11 @@ const createWindow = () =>
             sandbox: false,
         },
     });
+
+    if (process.platform === 'darwin' && app.dock)
+    {
+        app.dock.setIcon(appIconPath());
+    }
 
     mainWindow.once('ready-to-show', () =>
     {

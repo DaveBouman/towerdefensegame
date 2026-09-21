@@ -27,6 +27,16 @@ export interface CardInstance {
      * Stays on the grid as routing-only until the board clears into the exhaust pile.
      */
     spent?: boolean;
+    /**
+     * True after the card was moved, swapped, or picked up this energy round.
+     * Unmoved settled cards keep the anchored damage/armor bonus.
+     */
+    relocated?: boolean;
+    /**
+     * Set when placed from hand onto the board. Required for the anchored bonus
+     * (direct test placements without settling do not grant it).
+     */
+    settled?: boolean;
 }
 
 export type BoardCell = CardInstance | null;

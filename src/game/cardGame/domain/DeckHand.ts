@@ -6,6 +6,7 @@ import type { CardInstance } from './types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
 import { randomInt, shuffleInPlace } from '../../random/rng';
+import { clearCardAnchoredState } from '../combat/anchoredBonus';
 
 export class DeckHand
 {
@@ -307,6 +308,11 @@ export class DeckHand
         if (cards.length === 0)
         {
             return;
+        }
+
+        for (const card of cards)
+        {
+            clearCardAnchoredState(card);
         }
 
         this.discard.push(...cards);

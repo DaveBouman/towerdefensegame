@@ -206,6 +206,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | Chain start column | 0 | `gameRules.json` |
 | Max chain steps | 24 | `gameRules.json` |
 | Off-chain bonus | +2 damage (attack) / +2 armor (defend) on board but not in chain | `gameRules.json` |
+| Anchored bonus | +2 damage / +2 armor for attack/defend cards left unmoved since placement this energy round (in-chain and off-chain); moving, swapping, or picking up clears it | `gameRules.json` (`anchoredBonus`), `anchoredBonus.ts` |
 | Type streak | +15% per duplicate attack/defend when consecutive stackable steps are the **same tile** (revisit) or **grid-adjacent** (orthogonal/diagonal); leaps / distant same-type cards do not stack | `gameRules.json`, `typeStack.ts` |
 | Field boost | Random boost on empty tile; multiplies next chain step (boosts stack: ×2 each) | `gameRules.json` |
 | Resolution speed | Chain step 800ms, enemy turn 800ms (snappy) | `gameRules.json` |
@@ -227,6 +228,7 @@ The player turn is **escalating**: each Attack resolves the current board withou
 | Player thorns | `thornsBehavior.ts`, `CombatResolver.reflectPlayerThorns` | **Thorns** card adds its power to a player thorns pool for the energy round. Each enemy **attack** that actually hits (shield absorb counts; fully blocked hits do not) reflects that many damage at the attacker. Pool does not consume on reflect. Field Boost multiplies thorns (Boost → Thorns = ×2); Echo replays the previous thorns grant. Clears when energy refills. |
 | Battle modifiers | `battleModifiers.ts`, `battle-mod` behavior, `battle-mod` enemy intent | ±10% to enemy attack, damage taken, shield gained, or damage dealt — player cards (Glitch/Hardwire/Patch/Overclock) and enemy intents. **All modifiers last until energy refills.** Field **Boost** multiplies the next battle-mod delta. Active chips sit **below** the player/enemy panels (`BattleModifierStatusView`): enemy-attack under enemies, other stats under the player. Each stat has a distinct color; % text is green (buff) or red (debuff). |
 | Echo | `echo` behavior, `echoReplay.ts` | Re-activates the previous chain card (damage, armor, battle modifiers, thorns) then activates itself |
+| Anchored cards | `anchoredBonus.ts`, `BoardEditController` | Leave attack/defend cards where you placed them — +2 dmg / +2 armor while unmoved this energy round (stacks with off-chain). Move, swap, or pick up to rearrange and lose the bonus. |
 | Hazards/traps | `hazardBehavior.ts`, `AttackPipeline.applyBombConversion`, `FieldEffects.resolveHazardsAfterAttack` | Skip → slot explodes (4 dmg) + scorches tile; **route a card into it (or start the chain on it and continue)** → the trap converts to that card's type and joins the chain. **All resolved traps are removed from the board after the attack.** Enemies only place traps in the **last 3 columns**. |
 | Curse cards | `cards.json` (`unplayable`, `nonRerollable`, `handEndPenalty`), `CardGameSession.resolveHandEndPenalties` | Bad cards that clog resources — **Burden** (place to clear hand; **cannot be rerolled**; route through it safely or take **double hand penalty** if left off-chain on attack; 5 dmg if held in hand at end of turn). **Fuse** (weak attack, 8 dmg if not placed by end of turn). Penalties resolve after **each attack**. **Saboteur** adds Burdens via `curseHand` |
 | Exhaust | `exhaustOnPlay`, Exhaust pile | **Courier**, **Salvage**, **Execution**, **Redline**. After the card fires it stays on the grid as a dead routing link (no pickup, no extra effect) until energy refills or another card covers that tile — then it goes to the **Exhaust** pile. Returns in the next fight. **Redline** deals 13 damage and grants 13 armor (16/16 upgraded). |
@@ -371,6 +373,9 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-09-21 | **Anchored card bonus.** Attack/Defend/Redline cards left unmoved after placement grant +2 damage / +2 armor (in-chain and off-chain) for the energy round. Moving, swapping, or picking up clears the bonus; cyan pin marks anchored tiles. |
+| 2026-09-21 | **Combat layout scales with viewport.** Board tile, hand cards, and piles shrink from the 96px design when height is tight so 1280×720 keeps armor above the hand with no board overlap. |
+| 2026-09-21 | **Electron app icon.** Window / dock / installer use the Signal Chain chain-grid brand mark (`build/icon.png`, `npm run generate-app-icon`) instead of the default Electron logo. |
 | 2026-09-21 | **Min window 1280×720.** Dropped 960×540. Combat HUD is a single compact row (no wrap) with shorter copy and reduced top inset so it stays aligned at the minimum size. |
 | 2026-09-21 | **Display modes.** Settings → Display mode: Windowed, Borderless fullscreen, or Fullscreen. Borderless covers the monitor without exclusive fullscreen; Esc returns to windowed. Mode is persisted. |
 | 2026-09-21 | **Resolution-independent UI scale.** `#game-viewport` exposes `--ui-scale` (height / 720, clamped). Main menu panels zoom with it and pin Quit outside the scroll body so every preset fits the same layout. |

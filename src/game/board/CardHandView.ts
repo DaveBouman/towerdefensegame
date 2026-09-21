@@ -6,7 +6,6 @@ import { buildCardGraphic } from '../cards/CardRenderer';
 import { attachCardTooltip } from '../cardGame/presentation/tooltips/CardTooltipController';
 import { CYBER } from '../config/cyberpunkTheme';
 import { drawCornerBrackets } from '../config/cyberpunkUiGraphics';
-import { HAND_CARD_GAP, HAND_CARD_HEIGHT, HAND_CARD_WIDTH } from '../cards/cardVisuals';
 import type { BoardLayout } from './boardLayout';
 import { playHandDealIn } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 
@@ -21,7 +20,6 @@ export interface CardHandDragHandlers {
 }
 
 const HAND_FAN_SPREAD = 0.055;
-const HAND_FAN_DROP = 7;
 
 export class CardHandView
 {
@@ -36,6 +34,10 @@ export class CardHandView
     private rerollMode = false;
     private readonly handDock: Phaser.GameObjects.Graphics;
     private readonly handBrackets: Phaser.GameObjects.Graphics;
+    private cardWidth: number;
+    private cardHeight: number;
+    private cardGap: number;
+    private fanDrop: number;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -46,6 +48,10 @@ export class CardHandView
         private readonly onRerollSelectionChange?: (selectedCount: number) => void,
     )
     {
+        this.cardWidth = layout.handCardWidth;
+        this.cardHeight = layout.handCardHeight;
+        this.cardGap = layout.handCardGap;
+        this.fanDrop = Math.max(4, Math.round(layout.handCardHeight * 0.06));
         this.container = scene.add.container(layout.handCenterX, layout.handY);
         this.handDock = scene.add.graphics();
         this.handBrackets = scene.add.graphics();
@@ -56,6 +62,28 @@ export class CardHandView
     setPosition (x: number, y: number): void
     {
         this.container.setPosition(x, y);
+    }
+
+    applyLayout (layout: BoardLayout): void
+    {
+        const sizeChanged = layout.handCardWidth !== this.cardWidth
+            || layout.handCardHeight !== this.cardHeight
+            || layout.handCardGap !== this.cardGap;
+
+        this.cardWidth = layout.handCardWidth;
+        this.cardHeight = layout.handCardHeight;
+        this.cardGap = layout.handCardGap;
+        this.fanDrop = Math.max(4, Math.round(layout.handCardHeight * 0.06));
+        this.container.setPosition(layout.handCenterX, layout.handY);
+
+        if (sizeChanged)
+        {
+            this.renderHand();
+        }
+        else
+        {
+            this.updateHandDock();
+        }
     }
 
     syncHand (
@@ -210,14 +238,14 @@ export class CardHandView
         this.hand.forEach((card, index) =>
         {
             const offset = index - center;
-            const x = index * (HAND_CARD_WIDTH + HAND_CARD_GAP);
-            const y = Math.abs(offset) * HAND_FAN_DROP;
+            const x = index * (this.cardWidth + this.cardGap);
+            const y = Math.abs(offset) * this.fanDrop;
             const slot = this.scene.add.container(x, y);
             const hoverOutline = this.scene.add.rectangle(
-                HAND_CARD_WIDTH / 2,
-                HAND_CARD_HEIGHT / 2,
-                HAND_CARD_WIDTH + 10,
-                HAND_CARD_HEIGHT + 10,
+                this.cardWidth / 2,
+                this.cardHeight / 2,
+                this.cardWidth + 10,
+                this.cardHeight + 10,
                 CYBER.gold,
                 0,
             );
@@ -228,8 +256,8 @@ export class CardHandView
                 this.scene,
                 card,
                 {
-                    width: HAND_CARD_WIDTH,
-                    height: HAND_CARD_HEIGHT,
+                    width: this.cardWidth,
+                    height: this.cardHeight,
                     interactive: true,
                 },
             );
@@ -298,14 +326,14 @@ export class CardHandView
     private updateHandDock (): void
     {
         const cardSpan = this.hand.length > 0
-            ? this.hand.length * (HAND_CARD_WIDTH + HAND_CARD_GAP) - HAND_CARD_GAP
-            : HAND_CARD_WIDTH;
-        const padX = 22;
-        const padY = 16;
+            ? this.hand.length * (this.cardWidth + this.cardGap) - this.cardGap
+            : this.cardWidth;
+        const padX = Math.max(14, Math.round(this.cardWidth * 0.26));
+        const padY = Math.max(10, Math.round(this.cardHeight * 0.14));
         const dockW = cardSpan + padX * 2;
-        const dockH = HAND_CARD_HEIGHT + padY * 2;
+        const dockH = this.cardHeight + padY * 2;
         const dockX = -padX;
-        const dockY = -padY + HAND_FAN_DROP;
+        const dockY = -padY + this.fanDrop;
 
         this.handDock.clear();
         // Soft drop shadow under the shelf.
@@ -356,7 +384,7 @@ export class CardHandView
         {
             const selected = this.rerollMode && this.selectedIndices.has(index);
             const offset = index - center;
-            const baseY = Math.abs(offset) * HAND_FAN_DROP;
+            const baseY = Math.abs(offset) * this.fanDrop;
 
             slot.setY(selected ? baseY - 14 : baseY);
             slot.setScale(selected ? 1.08 : 1);
@@ -396,8 +424,8 @@ export class CardHandView
         this.hoverOutlines[index]?.setVisible(false);
 
         const { container } = buildCardGraphic(this.scene, card, {
-            width: HAND_CARD_WIDTH,
-            height: HAND_CARD_HEIGHT,
+            width: this.cardWidth,
+            height: this.cardHeight,
         });
 
         this.dragProxy = this.scene.add.container(

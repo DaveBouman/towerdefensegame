@@ -15,6 +15,7 @@ import type { CardDirection } from '../cardGame/domain/cardDirections';
 import type { CardInstance, SlotPosition } from '../cardGame/domain/types';
 import { boardColLabel } from './boardCoordinates';
 import type { BoardLayout } from './boardLayout';
+import { isCardAnchored } from '../cardGame/combat/anchoredBonus';
 import { JokerDirectionPicker } from './JokerDirectionPicker';
 import { playCardPlaceSettle } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import type { StreakBarRun } from '../cardGame/combat/streakBarRuns';
@@ -126,7 +127,8 @@ export class CardBoardView
         private readonly chainStartHandlers?: ChainStartHandlers,
     )
     {
-        const { cols, rows, tileSize } = GRID_CONFIG;
+        const { cols, rows } = GRID_CONFIG;
+        const tileSize = layout.tileSize;
         this.container = scene.add.container(layout.gridOffsetX, layout.gridOffsetY);
         this.chainPathGfx = scene.add.graphics();
         this.streakBarGfx = scene.add.graphics();
@@ -365,7 +367,7 @@ export class CardBoardView
 
     private slotCenter (slot: SlotPosition): { x: number; y: number }
     {
-        const { tileSize } = GRID_CONFIG;
+        const tileSize = this.layout.tileSize;
 
         return {
             x: slot.col * tileSize + tileSize / 2,
@@ -1001,7 +1003,7 @@ export class CardBoardView
             return null;
         }
 
-        const { tileSize } = GRID_CONFIG;
+        const tileSize = this.layout.tileSize;
         const slotSize = tileSize - SLOT_INSET * 2;
 
         return { slot, wrapper, width: slotSize, height: slotSize };
@@ -1040,6 +1042,7 @@ export class CardBoardView
             this.scene,
             this.layout.gridOffsetX,
             this.layout.gridOffsetY,
+            this.layout.tileSize,
             slot,
             directions,
             onChoose,
@@ -1062,14 +1065,15 @@ export class CardBoardView
             return;
         }
 
-        const size = GRID_CONFIG.tileSize - SLOT_INSET * 2;
+        const size = this.layout.tileSize - SLOT_INSET * 2;
 
         updateCardGraphicDirection(this.scene, graphic, direction, size, size);
     }
 
     findSlotAt (worldX: number, worldY: number): SlotPosition | null
     {
-        const { tileSize, cols, rows } = GRID_CONFIG;
+        const { cols, rows } = GRID_CONFIG;
+        const tileSize = this.layout.tileSize;
         const localX = worldX - this.layout.gridOffsetX;
         const localY = worldY - this.layout.gridOffsetY;
         const col = Math.floor(localX / tileSize);
@@ -1190,7 +1194,7 @@ export class CardBoardView
 
     moveCard (from: SlotPosition, to: SlotPosition): void
     {
-        const { tileSize } = GRID_CONFIG;
+        const tileSize = this.layout.tileSize;
         const wrapper = this.cardContainers[from.row][from.col];
 
         if (!wrapper)
@@ -1221,7 +1225,7 @@ export class CardBoardView
 
     swapCards (a: SlotPosition, b: SlotPosition): void
     {
-        const { tileSize } = GRID_CONFIG;
+        const tileSize = this.layout.tileSize;
         const wrapperA = this.cardContainers[a.row][a.col];
         const wrapperB = this.cardContainers[b.row][b.col];
         const size = tileSize - SLOT_INSET * 2;
@@ -1295,7 +1299,8 @@ export class CardBoardView
     /** Soft flash when the board clears into a new energy round. */
     playRoundResetFlash (): void
     {
-        const { cols, rows, tileSize } = GRID_CONFIG;
+        const { cols, rows } = GRID_CONFIG;
+        const tileSize = this.layout.tileSize;
         const flash = this.scene.add.rectangle(
             (cols * tileSize) / 2,
             (rows * tileSize) / 2,
@@ -1367,7 +1372,8 @@ export class CardBoardView
     ): void
     {
         const active = new Set(slots.map((slot) => `${slot.row},${slot.col}`));
-        const { rows, cols, tileSize } = GRID_CONFIG;
+        const { rows, cols } = GRID_CONFIG;
+        const tileSize = this.layout.tileSize;
 
         for (let row = 0; row < rows; row++)
         {
@@ -1414,7 +1420,8 @@ export class CardBoardView
         this.hideJokerDirectionPicker();
         this.clearHighlight();
 
-        const { rows, cols, tileSize } = GRID_CONFIG;
+        const { rows, cols } = GRID_CONFIG;
+        const tileSize = this.layout.tileSize;
 
         for (let row = 0; row < rows; row++)
         {
@@ -1460,7 +1467,7 @@ export class CardBoardView
         this.clearHighlight();
         this.setChainStartActive(false);
 
-        const { tileSize } = GRID_CONFIG;
+        const tileSize = this.layout.tileSize;
         const cardSize = tileSize - SLOT_INSET * 2;
         const flights: { proxy: Phaser.GameObjects.Container; x: number; y: number }[] = [];
 
@@ -1672,7 +1679,8 @@ export class CardBoardView
 
     private drawChainStartIndicators (): void
     {
-        const { tileSize, rows } = GRID_CONFIG;
+        const { rows } = GRID_CONFIG;
+        const tileSize = this.layout.tileSize;
         const startCol = GAME_RULES.activationStartColumn;
 
         this.chainStartColumnGlow = this.scene.add.rectangle(
@@ -1788,7 +1796,7 @@ export class CardBoardView
 
     private updateChainStartSelection (): void
     {
-        const { tileSize } = GRID_CONFIG;
+        const tileSize = this.layout.tileSize;
         const showPickHints = this.chainStartPickable && this.chainStartHandlers?.canSelect();
 
         for (const indicator of this.chainStartIndicators)
@@ -1874,8 +1882,9 @@ export class CardBoardView
         }
     }
 
-    private setSlotCard (slot: SlotPosition, card: CardInstance | null, tileSize = GRID_CONFIG.tileSize): void
+    private setSlotCard (slot: SlotPosition, card: CardInstance | null, tileSize?: number): void
     {
+        const size = tileSize ?? this.layout.tileSize;
         const slotBody = this.slotBodies[slot.row][slot.col];
 
         this.cardContainers[slot.row][slot.col]?.destroy();
@@ -1889,12 +1898,12 @@ export class CardBoardView
             return;
         }
 
-        const x = slot.col * tileSize + tileSize / 2;
-        const y = slot.row * tileSize + tileSize / 2;
+        const x = slot.col * size + size / 2;
+        const y = slot.row * size + size / 2;
 
         slotBody.setVisible(false);
 
-        const wrapper = this.drawCard(slot, x, y, tileSize, card);
+        const wrapper = this.drawCard(slot, x, y, size, card);
 
         this.normalizeWrapper(wrapper);
         this.cardContainers[slot.row][slot.col] = wrapper;
@@ -1931,6 +1940,18 @@ export class CardBoardView
         if (card.spent)
         {
             wrapper.setAlpha(0.42);
+        }
+
+        if (isCardAnchored(card))
+        {
+            const pin = this.scene.add.graphics();
+            const pinX = size - 10;
+            const pinY = 10;
+            pin.fillStyle(CYBER.cyan, 0.95);
+            pin.fillCircle(pinX, pinY, 4);
+            pin.lineStyle(1.5, CYBER.gold, 0.9);
+            pin.strokeCircle(pinX, pinY, 4);
+            wrapper.add(pin);
         }
 
         if (this.boardDragHandlers)

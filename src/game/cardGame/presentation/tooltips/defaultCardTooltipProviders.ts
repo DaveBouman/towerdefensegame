@@ -8,8 +8,9 @@ import type { CardTooltipContent, CardTooltipContext, CardTooltipProvider } from
 const titleFromDefinition = ({ definition }: CardTooltipContext): string =>
     definition.label;
 
-const attackLines = ({ definition }: CardTooltipContext): string[] =>
+const attackLines = (ctx: CardTooltipContext): string[] =>
 {
+    const { definition, card } = ctx;
     const lines = [ `Deals ${definition.power} damage when activated in the chain.` ];
 
     if (definition.maxChainActivations && definition.maxChainActivations > 1)
@@ -29,11 +30,19 @@ const attackLines = ({ definition }: CardTooltipContext): string[] =>
         lines.push('Uses diagonal arrows.');
     }
 
+    if (card.settled && !card.relocated)
+    {
+        lines.push(
+            `Anchored (+${GAME_RULES.anchoredBonus.attackDamage} damage) while left unmoved this energy round.`,
+        );
+    }
+
     return lines;
 };
 
-const defendLines = ({ definition }: CardTooltipContext): string[] =>
+const defendLines = (ctx: CardTooltipContext): string[] =>
 {
+    const { definition, card } = ctx;
     const lines = [ `Grants ${definition.power} armor when activated in the chain.` ];
 
     const stepDistance = getChainStepDistance(definition);
@@ -46,6 +55,13 @@ const defendLines = ({ definition }: CardTooltipContext): string[] =>
     if (definition.arrowPool === 'diagonal')
     {
         lines.push('Uses diagonal arrows.');
+    }
+
+    if (card.settled && !card.relocated)
+    {
+        lines.push(
+            `Anchored (+${GAME_RULES.anchoredBonus.defendArmor} armor) while left unmoved this energy round.`,
+        );
     }
 
     return lines;

@@ -11,6 +11,7 @@ import type { DeckHand } from './DeckHand';
 import type { CardInstance, SlotPosition } from './types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
+import { clearCardAnchoredState, markCardRelocated, markCardSettled } from '../combat/anchoredBonus';
 
 export interface BoardEditHost
 {
@@ -78,6 +79,7 @@ export class BoardEditController
             }
 
             this.host.deckHand.removeHandCardAt(handIndex);
+            markCardSettled(card);
             this.markExhaustedIfNeeded(card, definition);
             CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card, replaced: false });
             this.host.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
@@ -91,6 +93,7 @@ export class BoardEditController
             this.host.deckHand.exhaustToPile([ existing ]);
             this.host.board.placeCard(slot, card);
             this.host.deckHand.removeHandCardAt(handIndex);
+            markCardSettled(card);
             this.markExhaustedIfNeeded(card, definition);
             CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card, replaced: true });
             this.host.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
@@ -101,6 +104,8 @@ export class BoardEditController
         this.host.board.removeCard(slot);
         this.host.board.placeCard(slot, card);
         this.host.deckHand.setHandCardAt(handIndex, existing);
+        markCardRelocated(existing);
+        markCardSettled(card);
         this.markExhaustedIfNeeded(card, definition);
         CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card, replaced: true });
         this.host.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
@@ -122,6 +127,7 @@ export class BoardEditController
             return false;
         }
 
+        markCardRelocated(card);
         this.host.board.removeCard(slot);
         this.host.deckHand.returnCardToHand(card);
 
@@ -154,7 +160,14 @@ export class BoardEditController
             return false;
         }
 
-        return this.host.board.moveCard(from, to);
+        const moved = this.host.board.moveCard(from, to);
+
+        if (moved)
+        {
+            markCardRelocated(card);
+        }
+
+        return moved;
     }
 
     swapCardsOnBoard (a: SlotPosition, b: SlotPosition): boolean
@@ -173,7 +186,19 @@ export class BoardEditController
             return false;
         }
 
-        return this.host.board.swapCards(a, b);
+        const swapped = this.host.board.swapCards(a, b);
+
+        if (swapped)
+        {
+            markCardRelocated(cardA);
+
+            if (cardB)
+            {
+                markCardRelocated(cardB);
+            }
+        }
+
+        return swapped;
     }
 
     private markExhaustedIfNeeded (card: CardInstance, definition: CardDefinition): void

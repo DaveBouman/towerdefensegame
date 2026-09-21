@@ -17,6 +17,10 @@
     "attackDamage": 2,
     "defendArmor": 2
   },
+  "anchoredBonus": {
+    "attackDamage": 2,
+    "defendArmor": 2
+  },
   "hazard": {
     "definitionId": "hazard"
   },

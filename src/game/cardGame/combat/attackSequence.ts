@@ -15,6 +15,7 @@ import { getCardBehaviorOrThrow } from '../effects/cardBehaviorRegistry';
 import { isConvertibleFieldNode, isHazardDefinition, isSiphonDefinition } from './bombConversion';
 import { getNextChainSlot, planActivationChain } from './chainPathfinding';
 import { computeChainTypeMultipliers, resolveChainSteps } from './chainResolve';
+import { anchoredOffChainBonusForCard, applyAnchoredBonuses } from './anchoredBonus';
 
 export const isEchoDefinition = (definition: CardDefinition): boolean =>
     definition.behaviorId === 'echo';
@@ -78,7 +79,7 @@ export const buildAttackSequence = (
 ): AttackSequence =>
 {
     const stackMultipliers = computeChainTypeMultipliers(chain);
-    const scaledChain = resolveChainSteps(chain);
+    const scaledChain = applyAnchoredBonuses(resolveChainSteps(chain));
     const steps = scaledChain.filter((step) => step.damage > 0).map(toAttackStep);
     const totalDamage = steps.reduce((sum, step) => sum + step.damage, 0);
     const offChain = board ? computeOffChainBonuses(board, scaledChain) : { damage: 0, armor: 0 };
@@ -149,6 +150,10 @@ export const computeOffChainBonuses = (
         {
             armor += GAME_RULES.offChainBonus.defendArmor;
         }
+
+        const anchored = anchoredOffChainBonusForCard(card);
+        damage += anchored.damage;
+        armor += anchored.armor;
     }
 
     return { damage, armor };

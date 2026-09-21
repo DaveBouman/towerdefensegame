@@ -123,6 +123,8 @@ export interface GameRules {
     player: { maxHealth: number };
     defaultEnemyId: string;
     offChainBonus: { attackDamage: number; defendArmor: number };
+    /** Bonus for attack/defend cards that have not been moved since placement this energy round. */
+    anchoredBonus: { attackDamage: number; defendArmor: number };
     hazard: { definitionId: string };
     siphon: { definitionId: string };
     typeStackBonus: { perDuplicate: number };

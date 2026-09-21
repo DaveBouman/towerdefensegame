@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#060910"/>
+      <stop offset="55%" stop-color="#0c101c"/>
+      <stop offset="100%" stop-color="#120818"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="45%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#ff2d95" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#ff2d95" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <rect x="96" y="96" width="258.6666666666667" height="258.6666666666667" rx="28" fill="#120818" stroke="#00e8ff" stroke-width="14"/>
+  <circle cx="225.33333333333334" cy="225.33333333333334" r="41.38666666666667" fill="#fff6ea"/>
+  <circle cx="225.33333333333334" cy="225.33333333333334" r="20.693333333333335" fill="#ff2d95"/>
+  <rect x="382.6666666666667" y="96" width="258.6666666666667" height="258.6666666666667" rx="28" fill="#120818" stroke="#00e8ff" stroke-width="14"/>
+  <rect x="669.3333333333334" y="96" width="258.6666666666667" height="258.6666666666667" rx="28" fill="#120818" stroke="#00e8ff" stroke-width="14"/>
+  <rect x="96" y="382.6666666666667" width="258.6666666666667" height="258.6666666666667" rx="28" fill="#0a1018" stroke="#2a3a55" stroke-width="8"/>
+  <rect x="382.6666666666667" y="382.6666666666667" width="258.6666666666667" height="258.6666666666667" rx="28" fill="#0a1018" stroke="#2a3a55" stroke-width="8"/>
+  <rect x="669.3333333333334" y="382.6666666666667" width="258.6666666666667" height="258.6666666666667" rx="28" fill="#120818" stroke="#00e8ff" stroke-width="14"/>
+  <rect x="96" y="669.3333333333334" width="258.6666666666667" height="258.6666666666667" rx="28" fill="#0a1018" stroke="#2a3a55" stroke-width="8"/>
+  <rect x="382.6666666666667" y="669.3333333333334" width="258.6666666666667" height="258.6666666666667" rx="28" fill="#0a1018" stroke="#2a3a55" stroke-width="8"/>
+  <rect x="669.3333333333334" y="669.3333333333334" width="258.6666666666667" height="258.6666666666667" rx="28" fill="#0a1018" stroke="#2a3a55" stroke-width="8"/>
+  <path d="M 225.33333333333334 225.33333333333334 L 512 225.33333333333334 L 798.6666666666667 225.33333333333334 L 798.6666666666667 512" fill="none" stroke="#ff2d95" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
+</svg>
