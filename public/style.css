@@ -5308,7 +5308,15 @@ button.pile-view__card {
     color: #ff9fd4;
 }
 
+.tutorial-coach-overlay__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
 .tutorial-coach-overlay__button {
+    width: 100%;
     margin-top: 4px;
     padding: 10px 16px;
     border: 1px solid rgba(255, 45, 149, 0.5);
@@ -5317,6 +5325,12 @@ button.pile-view__card {
     color: #ffe8f5;
     font-size: 14px;
     cursor: var(--cursor-pointer, pointer);
+}
+
+.tutorial-coach-overlay__button--ghost {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.22);
+    color: #c8b8c0;
 }
 
 .tutorial-coach-overlay__button:hover {

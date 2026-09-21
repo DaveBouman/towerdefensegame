@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const TUTORIAL_STORAGE_KEY = 'card-chain-has-seen-tutorial';
 
@@ -89,12 +89,14 @@ export const useTutorial = (): {
     onWizardComplete: () => void;
     onFirstBattleWon: () => void;
     replayTutorial: () => void;
+    skipTutorial: () => void;
 } =>
 {
     const [ step, setStep ] = useState<TutorialStep>(() =>
         (hasSeenTutorial() ? 'done' : 'wizard'));
     const [ mapTipVisible, setMapTipVisible ] = useState(false);
     const [ rewardTipVisible, setRewardTipVisible ] = useState(false);
+    const skippedRef = useRef(false);
 
     useEffect(() =>
     {
@@ -106,6 +108,13 @@ export const useTutorial = (): {
 
     const onWizardComplete = useCallback((): void =>
     {
+        markTutorialSeen();
+
+        if (skippedRef.current)
+        {
+            return;
+        }
+
         setStep('map-tip');
         setMapTipVisible(true);
     }, []);
@@ -139,10 +148,20 @@ export const useTutorial = (): {
 
     const replayTutorial = useCallback((): void =>
     {
+        skippedRef.current = false;
         clearTutorialSeen();
         setMapTipVisible(false);
         setRewardTipVisible(false);
         setStep('wizard');
+    }, []);
+
+    const skipTutorial = useCallback((): void =>
+    {
+        skippedRef.current = true;
+        markTutorialSeen();
+        setMapTipVisible(false);
+        setRewardTipVisible(false);
+        setStep('done');
     }, []);
 
     return {
@@ -155,5 +174,6 @@ export const useTutorial = (): {
         onWizardComplete,
         onFirstBattleWon,
         replayTutorial,
+        skipTutorial,
     };
 };

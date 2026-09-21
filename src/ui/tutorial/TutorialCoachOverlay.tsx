@@ -12,9 +12,10 @@ type TutorialWizardState = ReturnType<typeof useTutorialWizard>;
 interface TutorialCoachOverlayProps {
     wizard: TutorialWizardState;
     paused?: boolean;
+    onSkip?: () => void;
 }
 
-export const TutorialCoachOverlay = ({ wizard, paused = false }: TutorialCoachOverlayProps) =>
+export const TutorialCoachOverlay = ({ wizard, paused = false, onSkip }: TutorialCoachOverlayProps) =>
 {
     const {
         step,
@@ -150,13 +151,24 @@ export const TutorialCoachOverlay = ({ wizard, paused = false }: TutorialCoachOv
                     <p className="tutorial-coach-overlay__hint">{copy.hint}</p>
                 )}
                 {needsAction && copy.action && (
-                    <button
-                        type="button"
-                        className="tutorial-coach-overlay__button"
-                        onClick={onPrimary}
-                    >
-                        {copy.action}
-                    </button>
+                    <div className="tutorial-coach-overlay__actions">
+                        <button
+                            type="button"
+                            className="tutorial-coach-overlay__button"
+                            onClick={onPrimary}
+                        >
+                            {copy.action}
+                        </button>
+                        {step === 'welcome' && onSkip && (
+                            <button
+                                type="button"
+                                className="tutorial-coach-overlay__button tutorial-coach-overlay__button--ghost"
+                                onClick={onSkip}
+                            >
+                                Skip tutorial
+                            </button>
+                        )}
+                    </div>
                 )}
                 {!needsAction && (
                     <p className="tutorial-coach-overlay__hint tutorial-coach-overlay__hint--next">

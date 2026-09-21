@@ -147,6 +147,11 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                         <TutorialCoachOverlay
                             wizard={tutorialWizard}
                             paused={pauseMenuOpen}
+                            onSkip={() =>
+                            {
+                                tutorial.skipTutorial();
+                                tutorialWizard.finishTutorial();
+                            }}
                         />
                     )}
                     {!captureMode && !tutorial.needsTutorialWizard && <PuzzleHud />}
