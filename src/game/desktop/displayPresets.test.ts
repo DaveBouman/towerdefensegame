@@ -32,7 +32,9 @@ describe('electron/displayPresets', () =>
 
     it('falls back to adaptive when nothing fixed fits', () =>
     {
-        expect(presetFitsWorkArea({ width: 960, height: 540 }, 800, 600)).toBe(false);
+        expect(presetFitsWorkArea({ width: 1280, height: 720 }, 800, 600)).toBe(false);
         expect(clampPresetId('1280x720', 800, 600)).toBe('adaptive');
+        expect(listAvailablePresetIds(1280, 720)).not.toContain('960x540');
+        expect(listAvailablePresetIds(1280, 720)).toContain('1280x720');
     });
 });

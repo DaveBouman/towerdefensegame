@@ -29,7 +29,6 @@ describe('displaySettings', () =>
                     maxHeight: 1080,
                     availablePresets: [
                         'adaptive',
-                        '960x540',
                         '1280x720',
                         '1600x900',
                         '1920x1080',

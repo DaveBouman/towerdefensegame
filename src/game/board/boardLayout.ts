@@ -78,7 +78,7 @@ export const computeBoardLayout = (
     const playerGap = enemyGap + Math.round(tileSize * 0.3);
     const handBandHeight = HAND_CARD_HEIGHT + 28;
     // Clearance for React GameHud (energy / hints / Attack) above the grid.
-    const hudTopInset = 92;
+    const hudTopInset = 56;
     const gridOffsetX = Math.round((canvasWidth - gridWidth) / 2);
     const handY = canvasHeight - handBandHeight + 4;
     const availableHeight = canvasHeight - hudTopInset - handBandHeight;

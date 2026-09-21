@@ -371,6 +371,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-09-21 | **Min window 1280×720.** Dropped 960×540. Combat HUD is a single compact row (no wrap) with shorter copy and reduced top inset so it stays aligned at the minimum size. |
 | 2026-09-21 | **Display modes.** Settings → Display mode: Windowed, Borderless fullscreen, or Fullscreen. Borderless covers the monitor without exclusive fullscreen; Esc returns to windowed. Mode is persisted. |
 | 2026-09-21 | **Resolution-independent UI scale.** `#game-viewport` exposes `--ui-scale` (height / 720, clamped). Main menu panels zoom with it and pin Quit outside the scroll body so every preset fits the same layout. |
 | 2026-09-21 | **Electron menu fit.** Main menu / Settings panels cap to the 16:9 viewport and scroll inside it (Quit + Teaching/Reset no longer clipped at 720p). Electron window uses `useContentSize` so 1280×720 is the client area. |

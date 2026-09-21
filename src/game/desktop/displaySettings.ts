@@ -6,7 +6,6 @@ import {
 
 export type DisplayPresetId =
     | 'adaptive'
-    | '960x540'
     | '1280x720'
     | '1600x900'
     | '1920x1080'
@@ -22,8 +21,7 @@ const STORAGE_KEY = 'signal-chain-display-preset';
 
 export const DISPLAY_PRESETS: readonly DisplayPreset[] = [
     { id: 'adaptive', width: null, height: null },
-    { id: '960x540', width: GAME_MIN_WIDTH, height: GAME_MIN_HEIGHT },
-    { id: '1280x720', width: 1280, height: 720 },
+    { id: '1280x720', width: GAME_MIN_WIDTH, height: GAME_MIN_HEIGHT },
     { id: '1600x900', width: 1600, height: 900 },
     { id: '1920x1080', width: 1920, height: 1080 },
     { id: '2560x1440', width: 2560, height: 1440 },
@@ -51,6 +49,11 @@ export const readDisplayPreset = (): DisplayPresetId =>
     try
     {
         const raw = localStorage.getItem(STORAGE_KEY);
+
+        if (raw === '960x540')
+        {
+            return DEFAULT_DISPLAY_PRESET;
+        }
 
         if (raw && isDisplayPresetId(raw))
         {

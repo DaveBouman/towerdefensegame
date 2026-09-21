@@ -140,8 +140,7 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
             </div>
             {!captureMode && showChainStartHint && (
                 <p className="game-hud__chain-start-hint" role="status">
-                    Chain starts on row <strong>{chainStart.rowLabel}</strong>
-                    {' '}— click any highlighted <strong>START</strong> column tile to move it
+                    Chain start: row <strong>{chainStart.rowLabel}</strong>
                 </p>
             )}
             {!captureMode && (
@@ -151,24 +150,24 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
                         rerollState.rerollModeActive
                             ? 'Click hand cards to select, then confirm reroll.'
                             : needsTarget
-                                ? 'Multiple hostiles detected — click an enemy panel to lock your target, then Attack.'
+                                ? 'Click an enemy panel to lock your target, then Attack.'
                                 : turnState.energy > 0
-                                    ? 'Place cards and attack — the enemy strikes back after each attack, then overclocks. Extra attacks this round also make them hit harder.'
-                                    : 'Out of energy — the enemy acts, then the board clears and energy refills.'
+                                    ? 'Place cards and Attack. Enemy strikes back, then overclocks.'
+                                    : 'Out of energy — board clears after the enemy acts.'
                     }
                 >
                     {rerollState.rerollModeActive
-                        ? 'Click hand cards to select, then confirm reroll.'
+                        ? 'Select cards, then confirm reroll.'
                         : needsTarget
-                            ? 'Multiple hostiles detected — click an enemy panel to lock your target, then Attack.'
+                            ? 'Lock a target, then Attack.'
                             : turnState.energy > 0
-                                ? 'Place cards and attack — the enemy strikes back after each attack, then overclocks. Extra attacks this round also make them hit harder.'
-                                : 'Out of energy — the enemy acts, then the board clears and energy refills.'}
+                                ? 'Place cards, then Attack.'
+                                : 'Out of energy.'}
                 </p>
             )}
             {!captureMode && needsTarget && (
                 <p className="game-hud__target-prompt" role="status">
-                    No target locked — click an enemy on the right
+                    Select target
                 </p>
             )}
             {rerollState.rerollModeActive ? (
@@ -196,7 +195,7 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
                     disabled={!rerollState.canReroll}
                     onClick={() => EventBus.emit(GAME_EVENTS.REROLL_BEGIN)}
                 >
-                    Floor reroll ({rerollState.rerollsRemaining}/{rerollState.maxRerollsPerFloor})
+                    Reroll ({rerollState.rerollsRemaining}/{rerollState.maxRerollsPerFloor})
                 </button>
             )}
             {!captureMode && (
