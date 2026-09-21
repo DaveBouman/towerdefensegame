@@ -29,10 +29,10 @@
     "build-nolog": "vite build --config vite/config.prod.mjs",
     "electron:start": "npm run build-nolog && electron .",
     "electron:dev": "node electron/dev.cjs",
-    "electron:pack": "npm run generate-app-icon && npm run build-nolog && electron-builder",
-    "dist:win": "npm run generate-app-icon && npm run build-nolog && electron-builder --win",
-    "dist:mac": "npm run generate-app-icon && npm run build-nolog && electron-builder --mac",
-    "dist:linux": "npm run generate-app-icon && npm run build-nolog && electron-builder --linux",
+    "electron:pack": "npm run generate-app-icon && npm run build-nolog && node scripts/run-electron-builder.mjs",
+    "dist:win": "npm run generate-app-icon && npm run build-nolog && node scripts/run-electron-builder.mjs --win --x64",
+    "dist:mac": "npm run generate-app-icon && npm run build-nolog && node scripts/run-electron-builder.mjs --mac",
+    "dist:linux": "npm run generate-app-icon && npm run build-nolog && node scripts/run-electron-builder.mjs --linux",
     "test": "vitest run",
     "test:watch": "vitest",
     "generate-sfx": "node scripts/generate-sfx.mjs",
@@ -60,7 +60,7 @@
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^35.0.0",
-    "electron-builder": "^25.1.8",
+    "electron-builder": "26.16.1",
     "eslint": "^9.22.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
@@ -93,7 +93,12 @@
     "asar": true,
     "win": {
       "target": [
-        "nsis"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "mac": {

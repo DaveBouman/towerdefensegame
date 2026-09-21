@@ -12,11 +12,13 @@ npm run electron:start
 npm run dev-nolog
 npm run electron:dev
 
-# Windows installer (after `npm run build`)
+# Windows installer (NSIS → `release/`)
 npm run dist:win
 ```
 
 Installers land in `release/`. Vite already uses `base: './'`, so relative asset paths work under `file://`.
+
+Smoke-test without the installer: after `dist:win`, run `release/win-unpacked/Signal Chain.exe`. That folder should contain the `.exe` and Chromium `.dll`s. If the installer leaves only `Uninstall*.exe` (and maybe `app.asar` / `.pak` files), rebuild with this repo’s pack scripts — they pin electron-builder **26.16.1**, force Windows **x64**, and set `ELECTRON_BUILDER_7Z_FILTER=BCJ` so NSIS can extract PE files ([electron-builder#9983](https://github.com/electron-userland/electron-builder/issues/9983)). Do not use `electron-builder@latest` while that tag still points at broken **26.15.3**.
 
 ### Steam dev setup
 
