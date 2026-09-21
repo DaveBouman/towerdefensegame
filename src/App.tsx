@@ -4,12 +4,15 @@ import { useRunController } from './runController/useRunController';
 import { useEffect } from 'react';
 import { ensureAudioUnlocked } from './game/audio/gameAudio';
 import { applyStoredDisplayPreset } from './game/desktop/displaySettings';
+import { applyStoredWindowMode } from './game/desktop/windowMode';
 import { isDesktopShell } from './game/desktop/desktopBridge';
 import { GAME_VIEWPORT_ID } from './game/ui/gameViewport';
+import { useGameViewportUiScale } from './ui/hooks/useGameViewportUiScale';
 
 function App()
 {
     const controller = useRunController();
+    useGameViewportUiScale();
 
     useEffect(() =>
     {
@@ -19,6 +22,7 @@ function App()
         }
 
         void applyStoredDisplayPreset();
+        void applyStoredWindowMode();
 
         const unlock = (): void =>
         {

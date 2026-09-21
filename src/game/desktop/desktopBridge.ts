@@ -17,6 +17,7 @@ export interface SignalChainSteamApi {
 }
 
 export type FullscreenChangeListener = (enabled: boolean) => void;
+export type WindowModeChangeListener = (mode: string) => void;
 
 export interface DisplayLimits {
     maxWidth: number;
@@ -29,6 +30,9 @@ export interface SignalChainDesktopApi {
     setFullscreen?: (enabled: boolean) => void;
     getFullscreen?: () => boolean | Promise<boolean>;
     onFullscreenChange?: (listener: FullscreenChangeListener) => (() => void);
+    setWindowMode?: (mode: string) => string | Promise<string>;
+    getWindowMode?: () => string | Promise<string>;
+    onWindowModeChange?: (listener: WindowModeChangeListener) => (() => void);
     setDisplayPreset?: (presetId: string) => string | Promise<string>;
     getDisplayPreset?: () => string | Promise<string>;
     getDisplayLimits?: () => DisplayLimits | Promise<DisplayLimits>;
@@ -105,6 +109,13 @@ export const setGameFullscreen = async (enabled: boolean): Promise<boolean> =>
 {
     const desktop = getDesktopApi();
 
+    if (desktop?.setWindowMode)
+    {
+        await desktop.setWindowMode(enabled ? 'fullscreen' : 'windowed');
+
+        return readGameFullscreen();
+    }
+
     if (desktop?.setFullscreen)
     {
         desktop.setFullscreen(enabled);
@@ -129,4 +140,25 @@ export const setGameFullscreen = async (enabled: boolean): Promise<boolean> =>
     }
 
     return isDocumentFullscreen();
+};
+
+export const subscribeGameWindowMode = (
+    listener: WindowModeChangeListener,
+): (() => void) =>
+{
+    const desktop = getDesktopApi();
+
+    if (desktop?.onWindowModeChange)
+    {
+        return desktop.onWindowModeChange(listener);
+    }
+
+    const onChange = (): void =>
+    {
+        listener(isDocumentFullscreen() ? 'fullscreen' : 'windowed');
+    };
+
+    document.addEventListener('fullscreenchange', onChange);
+
+    return () => document.removeEventListener('fullscreenchange', onChange);
 };

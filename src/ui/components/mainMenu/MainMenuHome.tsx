@@ -33,114 +33,15 @@ export const MainMenuHome = ({
 {
     const desktop = isDesktopShell();
 
-    const quitButton = (
-        <button
-            type="button"
-            className="main-menu__quit"
-            onClick={() =>
-            {
-                emitRunSfx('ui-click', { volume: 0.6, rate: 0.85 });
-                quitGame();
-            }}
-            title={desktop ? 'Quit to desktop' : 'Close window'}
-        >
-            Quit
-        </button>
-    );
-
-    const actions = (
+    const header = pause ? (
         <>
-            <MenuSection label="Run">
-                {pause ? (
-                    <>
-                        <button type="button" className="main-menu__start" onClick={onResume}>
-                            Resume
-                        </button>
-                        <button
-                            type="button"
-                            className="main-menu__secondary"
-                            onClick={onNewRunConfirm}
-                        >
-                            New run
-                        </button>
-                    </>
-                ) : (
-                    <button type="button" className="main-menu__start" onClick={onNewRunConfirm}>
-                        Start run
-                    </button>
-                )}
-            </MenuSection>
-
-            <MenuSection label="Archives">
-                <button
-                    type="button"
-                    className="main-menu__secondary"
-                    onClick={onOpenArchives}
-                >
-                    Browse archives
-                    <ProgressBadge
-                        unlocked={progress.unlocked + bestiaryProgress.unlocked + bodyModProgress.unlocked}
-                        total={progress.total + bestiaryProgress.total + bodyModProgress.total}
-                    />
-                </button>
-            </MenuSection>
-
-            <MenuSection label="Help">
-                <button
-                    type="button"
-                    className="main-menu__secondary"
-                    onClick={onOpenHowToPlay}
-                >
-                    How to play
-                </button>
-                <button
-                    type="button"
-                    className="main-menu__secondary"
-                    onClick={onOpenChangelog}
-                >
-                    What&apos;s new
-                </button>
-                <button
-                    type="button"
-                    className="main-menu__secondary"
-                    onClick={onOpenCredits}
-                >
-                    Credits
-                </button>
-            </MenuSection>
-
-            <MenuSection label="System">
-                <button
-                    type="button"
-                    className="main-menu__secondary"
-                    onClick={onOpenSettings}
-                >
-                    Settings
-                </button>
-            </MenuSection>
-
-            <div className="main-menu__actions main-menu__actions--footer">
-                {quitButton}
-            </div>
+            <p className="main-menu__eyebrow">Paused</p>
+            <h1 className="main-menu__brand main-menu__brand--pause">{GAME_TITLE}</h1>
+            <p className="main-menu__tagline">
+                Adjust settings, inspect archives, or abandon this run.
+            </p>
         </>
-    );
-
-    if (pause)
-    {
-        return (
-            <>
-                <p className="main-menu__eyebrow">Paused</p>
-                <h1 className="main-menu__brand main-menu__brand--pause">{GAME_TITLE}</h1>
-                <p className="main-menu__tagline">
-                    Adjust settings, inspect archives, or abandon this run.
-                </p>
-
-                <div className="main-menu__actions">{actions}</div>
-            </>
-        );
-    }
-
-    return (
+    ) : (
         <>
             <p className="main-menu__eyebrow">{GAME_TAGLINE}</p>
             <h1 className="main-menu__brand">{GAME_TITLE}</h1>
@@ -151,8 +52,97 @@ export const MainMenuHome = ({
             <p className="main-menu__tagline">
                 Link the grid, outlast the street, and cut down the Warden.
             </p>
-
-            <div className="main-menu__actions">{actions}</div>
         </>
+    );
+
+    return (
+        <div className="main-menu__home">
+            <div className="main-menu__home-scroll">
+                {header}
+
+                <div className="main-menu__actions">
+                    <MenuSection label="Run">
+                        {pause ? (
+                            <>
+                                <button type="button" className="main-menu__start" onClick={onResume}>
+                                    Resume
+                                </button>
+                                <button
+                                    type="button"
+                                    className="main-menu__secondary"
+                                    onClick={onNewRunConfirm}
+                                >
+                                    New run
+                                </button>
+                            </>
+                        ) : (
+                            <button type="button" className="main-menu__start" onClick={onNewRunConfirm}>
+                                Start run
+                            </button>
+                        )}
+                    </MenuSection>
+
+                    <MenuSection label="Archives">
+                        <button
+                            type="button"
+                            className="main-menu__secondary"
+                            onClick={onOpenArchives}
+                        >
+                            Browse archives
+                            <ProgressBadge
+                                unlocked={progress.unlocked + bestiaryProgress.unlocked + bodyModProgress.unlocked}
+                                total={progress.total + bestiaryProgress.total + bodyModProgress.total}
+                            />
+                        </button>
+                    </MenuSection>
+
+                    <MenuSection label="Help" actionsClassName="main-menu__section-actions--grid">
+                        <button
+                            type="button"
+                            className="main-menu__secondary"
+                            onClick={onOpenHowToPlay}
+                        >
+                            How to play
+                        </button>
+                        <button
+                            type="button"
+                            className="main-menu__secondary"
+                            onClick={onOpenChangelog}
+                        >
+                            What&apos;s new
+                        </button>
+                        <button
+                            type="button"
+                            className="main-menu__secondary"
+                            onClick={onOpenCredits}
+                        >
+                            Credits
+                        </button>
+                        <button
+                            type="button"
+                            className="main-menu__secondary"
+                            onClick={onOpenSettings}
+                        >
+                            Settings
+                        </button>
+                    </MenuSection>
+                </div>
+            </div>
+
+            <div className="main-menu__home-footer">
+                <button
+                    type="button"
+                    className="main-menu__quit"
+                    onClick={() =>
+                    {
+                        emitRunSfx('ui-click', { volume: 0.6, rate: 0.85 });
+                        quitGame();
+                    }}
+                    title={desktop ? 'Quit to desktop' : 'Close window'}
+                >
+                    Quit
+                </button>
+            </div>
+        </div>
     );
 };

@@ -27,17 +27,26 @@ const appIndexUrl = () => `${APP_SCHEME}://${APP_HOST}/index.html`;
 let mainWindow = null;
 /** @type {string} */
 let activeDisplayPreset = DEFAULT_PRESET_ID;
+/** @type {'windowed' | 'borderless' | 'fullscreen'} */
+let activeWindowMode = 'windowed';
+
+const WINDOW_MODES = new Set([ 'windowed', 'borderless', 'fullscreen' ]);
+
+const isValidWindowMode = (mode) => WINDOW_MODES.has(mode);
 
 const isValidPresetId = (presetId) => Object.hasOwn(PRESETS, presetId);
 
-const getWorkAreaSize = (window) =>
+const getDisplayForWindow = (window) =>
 {
-    const display = window && !window.isDestroyed()
-        ? screen.getDisplayMatching(window.getBounds())
-        : screen.getPrimaryDisplay();
+    if (window && !window.isDestroyed())
+    {
+        return screen.getDisplayMatching(window.getBounds());
+    }
 
-    return display.workAreaSize;
+    return screen.getPrimaryDisplay();
 };
+
+const getWorkAreaSize = (window) => getDisplayForWindow(window).workAreaSize;
 
 const getDisplayLimits = (window) =>
 {
@@ -51,9 +60,23 @@ const getDisplayLimits = (window) =>
     };
 };
 
+const sendWindowModeState = (window) =>
+{
+    if (!window || window.isDestroyed())
+    {
+        return;
+    }
+
+    window.webContents.send('app:window-mode-changed', activeWindowMode);
+    window.webContents.send(
+        'app:fullscreen-changed',
+        activeWindowMode === 'fullscreen' || activeWindowMode === 'borderless',
+    );
+};
+
 const applyDisplayPreset = (window, presetId) =>
 {
-    if (!window || window.isDestroyed() || window.isFullScreen())
+    if (!window || window.isDestroyed() || activeWindowMode !== 'windowed')
     {
         return activeDisplayPreset;
     }
@@ -68,17 +91,63 @@ const applyDisplayPreset = (window, presetId) =>
 
     if (!preset)
     {
+        window.setResizable(true);
         window.setMinimumSize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT);
         window.setMaximumSize(maxWidth, maxHeight);
         return activeDisplayPreset;
     }
 
+    window.setResizable(true);
     window.setMinimumSize(preset.width, preset.height);
     window.setMaximumSize(preset.width, preset.height);
     window.setSize(preset.width, preset.height);
     window.center();
 
     return activeDisplayPreset;
+};
+
+const applyWindowMode = (window, mode) =>
+{
+    if (!window || window.isDestroyed())
+    {
+        return activeWindowMode;
+    }
+
+    const nextMode = isValidWindowMode(mode) ? mode : 'windowed';
+
+    if (nextMode === 'fullscreen')
+    {
+        activeWindowMode = 'fullscreen';
+        window.setFullScreen(true);
+        sendWindowModeState(window);
+
+        return activeWindowMode;
+    }
+
+    if (window.isFullScreen())
+    {
+        window.setFullScreen(false);
+    }
+
+    if (nextMode === 'borderless')
+    {
+        activeWindowMode = 'borderless';
+        const { bounds } = getDisplayForWindow(window);
+
+        window.setResizable(false);
+        window.setMinimumSize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT);
+        window.setMaximumSize(bounds.width, bounds.height);
+        window.setBounds(bounds);
+        sendWindowModeState(window);
+
+        return activeWindowMode;
+    }
+
+    activeWindowMode = 'windowed';
+    applyDisplayPreset(window, activeDisplayPreset);
+    sendWindowModeState(window);
+
+    return activeWindowMode;
 };
 
 protocol.registerSchemesAsPrivileged([
@@ -100,12 +169,7 @@ app.commandLine.appendSwitch('disable-background-timer-throttling');
 
 const sendFullscreenState = (window) =>
 {
-    if (!window)
-    {
-        return;
-    }
-
-    window.webContents.send('app:fullscreen-changed', window.isFullScreen());
+    sendWindowModeState(window);
 };
 
 const registerAppProtocol = () =>
@@ -137,6 +201,8 @@ const createWindow = () =>
     mainWindow = new BrowserWindow({
         width: 1280,
         height: 720,
+        // Content size, not outer chrome — macOS title bar otherwise eats into 720p.
+        useContentSize: true,
         minWidth: MIN_WINDOW_WIDTH,
         minHeight: MIN_WINDOW_HEIGHT,
         backgroundColor: '#0c0812',
@@ -157,7 +223,18 @@ const createWindow = () =>
 
     if (isDevMode())
     {
-        void mainWindow.loadURL(DEV_URL);
+        const loadDev = (attempt = 0) =>
+        {
+            void mainWindow.loadURL(DEV_URL).catch(() =>
+            {
+                if (attempt < 40)
+                {
+                    setTimeout(() => loadDev(attempt + 1), 250);
+                }
+            });
+        };
+
+        loadDev();
         mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
     else
@@ -165,22 +242,33 @@ const createWindow = () =>
         void mainWindow.loadURL(appIndexUrl());
     }
 
-    mainWindow.on('enter-full-screen', () => sendFullscreenState(mainWindow));
+    mainWindow.on('enter-full-screen', () =>
+    {
+        activeWindowMode = 'fullscreen';
+        sendWindowModeState(mainWindow);
+    });
     mainWindow.on('leave-full-screen', () =>
     {
-        sendFullscreenState(mainWindow);
-        applyDisplayPreset(mainWindow, activeDisplayPreset);
+        if (activeWindowMode === 'fullscreen')
+        {
+            activeWindowMode = 'windowed';
+            applyDisplayPreset(mainWindow, activeDisplayPreset);
+        }
+
+        sendWindowModeState(mainWindow);
     });
 
     mainWindow.webContents.on('before-input-event', (_event, input) =>
     {
-        if (input.type !== 'keyDown' || input.key !== 'Escape' || !mainWindow?.isFullScreen())
+        if (input.type !== 'keyDown' || input.key !== 'Escape')
         {
             return;
         }
 
-        mainWindow.setFullScreen(false);
-        sendFullscreenState(mainWindow);
+        if (activeWindowMode === 'fullscreen' || activeWindowMode === 'borderless')
+        {
+            applyWindowMode(mainWindow, 'windowed');
+        }
     });
 };
 
@@ -198,15 +286,24 @@ ipcMain.on('app:fullscreen', (_event, enabled) =>
         return;
     }
 
-    window.setFullScreen(Boolean(enabled));
-    sendFullscreenState(window);
+    applyWindowMode(window, enabled ? 'fullscreen' : 'windowed');
 });
 
 ipcMain.handle('app:get-fullscreen', () =>
+    activeWindowMode === 'fullscreen' || activeWindowMode === 'borderless');
+
+ipcMain.handle('app:get-window-mode', () => activeWindowMode);
+
+ipcMain.handle('app:set-window-mode', (_event, mode) =>
 {
     const window = BrowserWindow.getFocusedWindow() ?? mainWindow;
 
-    return window ? window.isFullScreen() : false;
+    if (!window)
+    {
+        return activeWindowMode;
+    }
+
+    return applyWindowMode(window, mode);
 });
 
 ipcMain.handle('app:get-display-preset', () => activeDisplayPreset);

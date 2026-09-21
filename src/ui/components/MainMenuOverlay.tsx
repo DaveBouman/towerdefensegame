@@ -9,7 +9,13 @@ import {
     isDesktopShell,
     readGameFullscreen,
     subscribeGameFullscreen,
+    subscribeGameWindowMode,
 } from '../../game/desktop/desktopBridge';
+import {
+    isWindowMode,
+    readGameWindowMode,
+    type WindowMode,
+} from '../../game/desktop/windowMode';
 import { GAME_BUILD_LABEL, GAME_VERSION } from '../../game/meta/gameMeta';
 import { getCollectionProgress } from '../../game/run/cardCollection';
 import { getBestiaryProgress } from '../../game/run/enemyBestiary';
@@ -68,6 +74,7 @@ export const MainMenuOverlay = ({
     const [ bestiaryProgress, setBestiaryProgress ] = useState(getBestiaryProgress);
     const [ bodyModProgress, setBodyModProgress ] = useState(getBodyModBestiaryProgress);
     const [ fullscreen, setFullscreen ] = useState(false);
+    const [ windowMode, setWindowMode ] = useState<WindowMode>('windowed');
     const [ textScale, setTextScaleState ] = useState<TextScaleSize>(readTextScale);
     const [ tutorialArmed, setTutorialArmed ] = useState(false);
     const [ totalResetStep, setTotalResetStep ] = useState<1 | 2>(1);
@@ -102,8 +109,23 @@ export const MainMenuOverlay = ({
     useEffect(() =>
     {
         void readGameFullscreen().then(setFullscreen);
+        void readGameWindowMode().then(setWindowMode);
 
-        return subscribeGameFullscreen(setFullscreen);
+        const unsubFullscreen = subscribeGameFullscreen(setFullscreen);
+        const unsubMode = subscribeGameWindowMode((mode) =>
+        {
+            if (isWindowMode(mode))
+            {
+                setWindowMode(mode);
+                setFullscreen(mode !== 'windowed');
+            }
+        });
+
+        return () =>
+        {
+            unsubFullscreen();
+            unsubMode();
+        };
     }, []);
 
     useEffect(() =>
@@ -309,10 +331,12 @@ export const MainMenuOverlay = ({
                             seed={seed}
                             audio={audio}
                             fullscreen={fullscreen}
+                            windowMode={windowMode}
                             textScale={textScale}
                             tutorialArmed={tutorialArmed}
                             onBack={openHome}
                             onFullscreenChange={setFullscreen}
+                            onWindowModeChange={setWindowMode}
                             onTextScaleChange={setTextScaleState}
                             onTutorialArmed={() => setTutorialArmed(true)}
                             onReplayTutorial={onReplayTutorial}

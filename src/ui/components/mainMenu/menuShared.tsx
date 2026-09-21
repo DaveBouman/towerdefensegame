@@ -49,13 +49,17 @@ export const VolumeRow = ({
 export const MenuSection = ({
     label,
     children,
+    actionsClassName,
 }: {
     label: string;
     children: ReactNode;
+    actionsClassName?: string;
 }) => (
     <div className="main-menu__section">
         <p className="main-menu__section-label">{label}</p>
-        <div className="main-menu__section-actions">{children}</div>
+        <div className={[ 'main-menu__section-actions', actionsClassName ].filter(Boolean).join(' ')}>
+            {children}
+        </div>
     </div>
 );
 

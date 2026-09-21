@@ -1,38 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import {
-    GAME_ASPECT,
-    GAME_MIN_HEIGHT,
-    GAME_MIN_WIDTH,
-    computeViewportSize,
-} from './gameViewport';
+import { computeUiScale, GAME_UI_REF_HEIGHT } from './gameViewport';
 
-describe('gameViewport', () =>
+describe('computeUiScale', () =>
 {
-    it('keeps a 16:9 frame on ultrawide windows', () =>
+    it('is 1 at the reference height', () =>
     {
-        const size = computeViewportSize(2560, 1080);
-
-        expect(size.width / size.height).toBeCloseTo(GAME_ASPECT, 2);
-        expect(size.height).toBe(1080);
-        expect(size.width).toBe(Math.round(1080 * GAME_ASPECT));
+        expect(computeUiScale(GAME_UI_REF_HEIGHT)).toBe(1);
     });
 
-    it('keeps a 16:9 frame on tall windows', () =>
+    it('scales down on shorter viewports and up on taller ones within clamps', () =>
     {
-        const size = computeViewportSize(1080, 1920);
-
-        expect(size.width / size.height).toBeCloseTo(GAME_ASPECT, 2);
-        expect(size.width).toBe(1080);
-        expect(size.height).toBe(Math.round(1080 / GAME_ASPECT));
-    });
-
-    it('uses the full window at exactly 16:9', () =>
-    {
-        expect(computeViewportSize(1280, 720)).toEqual({ width: 1280, height: 720 });
-    });
-
-    it('documents the desktop minimum size', () =>
-    {
-        expect(GAME_MIN_WIDTH / GAME_MIN_HEIGHT).toBeCloseTo(GAME_ASPECT, 5);
+        expect(computeUiScale(540)).toBeCloseTo(0.75, 5);
+        expect(computeUiScale(360)).toBe(0.7);
+        expect(computeUiScale(1080)).toBeCloseTo(1.2, 5);
+        expect(computeUiScale(1440)).toBe(1.2);
     });
 });

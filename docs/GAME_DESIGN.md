@@ -371,6 +371,9 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-09-21 | **Display modes.** Settings → Display mode: Windowed, Borderless fullscreen, or Fullscreen. Borderless covers the monitor without exclusive fullscreen; Esc returns to windowed. Mode is persisted. |
+| 2026-09-21 | **Resolution-independent UI scale.** `#game-viewport` exposes `--ui-scale` (height / 720, clamped). Main menu panels zoom with it and pin Quit outside the scroll body so every preset fits the same layout. |
+| 2026-09-21 | **Electron menu fit.** Main menu / Settings panels cap to the 16:9 viewport and scroll inside it (Quit + Teaching/Reset no longer clipped at 720p). Electron window uses `useContentSize` so 1280×720 is the client area. |
 | 2026-08-31 | **Mid round chain start.** Training sim adds a step after the first energy attack: move chain start to row C mid round. Coach copy uses commas instead of em dashes. |
 | 2026-08-31 | **Training sim energy round.** Board persists between attacks during the 3-energy demo; strike→energy session handoff no longer re-applies a phase that wiped the grid each attack. Fire-synergy step uses the same board + Attack rings as the strike step. |
 | 2026-08-31 | **Live tutorial anchors.** Coach spotlight rects now come from Phaser `getBounds()` on chain-start hit areas, hand container, and grid panel — layout changes update automatically. |

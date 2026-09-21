@@ -49,6 +49,8 @@ html, body, #root {
     min-height: min(540px, 100vh);
     overflow: hidden;
     background: radial-gradient(circle at top, #1a1020 0%, #0c0812 45%, #06040a 100%);
+    /* Overlays read this; synced from JS to viewport height / 720. */
+    --ui-scale: 1;
 }
 
 #game-container,
@@ -2148,36 +2150,27 @@ html, body, #root {
     display: flex;
     align-items: safe center;
     justify-content: center;
-    padding: 24px;
+    padding: 12px;
     font-family: var(--font-ui);
     pointer-events: none;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
 }
 
-/* Settings: wider two-column grid — avoid inner panel scroll on desktop. */
-.main-menu:has(.main-menu__panel--settings) {
-    align-items: center;
-    padding-top: max(16px, env(safe-area-inset-top, 0px));
-    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+.main-menu:has(.main-menu__panel--settings),
+.main-menu--pause {
+    align-items: safe center;
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
 }
 
 .main-menu--pause {
     z-index: 1100;
     pointer-events: auto;
     background: rgba(2, 4, 8, 0.55);
-    align-items: center;
-    padding-top: max(16px, env(safe-area-inset-top, 0px));
-    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 }
 
 .main-menu--pause .main-menu__panel {
     pointer-events: auto;
-}
-
-.main-menu--pause .main-menu__panel--settings {
-    margin-top: 8px;
-    margin-bottom: 8px;
 }
 
 .main-menu__glow {
@@ -2190,24 +2183,27 @@ html, body, #root {
 }
 
 .main-menu__panel {
+    --_ui: var(--ui-scale, 1);
     position: relative;
     pointer-events: auto;
+    display: flex;
+    flex-direction: column;
     width: min(440px, 100%);
-    max-height: min(92vh, 860px);
-    max-height: min(92dvh, 860px);
-    overflow: auto;
-    padding: 36px 32px 28px;
+    /* Zoom with resolution; expand layout max-height so the scaled panel still fits. */
+    zoom: var(--_ui);
+    max-height: calc((100% - 16px) / var(--_ui));
+    min-height: 0;
+    overflow: hidden;
+    overscroll-behavior: contain;
+    padding: 28px 28px 20px;
     text-align: center;
     animation: panel-rise-in 420ms cubic-bezier(0.2, 0.9, 0.3, 1) both;
-    margin-block: auto;
 }
 
 .main-menu__panel--settings {
-    width: min(720px, calc(100vw - 32px));
-    max-height: none;
-    overflow: visible;
-    padding: 24px 28px 20px;
-    overscroll-behavior: auto;
+    width: min(720px, 100%);
+    padding: 18px 22px 16px;
+    overflow: auto;
 }
 
 .main-menu__panel--settings .main-menu__screen-title {
@@ -2216,6 +2212,29 @@ html, body, #root {
 
 .main-menu__panel--settings .main-menu__eyebrow {
     margin-bottom: 4px;
+}
+
+.main-menu__home {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+}
+
+.main-menu__home-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.main-menu__home-footer {
+    flex: 0 0 auto;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 45, 149, 0.22);
 }
 
 .main-menu__eyebrow {
@@ -2278,8 +2297,8 @@ html, body, #root {
 .main-menu__settings {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 8px;
+    gap: 8px;
+    margin-bottom: 6px;
     text-align: left;
 }
 
@@ -2290,15 +2309,15 @@ html, body, #root {
 .main-menu__settings-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px 12px;
+    gap: 8px 10px;
 }
 
 .main-menu__settings-card {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
     min-width: 0;
-    padding: 10px 12px;
+    padding: 8px 10px;
     border-radius: 8px;
     border: 1px solid rgba(255, 45, 149, 0.16);
     background: rgba(4, 10, 18, 0.45);
@@ -2353,11 +2372,6 @@ html, body, #root {
     .main-menu:has(.main-menu__panel--settings),
     .main-menu--pause {
         align-items: flex-start;
-    }
-
-    .main-menu__panel--settings {
-        max-height: calc(100dvh - 32px);
-        overflow: auto;
     }
 }
 
@@ -2611,6 +2625,19 @@ html, body, #root {
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.main-menu__section-actions--grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.main-menu__section-actions--grid .main-menu__secondary {
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
 }
 
 .main-menu__tagline--screen {

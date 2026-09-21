@@ -28,7 +28,7 @@
     "dev-nolog": "vite --config vite/config.dev.mjs",
     "build-nolog": "vite build --config vite/config.prod.mjs",
     "electron:start": "npm run build-nolog && electron .",
-    "electron:dev": "electron . --dev",
+    "electron:dev": "node electron/dev.cjs",
     "electron:pack": "npm run build-nolog && electron-builder",
     "dist:win": "npm run build-nolog && electron-builder --win",
     "dist:mac": "npm run build-nolog && electron-builder --mac",

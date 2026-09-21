@@ -17,6 +17,12 @@ import {
     type DisplayPresetId,
 } from '../../../game/desktop/displaySettings';
 import {
+    WINDOW_MODE_LABELS,
+    WINDOW_MODES,
+    setGameWindowMode,
+    type WindowMode,
+} from '../../../game/desktop/windowMode';
+import {
     isSteamBridgeAvailable,
     readSteamFacesEnabled,
     writeSteamFacesEnabled,
@@ -60,10 +66,12 @@ interface MainMenuSettingsProps {
     seed: string;
     audio: AudioSettings;
     fullscreen: boolean;
+    windowMode: WindowMode;
     textScale: TextScaleSize;
     tutorialArmed: boolean;
     onBack: () => void;
     onFullscreenChange: (next: boolean) => void;
+    onWindowModeChange: (next: WindowMode) => void;
     onTextScaleChange: (size: TextScaleSize) => void;
     onTutorialArmed: () => void;
     onReplayTutorial: () => void;
@@ -75,10 +83,12 @@ export const MainMenuSettings = ({
     seed,
     audio,
     fullscreen,
+    windowMode,
     textScale,
     tutorialArmed,
     onBack,
     onFullscreenChange,
+    onWindowModeChange,
     onTextScaleChange,
     onTutorialArmed,
     onReplayTutorial,
@@ -133,7 +143,7 @@ export const MainMenuSettings = ({
 
     const chooseDisplayPreset = (nextPreset: DisplayPresetId): void =>
     {
-        if (nextPreset === displayPreset || fullscreen)
+        if (nextPreset === displayPreset || windowMode !== 'windowed')
         {
             return;
         }
@@ -283,26 +293,44 @@ export const MainMenuSettings = ({
                                     </button>
                                 ))}
                             </div>
-                            <button
-                                type="button"
-                                className={`main-menu__toggle${fullscreen ? ' main-menu__toggle--on' : ''}`}
-                                aria-pressed={fullscreen}
-                                onClick={() =>
-                                {
-                                    emitRunSfx('ui-click', { volume: 0.68 });
-                                    void setGameFullscreen(!fullscreen).then(onFullscreenChange);
-                                }}
-                            >
-                                {fullscreen ? 'Fullscreen on' : 'Fullscreen off'}
-                            </button>
-                            {desktop && (
+                            {desktop ? (
                                 <>
+                                    <span className="main-menu__sublabel">Display mode</span>
+                                    <select
+                                        className="main-menu__resolution-select"
+                                        aria-label="Display mode"
+                                        value={windowMode}
+                                        onChange={(event) =>
+                                        {
+                                            const next = event.target.value as WindowMode;
+
+                                            emitRunSfx('ui-click', { volume: 0.68 });
+                                            void setGameWindowMode(next).then((applied) =>
+                                            {
+                                                onWindowModeChange(applied);
+                                                onFullscreenChange(applied !== 'windowed');
+                                            });
+                                        }}
+                                    >
+                                        {WINDOW_MODES.map((mode) => (
+                                            <option key={mode} value={mode}>
+                                                {WINDOW_MODE_LABELS[mode]}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <p className="main-menu__hint main-menu__hint--compact">
+                                        {windowMode === 'windowed'
+                                            ? t('settings.resolution.windowHint')
+                                            : windowMode === 'borderless'
+                                                ? t('settings.resolution.borderlessHint')
+                                                : t('settings.resolution.fullscreenHint')}
+                                    </p>
                                     <span className="main-menu__sublabel">{t('settings.resolution.label')}</span>
                                     <select
                                         className="main-menu__resolution-select"
                                         aria-label={t('settings.resolution.label')}
                                         value={displayPreset}
-                                        disabled={fullscreen}
+                                        disabled={windowMode !== 'windowed'}
                                         onChange={(event) =>
                                         {
                                             chooseDisplayPreset(event.target.value as DisplayPresetId);
@@ -314,12 +342,20 @@ export const MainMenuSettings = ({
                                             </option>
                                         ))}
                                     </select>
-                                    <p className="main-menu__hint main-menu__hint--compact">
-                                        {fullscreen
-                                            ? t('settings.resolution.fullscreenHint')
-                                            : t('settings.resolution.windowHint')}
-                                    </p>
                                 </>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className={`main-menu__toggle${fullscreen ? ' main-menu__toggle--on' : ''}`}
+                                    aria-pressed={fullscreen}
+                                    onClick={() =>
+                                    {
+                                        emitRunSfx('ui-click', { volume: 0.68 });
+                                        void setGameFullscreen(!fullscreen).then(onFullscreenChange);
+                                    }}
+                                >
+                                    {fullscreen ? 'Fullscreen on' : 'Fullscreen off'}
+                                </button>
                             )}
                         </div>
                     </section>
