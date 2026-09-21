@@ -226,6 +226,11 @@ export class Game extends Scene
 
         this.time.delayedCall(600, () =>
         {
+            if (!this.battleActive)
+            {
+                return;
+            }
+
             this.endBattle();
             EventBus.emit(GAME_EVENTS.PUZZLE_RESOLVED, {
                 puzzleId,
@@ -239,6 +244,13 @@ export class Game extends Scene
     private onRunPhase = ({ phase }: { phase: string }): void =>
     {
         this.runPhase = phase;
+
+        // New run / return to menu / leave combat without a battle outcome — clear the board.
+        if (this.battleActive && phase !== 'battle' && phase !== 'puzzle')
+        {
+            this.endBattle();
+        }
+
         this.syncRunBackdrop();
     };
 
@@ -753,6 +765,12 @@ export class Game extends Scene
 
         this.time.delayedCall(900, () =>
         {
+            // Aborted (e.g. new run) — do not emit an outcome for the torn-down fight.
+            if (!this.battleActive)
+            {
+                return;
+            }
+
             this.endBattle();
             EventBus.emit(GAME_EVENTS.BATTLE_WON, {
                 playerHealth,
@@ -778,6 +796,11 @@ export class Game extends Scene
 
         this.time.delayedCall(900, () =>
         {
+            if (!this.battleActive)
+            {
+                return;
+            }
+
             this.endBattle();
             EventBus.emit(GAME_EVENTS.BATTLE_LOST, {
                 runAttackCount,

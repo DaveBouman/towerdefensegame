@@ -29,10 +29,10 @@
     "build-nolog": "vite build --config vite/config.prod.mjs",
     "electron:start": "npm run build-nolog && electron .",
     "electron:dev": "node electron/dev.cjs",
-    "electron:pack": "npm run build-nolog && electron-builder",
-    "dist:win": "npm run build-nolog && electron-builder --win",
-    "dist:mac": "npm run build-nolog && electron-builder --mac",
-    "dist:linux": "npm run build-nolog && electron-builder --linux",
+    "electron:pack": "npm run generate-app-icon && npm run build-nolog && electron-builder",
+    "dist:win": "npm run generate-app-icon && npm run build-nolog && electron-builder --win",
+    "dist:mac": "npm run generate-app-icon && npm run build-nolog && electron-builder --mac",
+    "dist:linux": "npm run generate-app-icon && npm run build-nolog && electron-builder --linux",
     "test": "vitest run",
     "test:watch": "vitest",
     "generate-sfx": "node scripts/generate-sfx.mjs",
@@ -87,7 +87,8 @@
       "dist/**/*",
       "electron/**/*",
       "build/icon.png",
-      "package.json"
+      "package.json",
+      "!**/node_modules/steamworks.js/**"
     ],
     "asar": true,
     "win": {
@@ -99,7 +100,8 @@
       "target": [
         "dmg"
       ],
-      "category": "public.app-category.games"
+      "category": "public.app-category.games",
+      "identity": null
     },
     "linux": {
       "target": [
