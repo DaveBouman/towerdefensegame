@@ -381,7 +381,8 @@ export const getJokerDirectionChoices = (
 ): CardDirection[] =>
 {
     const stepDistance = getChainStepDistance(getCardDefinitionOrThrow('joker'));
-    const inBounds = getInBoundsDirectionsAtDistance(slot, board.rows, board.cols, stepDistance);
+    const inBounds = getInBoundsDirectionsAtDistance(slot, board.rows, board.cols, stepDistance)
+        .filter((direction) => direction === 'right' || direction === 'down');
 
     const withCard = inBounds.filter((direction) =>
         getNextChainSlot(board, slot, direction, stepDistance) !== null,

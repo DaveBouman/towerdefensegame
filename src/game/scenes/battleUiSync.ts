@@ -160,6 +160,8 @@ export const emitTurnState = (deps: Pick<BattleUiSyncDeps, 'session'>): void =>
         maxEnergy: deps.session.getMaxEnergy(),
         // Energy refills automatically when a full round of attacks is spent.
         canEndTurn: false,
+        boardMovesRemaining: deps.session.getBoardMovesRemaining(),
+        boardMovesMax: deps.session.getBoardMovesMax(),
     });
 };
 
@@ -192,9 +194,7 @@ export const emitAttackReadiness = (
         deps.enemySquad?.showAllIntents(deps.session);
     }
 
-    const chainStartPickable = deps.session.canEditBoard()
-        && !deps.rerollModeActive
-        && !deps.session.isBusy();
+    const chainStartPickable = false;
     const chainStart = deps.session.getChainStartSlot();
 
     deps.boardView?.setChainStartPickable(chainStartPickable);

@@ -195,6 +195,9 @@ export interface TurnState {
     energy: number;
     maxEnergy: number;
     canEndTurn: boolean;
+    /** Remaining board moves this energy round (Infinity when unlimited). */
+    boardMovesRemaining: number;
+    boardMovesMax: number;
 }
 
 export interface HandPenaltyResult {

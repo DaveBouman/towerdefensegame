@@ -70,8 +70,8 @@ export const TUTORIAL_WIZARD_STEPS: Record<TutorialWizardStep, TutorialWizardSte
         action: 'Got it',
     },
     'fire-synergy': {
-        title: 'Fire rhythm',
-        body: 'Fire rewards alternating Attack and Defend steps after it. Try Fire, then Attack, Defend, Attack in one row.',
+        title: 'Charge into Blast',
+        body: 'Line Charge → Charge → Blast from the top-left. Each Charge adds bonus damage when Blast hits.',
         hint: 'One Attack to finish training.',
     },
     'complete': {

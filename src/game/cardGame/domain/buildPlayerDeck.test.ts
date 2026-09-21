@@ -18,13 +18,15 @@ describe('buildPlayerDeck', () =>
 
         expect(deck).toHaveLength(20);
         expect(ids).toHaveLength(20);
-        expect(deck.filter((card) => card.definitionId === 'attack')).toHaveLength(3);
+        expect(deck.filter((card) => card.definitionId === 'attack')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'defend')).toHaveLength(3);
-        expect(deck.filter((card) => card.definitionId === 'attack-leap')).toHaveLength(2);
-        expect(deck.filter((card) => card.definitionId === 'defend-leap')).toHaveLength(2);
+        expect(deck.filter((card) => card.definitionId === 'attack-leap')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'defend-leap')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'joker')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'echo')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'cordite')).toHaveLength(2);
         expect(deck.filter((card) => card.definitionId === 'fire')).toHaveLength(1);
+        expect(deck.filter((card) => card.definitionId === 'warhead')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'poison')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'rupture')).toHaveLength(1);
         expect(deck.filter((card) => card.definitionId === 'bulwark')).toHaveLength(1);
@@ -57,7 +59,7 @@ describe('buildPlayerDeck', () =>
         }
     });
 
-    it('biases orthogonal arrows toward right and keeps left scarce', () =>
+    it('assigns only right and down for orthogonal starter arrows', () =>
     {
         const deck = buildPlayerDeck(GAME_RULES.deckSize);
         const orthogonalCards = deck.filter((card) =>
@@ -77,15 +79,11 @@ describe('buildPlayerDeck', () =>
                 count + (card.arrow === direction ? 1 : 0), 0);
 
         const right = countDirection('right');
-        const left = countDirection('left');
-        const up = countDirection('up');
         const down = countDirection('down');
 
-        expect(right + up + down + left).toBe(18);
-        expect(right).toBeGreaterThan(up);
-        expect(right).toBeGreaterThan(down);
-        expect(left).toBeLessThanOrEqual(up);
-        expect(left).toBeLessThanOrEqual(down);
-        expect(left).toBeLessThan(right);
+        expect(right + down).toBe(18);
+        expect(right).toBeGreaterThan(0);
+        expect(down).toBeGreaterThan(0);
+        expect(orthogonalCards.every((card) => card.arrow === 'right' || card.arrow === 'down')).toBe(true);
     });
 });

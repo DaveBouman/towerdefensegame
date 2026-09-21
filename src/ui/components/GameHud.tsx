@@ -29,6 +29,8 @@ const DEFAULT_TURN_STATE: TurnState = {
     energy: 0,
     maxEnergy: 0,
     canEndTurn: false,
+    boardMovesRemaining: 0,
+    boardMovesMax: 0,
 };
 
 const DEFAULT_CHAIN_START_STATE = {
@@ -138,6 +140,20 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
                     {turnState.energy}/{turnState.maxEnergy}
                 </span>
             </div>
+            {turnState.boardMovesMax > 0 && (
+                <div
+                    className="game-hud__energy"
+                    title="After placing, you can relocate, swap, or pick up cards this many times per energy round."
+                >
+                    <span className="game-hud__energy-label">Moves</span>
+                    <span className="game-hud__energy-count">
+                        {Number.isFinite(turnState.boardMovesRemaining)
+                            ? turnState.boardMovesRemaining
+                            : '∞'}
+                        /{turnState.boardMovesMax}
+                    </span>
+                </div>
+            )}
             {!captureMode && showChainStartHint && (
                 <p className="game-hud__chain-start-hint" role="status">
                     Chain start: row <strong>{chainStart.rowLabel}</strong>
@@ -152,7 +168,9 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
                             : needsTarget
                                 ? 'Click an enemy panel to lock your target, then Attack.'
                                 : turnState.energy > 0
-                                    ? 'Place cards and Attack. Enemy strikes back, then overclocks.'
+                                    ? turnState.boardMovesRemaining > 0
+                                        ? `Place freely; ${turnState.boardMovesRemaining} board move${turnState.boardMovesRemaining === 1 ? '' : 's'} left this round.`
+                                        : 'No moves left — Attack with the board as-is.'
                                     : 'Out of energy — board clears after the enemy acts.'
                     }
                 >
@@ -161,7 +179,9 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
                         : needsTarget
                             ? 'Lock a target, then Attack.'
                             : turnState.energy > 0
-                                ? 'Place cards, then Attack.'
+                                ? turnState.boardMovesRemaining > 0
+                                    ? `Place freely · ${turnState.boardMovesRemaining} moves left.`
+                                    : 'No moves left — Attack.'
                                 : 'Out of energy.'}
                 </p>
             )}

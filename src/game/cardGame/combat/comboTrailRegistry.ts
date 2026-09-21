@@ -89,6 +89,55 @@ const fireTrailDetector: ComboTrailDetector = {
     },
 };
 
+const corditeTrailDetector: ComboTrailDetector = {
+    id: 'cordite-trail',
+    starterBehaviorId: 'cordite',
+    detect: ({ startIndex, steps, minLength }) =>
+    {
+        // Only start at the first Charge in a run.
+        if (startIndex > 0 && steps[startIndex - 1]?.behaviorId === 'cordite')
+        {
+            return null;
+        }
+
+        const indices = [ startIndex ];
+
+        for (let i = startIndex + 1; i < steps.length; i++)
+        {
+            const behaviorId = steps[i]!.behaviorId;
+
+            if (behaviorId === 'cordite')
+            {
+                indices.push(i);
+                continue;
+            }
+
+            if (behaviorId === 'warhead')
+            {
+                indices.push(i);
+                break;
+            }
+
+            break;
+        }
+
+        const last = steps[indices[indices.length - 1]!]!;
+
+        if (last.behaviorId !== 'warhead' || indices.length < minLength)
+        {
+            return null;
+        }
+
+        const chargeCount = indices.length - 1;
+
+        return {
+            behaviorId: 'cordite',
+            indices,
+            label: `CHARGE×${chargeCount}`,
+        };
+    },
+};
+
 /**
  * Ordered list of combo-trail detectors. First match per starter index wins for that
  * starter behavior; multiple starters (Rad then Fire) can still fire on one chain.
@@ -96,6 +145,7 @@ const fireTrailDetector: ComboTrailDetector = {
  */
 export const COMBO_TRAIL_DETECTORS: readonly ComboTrailDetector[] = [
     radTrailDetector,
+    corditeTrailDetector,
     fireTrailDetector,
 ];
 

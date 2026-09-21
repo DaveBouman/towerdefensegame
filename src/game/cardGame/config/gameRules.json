@@ -4,6 +4,7 @@
   "deckSize": 20,
   "handSize": 8,
   "energyPerTurn": 3,
+  "boardMovesPerEnergyRound": 3,
   "enemyDamageRampPerAttack": 4,
   "enemyStrengthPerTurn": 4,
   "enemyHealthVariance": 0.1,
@@ -44,13 +45,16 @@
     "step": 0.1,
     "enemyIntentChance": 0.35
   },
-  "chainAbilities": {
+    "chainAbilities": {
     "poisonTrail": {
       "damagePerSubsequentCard": 1,
       "damagePerStack": 4
     },
     "fireAlternation": {
       "bonusDamagePerAlternatingStep": 3
+    },
+    "corditePayload": {
+      "damagePerCordite": 4
     },
     "bleed": {
       "attackThreshold": 2,
@@ -67,6 +71,8 @@
   "chainStepMsByBehavior": {
     "attack": 0.82,
     "fire": 0.82,
+    "cordite": 0.7,
+    "warhead": 1.05,
     "defend": 1.18,
     "poison": 1.05,
     "battle-mod": 1.05,

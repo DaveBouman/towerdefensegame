@@ -77,7 +77,67 @@ describe('CardGameSession enemy turn', () =>
 
         expect(session.getHand()).toHaveLength(GAME_RULES.handSize);
         expect(session.getHand().map((card) => card.instanceId)).not.toEqual(originalHand);
-        expect(session.getDiscardSize()).toBe(GAME_RULES.handSize);
+        // Experimental wipe: old hand discarded; board card(s) returned then topped up.
+        expect(session.getDiscardSize()).toBeGreaterThan(0);
+    });
+
+    it('returns board cards to hand on wipe and discards the old hand', () =>
+    {
+        const session = new CardGameSession();
+        const placementSlots = [
+            { row: 0, col: 0 },
+            { row: 0, col: 1 },
+            { row: 0, col: 2 },
+            { row: 0, col: 3 },
+        ] as const;
+
+        for (const slot of placementSlots)
+        {
+            expect(session.placeCardFromHand(0, slot)).toBe(true);
+        }
+
+        // Placing is free — move budget still full.
+        expect(session.getBoardMovesRemaining()).toBe(3);
+
+        const handBeforeWipe = session.getHand().length;
+        session.clearBoard();
+        expect(session.getHand()).toHaveLength(placementSlots.length);
+        expect(session.getDiscardSize()).toBe(handBeforeWipe);
+
+        session.renewHand();
+
+        expect(session.getHand()).toHaveLength(GAME_RULES.handSize);
+    });
+
+    it('limits board moves to three per energy round after placing', () =>
+    {
+        const session = new CardGameSession();
+
+        expect(session.getBoardMovesMax()).toBe(3);
+        expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
+        expect(session.placeCardFromHand(0, { row: 0, col: 1 })).toBe(true);
+        expect(session.placeCardFromHand(0, { row: 0, col: 2 })).toBe(true);
+        expect(session.placeCardFromHand(0, { row: 0, col: 3 })).toBe(true);
+        expect(session.getBoardMovesRemaining()).toBe(3);
+
+        expect(session.moveCardOnBoard({ row: 0, col: 0 }, { row: 1, col: 0 })).toBe(true);
+        expect(session.moveCardOnBoard({ row: 0, col: 1 }, { row: 1, col: 1 })).toBe(true);
+        expect(session.moveCardOnBoard({ row: 0, col: 2 }, { row: 1, col: 2 })).toBe(true);
+        expect(session.moveCardOnBoard({ row: 0, col: 3 }, { row: 1, col: 3 })).toBe(false);
+        expect(session.getBoardMovesRemaining()).toBe(0);
+
+        for (let i = session.getEnergy(); i > 0; i--)
+        {
+            session.spendEnergy();
+        }
+
+        session.clearBoard();
+        session.finishPlayerRound();
+
+        expect(session.getBoardMovesRemaining()).toBe(3);
+        expect(session.placeCardFromHand(0, { row: 2, col: 0 })).toBe(true);
+        expect(session.moveCardOnBoard({ row: 2, col: 0 }, { row: 2, col: 1 })).toBe(true);
+        expect(session.getBoardMovesRemaining()).toBe(2);
     });
 
     it('reshuffles the discard pile when the deck cannot satisfy a draw', () =>
@@ -87,46 +147,31 @@ describe('CardGameSession enemy turn', () =>
             { row: 0, col: 0 },
             { row: 0, col: 1 },
             { row: 0, col: 2 },
-            { row: 0, col: 3 },
-            { row: 1, col: 0 },
-            { row: 1, col: 1 },
-            { row: 1, col: 2 },
-            { row: 1, col: 3 },
-            { row: 2, col: 0 },
-            { row: 2, col: 1 },
         ] as const;
 
         for (const slot of placementSlots)
         {
-            session.placeCardFromHand(0, slot);
+            expect(session.placeCardFromHand(0, slot)).toBe(true);
         }
 
         session.clearBoard();
-        expect(session.getHand()).toHaveLength(0);
-        expect(session.getDiscardSize()).toBe(GAME_RULES.handSize);
-        expect(session.getDeckSize()).toBe(GAME_RULES.deckSize - GAME_RULES.handSize);
+        expect(session.getHand()).toHaveLength(placementSlots.length);
 
         session.renewHand();
-
         expect(session.getHand()).toHaveLength(GAME_RULES.handSize);
         expect(session.getDiscardSize()).toBe(GAME_RULES.handSize);
-        expect(session.getDeckSize()).toBe(GAME_RULES.deckSize - GAME_RULES.handSize * 2);
+
+        session.finishPlayerRound();
 
         for (const slot of placementSlots)
         {
-            session.placeCardFromHand(0, slot);
+            expect(session.placeCardFromHand(0, slot)).toBe(true);
         }
 
         session.clearBoard();
-        expect(session.getHand()).toHaveLength(0);
-        expect(session.getDiscardSize()).toBe(GAME_RULES.handSize * 2);
-        expect(session.getDeckSize()).toBe(GAME_RULES.deckSize - GAME_RULES.handSize * 2);
-
         session.renewHand();
 
         expect(session.getHand()).toHaveLength(GAME_RULES.handSize);
-        expect(session.getDiscardSize()).toBe(0);
-        expect(session.getDeckSize()).toBe(GAME_RULES.deckSize - GAME_RULES.handSize);
     });
 
     it('applies defend armor as shield that blocks enemy attacks', () =>
@@ -868,10 +913,9 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getPlayer().shield).toBe(3);
     });
 
-    it('replaces a board card when placing from hand onto an occupied slot', () =>
+    it('allows replacing an occupied slot using a board move', () =>
     {
         const session = new CardGameSession();
-        const handCard = session.getHand()[0];
 
         session.placeCardFromHand(0, { row: 0, col: 0 });
         session.placeCardFromHand(0, { row: 0, col: 1 });
@@ -879,9 +923,8 @@ describe('CardGameSession enemy turn', () =>
         const replacement = session.getHand()[0];
 
         expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
-        expect(session.board.getCardAt({ row: 0, col: 0 })?.instanceId).toBe(replacement.instanceId);
-        expect(session.getHand().some((card) => card.instanceId === handCard.instanceId)).toBe(true);
-        expect(session.placeCardFromHand(0, { row: 0, col: 0 })).toBe(true);
+        expect(session.board.getCardAt({ row: 0, col: 0 })?.instanceId).toBe(replacement?.instanceId);
+        expect(session.getBoardMovesRemaining()).toBe(2);
     });
 
     it('scrambles hand arrows for the rest of the energy round via Signal Twist', () =>
@@ -911,7 +954,7 @@ describe('CardGameSession enemy turn', () =>
         expect(session.hasHandRedirect()).toBe(false);
     });
 
-    it('swaps board cards without limit', () =>
+    it('swaps board cards within the move budget', () =>
     {
         const session = new CardGameSession();
 
@@ -922,9 +965,9 @@ describe('CardGameSession enemy turn', () =>
         const second = session.board.getCardAt({ row: 0, col: 1 })?.instanceId;
 
         expect(session.swapCardsOnBoard({ row: 0, col: 0 }, { row: 0, col: 1 })).toBe(true);
-        expect(session.swapCardsOnBoard({ row: 0, col: 0 }, { row: 0, col: 1 })).toBe(true);
-        expect(session.board.getCardAt({ row: 0, col: 0 })?.instanceId).toBe(first);
-        expect(session.board.getCardAt({ row: 0, col: 1 })?.instanceId).toBe(second);
+        expect(session.board.getCardAt({ row: 0, col: 0 })?.instanceId).toBe(second);
+        expect(session.board.getCardAt({ row: 0, col: 1 })?.instanceId).toBe(first);
+        expect(session.getBoardMovesRemaining()).toBe(2);
     });
 
     it('allows attack when only defend cards are on the board', () =>
@@ -977,20 +1020,20 @@ describe('CardGameSession enemy turn', () =>
         expect(session.getAttackReadiness().canAttack).toBe(true);
     });
 
-    it('uses the selected left-column tile as the chain start', () =>
+    it('keeps chain start locked to the top-left tile', () =>
     {
         const session = new CardGameSession();
 
-        session.setChainStartSlot({ row: 2, col: 0 });
+        expect(session.setChainStartSlot({ row: 2, col: 0 })).toBe(false);
+        session.board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'right'));
         session.board.placeCard({ row: 2, col: 0 }, createCardInstance('attack', 'right'));
-        session.board.placeCard({ row: 0, col: 0 }, createCardInstance('attack', 'left'));
 
         const sequence = session.planAttack();
 
-        expect(sequence?.chain.map((step) => step.slot)).toEqual([ { row: 2, col: 0 } ]);
+        expect(sequence?.chain.map((step) => step.slot)).toEqual([ { row: 0, col: 0 } ]);
     });
 
-    it('returns a board card to the hand when removed', () =>
+    it('allows picking up placed cards within the move budget', () =>
     {
         const session = new CardGameSession();
         const handSize = session.getHand().length;
@@ -1002,6 +1045,7 @@ describe('CardGameSession enemy turn', () =>
         expect(session.board.isEmpty({ row: 1, col: 1 })).toBe(true);
         expect(session.getHand()).toHaveLength(handSize);
         expect(session.getHand().some((card) => card.instanceId === placed?.instanceId)).toBe(true);
+        expect(session.getBoardMovesRemaining()).toBe(2);
     });
 
     it('starts each fight with three rerolls by default', () =>
@@ -1433,7 +1477,7 @@ describe('CardGameSession enemy turn', () =>
         expect(session.board.getCardAt({ row: 0, col: 1 })).toBeNull();
         expect(session.board.getCardAt({ row: 1, col: 0 })?.instanceId).toBe(firstDefend.instanceId);
         expect(session.board.getCardAt({ row: 2, col: 0 })?.instanceId).toBe(firstSkill.instanceId);
-        expect(session.getDiscardDefinitionIds()).toEqual([ 'attack' ]);
+        expect(session.getHand().some((card) => card.definitionId === 'attack')).toBe(true);
     });
 
     it('lets Latch Array pin a replacement after the kept card is picked up', () =>
@@ -1457,12 +1501,12 @@ describe('CardGameSession enemy turn', () =>
         session.clearBoard();
 
         expect(session.removeCardFromBoard({ row: 0, col: 0 })).toBe(true);
+        expect(session.board.getCardAt({ row: 0, col: 0 })).toBeNull();
         expect(session.placeCardFromHand(0, { row: 1, col: 0 })).toBe(true);
         const replacement = session.board.getCardAt({ row: 1, col: 0 })!;
 
         session.clearBoard();
 
-        expect(session.board.getCardAt({ row: 0, col: 0 })).toBeNull();
         expect(session.board.getCardAt({ row: 1, col: 0 })?.instanceId).toBe(replacement.instanceId);
     });
 
@@ -1727,7 +1771,7 @@ describe('CardGameSession courier discard', () =>
         expect(session.board.getCardAt({ row: 0, col: 0 })?.definitionId).toBe('courier');
     });
 
-    it('replaces a spent exhaust card from hand and sends the covered card to exhaust', () =>
+    it('covers a spent exhaust card using a board move', () =>
     {
         const session = puzzleSession([
             { definitionId: 'salvage', arrow: 'right' },

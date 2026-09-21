@@ -27,7 +27,7 @@ export const TUTORIAL_WIZARD_PHASE_SPECS: Partial<Record<TutorialWizardStep, Tut
     'chain-start': {
         stepId: 'chain-start',
         handCards: [],
-        chainStart: { row: 2, col: 0 },
+        chainStart: { row: 0, col: 0 },
         maxEnergy: 0,
     },
     'place-attacks': {
@@ -59,9 +59,9 @@ export const TUTORIAL_WIZARD_PHASE_SPECS: Partial<Record<TutorialWizardStep, Tut
     'fire-synergy': {
         stepId: 'fire-synergy',
         handCards: [
-            { definitionId: 'fire', arrow: 'right' },
-            { definitionId: 'attack', arrow: 'right' },
-            { definitionId: 'defend', arrow: 'right' },
+            { definitionId: 'cordite', arrow: 'right' },
+            { definitionId: 'cordite', arrow: 'right' },
+            { definitionId: 'warhead', arrow: 'right' },
             { definitionId: 'attack', arrow: 'right' },
         ],
         chainStart: { row: 0, col: 0 },

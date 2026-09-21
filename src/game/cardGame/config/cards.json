@@ -144,6 +144,33 @@
       }
     },
     {
+      "id": "cordite",
+      "label": "Charge",
+      "power": 0,
+      "behaviorId": "cordite",
+      "visualId": "cordite",
+      "arrowPool": "orthogonal",
+      "tier": 1,
+      "upgrade": {
+        "power": 0
+      }
+    },
+    {
+      "id": "warhead",
+      "label": "Blast",
+      "power": 4,
+      "behaviorId": "warhead",
+      "visualId": "warhead",
+      "arrowPool": "orthogonal",
+      "chainAbilityIds": [
+        "cordite-payload"
+      ],
+      "tier": 2,
+      "upgrade": {
+        "power": 6
+      }
+    },
+    {
       "id": "hazard",
       "label": "Trap",
       "power": 4,

@@ -200,6 +200,7 @@ export class CardGameSession
             deckHand: this.deckHand,
             isBusy: () => this.isBusy(),
             isPuzzleFinished: () => this.puzzleFinished,
+            isBoardMoveBudgetEnabled: () => this.puzzleMode === null,
             isSlotBlockedForPlayer: (slot) => this.isSlotBlockedForPlayer(slot),
             onCardExhausted: (definitionId) =>
             {
@@ -225,6 +226,8 @@ export class CardGameSession
             isEnemyDefeated: () => this.isEnemyDefeated(),
             refillHand: () => this.refillHand(),
             renewHand: () => this.renewHand(),
+            clearPlayerShield: () => this.clearPlayerShield(),
+            resetBoardPlacements: () => this.boardEdit.resetBoardMoves(),
             clearTransientBattleModifiers: () => this.clearTransientBattleModifiers(),
             clearBattleModifiers: () => this.clearBattleModifiers(),
             applyEnemyCurseHand: () => this.applyEnemyCurseHand(),
@@ -692,8 +695,13 @@ export class CardGameSession
     /** Discards the current hand and draws a fresh one for the next player turn. */
     renewHand (): void
     {
-        this.player.shield = 0;
+        this.clearPlayerShield();
         this.deckHand.renewHand();
+    }
+
+    clearPlayerShield (): void
+    {
+        this.player.shield = 0;
         CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: this.player.shield });
     }
 
@@ -709,12 +717,19 @@ export class CardGameSession
             return false;
         }
 
-        if (slot.col !== GAME_RULES.activationStartColumn || slot.row < 0 || slot.row >= GRID_CONFIG.rows)
+        // Experimental: chain always starts at top-left (activationStart).
+        if (
+            slot.row !== GAME_RULES.activationStart.row
+            || slot.col !== GAME_RULES.activationStartColumn
+        )
         {
             return false;
         }
 
-        this.chainStart = { row: slot.row, col: slot.col };
+        this.chainStart = {
+            row: GAME_RULES.activationStart.row,
+            col: GAME_RULES.activationStartColumn,
+        };
 
         return true;
     }
@@ -1384,11 +1399,11 @@ export class CardGameSession
         this.energyRound.completeEnemyTurn(action);
     }
 
-    /** Clears player cards from the board at end of player round (before the enemy acts). */
+    /** Clears player cards from the board at end of energy round — returns them to hand. */
     clearBoard (): void
     {
         const keepIds = this.getLatchKeepInstanceIds();
-        const toDiscard: CardInstance[] = [];
+        const toHand: CardInstance[] = [];
         const toExhaust: CardInstance[] = [];
 
         for (const slot of this.board.slotsInOrder())
@@ -1413,14 +1428,16 @@ export class CardGameSession
                 }
                 else
                 {
-                    toDiscard.push(card);
+                    toHand.push(card);
                 }
             }
 
             this.board.removeCard(slot);
         }
 
-        this.deckHand.discardToPile(toDiscard);
+        // Experimental: discard the old mid-round hand, then board cards become the new hand.
+        this.deckHand.discardHandToPile();
+        this.deckHand.returnCardsToHand(toHand);
         this.deckHand.exhaustToPile(toExhaust);
         this.reseedLatchFromBoard();
     }
@@ -1549,5 +1566,30 @@ export class CardGameSession
     canEditBoard (): boolean
     {
         return this.boardEdit.canEditBoard();
+    }
+
+    getBoardPlacementsRemaining (): number
+    {
+        return this.boardEdit.getBoardMovesRemaining();
+    }
+
+    getBoardPlacementsMax (): number
+    {
+        return this.boardEdit.getBoardMovesMax();
+    }
+
+    getBoardPlacementsUsed (): number
+    {
+        return this.boardEdit.getBoardMovesUsed();
+    }
+
+    getBoardMovesRemaining (): number
+    {
+        return this.boardEdit.getBoardMovesRemaining();
+    }
+
+    getBoardMovesMax (): number
+    {
+        return this.boardEdit.getBoardMovesMax();
     }
 }

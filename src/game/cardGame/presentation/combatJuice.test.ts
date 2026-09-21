@@ -13,9 +13,9 @@ describe('combatJuice', () =>
 {
     it('scales damage number presentation by tier', () =>
     {
-        expect(getDamageTierStyle(5).fontSize).toBe(24);
+        expect(getDamageTierStyle(5).fontSize).toBe(22);
         expect(getDamageTierStyle(12).fontSize).toBe(28);
-        expect(getDamageTierStyle(25).fontSize).toBe(32);
+        expect(getDamageTierStyle(25).fontSize).toBe(34);
         expect(getDamageTierStyle(50).hitstopMs).toBeGreaterThan(0);
         expect(getDamageTierStyle(5).shakeIntensity).toBeGreaterThan(0);
         expect(getDamageTierStyle(25).shakeIntensity).toBeGreaterThan(

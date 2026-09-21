@@ -22,7 +22,8 @@ export const CARD_DIRECTIONS: readonly CardDirection[] = [
     'down-right',
 ];
 
-export const ORTHOGONAL_DIRECTIONS: readonly CardDirection[] = [ 'up', 'down', 'left', 'right' ];
+/** Experimental branch: chains only travel right and down. */
+export const ORTHOGONAL_DIRECTIONS: readonly CardDirection[] = [ 'right', 'down' ];
 
 export const oppositeDirection = (direction: CardDirection): CardDirection =>
 {
@@ -39,10 +40,8 @@ export const oppositeDirection = (direction: CardDirection): CardDirection =>
     }
 };
 
+/** Experimental branch: diagonal cards only bend down-right. */
 export const DIAGONAL_DIRECTIONS: readonly CardDirection[] = [
-    'up-left',
-    'up-right',
-    'down-left',
     'down-right',
 ];
 
@@ -63,7 +62,7 @@ const OFFSETS: Record<CardDirection, { row: number; col: number }> = {
 };
 
 export const randomCardDirection = (): CardDirection =>
-    CARD_DIRECTIONS[randomInt(CARD_DIRECTIONS.length)]!;
+    ORTHOGONAL_DIRECTIONS[randomInt(ORTHOGONAL_DIRECTIONS.length)]!;
 
 export const randomDirectionForPool = (pool: ArrowPool): CardDirection =>
 {
@@ -121,16 +120,11 @@ export const getDirectionsForPool = (pool: ArrowPool): readonly CardDirection[] 
  */
 export const FORWARD_ORTHOGONAL_DIRECTIONS: readonly CardDirection[] = [
     'right',
-    'up',
     'down',
-    'left',
 ];
 
 export const FORWARD_DIAGONAL_DIRECTIONS: readonly CardDirection[] = [
-    'up-right',
     'down-right',
-    'up-left',
-    'down-left',
 ];
 
 export const getForwardDirectionsForPool = (pool: ArrowPool): readonly CardDirection[] =>
@@ -144,16 +138,14 @@ export const getForwardDirectionsForPool = (pool: ArrowPool): readonly CardDirec
 };
 
 /**
- * Right-biased cycle so starter decks have more forward arrows than left turns.
- * Orthogonal: 4 right / 2 up / 2 down / 1 left.
- * Diagonal: 2 up-right / 2 down-right / 1 up-left / 1 down-left.
+ * Experimental branch: only right / down (orthogonal) and down-right (diagonal).
  */
 const FORWARD_ORTHOGONAL_CYCLE: readonly CardDirection[] = [
-    'right', 'up', 'right', 'down', 'right', 'up', 'right', 'down', 'left',
+    'right', 'down', 'right', 'down', 'right', 'down',
 ];
 
 const FORWARD_DIAGONAL_CYCLE: readonly CardDirection[] = [
-    'up-right', 'down-right', 'up-right', 'down-right', 'up-left', 'down-left',
+    'down-right',
 ];
 
 export const arrowPoolLabel = (pool: ArrowPool): string =>
@@ -161,11 +153,11 @@ export const arrowPoolLabel = (pool: ArrowPool): string =>
     switch (pool)
     {
         case 'orthogonal':
-            return 'Right, up, down, or left';
+            return 'Right or down';
         case 'diagonal':
-            return 'Diagonal';
+            return 'Down-right';
         case 'joker':
-            return 'Any direction in battle';
+            return 'Right or down in battle';
     }
 };
 

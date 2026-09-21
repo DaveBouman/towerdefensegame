@@ -1,4 +1,5 @@
 import {
+    GAME_RULES,
     getCardDefinitionOrThrow,
     getCardDiscardFromHandCount,
     isCardExhaustOnPlay,
@@ -11,7 +12,7 @@ import type { DeckHand } from './DeckHand';
 import type { CardInstance, SlotPosition } from './types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
-import { clearCardAnchoredState, markCardRelocated, markCardSettled } from '../combat/anchoredBonus';
+import { markCardRelocated, markCardSettled } from '../combat/anchoredBonus';
 
 export interface BoardEditHost
 {
@@ -19,13 +20,17 @@ export interface BoardEditHost
     readonly deckHand: DeckHand;
     isBusy (): boolean;
     isPuzzleFinished (): boolean;
+    /** When false, move budget is ignored (puzzles / training sim). */
+    isBoardMoveBudgetEnabled (): boolean;
     isSlotBlockedForPlayer (slot: SlotPosition): boolean;
     onCardExhausted (definitionId: string): void;
 }
 
-/** Player board edits: place / remove / move / swap while combat is idle. */
+/** Player board edits: place freely; move / remove / swap use a per-round budget. */
 export class BoardEditController
 {
+    private movesUsedThisRound = 0;
+
     constructor (private readonly host: BoardEditHost) {}
 
     canEditBoard (): boolean
@@ -36,6 +41,68 @@ export class BoardEditController
         }
 
         return !this.host.isBusy();
+    }
+
+    getBoardMovesUsed (): number
+    {
+        return this.movesUsedThisRound;
+    }
+
+    getBoardMovesRemaining (): number
+    {
+        if (!this.host.isBoardMoveBudgetEnabled())
+        {
+            return Number.POSITIVE_INFINITY;
+        }
+
+        const max = GAME_RULES.boardMovesPerEnergyRound;
+
+        if (max <= 0)
+        {
+            return Number.POSITIVE_INFINITY;
+        }
+
+        return Math.max(0, max - this.movesUsedThisRound);
+    }
+
+    getBoardMovesMax (): number
+    {
+        if (!this.host.isBoardMoveBudgetEnabled())
+        {
+            return 0;
+        }
+
+        return Math.max(0, GAME_RULES.boardMovesPerEnergyRound);
+    }
+
+    /** Call when a new energy round begins (after board wipe). */
+    resetBoardMoves (): void
+    {
+        this.movesUsedThisRound = 0;
+    }
+
+    /** @deprecated Use getBoardMovesRemaining — kept for HUD transition aliases. */
+    getBoardPlacementsRemaining (): number
+    {
+        return this.getBoardMovesRemaining();
+    }
+
+    /** @deprecated Use getBoardMovesMax */
+    getBoardPlacementsMax (): number
+    {
+        return this.getBoardMovesMax();
+    }
+
+    /** @deprecated Use getBoardMovesUsed */
+    getBoardPlacementsUsed (): number
+    {
+        return this.getBoardMovesUsed();
+    }
+
+    /** @deprecated Use resetBoardMoves */
+    resetBoardPlacements (): void
+    {
+        this.resetBoardMoves();
     }
 
     placeCardFromHand (handIndex: number, slot: SlotPosition): boolean
@@ -66,6 +133,7 @@ export class BoardEditController
             return false;
         }
 
+        // Empty tile: place freely (no move budget).
         if (!existing)
         {
             if (this.host.isSlotBlockedForPlayer(slot))
@@ -87,6 +155,12 @@ export class BoardEditController
             return true;
         }
 
+        // Replacing / covering an existing player card counts as a move.
+        if (this.getBoardMovesRemaining() <= 0)
+        {
+            return false;
+        }
+
         if (existing.exhausted)
         {
             this.host.board.removeCard(slot);
@@ -95,6 +169,7 @@ export class BoardEditController
             this.host.deckHand.removeHandCardAt(handIndex);
             markCardSettled(card);
             this.markExhaustedIfNeeded(card, definition);
+            this.movesUsedThisRound += 1;
             CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card, replaced: true });
             this.host.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
 
@@ -107,6 +182,7 @@ export class BoardEditController
         markCardRelocated(existing);
         markCardSettled(card);
         this.markExhaustedIfNeeded(card, definition);
+        this.movesUsedThisRound += 1;
         CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card, replaced: true });
         this.host.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
 
@@ -116,6 +192,11 @@ export class BoardEditController
     removeCardFromBoard (slot: SlotPosition): boolean
     {
         if (this.host.isBusy())
+        {
+            return false;
+        }
+
+        if (this.getBoardMovesRemaining() <= 0)
         {
             return false;
         }
@@ -130,6 +211,7 @@ export class BoardEditController
         markCardRelocated(card);
         this.host.board.removeCard(slot);
         this.host.deckHand.returnCardToHand(card);
+        this.movesUsedThisRound += 1;
 
         return true;
     }
@@ -137,6 +219,11 @@ export class BoardEditController
     moveCardOnBoard (from: SlotPosition, to: SlotPosition): boolean
     {
         if (this.host.isBusy())
+        {
+            return false;
+        }
+
+        if (this.getBoardMovesRemaining() <= 0)
         {
             return false;
         }
@@ -165,6 +252,7 @@ export class BoardEditController
         if (moved)
         {
             markCardRelocated(card);
+            this.movesUsedThisRound += 1;
         }
 
         return moved;
@@ -173,6 +261,11 @@ export class BoardEditController
     swapCardsOnBoard (a: SlotPosition, b: SlotPosition): boolean
     {
         if (this.host.isBusy())
+        {
+            return false;
+        }
+
+        if (this.getBoardMovesRemaining() <= 0)
         {
             return false;
         }
@@ -196,6 +289,8 @@ export class BoardEditController
             {
                 markCardRelocated(cardB);
             }
+
+            this.movesUsedThisRound += 1;
         }
 
         return swapped;

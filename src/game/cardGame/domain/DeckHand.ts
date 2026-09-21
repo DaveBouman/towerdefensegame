@@ -303,6 +303,43 @@ export class DeckHand
         this.emitHandChanged();
     }
 
+    /** Returns multiple cards to hand (used when the board wipes back into hand). */
+    returnCardsToHand (cards: readonly CardInstance[]): void
+    {
+        if (cards.length === 0)
+        {
+            return;
+        }
+
+        for (const card of cards)
+        {
+            clearCardAnchoredState(card);
+            this.hand.push(card);
+        }
+
+        this.emitHandChanged();
+    }
+
+    /** Discards the entire hand into the graveyard (board-return wipe). */
+    discardHandToPile (): void
+    {
+        if (this.hand.length === 0)
+        {
+            return;
+        }
+
+        const leaving = this.hand.splice(0);
+
+        for (const card of leaving)
+        {
+            clearCardAnchoredState(card);
+        }
+
+        this.discard.push(...leaving);
+        this.emitHandChanged();
+        this.emitPilesChanged();
+    }
+
     discardToPile (cards: readonly CardInstance[]): void
     {
         if (cards.length === 0)

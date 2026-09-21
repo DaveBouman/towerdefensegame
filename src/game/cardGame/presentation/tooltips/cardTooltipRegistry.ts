@@ -69,8 +69,8 @@ export const resolveCardTooltip = (card: CardInstance): CardTooltipContent =>
     {
         lines.push(
             card.spent
-                ? 'Spent — routing only until energy refills, then this card goes to the Exhaust pile.'
-                : 'Single use this fight. After it fires, it stays on the grid as a dead link until energy refills, then goes to the Exhaust pile.',
+                ? 'Spent — routing only, then Exhaust.'
+                : 'Once per fight, then Exhaust.',
         );
     }
 

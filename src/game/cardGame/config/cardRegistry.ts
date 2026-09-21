@@ -111,6 +111,8 @@ export interface GameRules {
     deckSize: number;
     handSize: number;
     energyPerTurn: number;
+    /** Max board moves (relocate / swap / pick up / replace) per energy round (0 = unlimited). */
+    boardMovesPerEnergyRound: number;
     enemyDamageRampPerAttack: number;
     /** Flat enemy attack added after each enemy response (one player Attack). */
     enemyStrengthPerTurn: number;
@@ -136,6 +138,7 @@ export interface GameRules {
     chainAbilities: {
         poisonTrail: { damagePerSubsequentCard: number; damagePerStack: number };
         fireAlternation: { bonusDamagePerAlternatingStep: number };
+        corditePayload: { damagePerCordite: number };
         bleed: { attackThreshold: number; bonusPerExtraAttack: number };
         fortify: { defendThreshold: number; armorPerExtraDefend: number };
         overload: { damagePerAbilityCard: number };

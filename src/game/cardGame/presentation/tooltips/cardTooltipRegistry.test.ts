@@ -19,7 +19,7 @@ describe('cardTooltipRegistry', () =>
         const tooltip = resolveCardTooltip(createCardInstance('attack', 'right'));
 
         expect(tooltip.title).toBe('Attack');
-        expect(tooltip.lines[0]).toBe('Deals 5 damage when activated in the chain.');
+        expect(tooltip.lines[0]).toBe('5 damage.');
     });
 
     it('describes fire alternation bonus from game rules', () =>
@@ -37,7 +37,7 @@ describe('cardTooltipRegistry', () =>
         const strike = resolveCardTooltip(createCardInstance('attack-special', 'up-right'));
         const lunge = resolveCardTooltip(createCardInstance('attack-leap', 'right'));
 
-        expect(strike.lines.some((line) => line.includes('2 times'))).toBe(true);
+        expect(strike.lines.some((line) => line.includes('2×') || line.includes('2 times'))).toBe(true);
         expect(lunge.lines.some((line) => line.includes('2 tiles'))).toBe(true);
     });
 
@@ -46,8 +46,8 @@ describe('cardTooltipRegistry', () =>
         const tooltip = resolveCardTooltip(createCardInstance('loop-reset', 'right', 'player', 'left'));
 
         expect(tooltip.title).toBe('Loop');
-        expect(tooltip.lines[1]).toContain('↺←');
-        expect(tooltip.lines[2]).toContain('→');
+        expect(tooltip.lines[0]).toContain('↺←');
+        expect(tooltip.lines[0]).toContain('→');
     });
 
     it('allows registering custom tooltip providers', () =>

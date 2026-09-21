@@ -4,6 +4,7 @@ import { boostBehavior } from './boostBehavior';
 import { curseBehavior } from './curseBehavior';
 import { defendBehavior } from './defendBehavior';
 import { echoBehavior } from './echoBehavior';
+import { corditeBehavior } from './corditeBehavior';
 import { fireBehavior } from './fireBehavior';
 import { hazardBehavior } from './hazardBehavior';
 import { siphonBehavior } from './siphonBehavior';
@@ -12,6 +13,7 @@ import { loopResetBehavior } from './loopResetBehavior';
 import { poisonBehavior } from './poisonBehavior';
 import { redlineBehavior } from './redlineBehavior';
 import { thornsBehavior } from './thornsBehavior';
+import { warheadBehavior } from './warheadBehavior';
 import type { CardBehavior } from './types';
 
 const behaviors = new Map<string, CardBehavior>([
@@ -22,6 +24,8 @@ const behaviors = new Map<string, CardBehavior>([
     [ defendBehavior.id, defendBehavior ],
     [ echoBehavior.id, echoBehavior ],
     [ fireBehavior.id, fireBehavior ],
+    [ corditeBehavior.id, corditeBehavior ],
+    [ warheadBehavior.id, warheadBehavior ],
     [ hazardBehavior.id, hazardBehavior ],
     [ siphonBehavior.id, siphonBehavior ],
     [ jokerBehavior.id, jokerBehavior ],

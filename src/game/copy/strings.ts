@@ -20,6 +20,8 @@ const EN = {
     'card.loop-reset': 'Loop',
     'card.poison': 'Rad',
     'card.fire': 'Fire',
+    'card.cordite': 'Charge',
+    'card.warhead': 'Blast',
     'card.hazard': 'Trap',
     'card.siphon': 'Leech Node',
     'card.boost': 'Boost',

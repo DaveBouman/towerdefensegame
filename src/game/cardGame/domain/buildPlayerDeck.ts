@@ -14,14 +14,16 @@ export { shuffleInPlace };
  * from rewards. (Future: swap this table per character.)
  */
 const DECK_COMPOSITION: readonly { definitionId: string; count: number }[] = [
-    { definitionId: 'attack', count: 3 },
+    { definitionId: 'attack', count: 2 },
     { definitionId: 'defend', count: 3 },
-    { definitionId: 'attack-leap', count: 2 },
-    { definitionId: 'defend-leap', count: 2 },
+    { definitionId: 'attack-leap', count: 1 },
+    { definitionId: 'defend-leap', count: 1 },
     { definitionId: 'joker', count: 1 },
     { definitionId: 'echo', count: 1 },
-    // Synergy seeds — one verb from each major lane.
+    // Synergy seeds — Charge → Blast payload.
+    { definitionId: 'cordite', count: 2 },
     { definitionId: 'fire', count: 1 },
+    { definitionId: 'warhead', count: 1 },
     { definitionId: 'poison', count: 1 },
     { definitionId: 'rupture', count: 1 },
     { definitionId: 'bulwark', count: 1 },

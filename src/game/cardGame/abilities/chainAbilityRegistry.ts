@@ -5,6 +5,7 @@ import { getBoostMultiplierForStep, scaleBoostedValue } from '../combat/chainBoo
 import { bleedAbility } from './bleedAbility';
 import { fireAlternationAbility } from './fireAlternationAbility';
 import { fortifyAbility } from './fortifyAbility';
+import { corditePayloadAbility } from './corditePayloadAbility';
 import { overloadAbility } from './overloadAbility';
 import { poisonTrailAbility } from './poisonTrailAbility';
 import type {
@@ -18,6 +19,7 @@ import type {
 const abilities = new Map<string, ChainAbility>([
     [ poisonTrailAbility.id, poisonTrailAbility ],
     [ fireAlternationAbility.id, fireAlternationAbility ],
+    [ corditePayloadAbility.id, corditePayloadAbility ],
     [ bleedAbility.id, bleedAbility ],
     [ fortifyAbility.id, fortifyAbility ],
     [ overloadAbility.id, overloadAbility ],

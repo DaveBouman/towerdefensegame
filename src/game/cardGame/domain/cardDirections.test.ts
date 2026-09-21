@@ -9,7 +9,7 @@ describe('buildBalancedDirectionsForPool', () =>
 
         for (const direction of ORTHOGONAL_DIRECTIONS)
         {
-            expect(directions.filter((arrow) => arrow === direction)).toHaveLength(3);
+            expect(directions.filter((arrow) => arrow === direction)).toHaveLength(6);
         }
     });
 
@@ -24,23 +24,20 @@ describe('buildBalancedDirectionsForPool', () =>
 
 describe('buildForwardBiasedDirectionsForPool', () =>
 {
-    it('assigns more right arrows than left for orthogonal pools', () =>
+    it('assigns only right and down for orthogonal pools', () =>
     {
         const directions = buildForwardBiasedDirectionsForPool('orthogonal', 18, (items) => [ ...items ]);
 
-        expect(directions.filter((arrow) => arrow === 'right')).toHaveLength(8);
-        expect(directions.filter((arrow) => arrow === 'up')).toHaveLength(4);
-        expect(directions.filter((arrow) => arrow === 'down')).toHaveLength(4);
-        expect(directions.filter((arrow) => arrow === 'left')).toHaveLength(2);
+        expect(directions.filter((arrow) => arrow === 'right')).toHaveLength(9);
+        expect(directions.filter((arrow) => arrow === 'down')).toHaveLength(9);
+        expect(directions.every((arrow) => arrow === 'right' || arrow === 'down')).toBe(true);
     });
 
-    it('assigns more rightward diagonals than leftward', () =>
+    it('assigns only down-right for diagonal pools', () =>
     {
         const directions = buildForwardBiasedDirectionsForPool('diagonal', 6, (items) => [ ...items ]);
 
-        expect(directions.filter((arrow) => arrow === 'up-right')).toHaveLength(2);
-        expect(directions.filter((arrow) => arrow === 'down-right')).toHaveLength(2);
-        expect(directions.filter((arrow) => arrow === 'up-left')).toHaveLength(1);
-        expect(directions.filter((arrow) => arrow === 'down-left')).toHaveLength(1);
+        expect(directions).toHaveLength(6);
+        expect(directions.every((arrow) => arrow === 'down-right')).toBe(true);
     });
 });

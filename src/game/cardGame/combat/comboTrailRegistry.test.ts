@@ -14,6 +14,7 @@ describe('COMBO_TRAIL_DETECTORS', () =>
     it('registers Rad and Fire trail detectors', () =>
     {
         expect(COMBO_TRAIL_DETECTORS.map((detector) => detector.id).sort()).toEqual([
+            'cordite-trail',
             'fire-trail',
             'rad-trail',
         ]);

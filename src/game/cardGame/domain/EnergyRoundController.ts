@@ -6,6 +6,8 @@ export interface EnergyRoundHost
     isEnemyDefeated (): boolean;
     refillHand (): void;
     renewHand (): void;
+    clearPlayerShield (): void;
+    resetBoardPlacements (): void;
     clearTransientBattleModifiers (): void;
     clearBattleModifiers (): void;
     applyEnemyCurseHand (): void;
@@ -106,7 +108,10 @@ export class EnergyRoundController
         }
 
         this.host.clearHandRedirect();
-        this.host.renewHand();
+        // Experimental: board cards already returned to hand in clearBoard — top up only.
+        this.host.clearPlayerShield();
+        this.host.resetBoardPlacements();
+        this.host.refillHand();
         this.resetEnergy();
         this.host.clearBattleModifiers();
         this.host.activatePendingHandRedirectAfterRenew();

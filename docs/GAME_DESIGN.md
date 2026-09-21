@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-08-31
+**Last updated:** 2026-09-21
 
 ---
 
@@ -11,9 +11,10 @@
 A **5×5 card-chain combat** game built with Phaser + React, played across a
 branching **run map** (roguelite-style path of battles).
 
-- Player drags cards from hand onto a grid; arrows define activation order.
-- Player sets chain start (click a column-0 tile) and clicks **Attack**.
-- Chain resolves step-by-step (attack, defend, fire, rad, Reroute, hazard, siphon, boost, thorns).
+- Player drags cards from hand onto a grid; arrows define activation order (**experimental:** only right / down).
+- Chain always starts at the **top-left** tile; click **Attack**.
+- Chain resolves step-by-step (attack, defend, fire, Charge→Blast payload, rad, Reroute, hazard, siphon, boost, thorns).
+- Place freely from hand; **max 3 board moves** (relocate / swap / pick up / replace) per energy round; when energy is spent board cards return to hand.
 - Enemy acts with telegraphed intent (attack/shield + hazard traps / leech nodes).
 - Win: all enemy HP ≤ 0. Lose: player HP ≤ 0.
 - Multi-enemy fights: click an enemy to set your attack target before attacking; pick a new target mid-chain if the current one dies. When **all** enemies are dead, the chain stops immediately — leftover traps, curses, siphon, and other end-of-chain beats do not resolve.
@@ -377,7 +378,9 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | 2026-09-21 | **Anchored card bonus.** Attack/Defend/Redline cards left unmoved after placement grant +2 damage / +2 armor (in-chain and off-chain) for the energy round. Moving, swapping, or picking up clears the bonus; cyan pin marks anchored tiles. |
 | 2026-09-21 | **Combat layout scales with viewport.** Board tile, hand cards, and piles shrink from the 96px design when height is tight so 1280×720 keeps armor above the hand with no board overlap. |
 | 2026-09-21 | **New run clears combat.** Starting a new run (or returning to menu) mid-fight tears down Phaser board/hand/enemies so the old battle does not linger under the map. |
-| 2026-09-21 | **Windows NSIS install fix.** Pack scripts use electron-builder **26.16.1**, pin Windows **x64**, and set `ELECTRON_BUILDER_7Z_FILTER=BCJ` so the installer no longer drops `.exe`/`.dll`s (empty folder with only Uninstall). |
+| 2026-09-21 | **Experimental branch `experimental/gunpowder-downright`.** Chain start locked to top-left. Arrows only right/down (diagonal: down-right). **Charge × N → Blast** payload (+4 attack per Charge; no Fire required). Place freely; **max 3 board moves** per energy round; on wipe, board returns to hand (old hand discarded) and energy refills without a full renew. |
+| 2026-09-21 | Charge/Blast rename + simpler rule (drop Fire ignition) so the single-chain payload is easier to understand. |
+| 2026-09-21 | Shortened most card tooltip copy to 1–2 plain lines. |
 | 2026-09-21 | **Packaged app launch + icon.** Desktop packs no longer init Steamworks unless an App ID is set (Steam not required to open). Icon is regenerated before pack (`build/icon.png`); local mac builds skip code signing so the `.app` opens. |
 | 2026-09-21 | **Min window 1280×720.** Dropped 960×540. Combat HUD is a single compact row (no wrap) with shorter copy and reduced top inset so it stays aligned at the minimum size. |
 | 2026-09-21 | **Display modes.** Settings → Display mode: Windowed, Borderless fullscreen, or Fullscreen. Borderless covers the monitor without exclusive fullscreen; Esc returns to windowed. Mode is persisted. |

@@ -61,6 +61,18 @@ export const CARD_VISUALS: Record<string, CardVisualStyle> = {
         labelColor: '#ffd4b8',
         powerColor: '#ff9f43',
     },
+    cordite: {
+        fill: 0x1a1810,
+        border: 0xc4a574,
+        labelColor: '#e8d4b0',
+        powerColor: '#c4a574',
+    },
+    warhead: {
+        fill: 0x2a0c14,
+        border: 0xff3b6b,
+        labelColor: '#ffb8c8',
+        powerColor: '#ff6b8a',
+    },
     curse: {
         fill: 0x1a0a22,
         border: 0xa855f7,
