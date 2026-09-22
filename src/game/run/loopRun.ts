@@ -1,11 +1,15 @@
 import { getCardGameEnemyDefinitionOrThrow } from '../cardGame/config/enemyCatalog';
 import { getEnemyIdentity } from '../cardGame/presentation/enemyIdentity';
+import type { CardDirection } from '../cardGame/domain/cardDirections';
 import { BODY_MOD_IDS } from './bodyMods';
 import type { RunDeckCard } from './runDeck';
 import { pickRandom, shuffleInPlace } from '../random/rng';
 
 /** Steps on the walk map (Loop Hero road) — not card-board slots. */
 export const LOOP_MAP_STEPS = 16;
+
+/** Starter arrows — from top-left, only right and down. */
+export const LOOP_STARTER_ARROWS: readonly CardDirection[] = [ 'right', 'down' ];
 
 /** One enemy stationed on the circular walk map. */
 export interface LoopStation {
@@ -22,6 +26,15 @@ export interface LoopLootDef {
     addCardId?: string;
 }
 
+/** Card pick after clearing a station — unlocks more routing. */
+export interface LoopStationCardOffer {
+    definitionId: string;
+    label: string;
+    blurb: string;
+    /** New cards may use left / up / diagonal for more combinations. */
+    arrow?: CardDirection;
+}
+
 export interface LoopEncounter {
     id: string;
     title: string;
@@ -31,25 +44,94 @@ export interface LoopEncounter {
     kit: readonly RunDeckCard[];
 }
 
+/** Lean starter kit — arrows forced to right/down when dealt. */
 const SURFACE_KIT: readonly RunDeckCard[] = [
+    { definitionId: 'attack' },
+    { definitionId: 'attack' },
+    { definitionId: 'attack' },
+    { definitionId: 'attack' },
+    { definitionId: 'defend' },
+    { definitionId: 'defend' },
+    { definitionId: 'defend' },
     { definitionId: 'boost' },
     { definitionId: 'fire' },
-    { definitionId: 'attack' },
-    { definitionId: 'attack' },
-    { definitionId: 'attack' },
-    { definitionId: 'attack' },
-    { definitionId: 'attack' },
-    { definitionId: 'defend' },
-    { definitionId: 'defend' },
-    { definitionId: 'attack-leap' },
-    { definitionId: 'defend-leap' },
-    { definitionId: 'rupture' },
+    { definitionId: 'poison' },
 ];
 
 const DUNGEON_KIT: readonly RunDeckCard[] = [
     ...SURFACE_KIT,
-    { definitionId: 'echo' },
-    { definitionId: 'switchback' },
+    { definitionId: 'attack' },
+    { definitionId: 'boost' },
+];
+
+/** Unlocks after station clears — more directions and behaviors. */
+const STATION_CARD_POOL: readonly LoopStationCardOffer[] = [
+    {
+        definitionId: 'attack-leap',
+        label: 'Leap Strike',
+        blurb: 'Jump a tile — opens branching routes.',
+        arrow: 'right',
+    },
+    {
+        definitionId: 'defend-leap',
+        label: 'Leap Guard',
+        blurb: 'Defend that leaps — armor with reach.',
+        arrow: 'down',
+    },
+    {
+        definitionId: 'echo',
+        label: 'Echo',
+        blurb: 'Replay the previous card in the chain.',
+        arrow: 'right',
+    },
+    {
+        definitionId: 'switchback',
+        label: 'Switchback',
+        blurb: 'Turns the chain — unlocks left routing.',
+        arrow: 'left',
+    },
+    {
+        definitionId: 'attack-special',
+        label: 'Strike',
+        blurb: 'Diagonal attack — more path combinations.',
+        arrow: 'down-right',
+    },
+    {
+        definitionId: 'rupture',
+        label: 'Rupture',
+        blurb: 'Heavy hit for closing long chains.',
+        arrow: 'right',
+    },
+    {
+        definitionId: 'boost',
+        label: 'Boost',
+        blurb: 'Double the next step.',
+        arrow: 'down',
+    },
+    {
+        definitionId: 'fire',
+        label: 'Fire',
+        blurb: 'Fire trail combos with attacks.',
+        arrow: 'right',
+    },
+    {
+        definitionId: 'poison',
+        label: 'Rad',
+        blurb: 'Poison trail — more combo lines.',
+        arrow: 'down',
+    },
+    {
+        definitionId: 'attack',
+        label: 'Attack',
+        blurb: 'Extra attack — try the new arrows.',
+        arrow: 'up',
+    },
+    {
+        definitionId: 'defend',
+        label: 'Defend',
+        blurb: 'Extra guard — time it to the enemy hit.',
+        arrow: 'left',
+    },
 ];
 
 export const LOOP_SURFACE: LoopEncounter = {
@@ -161,6 +243,34 @@ export const rollLoopLootOffers = (dungeon: boolean, count = 3): LoopLootDef[] =
     return picks;
 };
 
+/** Pick 3 station card unlocks (more arrows / combos). */
+export const rollStationCardOffers = (count = 3): LoopStationCardOffer[] =>
+{
+    const pool = [ ...STATION_CARD_POOL ];
+    shuffleInPlace(pool);
+
+    return pool.slice(0, Math.min(count, pool.length));
+};
+
+/** Assign right/down only on starter kit cards that have no arrow yet. */
+export const assignLoopStarterArrows = (kit: readonly RunDeckCard[]): RunDeckCard[] =>
+{
+    let index = 0;
+
+    return kit.map((card) =>
+    {
+        if (card.arrow)
+        {
+            return { ...card };
+        }
+
+        const arrow = LOOP_STARTER_ARROWS[index % LOOP_STARTER_ARROWS.length]!;
+        index += 1;
+
+        return { ...card, arrow };
+    });
+};
+
 export const buildLoopKit = (
     encounter: LoopEncounter,
     homeLootIds: readonly string[],
@@ -178,7 +288,7 @@ export const buildLoopKit = (
         }
     }
 
-    return kit;
+    return assignLoopStarterArrows(kit);
 };
 
 export const bodyModsFromHomeLoot = (homeLootIds: readonly string[]): string[] =>
@@ -216,6 +326,7 @@ export const getStationPreview = (enemyId: string) =>
         label: enemy.label,
         hp: enemy.maxHealth,
         portraitFile: identity.portraitFile ?? 'basic.png',
+        attackDuration: enemy.attackDuration ?? 3,
     };
 };
 

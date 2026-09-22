@@ -41,8 +41,8 @@ export const LoopMapOverlay = ({
                     <p className="loop-map__eyebrow">Walk map</p>
                     <h1 className="loop-map__title">{encounter.title}</h1>
                     <p className="loop-map__tagline">
-                        Pack on the left, use Path on/off to preview the chain, Attack the dummy to test.
-                        Engage starts the fight with a fresh energy round (board stays locked).
+                        Pack from top-left (right/down starters). Defend on the enemy hit beat.
+                        Path previews the chain; Attack the dummy to test. Engage locks the board.
                         {' '}{remaining} station{remaining === 1 ? '' : 's'} left.
                     </p>
                 </header>
@@ -115,7 +115,9 @@ export const LoopMapOverlay = ({
                                     <strong>{preview.label}</strong>
                                     <span>
                                         Step {station.stepIndex + 1}
-                                        {done ? ' · cleared' : ` · ${preview.hp} HP`}
+                                        {done
+                                            ? ' · cleared'
+                                            : ` · ${preview.hp} HP · hits beat ${preview.attackDuration}`}
                                         {here && !done ? ' · here' : ''}
                                     </span>
                                 </div>

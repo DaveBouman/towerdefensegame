@@ -7,7 +7,8 @@
       "attackDamage": 13,
       "shieldGain": 13,
       "attackChance": 0.65,
-      "hazardsPerTurn": 1
+      "hazardsPerTurn": 1,
+      "attackDuration": 3
     },
     {
       "id": "thornward",
@@ -17,6 +18,7 @@
       "shieldGain": 15,
       "attackChance": 0.5,
       "hazardsPerTurn": 1,
+      "attackDuration": 4,
       "passives": [
         { "id": "thorns", "reflectDamage": 1 }
       ],
@@ -73,6 +75,7 @@
       "shieldGain": 13,
       "attackChance": 0.6,
       "hazardsPerTurn": 1,
+      "attackDuration": 4,
       "passives": [
         "smoke",
         { "id": "skillJam", "suppressedSkillCards": 3 },
@@ -118,6 +121,7 @@
       "shieldGain": 12,
       "attackChance": 0.5,
       "hazardsPerTurn": 1,
+      "attackDuration": 5,
       "passives": [
         "pressureColumn"
       ]

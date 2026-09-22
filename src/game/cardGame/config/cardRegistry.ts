@@ -77,6 +77,11 @@ export interface CardDefinition {
      * this when a card should not use its behavior's default pacing.
      */
     chainStepMsMultiplier?: number;
+    /**
+     * Shared timeline beats this card occupies (defend timing vs enemy attack).
+     * Defaults to `gameRules.defaultCardDuration`.
+     */
+    duration?: number;
 }
 
 interface CardDefinitionJson extends Omit<CardDefinition, 'tier' | 'upgradesTo' | 'upgradeOf'> {
@@ -102,6 +107,7 @@ interface CardDefinitionJson extends Omit<CardDefinition, 'tier' | 'upgradesTo' 
         | 'chainAbilityIds'
         | 'collectible'
         | 'chainStepMsMultiplier'
+        | 'duration'
     >>;
 }
 
@@ -132,6 +138,12 @@ export interface GameRules {
     activationStart: { row: number; col: number };
     activationStartColumn: number;
     maxChainSteps: number;
+    /** Beats a card occupies on the shared attack timeline (default 1). */
+    defaultCardDuration: number;
+    /** Beats until a telegraphed enemy attack lands during your chain. */
+    defaultEnemyAttackDuration: number;
+    /** After a defend in the chain, each later card removes this much shield. */
+    defendDecayPerCard: number;
     battleModifier?: { step: number; enemyIntentChance: number };
     chainAbilities: {
         poisonTrail: { damagePerSubsequentCard: number; damagePerStack: number };
@@ -206,6 +218,10 @@ export const getChainStepMs = (
 
     return Math.round(baseMs * multiplier);
 };
+
+/** Timeline beats for defend-timing vs enemy attack duration. */
+export const getCardDuration = (card: Pick<CardDefinition, 'duration'>): number =>
+    Math.max(1, card.duration ?? GAME_RULES.defaultCardDuration ?? 1);
 
 export const getCardDefinition = (id: string): CardDefinition | undefined =>
     definitions.get(id);

@@ -27,8 +27,8 @@ The amber road is **not** painted on the card grid. The card grid is **not** whe
 1. **Walk map ≠ chain board** — two spaces; chain stays visible on the left during the walk.
 2. **Stations on the loop** — specific steps hold enemies; advance to engage one at a time.
 3. **Prep then lock** — build the board before attack; locked during the fight; rearrange only outside battle.
-4. **Auto-loop combat** — Attack once; chain + enemy round replay until KO. Opening bombs placed once at Engage; they tick damage after each card round and stay on the board.
-5. **Loot → home** — clear the loop (or dungeon) → pick loot → stash buffs future chains.
+4. **Attack timing** — enemy hits mid-chain on a beat (`attackDuration`). Place defend so armor is up on that beat; later cards decay shield. Auto-loop until KO.
+5. **Loot → home** — clear the loop (or dungeon) → pick loot → stash buffs future chains. Station wins also grant kit cards (more arrows/combos).
 6. **Optional dungeon** — same walk map, harder stations.
 
 ### Target loop (v1)
@@ -37,8 +37,8 @@ The amber road is **not** painted on the card grid. The card grid is **not** whe
 Menu → Home (stash)
   → Enter ring / dungeon → Walk map (right) + chain board (left, editable)
   → Pack layout → Advance → station → Engage (lock board, place bombs once)
-  → Attack → auto-replay chain ↔ enemy until KO (bombs tick each round; no new board places)
-  → win → unlock board, back to walk map (rearrange ok)
+  → Attack → auto-replay chain ↔ enemy until KO (enemy hits mid-chain on beat N; bombs tick each round)
+  → win → pick a card (new arrows/combos) → unlock board, back to walk map
   → all stations clear → Loot → Home
 ```
 
@@ -430,6 +430,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-09-22 | **Loop Road timing + growth.** Chain always starts top-left; starter arrows are right/down only. Enemy attacks land mid-chain on `attackDuration` beats — defend so armor is up; later cards decay shield (−2). Station wins open a 3-card pick (leaps, left/up, diagonals) for more combinations. |
 | 2026-09-21 | **Snappy board edits.** Placing/moving cards no longer rebuilds every board wrapper or re-fades enemy intents — only changed tiles update, and path/streak redraws skip when unchanged. |
 | 2026-09-21 | **Anchored card bonus.** Attack/Defend/Redline cards left unmoved after placement grant +2 damage / +2 armor (in-chain and off-chain) for the energy round. Moving, swapping, or picking up clears the bonus; cyan pin marks anchored tiles. |
 | 2026-09-21 | **Combat layout scales with viewport.** Board tile, hand cards, and piles shrink from the 96px design when height is tight so 1280×720 keeps armor above the hand with no board overlap. |

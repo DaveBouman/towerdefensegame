@@ -68,8 +68,10 @@ import {
     getLoopEncounter,
     LOOP_MAP_STEPS,
     rollLoopLootOffers,
+    rollStationCardOffers,
     stationAtStep,
     type LoopLootDef,
+    type LoopStationCardOffer,
 } from '../game/run/loopRun';
 
 export const useRunController = () =>
@@ -104,6 +106,7 @@ export const useRunController = () =>
     const [ homeLootIds, setHomeLootIds ] = useState<string[]>([]);
     const [ loopLootOffers, setLoopLootOffers ] = useState<LoopLootDef[] | null>(null);
     const [ loopLootDungeon, setLoopLootDungeon ] = useState(false);
+    const [ loopCardOffers, setLoopCardOffers ] = useState<LoopStationCardOffer[] | null>(null);
     const [ loopWalkerStep, setLoopWalkerStep ] = useState(0);
     const [ loopClearedSteps, setLoopClearedSteps ] = useState<number[]>([]);
     const [ loopMapDungeon, setLoopMapDungeon ] = useState(false);
@@ -118,6 +121,7 @@ export const useRunController = () =>
     const loopActiveRef = useRef(false);
     const loopDungeonRef = useRef(false);
     const pendingStationStepRef = useRef<number | null>(null);
+    const loopCardPendingAllClearRef = useRef(false);
     const sceneReadyRef = useRef(false);
     const seedRef = useRef(seed);
     const bodyModsRef = useRef(bodyMods);
@@ -282,20 +286,11 @@ export const useRunController = () =>
             const encounter = getLoopEncounter(dungeon);
             const allClear = encounter.stations.every((station) => next.includes(station.stepIndex));
 
-            if (allClear)
-            {
-                EventBus.emit(GAME_EVENTS.LOOP_FINISH);
-                seedScope(seedRef.current, `loop-loot:${dungeon ? 'dungeon' : 'surface'}`);
-                setLoopLootDungeon(dungeon);
-                setLoopLootOffers(rollLoopLootOffers(dungeon));
-                setPhase('loop-loot');
-            }
-            else
-            {
-                EventBus.emit(GAME_EVENTS.LOOP_RESUME_PREP);
-                setPhase('loop-map');
-                setRunToast('Station cleared — rearrange on the left, then keep walking.');
-            }
+            loopCardPendingAllClearRef.current = allClear;
+            setLoopLootDungeon(dungeon);
+            seedScope(seedRef.current, `loop-card:${dungeon ? 'dungeon' : 'surface'}:${next.length}`);
+            setLoopCardOffers(rollStationCardOffers());
+            setPhase('loop-card-reward');
 
             return next;
         });
@@ -309,6 +304,31 @@ export const useRunController = () =>
         setPhase('loop-map');
     }, []);
 
+    const takeStationCard = useCallback((offer: LoopStationCardOffer): void =>
+    {
+        const card = { definitionId: offer.definitionId, arrow: offer.arrow };
+        setDeck((prev) => [ ...prev, card ]);
+        EventBus.emit(GAME_EVENTS.LOOP_GAIN_CARD, card);
+        setLoopCardOffers(null);
+
+        const allClear = loopCardPendingAllClearRef.current;
+        loopCardPendingAllClearRef.current = false;
+        const dungeon = loopLootDungeon;
+
+        if (allClear)
+        {
+            EventBus.emit(GAME_EVENTS.LOOP_FINISH);
+            seedScope(seedRef.current, `loop-loot:${dungeon ? 'dungeon' : 'surface'}`);
+            setLoopLootOffers(rollLoopLootOffers(dungeon));
+            setPhase('loop-loot');
+            setRunToast(`Gained ${offer.label} — loop clear, pick loot.`);
+            return;
+        }
+
+        EventBus.emit(GAME_EVENTS.LOOP_RESUME_PREP);
+        setPhase('loop-map');
+        setRunToast(`Gained ${offer.label} — rearrange, then keep walking.`);
+    }, [ loopLootDungeon ]);
     useBattleBridge(
         {
             seed: seedRef,
@@ -1188,6 +1208,7 @@ export const useRunController = () =>
         homeLootIds,
         loopLootOffers,
         loopLootDungeon,
+        loopCardOffers,
         loopWalkerStep,
         loopClearedSteps,
         loopMapDungeon,
@@ -1196,6 +1217,7 @@ export const useRunController = () =>
         fightLoopStation,
         retreatLoopToHome,
         takeLoopLootHome,
+        takeStationCard,
         openPracticeRoads,
         startLegacyRun,
         restHeal,

@@ -19,6 +19,7 @@ export type RunPhase =
     | 'puzzle-reward'
     | 'loop-hub'
     | 'loop-map'
+    | 'loop-card-reward'
     | 'loop-loot'
     | 'victory'
     | 'defeat';

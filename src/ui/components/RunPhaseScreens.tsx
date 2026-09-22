@@ -1,7 +1,7 @@
 import { PuzzleSelectOverlay } from './PuzzleSelectOverlay';
 import { KitSelectOverlay } from './KitSelectOverlay';
 import { SkirmishResultOverlay } from './SkirmishResultOverlay';
-import { LoopHubOverlay, LoopLootOverlay } from './LoopHubOverlay';
+import { LoopHubOverlay, LoopLootOverlay, LoopStationCardOverlay } from './LoopHubOverlay';
 import { LoopMapOverlay } from './LoopMapOverlay';
 import { PuzzleHud } from './PuzzleHud';
 import { PuzzleResultOverlay } from './PuzzleResultOverlay';
@@ -85,6 +85,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
         homeLootIds,
         loopLootOffers,
         loopLootDungeon,
+        loopCardOffers,
         loopWalkerStep,
         loopClearedSteps,
         loopMapDungeon,
@@ -93,6 +94,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
         fightLoopStation,
         retreatLoopToHome,
         takeLoopLootHome,
+        takeStationCard,
         openPracticeRoads,
         startLegacyRun,
         restHeal,
@@ -178,6 +180,12 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                         onRetreatHome={retreatLoopToHome}
                     />
                 </>
+            )}
+            {phase === 'loop-card-reward' && loopCardOffers && (
+                <LoopStationCardOverlay
+                    offers={loopCardOffers}
+                    onTake={takeStationCard}
+                />
             )}
             {phase === 'loop-loot' && loopLootOffers && (
                 <LoopLootOverlay

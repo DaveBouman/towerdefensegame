@@ -40,6 +40,9 @@
   },
   "activationStartColumn": 0,
   "maxChainSteps": 24,
+  "defaultCardDuration": 1,
+  "defaultEnemyAttackDuration": 3,
+  "defendDecayPerCard": 2,
   "battleModifier": {
     "step": 0.1,
     "enemyIntentChance": 0.35

@@ -19,6 +19,8 @@ export const GAME_EVENTS = {
     LOOP_RESUME_PREP: 'loop-resume-prep',
     /** Loop Road: tear down the persistent prep battle. */
     LOOP_FINISH: 'loop-finish',
+    /** Loop Road: add a station-reward card into the live prep session. */
+    LOOP_GAIN_CARD: 'loop-gain-card',
     TUTORIAL_WIZARD_APPLY_PHASE: 'tutorial-wizard-apply-phase',
     TUTORIAL_WIZARD_ATTACK: 'tutorial-wizard-attack',
     TUTORIAL_WIZARD_ENERGY_DEPLETED: 'tutorial-wizard-energy-depleted',

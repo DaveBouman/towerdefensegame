@@ -113,6 +113,8 @@ export class CardGameSession
     private puzzleFinished = false;
     /** Loop Road: keep packed layout across practice / locked rounds. */
     private persistBoardLayout = false;
+    /** Enemy attack already landed mid-chain this exchange — skip in enemy phase. */
+    private enemyAttackResolvedMidChain = false;
     private tutorialPhaseId: import('../../run/tutorialWizard').TutorialWizardStep | null = null;
     private readonly bodyMods: readonly string[];
     private readonly latchSlots: LatchSlots = {};
@@ -630,6 +632,15 @@ export class CardGameSession
         return this.deckHand.addCardToHand(definitionId, ignoreHandLimit);
     }
 
+    /** Loop Road: station card reward — into hand, or draw pile if preferred. */
+    gainLoopCard (
+        definitionId: string,
+        arrow?: import('../../run/runDeck').RunDeckCard['arrow'],
+    ): void
+    {
+        this.deckHand.addCardToHandWithArrow(definitionId, arrow, true);
+    }
+
     /**
      * Damages the player for each hand card with a hand-end penalty still held
      * when the turn ends, then exhausts those cards (battle-scoped removal).
@@ -740,6 +751,21 @@ export class CardGameSession
         if (this.combat.isAttackInProgress() || this.enemyPhase.isEnemyTurnInProgress())
         {
             return false;
+        }
+
+        // Loop Road: always start at top-left (row 0, col 0).
+        if (this.persistBoardLayout)
+        {
+            const locked = GAME_RULES.activationStart;
+
+            if (slot.row !== locked.row || slot.col !== locked.col)
+            {
+                return false;
+            }
+
+            this.chainStart = { row: locked.row, col: locked.col };
+
+            return true;
         }
 
         if (slot.col !== GAME_RULES.activationStartColumn || slot.row < 0 || slot.row >= GRID_CONFIG.rows)
@@ -1214,6 +1240,17 @@ export class CardGameSession
     /** If the start tile is empty, snap to the first packed card in the start column. */
     private ensureChainStartOnBoard (): void
     {
+        // Loop Road always fires from top-left — never snap to another row.
+        if (this.persistBoardLayout)
+        {
+            this.chainStart = {
+                row: GAME_RULES.activationStart.row,
+                col: GAME_RULES.activationStart.col,
+            };
+
+            return;
+        }
+
         if (this.board.getCardAt(this.chainStart))
         {
             return;
@@ -1263,6 +1300,7 @@ export class CardGameSession
             return null;
         }
 
+        this.enemyAttackResolvedMidChain = false;
         CardGameEventBus.emit(CARD_GAME_EVENTS.ATTACK_STARTED, { chainStart: { ...this.chainStart } });
 
         return { ...this.chainStart };
@@ -1358,6 +1396,7 @@ export class CardGameSession
 
     completeEnemyPhase (): void
     {
+        this.enemyAttackResolvedMidChain = false;
         this.enemyPhase.completeEnemyPhase();
     }
 
@@ -1626,6 +1665,45 @@ export class CardGameSession
     setPersistBoardLayout (persist: boolean): void
     {
         this.persistBoardLayout = persist;
+
+        if (persist)
+        {
+            this.chainStart = {
+                row: GAME_RULES.activationStart.row,
+                col: GAME_RULES.activationStart.col,
+            };
+        }
+    }
+
+    didResolveEnemyAttackMidChain (): boolean
+    {
+        return this.enemyAttackResolvedMidChain;
+    }
+
+    markEnemyAttackResolvedMidChain (): void
+    {
+        this.enemyAttackResolvedMidChain = true;
+    }
+
+    clearMidChainEnemyAttackFlag (): void
+    {
+        this.enemyAttackResolvedMidChain = false;
+    }
+
+    /** After a mid-chain defend, later cards strip this much shield. */
+    decayPlayerShield (amount: number): number
+    {
+        const stripped = Math.min(this.player.shield, Math.max(0, amount));
+
+        if (stripped <= 0)
+        {
+            return 0;
+        }
+
+        this.player.shield -= stripped;
+        CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: this.player.shield });
+
+        return stripped;
     }
 
     /** Prep dummy practice — resolve the chain without a real enemy response. */

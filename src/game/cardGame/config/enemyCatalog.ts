@@ -18,6 +18,11 @@ export interface CardGameEnemyDefinition {
     attackChance: number;
     /** Traps placed on the board every enemy turn. */
     hazardsPerTurn: number;
+    /**
+     * Beats from chain start until this attack lands (Loop Road timing).
+     * Defend earlier so shield is up; cards after a defend strip shield.
+     */
+    attackDuration?: number;
     passives?: EnemyPassiveInput[];
     /** Defensive combat traits shown as icons below the enemy name. */
     combatTraits?: CombatTraitInput[];
@@ -42,11 +47,11 @@ const loadEnemy = (enemy: CardGameEnemyDefinition): LoadedCardGameEnemyDefinitio
 });
 
 const definitions = new Map<string, LoadedCardGameEnemyDefinition>(
-    enemiesData.enemies.map((enemy) => [ enemy.id, loadEnemy(enemy) ]),
+    (enemiesData.enemies as CardGameEnemyDefinition[]).map((enemy) => [ enemy.id, loadEnemy(enemy) ]),
 );
 
 export const CARD_GAME_ENEMY_DEFINITIONS: readonly LoadedCardGameEnemyDefinition[] =
-    enemiesData.enemies.map(loadEnemy);
+    (enemiesData.enemies as CardGameEnemyDefinition[]).map(loadEnemy);
 
 export const getCardGameEnemyDefinition = (id: string): LoadedCardGameEnemyDefinition | undefined =>
     definitions.get(id);

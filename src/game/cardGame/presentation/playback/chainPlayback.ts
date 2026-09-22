@@ -1,4 +1,4 @@
-import { GAME_RULES, getCardDefinitionOrThrow, getChainStepMs } from '../../config/cardRegistry';
+import { GAME_RULES, getCardDefinitionOrThrow, getCardDuration, getChainStepMs } from '../../config/cardRegistry';
 import {
     applyJokerChosenDirection,
     getNextChainSlotFromStep,
@@ -14,6 +14,7 @@ import {
     tryBuildActivationStep,
     createChainWalkState,
 } from '../../combat/AttackPipeline';
+import { getMidChainEnemyAttackPlan } from '../../combat/chainTiming';
 import { getEchoReplayTarget } from '../../combat/echoReplay';
 import type { EchoReplayTarget } from '../../combat/echoReplay';
 import type { CardGameSession } from '../../domain/CardGameSession';
@@ -22,7 +23,7 @@ import type { CardBoardView } from '../../../board/CardBoardView';
 import type { EnemySquadView } from '../../../board/EnemySquadView';
 import { applyEnemyHitResult, type CombatHitVisualDeps } from './combatHitVisuals';
 import { playChainAbilityEffectVisual, playEndOfChainEffects } from './chainEndEffects';
-import { getBigMomentHoldMs, getChainGapMs, getChainPaceMultiplier } from '../combatJuice';
+import { getBigMomentHoldMs, getChainGapMs, getChainPaceMultiplier, getDamageTierStyle, shakeCamera } from '../combatJuice';
 import { playBattleModifierFloatingLabel } from '../battleModifierFloatingLabel';
 import { boostedBuffVisual } from '../visualEffects/boostedBuffVisual';
 import { playFloatingText } from '../visualEffects/visualEffectTweens';
@@ -33,7 +34,8 @@ import {
     resolveChainAbilities,
 } from '../../abilities/chainAbilityRegistry';
 import type { ChainAbilityEffect } from '../../abilities/types';
-
+import { playPlayerHitSfx, playShieldAbsorbSfx } from '../../../audio/bindGameAudio';
+import { playSfx } from '../../../audio/gameAudio';
 export interface ChainPlaybackDeps extends CombatHitVisualDeps
 {
     session: CardGameSession;
@@ -70,6 +72,9 @@ export function runChainPlayback (
     let current: SlotPosition | null = board.getCardAt(chainStart) ? chainStart : null;
     let activeStep: ActivationStep | null = null;
     const stepMs = GAME_RULES.activationStepMs;
+    let timelineBeat = 0;
+    let defendedThisChain = false;
+    const midChainAttack = getMidChainEnemyAttackPlan(deps.session);
 
     const buildCurrentSequence = (): AttackSequence =>
         deps.session.buildAttackSequence(chain, stepMs);
@@ -557,12 +562,92 @@ export function runChainPlayback (
         );
         const stepDurationMs = Math.max(300, pacedMs);
 
+        // Cards after a defend strip shield — land defend on the enemy's hit beat.
+        if (defendedThisChain)
+        {
+            const stripped = deps.session.decayPlayerShield(GAME_RULES.defendDecayPerCard ?? 2);
+
+            if (stripped > 0)
+            {
+                deps.setDisplayedArmor(deps.session.getPlayer().shield);
+                playFloatingText(
+                    deps.scene,
+                    deps.playerView.container,
+                    deps.playerView.container.width / 2 || 40,
+                    12,
+                    `−${stripped}`,
+                    '#7af0ff',
+                    { fontSize: 16 },
+                );
+            }
+        }
+
+        const resolveMidChainEnemyHitThen = (next: () => void): void =>
+        {
+            timelineBeat += getCardDuration(definition);
+
+            if (!midChainAttack
+                || deps.session.didResolveEnemyAttackMidChain()
+                || timelineBeat < midChainAttack.beat)
+            {
+                next();
+                return;
+            }
+
+            deps.session.markEnemyAttackResolvedMidChain();
+            const enemyView = midChainAttack.attackerInstanceId
+                ? deps.enemySquad.getView(midChainAttack.attackerInstanceId)
+                : deps.enemySquad.firstView;
+            enemyView?.playEnemyAttackPulse();
+
+            const result = deps.session.resolveEnemyAttack(
+                midChainAttack.damage,
+                midChainAttack.attackerInstanceId,
+            );
+            deps.playerView.setHealth(result.player);
+            deps.setDisplayedArmor(result.player.shield);
+
+            if (result.shieldAbsorbed > 0)
+            {
+                deps.armorView.showShieldAbsorb(result.shieldAbsorbed);
+                playShieldAbsorbSfx();
+            }
+
+            if (result.healthDamage > 0)
+            {
+                const tier = getDamageTierStyle(result.healthDamage);
+
+                deps.playerView.playHitFlash();
+                deps.playerView.showDamageNumber(result.healthDamage, tier);
+                shakeCamera(deps.scene, tier.shakeIntensity * 1.3);
+                playPlayerHitSfx(result.healthDamage);
+                deps.requestHitstop?.(tier.hitstopMs);
+            }
+
+            playSfx('enemy-move', { volume: 0.55 });
+
+            if (deps.session.isPlayerDefeated())
+            {
+                finishActiveStep();
+                finalize();
+                return;
+            }
+
+            deps.scheduleAttackTimer(next, 220);
+        };
+
         const proceedAfterStep = (): void =>
         {
             finishActiveStep();
 
             // No living enemies left — skip remaining chain cards.
             if (deps.session.getLivingCombatants().length === 0)
+            {
+                finalize();
+                return;
+            }
+
+            if (deps.session.isPlayerDefeated())
             {
                 finalize();
                 return;
@@ -575,6 +660,11 @@ export function runChainPlayback (
             }
 
             scheduleNext(getNextChainSlotFromStep(board, step));
+        };
+
+        const proceedAfterTimedStep = (): void =>
+        {
+            resolveMidChainEnemyHitThen(proceedAfterStep);
         };
 
         if (isEchoDefinition(definition))
@@ -590,7 +680,13 @@ export function runChainPlayback (
                 {
                     grantStepArmor(step);
                     grantStepThorns(step);
-                    scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs);
+
+                    if (resolvedStep.behaviorId === 'defend' && resolvedStep.armor > 0)
+                    {
+                        defendedThisChain = true;
+                    }
+
+                    scheduleStepCompletion(proceedAfterTimedStep, stepActivatedAt, stepDurationMs);
                 });
                 return;
             }
@@ -605,6 +701,7 @@ export function runChainPlayback (
             && !deps.session.isSlotNullified(step.slot))
         {
             deps.session.registerCapacitorDefendStep();
+            defendedThisChain = true;
         }
 
         grantStepArmor(step);
@@ -672,7 +769,7 @@ export function runChainPlayback (
                     deps.requestHitstop?.(45);
                 }
 
-                scheduleStepCompletion(proceedAfterStep, stepActivatedAt, stepDurationMs + hold);
+                scheduleStepCompletion(proceedAfterTimedStep, stepActivatedAt, stepDurationMs + hold);
             });
         };
 
@@ -703,8 +800,11 @@ export function runChainPlayback (
         {
             playOnStepAbilitiesThen((abilityDetonation) => scheduleStepCompletion(() =>
             {
-                finishActiveStep();
-                finalize();
+                resolveMidChainEnemyHitThen(() =>
+                {
+                    finishActiveStep();
+                    finalize();
+                });
             }, stepActivatedAt, stepDurationMs + getBigMomentHoldMs({ abilityDetonation })));
 
             return;

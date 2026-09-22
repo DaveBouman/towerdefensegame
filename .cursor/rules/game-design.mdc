@@ -7,10 +7,10 @@ alwaysApply: true
 
 Read `docs/GAME_DESIGN.md` before making gameplay or balance changes.
 
-- **North star:** **Loop Road with two boards** — (1) circular **walk map** (right) where the player advances and hits enemy stations; (2) **5×5 chain board** always visible on the left. Pack before engage; board locks in combat; rearrange only outside the battlefield.
-- **Combat:** Attack auto-loops until KO. Opening bombs placed once at Engage; they tick after each card round and persist. No mid-fight enemy board placement.
-- **Flow:** Home → walk map + prep board → Engage station (lock + place bombs) → Attack (auto-loop) → unlock → map → loot → home. Optional dungeon.
-- **Entry point:** `App.tsx` → loop hub / `LoopMapOverlay` + Phaser via `START_BATTLE` (`loopPrep`) / `LOOP_ENGAGE` / `LOOP_RESUME_PREP` / `LOOP_FINISH`.
+- **North star:** **Loop Road with two boards** — (1) circular **walk map** (right) where the player advances and hits enemy stations; (2) **5×5 chain board** always visible on the left. Pack before engage; board locks in combat; rearrange only outside the battlefield. Chain starts top-left; starter arrows right/down; station wins grant new cards; enemy hits mid-chain on a timing beat.
+- **Combat:** Attack auto-loops until KO. Enemy attack lands mid-chain on `attackDuration` beats — defend so armor is up; later cards decay shield. Opening bombs placed once at Engage; they tick after each card round and persist. No mid-fight enemy board placement.
+- **Flow:** Home → walk map + prep board → Engage station (lock + place bombs) → Attack (auto-loop) → card pick → unlock → map → loot → home. Optional dungeon.
+- **Entry point:** `App.tsx` → loop hub / `LoopMapOverlay` + Phaser via `START_BATTLE` (`loopPrep`) / `LOOP_ENGAGE` / `LOOP_RESUME_PREP` / `LOOP_GAIN_CARD` / `LOOP_FINISH`.
 - **Determinism:** seed-based RNG in `src/game/random/rng.ts` — never `Math.random()` in gameplay.
 - **Removed:** TD code. Do not recreate it.
 - **When changing systems:** Update `docs/GAME_DESIGN.md` changelog and roadmap.

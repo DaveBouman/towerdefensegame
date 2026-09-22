@@ -186,6 +186,34 @@ export class DeckHand
         return true;
     }
 
+    /** Adds a card with a fixed arrow into hand (Loop Road station rewards). */
+    addCardToHandWithArrow (
+        definitionId: string,
+        arrow?: import('../../run/runDeck').RunDeckCard['arrow'],
+        ignoreHandLimit = true,
+    ): boolean
+    {
+        if (!ignoreHandLimit && this.hand.length >= GAME_RULES.handSize)
+        {
+            return false;
+        }
+
+        this.hand.push(createCardInstance(definitionId, arrow));
+        this.emitHandChanged();
+
+        return true;
+    }
+
+    /** Puts a card on top of the draw pile (next to draw). */
+    addCardToDeck (
+        definitionId: string,
+        arrow?: import('../../run/runDeck').RunDeckCard['arrow'],
+    ): void
+    {
+        this.deck.push(createCardInstance(definitionId, arrow));
+        this.emitPilesChanged();
+    }
+
     /** Discards selected hand cards and draws replacements. Uses one floor reroll. */
     rerollHandCards (handIndices: number[]): boolean
     {

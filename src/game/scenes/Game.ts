@@ -153,6 +153,7 @@ export class Game extends Scene
         EventBus.on(GAME_EVENTS.LOOP_ENGAGE, this.onLoopEngage, this);
         EventBus.on(GAME_EVENTS.LOOP_RESUME_PREP, this.onLoopResumePrep, this);
         EventBus.on(GAME_EVENTS.LOOP_FINISH, this.onLoopFinish, this);
+        EventBus.on(GAME_EVENTS.LOOP_GAIN_CARD, this.onLoopGainCard, this);
         EventBus.on(GAME_EVENTS.ATTACK, this.onAttack, this);
         EventBus.on(GAME_EVENTS.END_TURN, this.onEndTurn, this);
         EventBus.on(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
@@ -694,7 +695,15 @@ export class Game extends Scene
                 return this.onBoardCardDropped(fromSlot, worldX, worldY);
             },
         }, {
-            canSelect: () => this.session?.canEditBoard() ?? false,
+            canSelect: () =>
+            {
+                if (this.loopPersistBoard)
+                {
+                    return false;
+                }
+
+                return this.session?.canEditBoard() ?? false;
+            },
             onSelect: (slot) =>
             {
                 if (!this.session?.setChainStartSlot(slot))
@@ -782,12 +791,31 @@ export class Game extends Scene
         if (this.loopPersistBoard)
         {
             this.session.setPersistBoardLayout(true);
+            this.boardView?.setChainStartSlot(this.session.getChainStartSlot());
         }
         this.syncLowHpVignette();
         this.emitAttackReadiness();
         this.emitRerollState();
         this.emitTutorialWizardLayout();
     }
+
+    private onLoopGainCard = (
+        { definitionId, arrow }: {
+            definitionId: string;
+            arrow?: import('../cardGame/domain/cardDirections').CardDirection;
+        },
+    ): void =>
+    {
+        if (!this.battleActive || !this.session || !this.loopPersistBoard)
+        {
+            return;
+        }
+
+        this.session.gainLoopCard(definitionId, arrow);
+        this.handView?.syncHand(this.session.getHand());
+        this.syncPileViews();
+        this.emitAttackReadiness();
+    };
 
     private ensureLowHpVignette (): void
     {
@@ -1006,6 +1034,7 @@ export class Game extends Scene
         EventBus.off(GAME_EVENTS.LOOP_ENGAGE, this.onLoopEngage, this);
         EventBus.off(GAME_EVENTS.LOOP_RESUME_PREP, this.onLoopResumePrep, this);
         EventBus.off(GAME_EVENTS.LOOP_FINISH, this.onLoopFinish, this);
+        EventBus.off(GAME_EVENTS.LOOP_GAIN_CARD, this.onLoopGainCard, this);
         EventBus.off(GAME_EVENTS.ATTACK, this.onAttack, this);
         EventBus.off(GAME_EVENTS.END_TURN, this.onEndTurn, this);
         EventBus.off(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);

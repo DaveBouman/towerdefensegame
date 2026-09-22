@@ -49,6 +49,12 @@ export function playEnemyTurnStep (
 
     if (step.kind === 'attack')
     {
+        if (session.didResolveEnemyAttackMidChain())
+        {
+            onComplete();
+            return;
+        }
+
         enemyView?.playEnemyAttackPulse();
 
         scene.time.delayedCall(turnMs, () =>

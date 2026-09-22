@@ -84,6 +84,10 @@ export interface GameEventMap {
     'loop-engage': { enemyId: string };
     'loop-resume-prep': undefined;
     'loop-finish': undefined;
+    'loop-gain-card': {
+        definitionId: string;
+        arrow?: import('../cardGame/domain/cardDirections').CardDirection;
+    };
     'puzzle-state': PuzzleState;
     'puzzle-resolved': PuzzleResolvedPayload;
     'battle-won': {

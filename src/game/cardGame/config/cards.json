@@ -45,6 +45,7 @@
       "visualId": "attack",
       "arrowPool": "orthogonal",
       "chainStepDistance": 2,
+      "duration": 2,
       "tier": 1,
       "upgrade": {
         "power": 7
@@ -84,6 +85,7 @@
       "visualId": "defend",
       "arrowPool": "orthogonal",
       "chainStepDistance": 2,
+      "duration": 2,
       "tier": 1,
       "upgrade": {
         "power": 5

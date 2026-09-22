@@ -1,6 +1,7 @@
 import {
     getLoopLoot,
     type LoopLootDef,
+    type LoopStationCardOffer,
 } from '../../game/run/loopRun';
 
 interface LoopHubOverlayProps {
@@ -106,6 +107,49 @@ export const LoopLootOverlay = ({
                             onClick={() => onTakeHome(loot.id)}
                         >
                             Take home
+                        </button>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    </div>
+);
+
+interface LoopStationCardOverlayProps {
+    offers: readonly LoopStationCardOffer[];
+    onTake: (offer: LoopStationCardOffer) => void;
+}
+
+/** After clearing a station — pick a card that unlocks more routing. */
+export const LoopStationCardOverlay = ({
+    offers,
+    onTake,
+}: LoopStationCardOverlayProps) => (
+    <div className="puzzle-select">
+        <div className="puzzle-select__panel">
+            <header className="puzzle-select__header">
+                <p className="puzzle-select__eyebrow">Station clear</p>
+                <h1 className="puzzle-select__title">New card</h1>
+                <p className="puzzle-select__tagline">
+                    Starter arrows are only right and down. New cards unlock left, up, leaps,
+                    and diagonals — more combinations on the chain.
+                </p>
+            </header>
+
+            <ul className="puzzle-select__list">
+                {offers.map((offer) => (
+                    <li key={`${offer.definitionId}-${offer.arrow ?? 'any'}`} className="puzzle-select__card">
+                        <h2 className="puzzle-select__card-title">{offer.label}</h2>
+                        <p className="puzzle-select__card-intro">
+                            {offer.blurb}
+                            {offer.arrow ? ` Arrow: ${offer.arrow}.` : ''}
+                        </p>
+                        <button
+                            type="button"
+                            className="puzzle-select__start"
+                            onClick={() => onTake(offer)}
+                        >
+                            Take card
                         </button>
                     </li>
                 ))}
