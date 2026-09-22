@@ -287,6 +287,15 @@ export const handleAttackResolved = (
             deps.session.queueNextEnemyTurn();
         }
 
+        // Belt-and-suspenders: every auto-loop round must be ready to strike again.
+        deps.session.clearMidChainEnemyAttackFlag();
+        if (!deps.session.getQueuedEnemyTurns().some(
+            (action) => action.steps.some((step) => step.kind === 'attack'),
+        ))
+        {
+            deps.session.queueNextEnemyTurn();
+        }
+
         deps.syncBoardFromSession();
         deps.enemySquad.syncFromSession(deps.session);
         deps.enemySquad.showAllIntents(deps.session);

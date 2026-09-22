@@ -1763,6 +1763,7 @@ export class CardGameSession
         this.player.shield = 0;
         this.playerThorns = 0;
         this.energyRound.resetEnergy();
+        this.enemyAttackResolvedMidChain = false;
         CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: 0 });
         this.enemyPhase.queueNextEnemyTurn();
     }

@@ -27,7 +27,7 @@ The amber road is **not** painted on the card grid. The card grid is **not** whe
 1. **Walk map ≠ chain board** — two spaces; chain stays visible on the left during the walk.
 2. **Stations on the loop** — specific steps hold enemies; advance to engage one at a time.
 3. **Prep then lock** — build the board before attack; after Engage you still rearrange while reading enemy intent/timing; **Attack** locks and auto-loops. Rearrange again only outside battle.
-4. **Attack timing** — each card costs ticks (Attack = 10); enemy hits mid-chain when those add up to their `attackDuration` (Raider = 30). Wall-clock = ticks × `tickMs` (faster modes later). After cards are placed, the path shows running tick totals and **HIT N** on the step where the enemy lands. Defend grants **10** shield; each later card ticks it down by **1**. Auto-loop until KO.
+4. **Attack timing** — each card costs ticks (Attack = 10); enemy hits mid-chain every `attackDuration` ticks (Raider = 30, so 30 / 60 / …). If the chain ends early, the hit still lands on the last card. Wall-clock = ticks × `tickMs`. Defend grants **10** shield; each later card ticks it down by **1**. Auto-loop until KO.
 5. **Loot → home** — clear the loop (or dungeon) → pick loot → stash buffs future chains. Station wins also grant kit cards (more arrows/combos).
 6. **Optional dungeon** — same walk map, harder stations.
 
@@ -430,6 +430,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-09-22 | **Enemy hit every timer beat.** Mid-chain strikes land every `attackDuration` ticks (not only the first), and short chains still get the hit on the last card. Auto-loop rounds clear the mid-chain flag so each loop can hit again. |
 | 2026-09-22 | **Station card direction pick.** After a station clear, rewards no longer come with a fixed arrow — pick the card, then choose its direction (same picker as event rewards). |
 | 2026-09-22 | **Tick hit beat on board.** After cards are placed, the chain stamps running tick totals and **HIT N** on the step where the enemy mid-chain attack lands. Enemy intent shows damage and `HIT 30` as separate lines (no more `13·30t`). |
 | 2026-09-22 | **Defend countdown.** Defend grants **10** shield; each card after it ticks shield down by **1** (`defendDecayPerCard`) with clear HUD feedback — place it so armor is still up on the enemy’s mid-chain hit tick. |

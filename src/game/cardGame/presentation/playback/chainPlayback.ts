@@ -74,11 +74,13 @@ export function runChainPlayback (
     const stepMs = GAME_RULES.activationStepMs;
     let timelineTicks = 0;
     let defendedThisChain = false;
-    const midChainAttack = getMidChainEnemyAttackPlan(deps.session);
+    let midChainHitsLanded = 0;
+    let midChainAttack = getMidChainEnemyAttackPlan(deps.session);
 
     const playMidChainEnemyHit = (plan: NonNullable<typeof midChainAttack>): void =>
     {
         deps.session.markEnemyAttackResolvedMidChain();
+        midChainHitsLanded += 1;
         const enemyView = plan.attackerInstanceId
             ? deps.enemySquad.getView(plan.attackerInstanceId)
             : deps.enemySquad.firstView;
@@ -109,6 +111,23 @@ export function runChainPlayback (
         }
 
         playSfx('enemy-move', { volume: 0.55 });
+    };
+
+    const ensureMidChainPlan = (): NonNullable<typeof midChainAttack> | null =>
+    {
+        if (midChainAttack)
+        {
+            return midChainAttack;
+        }
+
+        // Flag may have blocked the first read; clear and re-plan for deferred end hits.
+        if (midChainHitsLanded === 0)
+        {
+            deps.session.clearMidChainEnemyAttackFlag();
+            midChainAttack = getMidChainEnemyAttackPlan(deps.session);
+        }
+
+        return midChainAttack;
     };
 
     const buildCurrentSequence = (): AttackSequence =>
@@ -174,9 +193,11 @@ export function runChainPlayback (
         }
 
         // Short chains: still land the timed hit if the clock never crossed.
-        if (midChainAttack && !deps.session.didResolveEnemyAttackMidChain())
+        const deferredPlan = midChainAttack ?? ensureMidChainPlan();
+
+        if (deferredPlan && midChainHitsLanded === 0)
         {
-            playMidChainEnemyHit(midChainAttack);
+            playMidChainEnemyHit(deferredPlan);
 
             if (deps.session.isPlayerDefeated())
             {
@@ -637,25 +658,38 @@ export function runChainPlayback (
         const resolveMidChainEnemyHitThen = (next: () => void): void =>
         {
             timelineTicks += cardTicks;
+            const plan = midChainAttack ?? ensureMidChainPlan();
 
-            if (!midChainAttack
-                || deps.session.didResolveEnemyAttackMidChain()
-                || timelineTicks < midChainAttack.atTicks)
+            if (!plan)
             {
                 next();
                 return;
             }
 
-            playMidChainEnemyHit(midChainAttack);
+            // One strike per timer multiple (30, 60, …) — not only the first.
+            const expectedHits = Math.floor(timelineTicks / plan.atTicks);
 
-            if (deps.session.isPlayerDefeated())
+            const landRemaining = (): void =>
             {
-                finishActiveStep();
-                finalize();
-                return;
-            }
+                if (midChainHitsLanded >= expectedHits)
+                {
+                    next();
+                    return;
+                }
 
-            deps.scheduleAttackTimer(next, 220);
+                playMidChainEnemyHit(plan);
+
+                if (deps.session.isPlayerDefeated())
+                {
+                    finishActiveStep();
+                    finalize();
+                    return;
+                }
+
+                deps.scheduleAttackTimer(landRemaining, 220);
+            };
+
+            landRemaining();
         };
 
         const proceedAfterStep = (): void =>

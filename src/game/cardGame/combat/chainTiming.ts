@@ -14,6 +14,8 @@ export interface MidChainEnemyAttackPlan {
  * on the shared card-duration clock. Place defend so armor is up; later cards
  * decay shield. Wall-clock pacing is `ticks × gameRules.tickMs` (faster modes
  * only change tickMs).
+ *
+ * If the chain ends before that beat, playback still lands the hit at the end.
  */
 export const getMidChainEnemyAttackPlan = (
     session: CardGameSession,
@@ -38,33 +40,49 @@ export const getMidChainEnemyAttackPlan = (
 
     const targetId = session.getAttackTargetId() ?? living[0]!.instanceId;
     const combatant = living.find((entry) => entry.instanceId === targetId) ?? living[0]!;
-    const queued = session.getQueuedEnemyTurn(combatant.instanceId)
-        ?? session.getTelegraphedEnemyTurn(combatant.instanceId);
 
-    if (!queued)
+    const readQueuedAttack = (): MidChainEnemyAttackPlan | null =>
     {
-        return null;
-    }
+        const queued = session.getQueuedEnemyTurn(combatant.instanceId)
+            ?? session.getTelegraphedEnemyTurn(combatant.instanceId);
 
-    const attackStep = queued.steps.find((step) => step.kind === 'attack');
+        if (!queued)
+        {
+            return null;
+        }
 
-    if (!attackStep || (attackStep.amount ?? 0) <= 0)
-    {
-        return null;
-    }
+        const attackStep = queued.steps.find((step) => step.kind === 'attack');
 
-    const atTicks = Math.max(
-        1,
-        Math.round(
-            combatant.definition.attackDuration
-                ?? GAME_RULES.defaultEnemyAttackDuration
-                ?? 30,
-        ),
-    );
+        if (!attackStep || (attackStep.amount ?? 0) <= 0)
+        {
+            return null;
+        }
 
-    return {
-        atTicks,
-        damage: attackStep.amount ?? 0,
-        attackerInstanceId: combatant.instanceId,
+        const atTicks = Math.max(
+            1,
+            Math.round(
+                combatant.definition.attackDuration
+                    ?? GAME_RULES.defaultEnemyAttackDuration
+                    ?? 30,
+            ),
+        );
+
+        return {
+            atTicks,
+            damage: attackStep.amount ?? 0,
+            attackerInstanceId: combatant.instanceId,
+        };
     };
+
+    const planned = readQueuedAttack();
+
+    if (planned)
+    {
+        return planned;
+    }
+
+    // Engage / auto-loop can leave a stale non-attack queue — re-roll attack-only.
+    session.queueNextEnemyTurn();
+
+    return readQueuedAttack();
 };
