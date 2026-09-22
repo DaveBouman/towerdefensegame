@@ -764,7 +764,7 @@ export class Game extends Scene
         this.syncPileClickHandlers();
         this.syncPileViews();
 
-        if (!this.session.isPuzzleMode())
+        if (!this.session.isPuzzleMode() && !this.loopPersistBoard)
         {
             this.session.placeFieldBoost();
         }

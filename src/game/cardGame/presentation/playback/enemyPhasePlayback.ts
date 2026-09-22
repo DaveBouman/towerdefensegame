@@ -178,7 +178,13 @@ function syncBoardAfterEnemyResponse (
         flyFromWorld: options.dealInHand ? deps.deckView?.getReceivePosition() : undefined,
     });
     armorView?.setArmor(session.getPlayer().shield);
-    session.placeFieldBoost();
+
+    // Loop Road locked fights: no mid-match board placement (bombs only at Engage).
+    if (!session.shouldPersistBoardLayout())
+    {
+        session.placeFieldBoost();
+    }
+
     deps.syncBoardFromSession();
     deps.syncPileViews();
 }
