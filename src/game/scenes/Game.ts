@@ -511,14 +511,21 @@ export class Game extends Scene
         this.loopBoardLocked = true;
         this.battleResolved = false;
         this.autoRepeatCombat = false;
+        // Dummy practice can leave an attack lock / spent energy — clear for the real fight.
+        this.session.releaseAttackLock();
+        this.session.cancelEnemyTurn();
         this.session.setBoardLocked(true);
         this.session.replaceLoopEnemy(enemyId);
         this.session.placeOpeningEnemyField();
-        this.session.queueNextEnemyTurn();
+        this.session.prepareLockedRoundReset();
+        this.boardView?.clearChainPath();
         this.boardView?.syncFromBoard(this.session.board);
+        this.handView?.syncHand(this.session.getHand());
         this.enemySquad?.syncFromSession(this.session);
         this.enemySquad?.showAllIntents(this.session);
         this.playerView?.setHealth(this.session.getPlayer());
+        this.armorView?.setArmor(this.session.getPlayer().shield);
+        this.syncPileViews();
         this.emitAttackReadiness();
     };
 
@@ -1101,13 +1108,16 @@ export class Game extends Scene
         handleAttack(this.battleAttackFlowDeps());
     };
 
-    private onChainPathLit = (): void =>
+    private onChainPathLit = (enabled?: boolean): void =>
     {
-        if (!readChainPathLitEnabled())
+        const lit = typeof enabled === 'boolean' ? enabled : readChainPathLitEnabled();
+
+        if (!lit)
         {
             this.boardView?.clearChainPath();
         }
 
+        // Rebuild preview when Path is turned on (cards may already be placed).
         this.emitAttackReadiness();
     };
 

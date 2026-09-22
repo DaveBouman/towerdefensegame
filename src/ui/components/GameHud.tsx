@@ -12,7 +12,7 @@ const REJECT_MESSAGES: Record<NonNullable<AttackReadiness['reason']>, string> = 
     'enemy-turn': 'Enemy is acting…',
     'enemy-defeated': 'Enemy already defeated.',
     'player-defeated': 'You were defeated.',
-    'no-cards-on-board': 'Place cards on the board first.',
+    'no-cards-on-board': 'Set chain start on a packed card (click a column-1 tile), or Path preview off/on to refresh.',
     'no-energy': 'Out of energy — wait for the next round.',
     'no-target': 'Lock a target first — click an enemy panel on the right.',
 };
@@ -206,7 +206,7 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
                             ? 'game-hud__path-lit game-hud__path-lit--on'
                             : 'game-hud__path-lit'
                     }
-                    title="Show the planned chain route on the board. Past Reroute uses a soft guess until you pick."
+                    title="Preview your chain route on the board. Toggle anytime — does not block Attack or Engage."
                     aria-pressed={pathLit}
                     onClick={() =>
                     {

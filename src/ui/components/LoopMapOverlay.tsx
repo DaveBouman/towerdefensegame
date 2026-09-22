@@ -41,8 +41,8 @@ export const LoopMapOverlay = ({
                     <p className="loop-map__eyebrow">Walk map</p>
                     <h1 className="loop-map__title">{encounter.title}</h1>
                     <p className="loop-map__tagline">
-                        Pack your chain on the left, then Attack the dummy to test it.
-                        Engage locks the board for the real fight.
+                        Pack on the left, use Path on/off to preview the chain, Attack the dummy to test.
+                        Engage starts the fight with a fresh energy round (board stays locked).
                         {' '}{remaining} station{remaining === 1 ? '' : 's'} left.
                     </p>
                 </header>

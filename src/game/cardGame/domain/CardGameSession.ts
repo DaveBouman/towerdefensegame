@@ -1199,6 +1199,8 @@ export class CardGameSession
             return { canAttack: false, reason: 'no-energy' };
         }
 
+        this.ensureChainStartOnBoard();
+
         const sequence = planAttack(this.board, this.chainStart);
 
         if (sequence.chain.length === 0)
@@ -1207,6 +1209,29 @@ export class CardGameSession
         }
 
         return { canAttack: true, reason: null };
+    }
+
+    /** If the start tile is empty, snap to the first packed card in the start column. */
+    private ensureChainStartOnBoard (): void
+    {
+        if (this.board.getCardAt(this.chainStart))
+        {
+            return;
+        }
+
+        const startCol = GAME_RULES.activationStartColumn;
+
+        for (let row = 0; row < GRID_CONFIG.rows; row++)
+        {
+            const slot = { row, col: startCol };
+            const card = this.board.getCardAt(slot);
+
+            if (card && card.owner !== 'enemy' && card.owner !== 'field')
+            {
+                this.chainStart = slot;
+                return;
+            }
+        }
     }
 
     planAttack (): AttackSequence | null

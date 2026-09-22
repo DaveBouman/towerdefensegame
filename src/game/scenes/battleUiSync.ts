@@ -258,19 +258,23 @@ export const emitAttackReadiness = (
     const chainStartPickable = deps.session.canEditBoard()
         && !deps.rerollModeActive
         && !deps.session.isBusy();
+
+    // Snap start onto a packed card before reading readiness / path preview.
+    const readiness = deps.session.getAttackReadiness();
     const chainStart = deps.session.getChainStartSlot();
 
     deps.boardView?.setChainStartPickable(chainStartPickable);
+    deps.boardView?.setChainStartSlot(chainStart);
 
     if (deps.boardView && !deps.session.isBusy() && !deps.session.isEnemyDefeated())
     {
         const preview = planChainPathPreview(
             deps.session.board,
-            deps.session.getChainStartSlot(),
+            chainStart,
         );
         const streakBars = findAllStreakBarRuns(
             deps.session.board,
-            deps.session.getChainStartSlot(),
+            chainStart,
         );
 
         if (streakBars.length > 0)
@@ -302,7 +306,7 @@ export const emitAttackReadiness = (
         rowLabel: boardRowLabel(chainStart.row),
     });
 
-    EventBus.emit(GAME_EVENTS.CARD_ATTACK_READY, deps.session.getAttackReadiness());
+    EventBus.emit(GAME_EVENTS.CARD_ATTACK_READY, readiness);
     emitTurnState(deps);
     emitRerollState(deps);
 };
