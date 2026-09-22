@@ -154,6 +154,8 @@ export interface GameRules {
     loopBurstLoops: number;
     /** Cards offered after a completed Loop burst (enemy still alive). */
     loopBurstCardCount: number;
+    /** Board moves allowed between Attacks inside a Loop burst. */
+    loopBetweenAttackMoves: number;
     battleModifier?: { step: number; enemyIntentChance: number };
     chainAbilities: {
         poisonTrail: { damagePerSubsequentCard: number; damagePerStack: number };

@@ -35,7 +35,7 @@ export interface BattleAttackFlowDeps
     endBattle: () => void;
     winBattle: () => void;
     loseBattle: () => void;
-    /** Loop Road locked fight — Attack auto-repeats within a burst. */
+    /** Loop Road: legacy auto-repeat flag (cleared between Attacks / on burst break). */
     isAutoRepeatCombat?: () => boolean;
     setAutoRepeatCombat?: (active: boolean) => void;
     /** Loop Road: lock the packed board on the first real Attack. */
@@ -292,27 +292,15 @@ export const handleAttackResolved = (
             return;
         }
 
-        deps.setAutoRepeatCombat?.(true);
+        // Between Attacks: unlock for a few board moves, then player Attacks again.
+        deps.setAutoRepeatCombat?.(false);
 
         if (!deps.session.hasEnergy())
         {
             deps.session.prepareLockedRoundReset();
         }
-        else
-        {
-            deps.session.clearMidChainEnemyAttackFlag();
-            deps.session.queueNextEnemyTurn();
-        }
 
-        // Belt-and-suspenders: every auto-loop round must be ready to strike again.
-        deps.session.clearMidChainEnemyAttackFlag();
-        if (!deps.session.getQueuedEnemyTurns().some(
-            (action) => action.steps.some((step) => step.kind === 'attack'),
-        ))
-        {
-            deps.session.queueNextEnemyTurn();
-        }
-
+        deps.session.prepareLoopBetweenAttacks();
         deps.syncBoardFromSession();
         deps.enemySquad.syncFromSession(deps.session);
         deps.enemySquad.showAllIntents(deps.session);
@@ -320,25 +308,10 @@ export const handleAttackResolved = (
         deps.syncPileViews();
         unlockPlayerInput(deps);
         deps.emitAttackReadiness();
-
-        deps.delayCall(450, () =>
-        {
-            if (!deps.session || deps.session.isBusy() || !deps.session.isBoardLocked())
-            {
-                return;
-            }
-
-            if (deps.session.isEnemyDefeated() || deps.session.isPlayerDefeated())
-            {
-                return;
-            }
-
-            if (!deps.isAutoRepeatCombat?.())
-            {
-                return;
-            }
-
-            handleAttack(deps);
+        EventBus.emit(GAME_EVENTS.LOOP_BETWEEN_ATTACKS, {
+            moves: deps.session.getBoardEditBudget() ?? 0,
+            loop: deps.session.getLoopsThisBurst(),
+            burstLimit: deps.session.getLoopBurstLimit(),
         });
 
         return;

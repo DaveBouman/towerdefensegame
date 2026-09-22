@@ -195,6 +195,8 @@ export interface TurnState {
     energy: number;
     maxEnergy: number;
     canEndTurn: boolean;
+    /** Loop Road: remaining board edits between Attacks (undefined = unlimited). */
+    boardMovesRemaining?: number;
 }
 
 export interface HandPenaltyResult {

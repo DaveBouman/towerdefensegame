@@ -110,9 +110,60 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
     }, [ rejectMessage ]);
 
     const needsTarget = readiness.reason === 'no-target';
+    const boardMoves = turnState.boardMovesRemaining;
+    const betweenAttackMoves = typeof boardMoves === 'number';
     const showChainStartHint = chainStart.pickable
         && !rerollState.rerollModeActive
-        && turnState.energy > 0;
+        && turnState.energy > 0
+        && !betweenAttackMoves;
+
+    const deployHint = (() =>
+    {
+        if (rerollState.rerollModeActive)
+        {
+            return {
+                title: 'Click hand cards to select, then confirm reroll.',
+                text: 'Select cards, then confirm reroll.',
+            };
+        }
+
+        if (needsTarget)
+        {
+            return {
+                title: 'Click an enemy panel to lock your target, then Attack.',
+                text: 'Lock a target, then Attack.',
+            };
+        }
+
+        if (betweenAttackMoves)
+        {
+            if (boardMoves > 0)
+            {
+                return {
+                    title: 'Place, move, swap, or pick up cards — each counts as one move. Then Attack again.',
+                    text: `${boardMoves} board move${boardMoves === 1 ? '' : 's'} left.`,
+                };
+            }
+
+            return {
+                title: 'Board moves used up — press Attack to fire the next loop.',
+                text: 'No moves left — Attack.',
+            };
+        }
+
+        if (turnState.energy > 0)
+        {
+            return {
+                title: 'Place cards and Attack. Enemy strikes back, then overclocks.',
+                text: 'Place cards, then Attack.',
+            };
+        }
+
+        return {
+            title: 'Out of energy — board clears after the enemy acts.',
+            text: 'Out of energy.',
+        };
+    })();
 
     return (
         <aside className={`game-hud${captureMode ? ' game-hud--capture' : ''}`}>
@@ -146,23 +197,9 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
             {!captureMode && (
                 <p
                     className="game-hud__deploy-hint"
-                    title={
-                        rerollState.rerollModeActive
-                            ? 'Click hand cards to select, then confirm reroll.'
-                            : needsTarget
-                                ? 'Click an enemy panel to lock your target, then Attack.'
-                                : turnState.energy > 0
-                                    ? 'Place cards and Attack. Enemy strikes back, then overclocks.'
-                                    : 'Out of energy — board clears after the enemy acts.'
-                    }
+                    title={deployHint.title}
                 >
-                    {rerollState.rerollModeActive
-                        ? 'Select cards, then confirm reroll.'
-                        : needsTarget
-                            ? 'Lock a target, then Attack.'
-                            : turnState.energy > 0
-                                ? 'Place cards, then Attack.'
-                                : 'Out of energy.'}
+                    {deployHint.text}
                 </p>
             )}
             {!captureMode && needsTarget && (

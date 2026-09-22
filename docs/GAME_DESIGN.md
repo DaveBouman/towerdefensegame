@@ -26,10 +26,11 @@ The amber road is **not** painted on the card grid. The card grid is **not** whe
 
 1. **Walk map ≠ chain board** — two spaces; chain stays visible on the left during the walk.
 2. **Stations on the loop** — specific steps hold enemies; advance to engage one at a time.
-3. **Prep then lock** — build the board before attack; after Engage you rearrange while reading intent; **Attack** locks for a **3-loop burst**.
+3. **Prep then lock** — build the board before attack; after Engage you rearrange while reading intent; **Attack** locks into a **3-loop burst**.
 4. **Attack timing** — each card costs ticks (Attack = 10); enemy hits mid-chain every `attackDuration` ticks. Board marks **HIT** where the strike lands. Intent shows damage + timing.
-5. **Burst break** — after 3 loops, if the enemy lives: unlock, take **3 cards** (pick directions), rearrange, Attack again. Repeat until KO. Station clear still grants a card.
-6. **Loot → home** — clear the loop → pick loot → stash. Optional dungeon.
+5. **Between Attacks** — after each loop (1–2 of 3), unlock for **3 board moves** (place/move/swap/pick up), then Attack again. No auto-repeat.
+6. **Burst break** — after 3 loops, if the enemy lives: unlock, take **3 cards** (pick directions), rearrange freely, Attack again. Repeat until KO. Station clear still grants a card.
+7. **Loot → home** — clear the loop → pick loot → stash. Optional dungeon.
 
 ### Target loop (v1)
 
@@ -37,7 +38,8 @@ The amber road is **not** painted on the card grid. The card grid is **not** whe
 Menu → Home (stash)
   → Walk map + chain board (left)
   → Pack → Engage station → Attack
-  → 3 auto-loops (enemy hits mid-chain) → if alive: take 3 cards + rearrange → Attack again
+  → Loop → up to 3 board moves → Attack → … (×3)
+  → if alive: take 3 cards + rearrange → Attack again
   → KO → station card → walk map
   → all stations clear → Loot → Home
 ```
@@ -47,7 +49,7 @@ Menu → Home (stash)
 - Painting the loop onto the 5×5 card tiles as the primary map
 - Pure no-combat routing puzzles as the default product
 - Branching Slay-the-Spire map as the default
-- Editing the chain mid-fight
+- Unlimited free editing during a locked Attack chain (limited between-Attack moves only)
 
 ### Implementation sketch
 
@@ -430,14 +432,15 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
-| 2026-09-22 | **3-loop bursts.** Locked station fights auto-Attack **3 times**, then unlock for a **3-card draft** + rearrange before the next burst (until KO). No more infinite auto-loop. |
+| 2026-09-22 | **Between-Attack moves.** Inside a 3-loop burst, after each Attack the board unlocks for **3 edits** (`loopBetweenAttackMoves`), then the player presses Attack again (no auto-repeat). After loop 3: full burst break + 3-card draft. |
+| 2026-09-22 | **3-loop bursts.** Locked station fights run **3 Attacks**, then unlock for a **3-card draft** + rearrange before the next burst (until KO). No more infinite auto-loop. |
 | 2026-09-22 | **Less fight foresight.** Board shows **HIT** markers only (no running tick totals). Walk-map stations no longer list HP / hit ticks. Enemy intent still shows attack damage + HIT timing. |
 | 2026-09-22 | **Enemy hit every timer beat.** Mid-chain strikes land every `attackDuration` ticks (not only the first), and short chains still get the hit on the last card. Auto-loop rounds clear the mid-chain flag so each loop can hit again. |
 | 2026-09-22 | **Station card direction pick.** After a station clear, rewards no longer come with a fixed arrow — pick the card, then choose its direction (same picker as event rewards). |
 | 2026-09-22 | **Tick hit beat on board.** After cards are placed, the chain stamps running tick totals and **HIT N** on the step where the enemy mid-chain attack lands. Enemy intent shows damage and `HIT 30` as separate lines (no more `13·30t`). |
 | 2026-09-22 | **Defend countdown.** Defend grants **10** shield; each card after it ticks shield down by **1** (`defendDecayPerCard`) with clear HUD feedback — place it so armor is still up on the enemy’s mid-chain hit tick. |
 | 2026-09-22 | **Loop board survives station card pick.** Winning a station no longer tears down the Phaser board when entering `loop-card-reward` — the left chain stays under the pick UI, then unlocks again for the walk map. |
-| 2026-09-22 | **Loop Road timing + growth.** Chain always starts top-left; starter arrows are right/down only. Timing uses **ticks** (`tickMs` wall-clock; faster modes change only `tickMs`). Attack cards are **10 ticks**, Raider hits at **30 ticks**. Loop enemies **always attack** (never shield) so defend timing stays reliable. Engage shows intent while board stays editable; Attack locks and auto-loops. Station card picks unlock more routes. |
+| 2026-09-22 | **Loop Road timing + growth.** Chain always starts top-left; starter arrows are right/down only. Timing uses **ticks** (`tickMs` wall-clock; faster modes change only `tickMs`). Attack cards are **10 ticks**, Raider hits at **30 ticks**. Loop enemies **always attack** (never shield) so defend timing stays reliable. Engage shows intent while board stays editable; Attack locks into a burst with limited between-Attack moves. Station card picks unlock more routes. |
 | 2026-09-21 | **Snappy board edits.** Placing/moving cards no longer rebuilds every board wrapper or re-fades enemy intents — only changed tiles update, and path/streak redraws skip when unchanged. |
 | 2026-09-21 | **Anchored card bonus.** Attack/Defend/Redline cards left unmoved after placement grant +2 damage / +2 armor (in-chain and off-chain) for the energy round. Moving, swapping, or picking up clears the bonus; cyan pin marks anchored tiles. |
 | 2026-09-21 | **Combat layout scales with viewport.** Board tile, hand cards, and piles shrink from the 96px design when height is tight so 1280×720 keeps armor above the hand with no board overlap. |

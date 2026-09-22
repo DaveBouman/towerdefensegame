@@ -16,4 +16,5 @@ export const CARD_GAME_EVENTS = {
     PLAYER_DEFEATED: 'card-game-player-defeated',
     PLAYER_HEALED: 'card-game-player-healed',
     PHASE_SHIFT: 'card-game-phase-shift',
+    BOARD_EDIT_BUDGET: 'card-game-board-edit-budget',
 } as const;

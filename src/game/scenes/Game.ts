@@ -533,6 +533,7 @@ export class Game extends Scene
         this.session.placeOpeningEnemyField();
         this.session.prepareLockedRoundReset();
         this.session.resetLoopBurst();
+        // Unlimited edits until first Attack locks the board.
         this.boardView?.clearChainPath();
         this.boardView?.syncFromBoard(this.session.board);
         this.handView?.syncHand(this.session.getHand());

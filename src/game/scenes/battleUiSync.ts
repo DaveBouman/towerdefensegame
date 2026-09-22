@@ -220,11 +220,15 @@ export const emitTurnState = (deps: Pick<BattleUiSyncDeps, 'session'>): void =>
         return;
     }
 
+    const editBudget = deps.session.getBoardEditBudget();
+
     EventBus.emit(GAME_EVENTS.TURN_STATE, {
         energy: deps.session.getEnergy(),
         maxEnergy: deps.session.getMaxEnergy(),
         // Energy refills automatically when a full round of attacks is spent.
         canEndTurn: false,
+        // null budget = unlimited (prep / burst draft); omit so HUD skips the hint.
+        ...(editBudget === null ? {} : { boardMovesRemaining: editBudget }),
     });
 };
 

@@ -45,6 +45,7 @@
   "defendDecayPerCard": 1,
   "loopBurstLoops": 3,
   "loopBurstCardCount": 3,
+  "loopBetweenAttackMoves": 3,
   "battleModifier": {
     "step": 0.1,
     "enemyIntentChance": 0.35

@@ -89,6 +89,7 @@ export interface GameEventMap {
         arrow?: import('../cardGame/domain/cardDirections').CardDirection;
     };
     'loop-burst-break': undefined;
+    'loop-between-attacks': { moves: number; loop: number; burstLimit: number };
     'puzzle-state': PuzzleState;
     'puzzle-resolved': PuzzleResolvedPayload;
     'battle-won': {

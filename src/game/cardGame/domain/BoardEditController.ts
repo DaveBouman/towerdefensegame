@@ -11,7 +11,7 @@ import type { DeckHand } from './DeckHand';
 import type { CardInstance, SlotPosition } from './types';
 import { CardGameEventBus } from '../events/CardGameEventBus';
 import { CARD_GAME_EVENTS } from '../events/cardGameEvents';
-import { clearCardAnchoredState, markCardRelocated, markCardSettled } from '../combat/anchoredBonus';
+import { markCardRelocated, markCardSettled } from '../combat/anchoredBonus';
 
 export interface BoardEditHost
 {
@@ -27,17 +27,40 @@ export interface BoardEditHost
 export class BoardEditController
 {
     private boardLocked = false;
+    /** null = unlimited; 0 = no edits; >0 = remaining moves between Loop Attacks. */
+    private editBudget: number | null = null;
 
     constructor (private readonly host: BoardEditHost) {}
 
     setBoardLocked (locked: boolean): void
     {
         this.boardLocked = locked;
+
+        if (locked)
+        {
+            this.editBudget = 0;
+        }
+        else if (this.editBudget === 0)
+        {
+            // Unlock after a lock → unlimited until a budget is set (between-Attack pause).
+            this.editBudget = null;
+        }
     }
 
     isBoardLocked (): boolean
     {
         return this.boardLocked;
+    }
+
+    /** null = unlimited edits (prep / burst draft). */
+    setEditBudget (budget: number | null): void
+    {
+        this.editBudget = budget === null ? null : Math.max(0, Math.round(budget));
+    }
+
+    getEditBudget (): number | null
+    {
+        return this.editBudget;
     }
 
     canEditBoard (): boolean
@@ -47,7 +70,25 @@ export class BoardEditController
             return false;
         }
 
+        if (this.editBudget === 0)
+        {
+            return false;
+        }
+
         return !this.host.isBusy();
+    }
+
+    private consumeEditBudget (): void
+    {
+        if (this.editBudget === null || this.editBudget <= 0)
+        {
+            return;
+        }
+
+        this.editBudget -= 1;
+        CardGameEventBus.emit(CARD_GAME_EVENTS.BOARD_EDIT_BUDGET, {
+            remaining: this.editBudget,
+        });
     }
 
     placeCardFromHand (handIndex: number, slot: SlotPosition): boolean
@@ -95,6 +136,7 @@ export class BoardEditController
             this.markExhaustedIfNeeded(card, definition);
             CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card, replaced: false });
             this.host.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
+            this.consumeEditBudget();
 
             return true;
         }
@@ -109,6 +151,7 @@ export class BoardEditController
             this.markExhaustedIfNeeded(card, definition);
             CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card, replaced: true });
             this.host.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
+            this.consumeEditBudget();
 
             return true;
         }
@@ -121,6 +164,7 @@ export class BoardEditController
         this.markExhaustedIfNeeded(card, definition);
         CardGameEventBus.emit(CARD_GAME_EVENTS.CARD_PLACED, { slot, card, replaced: true });
         this.host.deckHand.discardFromHandOnPlay(getCardDiscardFromHandCount(definition));
+        this.consumeEditBudget();
 
         return true;
     }
@@ -142,6 +186,7 @@ export class BoardEditController
         markCardRelocated(card);
         this.host.board.removeCard(slot);
         this.host.deckHand.returnCardToHand(card);
+        this.consumeEditBudget();
 
         return true;
     }
@@ -177,6 +222,7 @@ export class BoardEditController
         if (moved)
         {
             markCardRelocated(card);
+            this.consumeEditBudget();
         }
 
         return moved;
@@ -208,6 +254,8 @@ export class BoardEditController
             {
                 markCardRelocated(cardB);
             }
+
+            this.consumeEditBudget();
         }
 
         return swapped;

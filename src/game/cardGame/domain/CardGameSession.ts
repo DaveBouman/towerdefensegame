@@ -1723,6 +1723,7 @@ export class CardGameSession
     prepareLoopBurstBreak (): void
     {
         this.setBoardLocked(false);
+        this.boardEdit.setEditBudget(null);
         this.loopsThisBurst = 0;
         this.enemyAttackResolvedMidChain = false;
         this.player.shield = 0;
@@ -1742,6 +1743,43 @@ export class CardGameSession
 
         CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: 0 });
         this.enemyPhase.queueNextEnemyTurn();
+    }
+
+    /**
+     * Between Attacks inside a burst: unlock and allow a few board moves, then
+     * the player presses Attack again (no auto-repeat).
+     */
+    prepareLoopBetweenAttacks (): void
+    {
+        this.setBoardLocked(false);
+        this.boardEdit.setEditBudget(
+            Math.max(0, Math.round(GAME_RULES.loopBetweenAttackMoves ?? 3)),
+        );
+        this.enemyAttackResolvedMidChain = false;
+        this.player.shield = 0;
+        this.playerThorns = 0;
+
+        for (const slot of this.board.slotsInOrder())
+        {
+            const card = this.board.getCardAt(slot);
+
+            if (card && card.owner !== 'enemy' && card.owner !== 'field')
+            {
+                card.exhausted = false;
+                card.spent = false;
+            }
+        }
+
+        CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: 0 });
+        CardGameEventBus.emit(CARD_GAME_EVENTS.BOARD_EDIT_BUDGET, {
+            remaining: this.boardEdit.getEditBudget() ?? 0,
+        });
+        this.enemyPhase.queueNextEnemyTurn();
+    }
+
+    getBoardEditBudget (): number | null
+    {
+        return this.boardEdit.getEditBudget();
     }
 
     /** After a mid-chain defend, each later card strips this much shield (countdown). */
@@ -1867,6 +1905,7 @@ export class CardGameSession
         this.player.shield = 0;
         this.energyRound.resetEnergy();
         this.loopsThisBurst = 0;
+        this.boardEdit.setEditBudget(null);
         CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: 0 });
         this.replaceLoopEnemy('training-dummy');
     }
