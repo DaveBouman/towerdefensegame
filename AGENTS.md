@@ -2,7 +2,7 @@
 
 ## Project
 
-Card-chain combat game (Phaser + React). See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) for architecture, balance config paths, design goals, and roadmap.
+Card-chain combat game (Phaser + React) — **Loop Road**: walk map (right) + chain board always on the left. Pack before engage; locked in combat. See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md).
 
 ## Do not use
 

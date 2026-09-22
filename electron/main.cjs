@@ -221,6 +221,8 @@ const createWindow = () =>
             contextIsolation: true,
             nodeIntegration: false,
             sandbox: false,
+            // Keep the game ticking at full rate when the window is occluded / unfocused.
+            backgroundThrottling: false,
         },
     });
 

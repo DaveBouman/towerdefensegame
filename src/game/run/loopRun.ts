@@ -1,0 +1,237 @@
+import { getCardGameEnemyDefinitionOrThrow } from '../cardGame/config/enemyCatalog';
+import { getEnemyIdentity } from '../cardGame/presentation/enemyIdentity';
+import { BODY_MOD_IDS } from './bodyMods';
+import type { RunDeckCard } from './runDeck';
+import { pickRandom, shuffleInPlace } from '../random/rng';
+
+/** Steps on the walk map (Loop Hero road) — not card-board slots. */
+export const LOOP_MAP_STEPS = 16;
+
+/** One enemy stationed on the circular walk map. */
+export interface LoopStation {
+    /** Index 0 … LOOP_MAP_STEPS-1 on the walk ring. */
+    stepIndex: number;
+    enemyId: string;
+}
+
+export interface LoopLootDef {
+    id: string;
+    label: string;
+    blurb: string;
+    bodyModId?: string;
+    addCardId?: string;
+}
+
+export interface LoopEncounter {
+    id: string;
+    title: string;
+    blurb: string;
+    dungeon: boolean;
+    stations: readonly LoopStation[];
+    kit: readonly RunDeckCard[];
+}
+
+const SURFACE_KIT: readonly RunDeckCard[] = [
+    { definitionId: 'boost' },
+    { definitionId: 'fire' },
+    { definitionId: 'attack' },
+    { definitionId: 'attack' },
+    { definitionId: 'attack' },
+    { definitionId: 'attack' },
+    { definitionId: 'attack' },
+    { definitionId: 'defend' },
+    { definitionId: 'defend' },
+    { definitionId: 'attack-leap' },
+    { definitionId: 'defend-leap' },
+    { definitionId: 'rupture' },
+];
+
+const DUNGEON_KIT: readonly RunDeckCard[] = [
+    ...SURFACE_KIT,
+    { definitionId: 'echo' },
+    { definitionId: 'switchback' },
+];
+
+export const LOOP_SURFACE: LoopEncounter = {
+    id: 'loop-surface',
+    title: 'The Ring',
+    blurb: 'Walk the circular map. Stations hold enemies — fight them on your chain board.',
+    dungeon: false,
+    stations: [
+        { stepIndex: 3, enemyId: 'basic' },
+        { stepIndex: 7, enemyId: 'basic' },
+        { stepIndex: 12, enemyId: 'thornward' },
+    ],
+    kit: SURFACE_KIT,
+};
+
+export const LOOP_DUNGEON: LoopEncounter = {
+    id: 'loop-dungeon',
+    title: 'Deep Ring',
+    blurb: 'Harder stations on the same walk map. Clear for richer loot.',
+    dungeon: true,
+    stations: [
+        { stepIndex: 2, enemyId: 'thornward' },
+        { stepIndex: 6, enemyId: 'smokebinder' },
+        { stepIndex: 10, enemyId: 'gridlock' },
+        { stepIndex: 14, enemyId: 'basic' },
+    ],
+    kit: DUNGEON_KIT,
+};
+
+export const LOOP_LOOT: readonly LoopLootDef[] = [
+    {
+        id: 'whetstone',
+        label: 'Whetstone',
+        blurb: 'Attacks in the chain hit harder (Razor Feed).',
+        bodyModId: BODY_MOD_IDS.razorFeed,
+    },
+    {
+        id: 'pyre-shard',
+        label: 'Pyre Shard',
+        blurb: 'Fire synergies run hotter (Pyre Link).',
+        bodyModId: BODY_MOD_IDS.pyreLink,
+    },
+    {
+        id: 'venom-vial',
+        label: 'Venom Vial',
+        blurb: 'Poison sticks longer (Venom Latch).',
+        bodyModId: BODY_MOD_IDS.venomLatch,
+    },
+    {
+        id: 'gyro-chip',
+        label: 'Gyro Chip',
+        blurb: 'Left-routing hits punch up (Portside Gyro).',
+        bodyModId: BODY_MOD_IDS.portsideGyro,
+    },
+    {
+        id: 'spare-boost',
+        label: 'Spare Boost',
+        blurb: 'Take an extra Boost into the kit.',
+        addCardId: 'boost',
+    },
+    {
+        id: 'spare-echo',
+        label: 'Spare Echo',
+        blurb: 'Take an Echo into the kit.',
+        addCardId: 'echo',
+    },
+    {
+        id: 'plating',
+        label: 'Scrap Plating',
+        blurb: 'Block a hit (Reactive Plating).',
+        bodyModId: BODY_MOD_IDS.reactivePlating,
+    },
+    {
+        id: 'mark-chip',
+        label: 'Mark Chip',
+        blurb: 'Every 5th attack doubles (Mark V).',
+        bodyModId: BODY_MOD_IDS.markFive,
+    },
+];
+
+export const getLoopLoot = (id: string): LoopLootDef =>
+{
+    const loot = LOOP_LOOT.find((entry) => entry.id === id);
+
+    if (!loot)
+    {
+        throw new Error(`Unknown loop loot: ${id}`);
+    }
+
+    return loot;
+};
+
+export const rollLoopLootOffers = (dungeon: boolean, count = 3): LoopLootDef[] =>
+{
+    const pool = [ ...LOOP_LOOT ];
+    shuffleInPlace(pool);
+    const picks = pool.slice(0, Math.min(count, pool.length));
+
+    if (dungeon)
+    {
+        const bodyMods = LOOP_LOOT.filter((entry) => entry.bodyModId);
+
+        if (picks.every((entry) => !entry.bodyModId) && bodyMods.length > 0)
+        {
+            picks[0] = pickRandom(bodyMods);
+        }
+    }
+
+    return picks;
+};
+
+export const buildLoopKit = (
+    encounter: LoopEncounter,
+    homeLootIds: readonly string[],
+): RunDeckCard[] =>
+{
+    const kit: RunDeckCard[] = encounter.kit.map((card) => ({ ...card }));
+
+    for (const lootId of homeLootIds)
+    {
+        const loot = getLoopLoot(lootId);
+
+        if (loot.addCardId)
+        {
+            kit.push({ definitionId: loot.addCardId });
+        }
+    }
+
+    return kit;
+};
+
+export const bodyModsFromHomeLoot = (homeLootIds: readonly string[]): string[] =>
+{
+    const mods: string[] = [];
+
+    for (const lootId of homeLootIds)
+    {
+        const loot = getLoopLoot(lootId);
+
+        if (loot.bodyModId && !mods.includes(loot.bodyModId))
+        {
+            mods.push(loot.bodyModId);
+        }
+    }
+
+    return mods;
+};
+
+export const getLoopEncounter = (dungeon: boolean): LoopEncounter =>
+    dungeon ? LOOP_DUNGEON : LOOP_SURFACE;
+
+export const stationAtStep = (
+    encounter: LoopEncounter,
+    stepIndex: number,
+): LoopStation | undefined =>
+    encounter.stations.find((station) => station.stepIndex === stepIndex);
+
+export const getStationPreview = (enemyId: string) =>
+{
+    const enemy = getCardGameEnemyDefinitionOrThrow(enemyId);
+    const identity = getEnemyIdentity(enemyId);
+
+    return {
+        label: enemy.label,
+        hp: enemy.maxHealth,
+        portraitFile: identity.portraitFile ?? 'basic.png',
+    };
+};
+
+/** Polar position for a step on the walk ring (SVG viewBox 0..100). */
+export const loopStepPosition = (
+    stepIndex: number,
+    total = LOOP_MAP_STEPS,
+    radius = 36,
+    cx = 50,
+    cy = 50,
+): { x: number; y: number } =>
+{
+    const angle = (stepIndex / total) * Math.PI * 2 - Math.PI / 2;
+
+    return {
+        x: cx + Math.cos(angle) * radius,
+        y: cy + Math.sin(angle) * radius,
+    };
+};

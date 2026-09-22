@@ -2,11 +2,64 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-08-31
+**Last updated:** 2026-09-22  
+**Branch:** `puzzle-redesign` — **Loop Road** (two boards: walk map + chain combat)
 
 ---
 
-## What this game is
+## Redesign north star — Loop Road (dual board)
+
+**Two different boards — do not merge them.**
+
+| Board | What it is | What you do |
+|-------|------------|-------------|
+| **Walk map** | Circular loop (Loop Hero road). Enemies sit on **stations**. | Advance around the ring; when you land on a station, engage. |
+| **Chain board** | 5×5 card lattice — **always visible on the left** while walking. | Pack layout **before** engage. Fight locks the board (one-and-done). Rearrange only outside the battlefield. |
+
+The amber road is **not** painted on the card grid. The card grid is **not** where you walk. Home loot still buffs the chain for future fights.
+
+### Player fantasy
+
+> I walk a circular road with my chain board always on the left. I pack a layout, engage a station (board locks), resolve, unlock and rearrange between stations. Loot comes home and makes the next walk stronger.
+
+### Pillars
+
+1. **Walk map ≠ chain board** — two spaces; chain stays visible on the left during the walk.
+2. **Stations on the loop** — specific steps hold enemies; advance to engage one at a time.
+3. **Prep then lock** — build the board before attack; locked during the fight; rearrange only outside battle.
+4. **Auto-loop combat** — Attack once; chain + enemy round replay until KO. Opening bombs placed once at Engage; they tick damage after each card round and stay on the board.
+5. **Loot → home** — clear the loop (or dungeon) → pick loot → stash buffs future chains.
+6. **Optional dungeon** — same walk map, harder stations.
+
+### Target loop (v1)
+
+```
+Menu → Home (stash)
+  → Enter ring / dungeon → Walk map (right) + chain board (left, editable)
+  → Pack layout → Advance → station → Engage (lock board, place bombs once)
+  → Attack → auto-replay chain ↔ enemy until KO (bombs tick each round; no new board places)
+  → win → unlock board, back to walk map (rearrange ok)
+  → all stations clear → Loot → Home
+```
+
+### Explicit non-goals
+
+- Painting the loop onto the 5×5 card tiles as the primary map
+- Pure no-combat routing puzzles as the default product
+- Branching Slay-the-Spire map as the default
+- Editing the chain mid-fight
+
+### Implementation sketch
+
+1. [x] Home hub + loot stash + dungeon toggle.
+2. [x] **Walk map UI** — circular path, walker, stations (right panel; board visible left).
+3. [x] **Persistent prep board** — `loopPrep` START_BATTLE; Engage via `LOOP_ENGAGE` (lock); resume via `LOOP_RESUME_PREP`.
+4. [x] Return to walk map until loop clear → loot.
+5. [ ] Richer loot targeting card types / station markers polish.
+
+---
+
+## What this game is (current build — legacy run)
 
 A **5×5 card-chain combat** game built with Phaser + React, played across a
 branching **run map** (roguelite-style path of battles).
@@ -17,6 +70,8 @@ branching **run map** (roguelite-style path of battles).
 - Enemy acts with telegraphed intent (attack/shield + hazard traps / leech nodes).
 - Win: all enemy HP ≤ 0. Lose: player HP ≤ 0.
 - Multi-enemy fights: click an enemy to set your attack target before attacking; pick a new target mid-chain if the current one dies. When **all** enemies are dead, the chain stops immediately — leftover traps, curses, siphon, and other end-of-chain beats do not resolve.
+
+> **Note:** Default product is **Loop Road** — walk map + separate chain combat. Legacy run and practice roads are optional.
 
 ## Run structure
 
@@ -76,9 +131,9 @@ Helpers: `getFloorForColumn`, `getFloorColumnRange`, `RUN_CONFIG.mapFloorCount` 
 - **Training sim wizard** (`tutorial-wizard` + `TutorialCoachOverlay.tsx`): phased lesson on the training dummy — chain start, attack chain, energy (3 per round), board reset, Fire rhythm. Spotlight + arrow coach points at each click target. No enemy counterattack.
 - After the sim: map tip overlay (route, energy, rerolls); reward/shop tip after the first real win. Dismissible; skipped once seen. Settings → replay training sim.
 
-Flow: `menu` → `training sim` → `map (pick node)` → `battle` → `win → reward → map` / `lose → defeat` / `boss win → victory`.
-Non-battle nodes: `map (pick shop)` → `visit (ShopOverlay)` → `map`; `map (pick event)` → `visit (RunEventOverlay)` → `map`.
-Victory/defeat can return to the main menu or start a fresh run immediately.
+Flow (north star): `menu` → teach → `puzzle-select` → `puzzle` → result → `puzzle-select`.
+Legacy: gallery footer → `map` → `battle`. Kit-select skirmish is demoted (not on Start).
+Non-battle nodes (legacy only): shop / event / rest as before.
 
 ### Seeds & determinism
 
@@ -285,7 +340,7 @@ remain as a fallback if a portrait fails to load.
 
 #### Phase 1 — Stakes (~1–2 weeks)
 
-- [x] **Gauntlet / run map** — branching path of escalating enemies from `enemies.json` (`runMap.ts`, `RunMapOverlay`)
+- [x] **Gauntlet / run map** — linear path exists as **Legacy** (`runMap.ts`); default product is Chain Puzzle (rewire gallery next)
 - [x] **Carry-over HP** — HP carries between fights with a small heal on victory (`RUN_CONFIG.healOnVictory`)
 - [x] **Pre-fight enemy preview** — map nodes show the enemy label before you commit
 - [x] **Node kinds** — enemy/boss/shop/event nodes with icons + hover tooltips (`nodeKinds.ts`, `NodeKindIcon`); events via `RunEventOverlay`; shop via `ShopOverlay`
@@ -339,7 +394,9 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | Task | Start here |
 |------|------------|
 | Seeded RNG / determinism | `src/game/random/rng.ts` (use `random`/`randomInt`/`pickRandom`/`shuffleInPlace`, never `Math.random`) |
-| Map layout / difficulty ramp | `src/game/run/runMap.ts` (`ROW_SIZES`, `ROW_ENEMY_POOLS`, `RUN_CONFIG`) |
+| Map layout / difficulty ramp | `src/game/run/runMap.ts` (linear `ROW_SIZES`, `STREET_ENEMY_POOLS`, `RUN_CONFIG`) |
+| Chain Puzzle gallery | `PuzzleSelectOverlay.tsx`, `runPuzzles.ts`, `puzzleWin.ts`, phase `puzzle-select` → `puzzle` |
+| Skirmish (demoted) | `KitSelectOverlay.tsx`, `skirmishEncounters.ts` — not on default Start |
 | Map node kinds / icons / tooltips | `src/game/run/nodeKinds.ts` (kinds, weights, tooltip copy), `src/ui/components/NodeKindIcon.tsx` |
 | Shop / event node behavior | `ShopOverlay.tsx`, `shop.ts`, `RunEventOverlay.tsx`, `runEvents.ts`, `runPuzzles.ts`, `PuzzleHud.tsx`, `PuzzleResultOverlay.tsx`; `App.tsx` `visit`/`puzzle` phases |
 | Rewards / reward pool / body-mod hooks | `src/game/run/rewards.ts` (`rewardForNodeKind`, tier×floor weights, deck-weighted `rollCardReward`), `deckArchetypes.ts` |
@@ -376,6 +433,19 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | 2026-09-21 | **Snappy board edits.** Placing/moving cards no longer rebuilds every board wrapper or re-fades enemy intents — only changed tiles update, and path/streak redraws skip when unchanged. |
 | 2026-09-21 | **Anchored card bonus.** Attack/Defend/Redline cards left unmoved after placement grant +2 damage / +2 armor (in-chain and off-chain) for the energy round. Moving, swapping, or picking up clears the bonus; cyan pin marks anchored tiles. |
 | 2026-09-21 | **Combat layout scales with viewport.** Board tile, hand cards, and piles shrink from the 96px design when height is tight so 1280×720 keeps armor above the hand with no board overlap. |
+| 2026-09-22 | **Auto-loop station fights.** Engage places bombs once; Attack auto-replays chain ↔ enemy until KO. Bombs stay and tick each round; no mid-fight board placement. |
+| 2026-09-22 | **Prep + lock board.** Chain board always on the left during the walk; pack before Engage; board locks in combat; rearrange only on the walk map (`LOOP_ENGAGE` / `LOOP_RESUME_PREP`). |
+| 2026-09-22 | **Dual boards.** Walk map (circular loop + stations) is separate from the 5×5 chain board. Advance on the map; fight opens the chain board only for that station. |
+| 2026-09-22 | **Loop Road v1.** Start → Home hub → walk circular ring with multi-enemy stations → loot take-home (body mods / kit cards) → optional dungeon. Practice roads demoted to hub footer. |
+| 2026-09-22 | **Painted roads.** Gallery entries paint an amber Loop Hero road on the 5×5; clear by walking it. Gallery UI is “Choose a road,” not abstract puzzle names alone. |
+| 2026-09-22 | **Dense lattices (Loop Hero / Backpack).** Gallery kits are 10–16 cards: coverage, pack-all, edge checkpoints, long walks. Tiny 2–3 card trials kept for run events only. |
+| 2026-09-22 | **Aha-routing gallery.** Default Start → Chain Puzzle (`START_PUZZLE`). Win rules: damage / visitTiles / minLength / useAllCards. Kit+KO off the default path. Incremental idle rejected as non-goal. |
+| 2026-09-22 | **Chain Puzzle north star.** Only the 5×5 chain survives as core. Default product = spatial/logical puzzles (route, constraint, board-lock) — not kit+KO skirmishes or damage-target DPS checks. Combat modes demoted to optional. |
+| 2026-09-22 | **Skirmish kit fights.** Gallery is enemy select → pack a kit → full `START_BATTLE` until KO (enemy hits back). Replaces damage-target puzzle trials as the default loop. |
+| 2026-09-22 | **Puzzle beginning + linear map.** Default Start → `puzzle-select` gallery (visible goals, training dummy trials); resolve returns to gallery. Run map is a single-node-per-column path (no forks); reachable via Legacy run. Layout tray still pending. |
+| 2026-09-22 | **Puzzle redesign north star.** Playtest: run not fun enough. Branch `puzzle-redesign` targets Puzzle Chain — visible enemy select, one fixed deck full layout, dynamic chains as the verb; demote map/hand/reroll gauntlet. |
+| 2026-09-21 | **Crisp desktop UI type.** Restored canvas antialias (kept 60 FPS cap). Menu/settings no longer use CSS `zoom` (retina-soft text); panel type scales via `em` + snapped `--ui-scale`. |
+| 2026-09-21 | **Desktop render pacing.** Electron builds target 60 FPS and use `backgroundThrottling: false` so packaged Mac builds stutter less under thermal load. |
 | 2026-09-21 | **New run clears combat.** Starting a new run (or returning to menu) mid-fight tears down Phaser board/hand/enemies so the old battle does not linger under the map. |
 | 2026-09-21 | **Packaged app launch + icon.** Desktop packs no longer init Steamworks unless an App ID is set (Steam not required to open). Icon is regenerated before pack (`build/icon.png`); local mac builds skip code signing so the `.app` opens. |
 | 2026-09-21 | **Min window 1280×720.** Dropped 960×540. Combat HUD is a single compact row (no wrap) with shorter copy and reduced top inset so it stays aligned at the minimum size. |

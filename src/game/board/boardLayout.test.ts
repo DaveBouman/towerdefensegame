@@ -13,14 +13,26 @@ describe('boardLayout', () =>
         expect(layout.enemyX).toBeGreaterThan(layout.gridOffsetX + layout.gridWidth);
         expect(layout.playerX).toBeLessThan(layout.gridOffsetX);
 
-        const gridCenter = layout.gridOffsetX + layout.gridWidth / 2;
-        expect(gridCenter).toBeCloseTo(layout.canvasWidth / 2, 0);
+        const clusterLeft = layout.playerX;
+        const clusterRight = layout.enemyX + layout.enemySize;
+        const clusterCenter = (clusterLeft + clusterRight) / 2;
+        expect(clusterCenter).toBeCloseTo(layout.canvasWidth / 2, -1);
         expect(layout.handY).toBeGreaterThan(layout.gridOffsetY + layout.gridHeight);
         expect(layout.deckX).toBeLessThan(layout.handCenterX);
         expect(layout.graveyardX).toBeGreaterThan(layout.handCenterX);
         expect(layout.graveyardX).toBeGreaterThan(layout.deckX);
         expect(layout.deckY).toBe(layout.graveyardY);
         expect(layout.deckY).toBeGreaterThan(layout.canvasHeight - layout.pileHeight - 40);
+    });
+
+    it('packs the board into the left half for loop-split walk map', () =>
+    {
+        const full = computeBoardLayout(1920, 1080, 'full');
+        const split = computeBoardLayout(1920, 1080, 'loop-split');
+
+        expect(split.gridOffsetX).toBeLessThan(full.gridOffsetX);
+        expect(split.enemyX + split.enemySize).toBeLessThan(1920 * 0.65);
+        expect(split.graveyardX).toBeLessThan(full.graveyardX);
     });
 
     it('scales the board down at 1280×720 so armor sits above the hand', () =>

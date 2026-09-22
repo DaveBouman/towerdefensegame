@@ -2,8 +2,14 @@ import { useEffect, useState } from 'react';
 import { EventBus } from '../../game/EventBus';
 import { GAME_EVENTS } from '../../game/events/gameEvents';
 import type { PuzzleState } from '../../game/events/gameEventMap';
-import { PUZZLE_TRIAL_RULES } from '../../game/run/rewards';
 import { EventIcon } from './EventIcon';
+
+const GALLERY_RULES: readonly string[] = [
+    'Amber tiles are the road — pack cards on them.',
+    'Set chain start on the road, then Attack once.',
+    'Walk the painted path (or fire every packed piece).',
+    'Wrong layout → rearrange. No counterattack.',
+];
 
 export const PuzzleHud = () =>
 {
@@ -39,18 +45,18 @@ export const PuzzleHud = () =>
                 <div>
                     <h2 className="puzzle-hud__title">{puzzle.title}</h2>
                     <p className="puzzle-hud__goal">
-                        Deal at least <strong>{puzzle.damageTarget}</strong> damage in one attack
+                        {puzzle.goalLine}
                         {' '}({puzzle.cardCount} cards)
                     </p>
                 </div>
             </div>
             <ul className="puzzle-hud__rules">
-                {PUZZLE_TRIAL_RULES.map((rule) => (
+                {GALLERY_RULES.map((rule) => (
                     <li key={rule}>{rule}</li>
                 ))}
             </ul>
             <p className="puzzle-hud__hint">{puzzle.hint}</p>
-            <p className="puzzle-hud__note">One attack only — no enemy counterattack.</p>
+            <p className="puzzle-hud__note">One commit — walk the amber road.</p>
         </aside>
     );
 };

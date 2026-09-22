@@ -50,7 +50,7 @@ export const MainMenuHome = ({
                 {GAME_EARLY_ACCESS_NOTICE}
             </p>
             <p className="main-menu__tagline">
-                Link the grid, outlast the street, and cut down the Warden.
+                Build the chain. Solve the trial.
             </p>
         </>
     );
@@ -61,7 +61,7 @@ export const MainMenuHome = ({
                 {header}
 
                 <div className="main-menu__actions">
-                    <MenuSection label="Run">
+                    <MenuSection label="Play">
                         {pause ? (
                             <>
                                 <button type="button" className="main-menu__start" onClick={onResume}>
@@ -72,12 +72,12 @@ export const MainMenuHome = ({
                                     className="main-menu__secondary"
                                     onClick={onNewRunConfirm}
                                 >
-                                    New run
+                                    New road
                                 </button>
                             </>
                         ) : (
                             <button type="button" className="main-menu__start" onClick={onNewRunConfirm}>
-                                Start run
+                                Start the road
                             </button>
                         )}
                     </MenuSection>

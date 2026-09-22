@@ -34,6 +34,69 @@ export interface BattleUiSyncDeps
     rerollModeActive: boolean;
 }
 
+interface AttackReadinessEmitCache
+{
+    pathBoardKey: string;
+    chainStartKey: string;
+    attackReadyKey: string;
+    turnKey: string;
+    rerollKey: string;
+}
+
+let emitCache: AttackReadinessEmitCache = {
+    pathBoardKey: '',
+    chainStartKey: '',
+    attackReadyKey: '',
+    turnKey: '',
+    rerollKey: '',
+};
+
+/** Reset when a fight tears down so the next battle does not skip a first emit. */
+export const resetAttackReadinessEmitCache = (): void =>
+{
+    emitCache = {
+        pathBoardKey: '',
+        chainStartKey: '',
+        attackReadyKey: '',
+        turnKey: '',
+        rerollKey: '',
+    };
+};
+
+const fingerprintBoardForPathPreview = (session: CardGameSession): string =>
+{
+    const start = session.getChainStartSlot();
+    const parts: string[] = [
+        `s${start.row},${start.col}`,
+        session.isBusy() ? 'b1' : 'b0',
+        readChainPathLitEnabled() ? 'p1' : 'p0',
+    ];
+
+    for (let row = 0; row < session.board.rows; row += 1)
+    {
+        for (let col = 0; col < session.board.cols; col += 1)
+        {
+            const card = session.board.getCardAt({ row, col });
+
+            if (!card)
+            {
+                parts.push('.');
+                continue;
+            }
+
+            parts.push([
+                card.instanceId,
+                card.arrow ?? '',
+                card.relocated ? '1' : '0',
+                card.spent ? '1' : '0',
+                card.exhausted ? '1' : '0',
+            ].join(':'));
+        }
+    }
+
+    return parts.join('|');
+};
+
 export interface BattlePileClickSyncDeps
 {
     pileInspectionBlocked: boolean;

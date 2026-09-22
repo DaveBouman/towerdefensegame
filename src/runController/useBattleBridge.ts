@@ -44,6 +44,8 @@ interface PendingBattleStart {
     runGold?: number;
     puzzleMode?: import('../game/cardGame/domain/CardGameSession').PuzzleModeConfig | null;
     enemyHealthMultiplier?: number;
+    roadTiles?: readonly import('../game/cardGame/domain/types').SlotPosition[];
+    loopPrep?: boolean;
 }
 
 interface PendingPuzzleStart {
@@ -71,6 +73,11 @@ export interface BattleBridgeRefs {
     eventVisit: MutableRefObject<VisitState | null>;
     pendingStart: MutableRefObject<PendingBattleStart | null>;
     pendingPuzzle: MutableRefObject<PendingPuzzleStart | null>;
+    /** When set, battle win/lose returns to the skirmish gallery instead of the run map. */
+    skirmishEncounterId: MutableRefObject<string | null>;
+    /** Loop Road walk — win opens loot, lose returns to hub. */
+    loopActive: MutableRefObject<boolean>;
+    loopDungeon: MutableRefObject<boolean>;
 }
 
 export interface BattleBridgeActions {
@@ -88,11 +95,14 @@ export interface BattleBridgeActions {
     setPendingRewardFlow: (value: PendingRewardFlow | null) => void;
     setPendingPuzzleReward: (value: PendingPuzzleReward | null) => void;
     setPuzzleResult: (value: PuzzleResultState | null) => void;
+    setSkirmishResult: (value: import('./types').SkirmishResultState | null) => void;
     setPhase: (phase: RunPhase) => void;
     setFloorRerollsRemaining: (value: number) => void;
     completeWardenVictory: () => void;
     onTutorialWizardComplete: () => void;
     restartTutorialWizard: () => void;
+    onLoopBattleWon: (dungeon: boolean) => void;
+    onLoopBattleLost: () => void;
 }
 
 export const useBattleBridge = (
@@ -137,6 +147,32 @@ export const useBattleBridge = (
             battleDamageTaken?: number;
         }): void =>
         {
+            const skirmishId = refs.skirmishEncounterId.current;
+
+            if (skirmishId)
+            {
+                actions.setRunAttackCount(nextRunAttackCount);
+                actions.setActiveBattleKind(null);
+                actions.setCombatRecap(null);
+                actions.setPlayerHealth(GAME_RULES.player.maxHealth);
+                refs.skirmishEncounterId.current = null;
+                actions.setSkirmishResult({ encounterId: skirmishId, success: true });
+                actions.setPhase('puzzle-result');
+                return;
+            }
+
+            if (refs.loopActive.current)
+            {
+                const dungeon = refs.loopDungeon.current;
+                refs.loopActive.current = false;
+                actions.setRunAttackCount(nextRunAttackCount);
+                actions.setActiveBattleKind(null);
+                actions.setCombatRecap(null);
+                actions.setPlayerHealth(GAME_RULES.player.maxHealth);
+                actions.onLoopBattleWon(dungeon);
+                return;
+            }
+
             actions.setRunAttackCount(nextRunAttackCount);
             actions.setActiveBattleKind(null);
             actions.setCombatRecap(null);
@@ -248,6 +284,29 @@ export const useBattleBridge = (
             stolenCardIds?: readonly string[];
         }): void =>
         {
+            const skirmishId = refs.skirmishEncounterId.current;
+
+            if (skirmishId)
+            {
+                actions.setRunAttackCount(nextRunAttackCount);
+                actions.setActiveBattleKind(null);
+                actions.setPlayerHealth(GAME_RULES.player.maxHealth);
+                refs.skirmishEncounterId.current = null;
+                actions.setSkirmishResult({ encounterId: skirmishId, success: false });
+                actions.setPhase('puzzle-result');
+                return;
+            }
+
+            if (refs.loopActive.current)
+            {
+                refs.loopActive.current = false;
+                actions.setRunAttackCount(nextRunAttackCount);
+                actions.setActiveBattleKind(null);
+                actions.setPlayerHealth(GAME_RULES.player.maxHealth);
+                actions.onLoopBattleLost();
+                return;
+            }
+
             actions.setRunAttackCount(nextRunAttackCount);
             actions.setActiveBattleKind(null);
 
@@ -302,12 +361,28 @@ export const useBattleBridge = (
                 if (success)
                 {
                     actions.onTutorialWizardComplete();
-                    actions.setPhase('map');
+                    actions.setPhase('loop-hub');
                     return;
                 }
 
                 actions.setRunToast('Not enough damage — line up your chain and try again.');
                 actions.restartTutorialWizard();
+                return;
+            }
+
+            // Gallery trials: no run economy / event visit — show result then back to select.
+            if (!refs.eventVisit.current)
+            {
+                actions.setPuzzleResult({
+                    puzzleId,
+                    success,
+                    damageDealt,
+                    damageTarget,
+                    messages: success
+                        ? [ { tone: 'good', text: 'Road clear.' } ]
+                        : [ { tone: 'bad', text: 'Wrong layout — rearrange and try again.' } ],
+                });
+                actions.setPhase('puzzle-result');
                 return;
             }
 
@@ -343,7 +418,7 @@ export const useBattleBridge = (
                 actions.setPendingPuzzleReward({
                     puzzleId,
                     nodeId: node.id,
-                    options: rollPuzzleCardReward(toDefinitionIds(refs.deck.current), refs.currentFloor.current),
+                    options: rollPuzzleCardReward(toDefinitionIds(refs.deck.current)),
                     damageDealt,
                     damageTarget,
                     messages: applied.messages,

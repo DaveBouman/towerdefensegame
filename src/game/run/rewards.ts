@@ -125,11 +125,11 @@ export const BATTLE_REWARD_RULES: readonly string[] = [
 
 /** Shown on combo-trial briefs and reward screens. */
 export const PUZZLE_TRIAL_RULES: readonly string[] = [
-    'You receive a fixed hand — place every card on the board.',
+    'You receive a fixed hand — place cards and set arrows.',
     'Click a column-0 tile to set chain start, then launch one attack.',
-    'Deal at least the target damage in that single attack.',
+    'Clear the puzzle goal (route, length, or score) — layout is the solution.',
     'The training dummy does not fight back.',
-    'Pass: pick one reward card (or none). Fail: take damage.',
+    'Gallery: free retry. Run events: pass for a reward, fail for a penalty.',
 ];
 
 /** Base (unupgraded) cards eligible as battle rewards. */

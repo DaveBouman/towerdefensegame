@@ -200,16 +200,25 @@ export class FieldEffects
     }
 
     /**
-     * After an attack: scorch tiles of traps that exploded (not in the chain),
-     * and remove every enemy trap from the board (disarmed or detonated).
+     * After an attack: unchained traps explode (scorch when not persisted).
+     * Loop Road locked fights keep bombs on the board so they tick every round.
      */
-    resolveHazardsAfterAttack (chain: AttackSequence['chain']): void
+    resolveHazardsAfterAttack (
+        chain: AttackSequence['chain'],
+        options: { persistHazards?: boolean } = {},
+    ): void
     {
         this.bombDisabledSlots.clear();
 
         for (const slot of getUnchainedHazardSlots(this.board, chain))
         {
             this.bombDisabledSlots.add(slotKey(slot));
+        }
+
+        if (options.persistHazards)
+        {
+            this.bombDisabledSlots.clear();
+            return;
         }
 
         this.removeEnemyFieldNodesFromBoard();

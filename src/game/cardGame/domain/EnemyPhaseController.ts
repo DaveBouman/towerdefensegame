@@ -22,6 +22,8 @@ export interface EnemyPhaseHost
     rampEnemyAction (action: EnemyTurnAction): EnemyTurnAction;
     applySilenceTilesFromPassives (): void;
     tickEnemyOverclock (): void;
+    /** Loop Road locked fight — no mid-fight board placement. */
+    shouldSkipBoardPlacement? (): boolean;
 }
 
 export class EnemyPhaseController
@@ -96,6 +98,7 @@ export class EnemyPhaseController
                 bonusAttack: (combatant.linkRageAttackBonus ?? 0) + (combatant.rerollTaxAttackBonus ?? 0),
                 bonusTraps: combatant.pendingExtraTraps ?? 0,
                 phaseShiftActive: combatant.phaseShiftActive === true,
+                skipBoardPlacement: this.host.shouldSkipBoardPlacement?.() === true,
             });
             const allySteps = planAllySupportSteps(
                 combatant,

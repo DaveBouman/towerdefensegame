@@ -29,8 +29,21 @@ export const computeViewportSize = (
 export const computeUiScale = (viewportHeight: number): number =>
 {
     const raw = viewportHeight / GAME_UI_REF_HEIGHT;
+    const clamped = Math.min(GAME_UI_SCALE_MAX, Math.max(GAME_UI_SCALE_MIN, raw));
 
-    return Math.min(GAME_UI_SCALE_MAX, Math.max(GAME_UI_SCALE_MIN, raw));
+    // Prefer exact 1× near 720p so CSS type stays on whole pixels (avoids soft buttons).
+    if (Math.abs(clamped - 1) < 0.06)
+    {
+        return 1;
+    }
+
+    // Keep clamp endpoints exact; quarter-snap the mid range for sharper calc() fonts.
+    if (clamped === GAME_UI_SCALE_MIN || clamped === GAME_UI_SCALE_MAX)
+    {
+        return clamped;
+    }
+
+    return Math.round(clamped * 4) / 4;
 };
 
 export const getGameViewportElement = (): HTMLElement | null =>
@@ -59,7 +72,7 @@ export const syncGameViewportUiScale = (): number =>
     }
 
     const scale = computeUiScale(viewport.getBoundingClientRect().height);
-    viewport.style.setProperty('--ui-scale', scale.toFixed(4));
+    viewport.style.setProperty('--ui-scale', String(scale));
 
     return scale;
 };

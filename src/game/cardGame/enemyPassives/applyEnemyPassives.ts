@@ -32,6 +32,8 @@ export interface EnemyTurnPlanningContext {
     bonusTraps?: number;
     /** Lieutenant phase shift — adds attack/trap pressure below half HP. */
     phaseShiftActive?: boolean;
+    /** Loop Road locked fight — attack/shield only; no mid-fight board placement. */
+    skipBoardPlacement?: boolean;
 }
 
 const isLastStandActive = (
@@ -125,6 +127,7 @@ export const planEnemyTurnWithPassives = ({
     bonusAttack = 0,
     bonusTraps = 0,
     phaseShiftActive = false,
+    skipBoardPlacement = false,
 }: EnemyTurnPlanningContext): EnemyTurnAction =>
 {
     const passives = enemy.passives;
@@ -178,6 +181,14 @@ export const planEnemyTurnWithPassives = ({
         planCombatStep(enemy, enemyState, passives, enrageStacks, phaseBonusAttack),
         globalEnemyTurns,
     ));
+
+    if (skipBoardPlacement)
+    {
+        return {
+            enemyId: enemy.id,
+            steps,
+        };
+    }
 
     // Dead Zone is an event the enemy casts on a cadence (telegraphed like a trap).
     if (dampen && dampen.everyTurns > 0 && turnsTaken % dampen.everyTurns === 0)

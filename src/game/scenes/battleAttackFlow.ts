@@ -35,6 +35,9 @@ export interface BattleAttackFlowDeps
     endBattle: () => void;
     winBattle: () => void;
     loseBattle: () => void;
+    /** Loop Road locked fight — Attack starts auto-repeat until KO. */
+    isAutoRepeatCombat?: () => boolean;
+    setAutoRepeatCombat?: (active: boolean) => void;
 }
 
 /** Releases attack lock and re-enables player input. */
@@ -68,6 +71,11 @@ export const handleAttack = (deps: BattleAttackFlowDeps): void =>
 
         EventBus.emit(GAME_EVENTS.ATTACK_REJECTED, { reason: readiness.reason });
         return;
+    }
+
+    if (deps.session.isBoardLocked())
+    {
+        deps.setAutoRepeatCombat?.(true);
     }
 
     const selectedTarget = deps.enemySquad?.getSelectedId();
@@ -224,9 +232,27 @@ export const handleAttackResolved = (
 
     if (deps.session.isEnemyDefeated())
     {
+        deps.setAutoRepeatCombat?.(false);
         deps.enemySquad.clearIntent();
         unlockPlayerInput(deps);
         deps.winBattle();
+        return;
+    }
+
+    // Walk-map prep: fire the chain on the dummy, keep the board, skip enemy response.
+    if (deps.session.isPrepDummyPractice())
+    {
+        if (!deps.session.hasEnergy())
+        {
+            deps.session.prepareLockedRoundReset();
+            deps.syncBoardFromSession();
+            deps.enemySquad.syncFromSession(deps.session);
+            deps.armorView?.setArmor(deps.session.getPlayer().shield);
+            deps.syncPileViews();
+        }
+
+        unlockPlayerInput(deps);
+        deps.emitAttackReadiness();
         return;
     }
 
@@ -307,12 +333,14 @@ export const resolveEnemyPhase = (deps: BattleAttackFlowDeps): void =>
 
             if (result.kind === 'player-defeated')
             {
+                deps.setAutoRepeatCombat?.(false);
                 deps.loseBattle();
                 return;
             }
 
             if (result.kind === 'enemy-defeated')
             {
+                deps.setAutoRepeatCombat?.(false);
                 deps.winBattle();
                 return;
             }
@@ -320,6 +348,24 @@ export const resolveEnemyPhase = (deps: BattleAttackFlowDeps): void =>
             if (result.kind === 'continue' && deps.session)
             {
                 EventBus.emit(GAME_EVENTS.COMBAT_RECAP, deps.session.getCombatRecap());
+
+                if (deps.isAutoRepeatCombat?.() && deps.session.isBoardLocked())
+                {
+                    deps.delayCall(450, () =>
+                    {
+                        if (!deps.session || deps.session.isBusy() || !deps.session.isBoardLocked())
+                        {
+                            return;
+                        }
+
+                        if (deps.session.isEnemyDefeated() || deps.session.isPlayerDefeated())
+                        {
+                            return;
+                        }
+
+                        handleAttack(deps);
+                    });
+                }
             }
         },
     });

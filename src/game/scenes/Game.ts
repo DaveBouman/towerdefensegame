@@ -1,7 +1,7 @@
 import { getGameCursors, subscribeGameCursors } from '../ui/gameCursors';
 import { readChainPathLitEnabled } from '../ui/chainPathSettings';
 import { computeLiveTutorialTargets } from '../board/tutorialLiveBounds';
-import { applyBoardLayout, computeBoardLayout, type BoardLayout } from '../board/boardLayout';
+import { applyBoardLayout, computeBoardLayout, type BoardLayout, type BoardLayoutMode } from '../board/boardLayout';
 import { BattlefieldBackgroundView } from '../board/BattlefieldBackgroundView';
 import { MapBackgroundView } from '../board/MapBackgroundView';
 import { ArmorView } from '../board/ArmorView';
@@ -24,7 +24,7 @@ import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
 import { reseed } from '../random/rng';
 import { beginSteamFaceBattle } from '../desktop/steamAvatars';
-import { getRunPuzzle } from '../run/runPuzzles';
+import { damageTargetFromWin, getPuzzleGoalLine, getRunPuzzle } from '../run/runPuzzles';
 import { getTutorialCoachChainStartHighlightRow, isTutorialWizardPuzzle, type TutorialWizardStep } from '../run/tutorialWizard';
 import { getTutorialWizardPhaseSpec } from '../run/tutorialWizardPhases';
 import { readPersistedTutorialWizardStep } from '../../ui/tutorial/tutorialWizardSession';
@@ -93,6 +93,13 @@ export class Game extends Scene
     private battleActive = false;
     private battleResolved = false;
     private activePuzzleId: string | null = null;
+    private pendingLoopRoadTiles: import('../cardGame/domain/types').SlotPosition[] | null = null;
+    /** Loop Road: keep chain board alive across walk-map ↔ station fights. */
+    private loopPersistBoard = false;
+    /** Loop Road: true while fighting a station (board edits blocked). */
+    private loopBoardLocked = false;
+    /** Locked fight: Attack once, then auto-replay until KO. */
+    private autoRepeatCombat = false;
     private lowHpVignette?: Phaser.GameObjects.Rectangle;
     private battlefieldBackground?: BattlefieldBackgroundView;
     private mapBackground?: MapBackgroundView;
@@ -143,6 +150,9 @@ export class Game extends Scene
     {
         EventBus.on(GAME_EVENTS.START_BATTLE, this.onStartBattle, this);
         EventBus.on(GAME_EVENTS.START_PUZZLE, this.onStartPuzzle, this);
+        EventBus.on(GAME_EVENTS.LOOP_ENGAGE, this.onLoopEngage, this);
+        EventBus.on(GAME_EVENTS.LOOP_RESUME_PREP, this.onLoopResumePrep, this);
+        EventBus.on(GAME_EVENTS.LOOP_FINISH, this.onLoopFinish, this);
         EventBus.on(GAME_EVENTS.ATTACK, this.onAttack, this);
         EventBus.on(GAME_EVENTS.END_TURN, this.onEndTurn, this);
         EventBus.on(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);
@@ -245,6 +255,18 @@ export class Game extends Scene
     {
         this.runPhase = phase;
 
+        // Loop prep keeps the chain board under the walk map / station fight.
+        if (
+            this.battleActive
+            && this.loopPersistBoard
+            && (phase === 'loop-map' || phase === 'battle')
+        )
+        {
+            this.refreshBattleLayout();
+            this.syncRunBackdrop();
+            return;
+        }
+
         // New run / return to menu / leave combat without a battle outcome — clear the board.
         if (this.battleActive && phase !== 'battle' && phase !== 'puzzle')
         {
@@ -252,6 +274,38 @@ export class Game extends Scene
         }
 
         this.syncRunBackdrop();
+    };
+
+    private getBoardLayoutMode (): BoardLayoutMode
+    {
+        // Pack on the left while the walk ring is up; full field once engaged.
+        return this.loopPersistBoard && this.runPhase !== 'battle' ? 'loop-split' : 'full';
+    }
+
+    private refreshBattleLayout (): void
+    {
+        if (!this.battleActive || !this.boardView || !this.handView || !this.enemySquad
+            || !this.playerView || !this.armorView || !this.deckView || !this.graveyardView)
+        {
+            return;
+        }
+
+        const { width, height } = this.scale;
+        this.layout = computeBoardLayout(width, height, this.getBoardLayoutMode());
+        this.battlefieldBackground?.resize(width, height, this.layout);
+        applyBoardLayout(this.layout, {
+            board: this.boardView,
+            hand: this.handView,
+            enemy: this.enemySquad.firstView?.container ?? this.playerView.container,
+            player: this.playerView.container,
+            armor: this.armorView.container,
+            deck: this.deckView,
+            graveyard: this.graveyardView,
+        });
+        this.enemySquad.applyLayout(this.layout);
+        this.syncBattleModifierLayout();
+        this.battleModifierView?.reposition(this.layout, this.session?.getCombatants().length ?? 1);
+        this.emitTutorialWizardLayout();
     };
 
     private syncRunBackdrop (): void
@@ -330,6 +384,11 @@ export class Game extends Scene
             endBattle: () => this.endBattle(),
             winBattle: () => this.winBattle(),
             loseBattle: () => this.loseBattle(),
+            isAutoRepeatCombat: () => this.autoRepeatCombat,
+            setAutoRepeatCombat: (active) =>
+            {
+                this.autoRepeatCombat = active;
+            },
         };
     }
 
@@ -379,6 +438,8 @@ export class Game extends Scene
             routeKind,
             puzzleMode = null,
             enemyHealthMultiplier: enemyHealthOverride,
+            roadTiles,
+            loopPrep = false,
         }:
         {
             enemyId?: string;
@@ -394,6 +455,8 @@ export class Game extends Scene
             routeKind?: import('../run/runMap').RouteKind;
             puzzleMode?: PuzzleModeConfig | null;
             enemyHealthMultiplier?: number;
+            roadTiles?: readonly import('../cardGame/domain/types').SlotPosition[];
+            loopPrep?: boolean;
         },
     ): void =>
     {
@@ -402,11 +465,16 @@ export class Game extends Scene
             this.endBattle();
         }
 
+        this.loopPersistBoard = Boolean(loopPrep);
+        this.loopBoardLocked = false;
+
         const battleEnemyIds = enemyIds && enemyIds.length > 0
             ? enemyIds
             : enemyId
                 ? [ enemyId ]
                 : [ GAME_RULES.defaultEnemyId ];
+
+        this.pendingLoopRoadTiles = roadTiles ? [ ...roadTiles ] : null;
 
         const enemyHealthMultiplier = enemyHealthOverride
             ?? (
@@ -433,6 +501,56 @@ export class Game extends Scene
         }
     };
 
+    private onLoopEngage = ({ enemyId }: { enemyId: string }): void =>
+    {
+        if (!this.battleActive || !this.session || !this.loopPersistBoard)
+        {
+            return;
+        }
+
+        this.loopBoardLocked = true;
+        this.battleResolved = false;
+        this.autoRepeatCombat = false;
+        this.session.setBoardLocked(true);
+        this.session.replaceLoopEnemy(enemyId);
+        this.session.placeOpeningEnemyField();
+        this.session.queueNextEnemyTurn();
+        this.boardView?.syncFromBoard(this.session.board);
+        this.enemySquad?.syncFromSession(this.session);
+        this.enemySquad?.showAllIntents(this.session);
+        this.playerView?.setHealth(this.session.getPlayer());
+        this.emitAttackReadiness();
+    };
+
+    private onLoopResumePrep = (): void =>
+    {
+        if (!this.battleActive || !this.session || !this.loopPersistBoard)
+        {
+            return;
+        }
+
+        this.loopBoardLocked = false;
+        this.battleResolved = false;
+        this.autoRepeatCombat = false;
+        this.session.prepareLoopBetweenStations();
+        this.boardView?.syncFromBoard(this.session.board);
+        this.handView?.syncHand(this.session.getHand());
+        this.enemySquad?.syncFromSession(this.session);
+        this.playerView?.setHealth(this.session.getPlayer());
+        this.syncPileViews();
+        this.emitAttackReadiness();
+    };
+
+    private onLoopFinish = (): void =>
+    {
+        if (!this.battleActive)
+        {
+            return;
+        }
+
+        this.endBattle();
+    };
+
     private onStartPuzzle = (
         { puzzleId, startHealth, seed, bodyMods, runAttackCount }:
         { puzzleId: string; startHealth: number; seed: number; bodyMods: string[]; runAttackCount: number },
@@ -455,16 +573,19 @@ export class Game extends Scene
     ): void
     {
         const puzzle = getRunPuzzle(puzzleId);
+        const damageTarget = damageTargetFromWin(puzzle.win);
         const puzzleMode: PuzzleModeConfig = isTutorialWizardPuzzle(puzzleId)
             ? {
                 handCards: [],
                 damageTarget: 1,
+                win: { kind: 'damage', target: 1 },
                 tutorialWizard: true,
                 maxEnergy: 0,
             }
             : {
                 handCards: puzzle.cards,
-                damageTarget: puzzle.damageTarget,
+                damageTarget,
+                win: puzzle.win,
             };
 
         this.activePuzzleId = puzzleId;
@@ -474,7 +595,8 @@ export class Game extends Scene
             puzzleId,
             title: puzzle.title,
             hint: puzzle.hint,
-            damageTarget: puzzle.damageTarget,
+            damageTarget,
+            goalLine: getPuzzleGoalLine(puzzle),
             cardCount: isTutorialWizardPuzzle(puzzleId) ? 0 : puzzle.cards.length,
             isPuzzle: true,
         });
@@ -505,7 +627,7 @@ export class Game extends Scene
         }
 
         const { width, height } = this.scale;
-        this.layout = computeBoardLayout(width, height);
+        this.layout = computeBoardLayout(width, height, this.getBoardLayoutMode());
         const layout = this.layout;
 
         this.battlefieldBackground?.destroy();
@@ -579,6 +701,21 @@ export class Game extends Scene
             },
         });
 
+        if (this.activePuzzleId)
+        {
+            const puzzle = getRunPuzzle(this.activePuzzleId);
+
+            if (puzzle.road && puzzle.road.length > 0)
+            {
+                this.boardView.setRoadSlots(puzzle.road);
+            }
+        }
+        else if (this.pendingLoopRoadTiles && this.pendingLoopRoadTiles.length > 0)
+        {
+            this.boardView.setRoadSlots(this.pendingLoopRoadTiles);
+            this.pendingLoopRoadTiles = null;
+        }
+
         this.playerView = new PlayerHealthView(this, layout, this.session.getPlayer());
         this.playerView.setCombatTraits(this.session.getPlayerCombatTraits());
         this.enemySquad = new EnemySquadView(
@@ -635,6 +772,10 @@ export class Game extends Scene
         }
 
         this.battleActive = true;
+        if (this.loopPersistBoard)
+        {
+            this.session.setPersistBoardLayout(true);
+        }
         this.syncLowHpVignette();
         this.emitAttackReadiness();
         this.emitRerollState();
@@ -695,7 +836,7 @@ export class Game extends Scene
             return;
         }
 
-        this.layout = computeBoardLayout(gameSize.width, gameSize.height);
+        this.layout = computeBoardLayout(gameSize.width, gameSize.height, this.getBoardLayoutMode());
         this.battlefieldBackground?.resize(gameSize.width, gameSize.height, this.layout);
         applyBoardLayout(this.layout, {
             board: this.boardView,
@@ -748,11 +889,21 @@ export class Game extends Scene
         this.battleActive = false;
         this.activePuzzleId = null;
         this.rerollModeActive = false;
+        this.loopPersistBoard = false;
+        this.loopBoardLocked = false;
+        this.autoRepeatCombat = false;
+        this.pendingLoopRoadTiles = null;
     }
 
     private winBattle (): void
     {
         if (this.battleResolved || !this.session)
+        {
+            return;
+        }
+
+        // Prep dummy — ignore accidental wins before a station engage.
+        if (this.loopPersistBoard && !this.loopBoardLocked)
         {
             return;
         }
@@ -771,21 +922,34 @@ export class Game extends Scene
                 return;
             }
 
-            this.endBattle();
-            EventBus.emit(GAME_EVENTS.BATTLE_WON, {
+            const payload = {
                 playerHealth,
                 runAttackCount,
                 goldStolen,
                 stolenCardIds,
                 battleDamageDealt: battleDamage.dealt,
                 battleDamageTaken: battleDamage.taken,
-            });
+            };
+
+            if (this.loopPersistBoard)
+            {
+                EventBus.emit(GAME_EVENTS.BATTLE_WON, payload);
+                return;
+            }
+
+            this.endBattle();
+            EventBus.emit(GAME_EVENTS.BATTLE_WON, payload);
         });
     }
 
     private loseBattle (): void
     {
         if (this.battleResolved || !this.session)
+        {
+            return;
+        }
+
+        if (this.loopPersistBoard && !this.loopBoardLocked)
         {
             return;
         }
@@ -801,12 +965,20 @@ export class Game extends Scene
                 return;
             }
 
-            this.endBattle();
-            EventBus.emit(GAME_EVENTS.BATTLE_LOST, {
+            const payload = {
                 runAttackCount,
                 goldStolen,
                 stolenCardIds,
-            });
+            };
+
+            if (this.loopPersistBoard)
+            {
+                EventBus.emit(GAME_EVENTS.BATTLE_LOST, payload);
+                return;
+            }
+
+            this.endBattle();
+            EventBus.emit(GAME_EVENTS.BATTLE_LOST, payload);
         });
     }
 
@@ -824,6 +996,9 @@ export class Game extends Scene
         this.scale.off('resize', this.onResize, this);
         EventBus.off(GAME_EVENTS.START_BATTLE, this.onStartBattle, this);
         EventBus.off(GAME_EVENTS.START_PUZZLE, this.onStartPuzzle, this);
+        EventBus.off(GAME_EVENTS.LOOP_ENGAGE, this.onLoopEngage, this);
+        EventBus.off(GAME_EVENTS.LOOP_RESUME_PREP, this.onLoopResumePrep, this);
+        EventBus.off(GAME_EVENTS.LOOP_FINISH, this.onLoopFinish, this);
         EventBus.off(GAME_EVENTS.ATTACK, this.onAttack, this);
         EventBus.off(GAME_EVENTS.END_TURN, this.onEndTurn, this);
         EventBus.off(GAME_EVENTS.REROLL_BEGIN, this.onRerollBegin, this);

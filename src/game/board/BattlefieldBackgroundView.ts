@@ -36,9 +36,10 @@ export class BattlefieldBackgroundView
         this.circuits = scene.add.graphics();
         this.frameOuter = scene.add.graphics();
         this.frameInner = scene.add.graphics();
-        this.scanBand = scene.add.rectangle(0, 0, 4, 4, CYBER.magenta, 0.045);
+        this.scanBand = scene.add.rectangle(0, 0, 4, 4, CYBER.magenta, 0.03);
         this.scanBand.setOrigin(0.5, 0.5);
-        this.scanBand.setBlendMode(BlendModes.ADD);
+        // NORMAL blend — ADD overdraw every frame was a steady GPU cost in packaged builds.
+        this.scanBand.setBlendMode(BlendModes.NORMAL);
 
         this.container.add([
             this.base,
@@ -56,10 +57,16 @@ export class BattlefieldBackgroundView
 
     resize (width: number, height: number, layout?: BoardLayout): void
     {
+        const sizeChanged = width !== this.width || height !== this.height;
+
         this.width = width;
         this.height = height;
         this.redraw(layout);
-        this.restartMotion();
+
+        if (sizeChanged || !this.scanTween?.isPlaying())
+        {
+            this.restartMotion();
+        }
     }
 
     destroy (): void
@@ -306,25 +313,18 @@ export class BattlefieldBackgroundView
     {
         this.scanTween?.stop();
         this.glowTween?.stop();
+        this.glowTween = undefined;
 
         this.scanBand.setY(-this.scanBand.displayHeight / 2);
-        this.gridGlow.setAlpha(1);
+        this.gridGlow.setAlpha(0.9);
 
+        // Single slow sweep — no forever glow yoyo (that was constant tween churn).
         this.scanTween = this.scene.tweens.add({
             targets: this.scanBand,
             y: this.height + this.scanBand.displayHeight,
-            duration: 7200,
+            duration: 14000,
             repeat: -1,
             ease: 'Linear',
-        });
-
-        this.glowTween = this.scene.tweens.add({
-            targets: this.gridGlow,
-            alpha: { from: 0.78, to: 1 },
-            duration: 2600,
-            yoyo: true,
-            repeat: -1,
-            ease: 'Sine.easeInOut',
         });
     }
 }

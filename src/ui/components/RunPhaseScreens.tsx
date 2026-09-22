@@ -1,4 +1,8 @@
-import { GameHud } from './GameHud';
+import { PuzzleSelectOverlay } from './PuzzleSelectOverlay';
+import { KitSelectOverlay } from './KitSelectOverlay';
+import { SkirmishResultOverlay } from './SkirmishResultOverlay';
+import { LoopHubOverlay, LoopLootOverlay } from './LoopHubOverlay';
+import { LoopMapOverlay } from './LoopMapOverlay';
 import { PuzzleHud } from './PuzzleHud';
 import { PuzzleResultOverlay } from './PuzzleResultOverlay';
 import { RunMapOverlay } from './RunMapOverlay';
@@ -28,7 +32,7 @@ import { GAME_RULES } from '../../game/cardGame/config/cardRegistry';
 import { RUN_CONFIG } from '../../game/run/runMap';
 import { parseCaptureId } from '../../game/showcase/showcaseScenarios';
 import type { RunController } from '../../runController/useRunController';
-
+import { GameHud } from './GameHud';
 type RunPhaseScreensProps = RunController;
 
 export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
@@ -72,6 +76,25 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
         visit,
         finishEvent,
         startPuzzleFromEvent,
+        startPuzzleFromSelect,
+        confirmSkirmishKit,
+        cancelSkirmishKit,
+        finishSkirmishResult,
+        pendingSkirmishId,
+        skirmishResult,
+        homeLootIds,
+        loopLootOffers,
+        loopLootDungeon,
+        loopWalkerStep,
+        loopClearedSteps,
+        loopMapDungeon,
+        startLoopWalk,
+        advanceLoopStep,
+        fightLoopStation,
+        retreatLoopToHome,
+        takeLoopLootHome,
+        openPracticeRoads,
+        startLegacyRun,
         restHeal,
         restUpgrade,
         finishVisit,
@@ -132,6 +155,49 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                     onNewRun={startNewRun}
                     onReplayTutorial={tutorial.replayTutorial}
                     onTotalReset={resetAllProgress}
+                />
+            )}
+            {phase === 'loop-hub' && (
+                <LoopHubOverlay
+                    homeLootIds={homeLootIds}
+                    onWalkLoop={() => startLoopWalk(false)}
+                    onEnterDungeon={() => startLoopWalk(true)}
+                    onBackToMenu={returnToMenu}
+                    onOpenRoads={openPracticeRoads}
+                />
+            )}
+            {phase === 'loop-map' && (
+                <>
+                    <GameHud captureMode={captureMode} />
+                    <LoopMapOverlay
+                        dungeon={loopMapDungeon}
+                        walkerStep={loopWalkerStep}
+                        clearedSteps={loopClearedSteps}
+                        onAdvance={advanceLoopStep}
+                        onFightStation={fightLoopStation}
+                        onRetreatHome={retreatLoopToHome}
+                    />
+                </>
+            )}
+            {phase === 'loop-loot' && loopLootOffers && (
+                <LoopLootOverlay
+                    offers={loopLootOffers}
+                    dungeon={loopLootDungeon}
+                    onTakeHome={takeLoopLootHome}
+                />
+            )}
+            {phase === 'puzzle-select' && (
+                <PuzzleSelectOverlay
+                    onSelect={startPuzzleFromSelect}
+                    onBackToMenu={returnToMenu}
+                    onLegacyRun={startLegacyRun}
+                />
+            )}
+            {phase === 'kit-select' && pendingSkirmishId && (
+                <KitSelectOverlay
+                    encounterId={pendingSkirmishId}
+                    onConfirm={confirmSkirmishKit}
+                    onBack={cancelSkirmishKit}
                 />
             )}
             {phase === 'battle' && (
@@ -282,7 +348,14 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
             {phase === 'visit' && visit && !visit.eventId && visit.node.kind !== 'shop' && visit.node.kind !== 'rest' && (
                 <NodeVisitOverlay node={visit.node} gold={gold} onContinue={finishVisit} />
             )}
-            {phase === 'puzzle-result' && puzzleResult && (
+            {phase === 'puzzle-result' && skirmishResult && (
+                <SkirmishResultOverlay
+                    encounterId={skirmishResult.encounterId}
+                    success={skirmishResult.success}
+                    onContinue={finishSkirmishResult}
+                />
+            )}
+            {phase === 'puzzle-result' && puzzleResult && !skirmishResult && (
                 <PuzzleResultOverlay
                     puzzleId={puzzleResult.puzzleId}
                     success={puzzleResult.success}

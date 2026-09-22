@@ -98,22 +98,30 @@ export const applyBoardLayout = (layout: BoardLayout, views: BoardLayoutViews): 
 /**
  * Fits the 5×5 board, hand, armor strip, and side portraits into the canvas.
  * Tile / hand / pile sizes scale down from the 96px design when height is tight (720p).
+ * `loop-split` packs combat into the left side so the walk-map ring can sit on the right.
  */
+export type BoardLayoutMode = 'full' | 'loop-split';
+
 export const computeBoardLayout = (
     canvasWidth: number,
     canvasHeight: number,
+    mode: BoardLayoutMode = 'full',
 ): BoardLayout =>
 {
     const { cols, rows } = GRID_CONFIG;
     const hudTopInset = Math.round(clamp(canvasHeight * 0.078, 40, 56));
     const armorBand = Math.round(clamp(canvasHeight * 0.072, 40, 52));
     const sideInset = 14;
+    const rightInset = mode === 'loop-split'
+        ? Math.round(Math.min(canvasWidth * 0.4, 400) + 16)
+        : 0;
+    const layoutWidth = Math.max(640, canvasWidth - rightInset);
 
     const heightDivisor = rows + HAND_H_RATIO + HAND_DOCK_PAD_RATIO;
     const maxTileByHeight = (canvasHeight - hudTopInset - armorBand) / heightDivisor;
     const widthDivisor = PLAYER_SIZE_RATIO + SIDE_GAP_RATIO + PLAYER_GAP_EXTRA_RATIO
         + cols + SIDE_GAP_RATIO + ENEMY_SIZE_RATIO;
-    const maxTileByWidth = (canvasWidth - sideInset * 2) / widthDivisor;
+    const maxTileByWidth = (layoutWidth - sideInset * 2) / widthDivisor;
     const tileSize = Math.max(
         LAYOUT_MIN_TILE,
         Math.min(LAYOUT_REF_TILE, Math.floor(Math.min(maxTileByHeight, maxTileByWidth))),
@@ -130,18 +138,22 @@ export const computeBoardLayout = (
     const handCardGap = Math.max(8, Math.round(tileSize * HAND_GAP_RATIO));
     const handDockPad = Math.max(16, Math.round(tileSize * HAND_DOCK_PAD_RATIO));
     const handBandHeight = handCardHeight + handDockPad;
-    const gridOffsetX = Math.round((canvasWidth - gridWidth) / 2);
+    const clusterWidth = playerSize + playerGap + gridWidth + enemyGap + enemySize;
+    const clusterPad = Math.max(0, layoutWidth - sideInset * 2 - clusterWidth);
+    // Bias slightly left so the grid clears the ring panel.
+    const clusterLeft = sideInset + Math.round(clusterPad * (mode === 'loop-split' ? 0.25 : 0.5));
+    const gridOffsetX = clusterLeft + playerSize + playerGap;
     const handY = canvasHeight - handBandHeight + Math.round(handDockPad * 0.14);
     const availableHeight = canvasHeight - hudTopInset - armorBand - handBandHeight;
     const gridOffsetY = hudTopInset + Math.round(Math.max(0, availableHeight - gridHeight) / 2);
     const handWidth = handCardWidth * GAME_RULES.handSize + handCardGap * (GAME_RULES.handSize - 1);
-    const handCenterX = Math.round(canvasWidth / 2 - handWidth / 2);
+    const handCenterX = Math.round(layoutWidth / 2 - handWidth / 2);
     const pileWidth = Math.max(PILE_CARD_WIDTH, Math.round(tileSize * PILE_W_RATIO));
     const pileHeight = Math.max(PILE_CARD_HEIGHT, Math.round(tileSize * PILE_H_RATIO));
     const pileFrameWidth = pileWidth + 10;
     const pileFrameHeight = pileHeight + 8;
     const deckX = sideInset;
-    const graveyardX = canvasWidth - pileFrameWidth - sideInset;
+    const graveyardX = layoutWidth - pileFrameWidth - sideInset;
     const pileY = canvasHeight - Math.round(pileFrameHeight * 0.48);
     const gridBottom = gridOffsetY + gridHeight;
 

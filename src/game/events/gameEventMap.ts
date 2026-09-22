@@ -24,6 +24,8 @@ export interface PuzzleState {
     title: string;
     hint: string;
     damageTarget: number;
+    /** Human-readable clear condition (aha routing). */
+    goalLine: string;
     cardCount: number;
     isPuzzle: true;
 }
@@ -73,8 +75,15 @@ export interface GameEventMap {
         runGold?: number;
         ascensionLevel?: number;
         routeKind?: import('../run/runMap').RouteKind;
+        /** Loop Road amber tiles painted under the board. */
+        roadTiles?: readonly import('../cardGame/domain/types').SlotPosition[];
+        /** Loop Road: persistent prep battle (board stays across stations). */
+        loopPrep?: boolean;
     };
     'start-puzzle': { puzzleId: string; startHealth: number; seed: number; bodyMods: string[]; runAttackCount: number };
+    'loop-engage': { enemyId: string };
+    'loop-resume-prep': undefined;
+    'loop-finish': undefined;
     'puzzle-state': PuzzleState;
     'puzzle-resolved': PuzzleResolvedPayload;
     'battle-won': {

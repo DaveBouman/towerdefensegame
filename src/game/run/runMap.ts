@@ -111,8 +111,8 @@ export const getFloorColumnRange = (floor: number): { startCol: number; endCol: 
 /** Elite enemies used for the fixed semi-boss column. */
 const SEMI_BOSS_ENEMY_POOL: readonly string[] = [ 'smokebinder', 'saboteur' ];
 
-/** Branching width per column (first → boss). */
-const ROW_SIZES: readonly number[] = [ 2, 3, 3, 3, 4, 4, 4, 3, 3, 2, 1 ];
+/** Linear width per column (puzzle redesign: one node per column, no forks). */
+const ROW_SIZES: readonly number[] = [ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ];
 
 const clamp = (value: number, min: number, max: number): number =>
     Math.max(min, Math.min(max, value));
@@ -126,38 +126,6 @@ export const projectIndex = (index: number, from: number, to: number): number =>
     }
 
     return clamp(Math.round((index / (from - 1)) * (to - 1)), 0, to - 1);
-};
-
-/** Saboteur nodes always open adjacent routes on the next column (up and/or down). */
-const connectSaboteurBranches = (
-    node: RunMapNode,
-    nodeIndex: number,
-    current: RunMapNode[],
-    next: RunMapNode[],
-    connect: (from: RunMapNode, to: RunMapNode) => void,
-    hasIncoming: Set<string>,
-): void =>
-{
-    if (node.enemyId !== 'saboteur' || next.length <= 1)
-    {
-        return;
-    }
-
-    const targetIndex = projectIndex(nodeIndex, current.length, next.length);
-
-    for (const offset of [ -1, 1 ])
-    {
-        const branchIndex = targetIndex + offset;
-
-        if (branchIndex < 0 || branchIndex >= next.length)
-        {
-            continue;
-        }
-
-        const branch = next[branchIndex]!;
-        connect(node, branch);
-        hasIncoming.add(branch.id);
-    }
 };
 
 const resolveNodeKind = (row: number, rows: number): RunMapNodeKind =>
@@ -265,49 +233,13 @@ export const generateRunMap = (): RunMap =>
     {
         const current = grid[row]!;
         const next = grid[row + 1]!;
-        const hasIncoming = new Set<string>();
 
-        current.forEach((node, index) =>
+        // Linear path: each column has one node linked to the next column's only node.
+        current.forEach((node) =>
         {
-            const targetIndex = projectIndex(index, current.length, next.length);
-            const target = next[targetIndex]!;
+            const target = next[0]!;
             connect(node, target);
-            hasIncoming.add(target.id);
             target.routeKind = target.routeKind ?? 'standard';
-
-            // Saboteur nodes always branch up/down; others fork when the column is wide enough.
-            if (next.length > 1)
-            {
-                if (node.enemyId === 'saboteur')
-                {
-                    connectSaboteurBranches(node, index, current, next, connect, hasIncoming);
-                }
-                else if (next.length >= 3 || random() < 0.55)
-                {
-                    const dir = random() < 0.5 ? -1 : 1;
-                    const branchIndex = clamp(targetIndex + dir, 0, next.length - 1);
-                    const branch = next[branchIndex]!;
-
-                    if (branch.id !== target.id)
-                    {
-                        connect(node, branch);
-                        hasIncoming.add(branch.id);
-                        branch.routeKind = branchIndex < targetIndex ? 'safe' : 'hot';
-                    }
-                }
-            }
-        });
-
-        // Guarantee every node in the next column is reachable.
-        next.forEach((node, index) =>
-        {
-            if (hasIncoming.has(node.id))
-            {
-                return;
-            }
-
-            const sourceIndex = projectIndex(index, next.length, current.length);
-            connect(current[sourceIndex]!, node);
         });
     }
 

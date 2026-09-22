@@ -77,6 +77,17 @@ export function resolveEnemyPhasePlayback (deps: EnemyPhaseResolveDeps): void
             return;
         }
 
+        // Loop Road prep / locked fights keep the packed board; only reset the round.
+        if (session.shouldPersistBoardLayout())
+        {
+            session.prepareLockedRoundReset();
+            deps.syncBoardFromSession();
+            syncBoardAfterEnemyResponse(deps, { dealInHand: false });
+            deps.syncPileViews();
+            deps.onPhaseSettled({ kind: 'continue' });
+            return;
+        }
+
         const graveyardTarget = deps.graveyardView?.getReceivePosition() ?? { x: 0, y: 0 };
         const exhaustTarget = deps.graveyardView?.getExhaustReceivePosition()
             ?? deps.exhaustView?.getReceivePosition()

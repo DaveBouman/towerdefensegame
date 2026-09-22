@@ -26,11 +26,23 @@ export interface BoardEditHost
 /** Player board edits: place / remove / move / swap while combat is idle. */
 export class BoardEditController
 {
+    private boardLocked = false;
+
     constructor (private readonly host: BoardEditHost) {}
+
+    setBoardLocked (locked: boolean): void
+    {
+        this.boardLocked = locked;
+    }
+
+    isBoardLocked (): boolean
+    {
+        return this.boardLocked;
+    }
 
     canEditBoard (): boolean
     {
-        if (this.host.isPuzzleFinished())
+        if (this.boardLocked || this.host.isPuzzleFinished())
         {
             return false;
         }
@@ -40,7 +52,7 @@ export class BoardEditController
 
     placeCardFromHand (handIndex: number, slot: SlotPosition): boolean
     {
-        if (this.host.isBusy())
+        if (!this.canEditBoard())
         {
             return false;
         }
@@ -115,7 +127,7 @@ export class BoardEditController
 
     removeCardFromBoard (slot: SlotPosition): boolean
     {
-        if (this.host.isBusy())
+        if (!this.canEditBoard())
         {
             return false;
         }
@@ -136,7 +148,7 @@ export class BoardEditController
 
     moveCardOnBoard (from: SlotPosition, to: SlotPosition): boolean
     {
-        if (this.host.isBusy())
+        if (!this.canEditBoard())
         {
             return false;
         }
@@ -172,7 +184,7 @@ export class BoardEditController
 
     swapCardsOnBoard (a: SlotPosition, b: SlotPosition): boolean
     {
-        if (this.host.isBusy())
+        if (!this.canEditBoard())
         {
             return false;
         }

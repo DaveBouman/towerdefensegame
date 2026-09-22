@@ -7,10 +7,10 @@ alwaysApply: true
 
 Read `docs/GAME_DESIGN.md` before making gameplay or balance changes.
 
-- **Active game:** 5×5 card-chain combat (`src/game/cardGame/`) played across a branching run map. Not tower defense.
-- **Entry point:** `App.tsx` (run controller) → `RunMapOverlay` / `GameHud` / `RunEndOverlay` + `scenes/Game.ts` + `CardGameSession`.
-- **Run flow:** map (pick node) → battle → win/lose. Scene starts/ends fights via `START_BATTLE` / `BATTLE_WON` / `BATTLE_LOST` events; HP carries over. See `src/game/run/runMap.ts`.
-- **Determinism:** runs are seed-based. Use the seeded RNG in `src/game/random/rng.ts` (`random`/`randomInt`/`pickRandom`/`shuffleInPlace`) — never `Math.random()` in gameplay code.
-- **Removed:** All TD code (towers, waves, fusion, races, targeting modes). Do not recreate or reference it.
-- **Design goals:** Higher stakes (gauntlet, carry-over HP, scarce rerolls), deeper tactics (enemy counters, column pressure, telegraphed thresholds).
-- **When changing systems:** Update `docs/GAME_DESIGN.md` changelog and roadmap checkboxes.
+- **North star:** **Loop Road with two boards** — (1) circular **walk map** (right) where the player advances and hits enemy stations; (2) **5×5 chain board** always visible on the left. Pack before engage; board locks in combat; rearrange only outside the battlefield.
+- **Combat:** Attack auto-loops until KO. Opening bombs placed once at Engage; they tick after each card round and persist. No mid-fight enemy board placement.
+- **Flow:** Home → walk map + prep board → Engage station (lock + place bombs) → Attack (auto-loop) → unlock → map → loot → home. Optional dungeon.
+- **Entry point:** `App.tsx` → loop hub / `LoopMapOverlay` + Phaser via `START_BATTLE` (`loopPrep`) / `LOOP_ENGAGE` / `LOOP_RESUME_PREP` / `LOOP_FINISH`.
+- **Determinism:** seed-based RNG in `src/game/random/rng.ts` — never `Math.random()` in gameplay.
+- **Removed:** TD code. Do not recreate it.
+- **When changing systems:** Update `docs/GAME_DESIGN.md` changelog and roadmap.

@@ -13,6 +13,12 @@ export const GAME_EVENTS = {
     SCENE_READY: 'current-scene-ready',
     START_BATTLE: 'start-battle',
     START_PUZZLE: 'start-puzzle',
+    /** Loop Road: lock chain board and fight this station enemy (board stays). */
+    LOOP_ENGAGE: 'loop-engage',
+    /** Loop Road: unlock board after a station; back to prep. */
+    LOOP_RESUME_PREP: 'loop-resume-prep',
+    /** Loop Road: tear down the persistent prep battle. */
+    LOOP_FINISH: 'loop-finish',
     TUTORIAL_WIZARD_APPLY_PHASE: 'tutorial-wizard-apply-phase',
     TUTORIAL_WIZARD_ATTACK: 'tutorial-wizard-attack',
     TUTORIAL_WIZARD_ENERGY_DEPLETED: 'tutorial-wizard-energy-depleted',

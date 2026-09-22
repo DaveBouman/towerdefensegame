@@ -24,6 +24,9 @@ export const CYBER = {
     slotDampenedBorder: 0x7d6cff,
     slotNullified: 0x100818,
     slotNullifiedBorder: 0xb57aff,
+    /** Loop Hero–style puzzle road underlay. */
+    slotRoad: 0x2a1c08,
+    slotRoadBorder: 0xfcee0a,
     player: 0xff2d95,
     playerBarBg: 0x1a0c14,
     playerBarFill: 0xff4a9d,

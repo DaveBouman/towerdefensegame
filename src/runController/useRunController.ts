@@ -57,9 +57,20 @@ import type {
     PendingRewardFlow,
     PuzzleResultState,
     RunPhase,
+    SkirmishResultState,
     VisitState,
 } from './types';
 import { MAX_HEALTH } from './types';
+import { getSkirmishEncounter } from '../game/run/skirmishEncounters';
+import {
+    bodyModsFromHomeLoot,
+    buildLoopKit,
+    getLoopEncounter,
+    LOOP_MAP_STEPS,
+    rollLoopLootOffers,
+    stationAtStep,
+    type LoopLootDef,
+} from '../game/run/loopRun';
 
 export const useRunController = () =>
 {
@@ -88,6 +99,14 @@ export const useRunController = () =>
     const [ pendingRewardFlow, setPendingRewardFlow ] = useState<PendingRewardFlow | null>(null);
     const [ visit, setVisit ] = useState<VisitState | null>(null);
     const [ puzzleResult, setPuzzleResult ] = useState<PuzzleResultState | null>(null);
+    const [ skirmishResult, setSkirmishResult ] = useState<SkirmishResultState | null>(null);
+    const [ pendingSkirmishId, setPendingSkirmishId ] = useState<string | null>(null);
+    const [ homeLootIds, setHomeLootIds ] = useState<string[]>([]);
+    const [ loopLootOffers, setLoopLootOffers ] = useState<LoopLootDef[] | null>(null);
+    const [ loopLootDungeon, setLoopLootDungeon ] = useState(false);
+    const [ loopWalkerStep, setLoopWalkerStep ] = useState(0);
+    const [ loopClearedSteps, setLoopClearedSteps ] = useState<number[]>([]);
+    const [ loopMapDungeon, setLoopMapDungeon ] = useState(false);
     const [ pendingPuzzleReward, setPendingPuzzleReward ] = useState<PendingPuzzleReward | null>(null);
     const [ pendingCardDirectionFlow, setPendingCardDirectionFlow ] = useState<PendingCardDirectionFlow | null>(null);
     const [ pauseMenuOpen, setPauseMenuOpen ] = useState(false);
@@ -95,6 +114,10 @@ export const useRunController = () =>
 
     const selectedNodeRef = useRef<RunMapNode | null>(null);
     const eventVisitRef = useRef<VisitState | null>(null);
+    const skirmishEncounterIdRef = useRef<string | null>(null);
+    const loopActiveRef = useRef(false);
+    const loopDungeonRef = useRef(false);
+    const pendingStationStepRef = useRef<number | null>(null);
     const sceneReadyRef = useRef(false);
     const seedRef = useRef(seed);
     const bodyModsRef = useRef(bodyMods);
@@ -120,6 +143,8 @@ export const useRunController = () =>
         ascensionLevel?: number;
         routeKind?: import('../game/run/runMap').RouteKind;
         runGold?: number;
+        roadTiles?: readonly import('../game/cardGame/domain/types').SlotPosition[];
+        loopPrep?: boolean;
     } | null>(null);
     const pendingBattleRef = useRef<{ node: RunMapNode; battleEnemyIds: string[]; rerollsRemaining: number } | null>(null);
     const pendingPuzzleRef = useRef<{
@@ -246,6 +271,44 @@ export const useRunController = () =>
         EventBus.emit(GAME_EVENTS.START_PUZZLE, payload);
     }, []);
 
+    const onLoopBattleWon = useCallback((dungeon: boolean): void =>
+    {
+        const step = pendingStationStepRef.current;
+        pendingStationStepRef.current = null;
+
+        setLoopClearedSteps((prev) =>
+        {
+            const next = step !== null && !prev.includes(step) ? [ ...prev, step ] : prev;
+            const encounter = getLoopEncounter(dungeon);
+            const allClear = encounter.stations.every((station) => next.includes(station.stepIndex));
+
+            if (allClear)
+            {
+                EventBus.emit(GAME_EVENTS.LOOP_FINISH);
+                seedScope(seedRef.current, `loop-loot:${dungeon ? 'dungeon' : 'surface'}`);
+                setLoopLootDungeon(dungeon);
+                setLoopLootOffers(rollLoopLootOffers(dungeon));
+                setPhase('loop-loot');
+            }
+            else
+            {
+                EventBus.emit(GAME_EVENTS.LOOP_RESUME_PREP);
+                setPhase('loop-map');
+                setRunToast('Station cleared — rearrange on the left, then keep walking.');
+            }
+
+            return next;
+        });
+    }, []);
+
+    const onLoopBattleLost = useCallback((): void =>
+    {
+        pendingStationStepRef.current = null;
+        EventBus.emit(GAME_EVENTS.LOOP_RESUME_PREP);
+        setRunToast('You fell — board unlocked. Rearrange, then try the station again.');
+        setPhase('loop-map');
+    }, []);
+
     useBattleBridge(
         {
             seed: seedRef,
@@ -264,6 +327,9 @@ export const useRunController = () =>
             eventVisit: eventVisitRef,
             pendingStart: pendingStartRef,
             pendingPuzzle: pendingPuzzleRef,
+            skirmishEncounterId: skirmishEncounterIdRef,
+            loopActive: loopActiveRef,
+            loopDungeon: loopDungeonRef,
         },
         {
             setRunAttackCount,
@@ -280,11 +346,14 @@ export const useRunController = () =>
             setPendingRewardFlow,
             setPendingPuzzleReward,
             setPuzzleResult,
+            setSkirmishResult,
             setPhase,
             setFloorRerollsRemaining,
             completeWardenVictory,
             onTutorialWizardComplete,
             restartTutorialWizard,
+            onLoopBattleWon,
+            onLoopBattleLost,
         },
     );
 
@@ -533,14 +602,195 @@ export const useRunController = () =>
     {
         const node = eventVisitRef.current?.node;
 
-        if (node)
+        if (!node)
         {
-            setPath((prev) => (prev.includes(node.id) ? prev : [ ...prev, node.id ]));
+            setPuzzleResult(null);
+            setPhase('puzzle-select');
+            return;
         }
 
+        setPath((prev) => (prev.includes(node.id) ? prev : [ ...prev, node.id ]));
         eventVisitRef.current = null;
         setPuzzleResult(null);
         setPhase('map');
+    }, []);
+
+    const startPuzzleFromSelect = useCallback((puzzleId: string): void =>
+    {
+        eventVisitRef.current = null;
+        setPuzzleResult(null);
+        setSkirmishResult(null);
+        setPendingSkirmishId(null);
+        skirmishEncounterIdRef.current = null;
+
+        const payload = {
+            puzzleId,
+            startHealth: MAX_HEALTH,
+            seed: deriveSeed(seed, `gallery:${puzzleId}`),
+            bodyMods: [] as string[],
+            runAttackCount: 0,
+        };
+        setPlayerHealth(MAX_HEALTH);
+        setPhase('puzzle');
+
+        if (sceneReadyRef.current)
+        {
+            EventBus.emit(GAME_EVENTS.START_PUZZLE, payload);
+        }
+        else
+        {
+            pendingPuzzleRef.current = payload;
+        }
+    }, [ seed ]);
+
+    const confirmSkirmishKit = useCallback((definitionIds: string[]): void =>
+    {
+        if (!pendingSkirmishId)
+        {
+            return;
+        }
+
+        const encounter = getSkirmishEncounter(pendingSkirmishId);
+        const kitDeck: RunDeckCard[] = definitionIds.map((definitionId) => ({ definitionId }));
+
+        selectedNodeRef.current = null;
+        skirmishEncounterIdRef.current = encounter.id;
+        setDeck(kitDeck);
+        setPlayerHealth(MAX_HEALTH);
+        setBodyMods([]);
+        setRunAttackCount(0);
+        unlockEnemies([ encounter.enemyId ]);
+
+        const payload = {
+            enemyId: encounter.enemyId,
+            startHealth: MAX_HEALTH,
+            deck: kitDeck,
+            seed: deriveSeed(seed, `skirmish:${encounter.id}`),
+            bodyMods: [] as string[],
+            runAttackCount: 0,
+            rerollsRemaining: 0,
+            nodeKind: 'enemy' as const,
+            runGold: 0,
+            ascensionLevel: 0,
+        };
+
+        setPendingSkirmishId(null);
+        setActiveBattleKind('enemy');
+        setPhase('battle');
+
+        if (sceneReadyRef.current)
+        {
+            EventBus.emit(GAME_EVENTS.START_BATTLE, payload);
+        }
+        else
+        {
+            pendingStartRef.current = payload;
+        }
+    }, [ pendingSkirmishId, seed ]);
+
+    const finishSkirmishResult = useCallback((): void =>
+    {
+        setSkirmishResult(null);
+        setPuzzleResult(null);
+        setPhase('puzzle-select');
+    }, []);
+
+    const cancelSkirmishKit = useCallback((): void =>
+    {
+        setPendingSkirmishId(null);
+        setPhase('puzzle-select');
+    }, []);
+
+    const startLoopWalk = useCallback((dungeon: boolean): void =>
+    {
+        const encounter = getLoopEncounter(dungeon);
+        const kit = buildLoopKit(encounter, homeLootIds);
+        const mods = bodyModsFromHomeLoot(homeLootIds);
+
+        loopDungeonRef.current = dungeon;
+        loopActiveRef.current = false;
+        pendingStationStepRef.current = null;
+        selectedNodeRef.current = null;
+        skirmishEncounterIdRef.current = null;
+        setLoopMapDungeon(dungeon);
+        setLoopWalkerStep(0);
+        setLoopClearedSteps([]);
+        setDeck(kit);
+        setBodyMods(mods);
+        setPlayerHealth(MAX_HEALTH);
+        setRunAttackCount(0);
+        setActiveBattleKind('enemy');
+        setPhase('loop-map');
+
+        const payload = {
+            enemyId: 'training-dummy',
+            startHealth: MAX_HEALTH,
+            deck: kit,
+            seed: deriveSeed(seed, `loop-prep:${encounter.id}:${homeLootIds.length}`),
+            bodyMods: mods,
+            runAttackCount: 0,
+            rerollsRemaining: GAME_RULES.rerollsPerFloor,
+            nodeKind: 'enemy' as const,
+            runGold: 0,
+            ascensionLevel: 0,
+            loopPrep: true,
+        };
+
+        if (sceneReadyRef.current)
+        {
+            EventBus.emit(GAME_EVENTS.START_BATTLE, payload);
+        }
+        else
+        {
+            pendingStartRef.current = payload;
+        }
+    }, [ homeLootIds, seed ]);
+
+    const advanceLoopStep = useCallback((): void =>
+    {
+        setLoopWalkerStep((prev) => (prev + 1) % LOOP_MAP_STEPS);
+    }, []);
+
+    const fightLoopStation = useCallback((): void =>
+    {
+        const encounter = getLoopEncounter(loopMapDungeon);
+        const station = stationAtStep(encounter, loopWalkerStep);
+
+        if (!station || loopClearedSteps.includes(loopWalkerStep))
+        {
+            return;
+        }
+
+        unlockEnemies([ station.enemyId ]);
+        pendingStationStepRef.current = loopWalkerStep;
+        loopActiveRef.current = true;
+        loopDungeonRef.current = loopMapDungeon;
+        setActiveBattleKind('enemy');
+        setPhase('battle');
+        EventBus.emit(GAME_EVENTS.LOOP_ENGAGE, { enemyId: station.enemyId });
+    }, [ loopClearedSteps, loopMapDungeon, loopWalkerStep ]);
+
+    const retreatLoopToHome = useCallback((): void =>
+    {
+        loopActiveRef.current = false;
+        pendingStationStepRef.current = null;
+        EventBus.emit(GAME_EVENTS.LOOP_FINISH);
+        setActiveBattleKind(null);
+        setPhase('loop-hub');
+    }, []);
+
+    const takeLoopLootHome = useCallback((lootId: string): void =>
+    {
+        EventBus.emit(GAME_EVENTS.LOOP_FINISH);
+        setActiveBattleKind(null);
+        setHomeLootIds((prev) => [ ...prev, lootId ]);
+        setLoopLootOffers(null);
+        setPhase('loop-hub');
+    }, []);
+
+    const openPracticeRoads = useCallback((): void =>
+    {
+        setPhase('puzzle-select');
     }, []);
 
     const finishEvent = useCallback((result: AppliedEventResult): void =>
@@ -748,9 +998,21 @@ export const useRunController = () =>
         setPendingRewardFlow(null);
         setVisit(null);
         setPuzzleResult(null);
+        setSkirmishResult(null);
+        setPendingSkirmishId(null);
+        setHomeLootIds([]);
+        setLoopLootOffers(null);
+        setLoopLootDungeon(false);
+        setLoopWalkerStep(0);
+        setLoopClearedSteps([]);
+        setLoopMapDungeon(false);
         setPendingPuzzleReward(null);
         setPendingCardDirectionFlow(null);
         eventVisitRef.current = null;
+        skirmishEncounterIdRef.current = null;
+        loopActiveRef.current = false;
+        loopDungeonRef.current = false;
+        pendingStationStepRef.current = null;
         setDepartingNodeId(null);
         setRunToast(null);
         setBattleIntroKind(null);
@@ -768,8 +1030,47 @@ export const useRunController = () =>
         const seed = typeof nextSeed === 'string' && nextSeed.trim().length > 0
             ? normalizeSeed(nextSeed)
             : createRandomSeed();
-        resetRun(seed, 'map');
+        resetRun(seed, 'loop-hub');
     }, [ resetRun ]);
+
+    const startLegacyRun = useCallback((nextSeed?: string): void =>
+    {
+        setPauseMenuOpen(false);
+        const seedValue = typeof nextSeed === 'string' && nextSeed.trim().length > 0
+            ? normalizeSeed(nextSeed)
+            : createRandomSeed();
+        resetRun(seedValue, 'map');
+    }, [ resetRun ]);
+
+    const startRunFromMenu = useCallback((nextSeed: string): void =>
+    {
+        const normalized = normalizeSeed(nextSeed);
+
+        if (!tutorial.needsTutorialWizard)
+        {
+            resetRun(normalized, 'loop-hub');
+            return;
+        }
+
+        resetRun(normalized, 'puzzle');
+
+        const payload = {
+            puzzleId: TUTORIAL_WIZARD_PUZZLE_ID,
+            startHealth: MAX_HEALTH,
+            seed: deriveSeed(normalized, 'tutorial-wizard'),
+            bodyMods: [] as string[],
+            runAttackCount: 0,
+        };
+
+        if (sceneReadyRef.current)
+        {
+            EventBus.emit(GAME_EVENTS.START_PUZZLE, payload);
+        }
+        else
+        {
+            pendingPuzzleRef.current = payload;
+        }
+    }, [ resetRun, tutorial.needsTutorialWizard ]);
 
     const returnToMenu = useCallback((): void =>
     {
@@ -795,36 +1096,6 @@ export const useRunController = () =>
     {
         setPauseMenuOpen((open) => !open);
     }, []);
-
-    const startRunFromMenu = useCallback((nextSeed: string): void =>
-    {
-        const normalized = normalizeSeed(nextSeed);
-
-        if (!tutorial.needsTutorialWizard)
-        {
-            resetRun(normalized, 'map');
-            return;
-        }
-
-        resetRun(normalized, 'puzzle');
-
-        const payload = {
-            puzzleId: TUTORIAL_WIZARD_PUZZLE_ID,
-            startHealth: MAX_HEALTH,
-            seed: deriveSeed(normalized, 'tutorial-wizard'),
-            bodyMods: [] as string[],
-            runAttackCount: 0,
-        };
-
-        if (sceneReadyRef.current)
-        {
-            EventBus.emit(GAME_EVENTS.START_PUZZLE, payload);
-        }
-        else
-        {
-            pendingPuzzleRef.current = payload;
-        }
-    }, [ resetRun, tutorial.needsTutorialWizard ]);
 
     const currentNodeId = path.length > 0 ? path[path.length - 1]! : null;
     const availableIds = useMemo(
@@ -908,6 +1179,25 @@ export const useRunController = () =>
         visit,
         finishEvent,
         startPuzzleFromEvent,
+        startPuzzleFromSelect,
+        confirmSkirmishKit,
+        cancelSkirmishKit,
+        finishSkirmishResult,
+        pendingSkirmishId,
+        skirmishResult,
+        homeLootIds,
+        loopLootOffers,
+        loopLootDungeon,
+        loopWalkerStep,
+        loopClearedSteps,
+        loopMapDungeon,
+        startLoopWalk,
+        advanceLoopStep,
+        fightLoopStation,
+        retreatLoopToHome,
+        takeLoopLootHome,
+        openPracticeRoads,
+        startLegacyRun,
         restHeal,
         restUpgrade,
         finishVisit,

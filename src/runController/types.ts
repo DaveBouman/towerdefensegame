@@ -12,9 +12,14 @@ export type RunPhase =
     | 'reward'
     | 'body-mod-reward'
     | 'visit'
+    | 'puzzle-select'
+    | 'kit-select'
     | 'puzzle'
     | 'puzzle-result'
     | 'puzzle-reward'
+    | 'loop-hub'
+    | 'loop-map'
+    | 'loop-loot'
     | 'victory'
     | 'defeat';
 
@@ -41,6 +46,11 @@ export interface PuzzleResultState {
     damageDealt: number;
     damageTarget: number;
     messages: AppliedEventMessage[];
+}
+
+export interface SkirmishResultState {
+    encounterId: string;
+    success: boolean;
 }
 
 import type { RunDeckCard } from '../game/run/runDeck';

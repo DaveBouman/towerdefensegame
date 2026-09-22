@@ -1,5 +1,9 @@
 import type { AppliedEventMessage } from '../../game/run/runEvents';
-import { getRunPuzzle } from '../../game/run/runPuzzles';
+import {
+    formatPuzzleFailHint,
+    getPuzzleGoalLine,
+    getRunPuzzle,
+} from '../../game/run/runPuzzles';
 import { EventIcon } from './EventIcon';
 
 interface PuzzleResultOverlayProps {
@@ -31,6 +35,10 @@ export const PuzzleResultOverlay = ({
 }: PuzzleResultOverlayProps) =>
 {
     const puzzle = getRunPuzzle(puzzleId);
+    const goal = getPuzzleGoalLine(puzzle);
+    const scoreLine = puzzle.win.kind === 'damage'
+        ? `Scored ${damageDealt} / ${damageTarget}.`
+        : goal;
 
     return (
         <div className="run-event">
@@ -40,10 +48,10 @@ export const PuzzleResultOverlay = ({
                         <EventIcon icon="puzzle" />
                     </span>
                     <h1 className="run-event__title">
-                        {success ? 'Trial Passed!' : 'Trial Failed'}
+                        {success ? 'Road clear' : 'Not yet'}
                     </h1>
                     <p className="run-event__intro">
-                        {puzzle.title} — dealt {damageDealt} / {damageTarget} damage.
+                        {puzzle.title} — {scoreLine}
                     </p>
                 </header>
 
@@ -51,8 +59,8 @@ export const PuzzleResultOverlay = ({
                     <ul className="run-event__messages">
                         <li className={`run-event__message ${success ? 'run-event__message--good' : 'run-event__message--bad'}`}>
                             {success
-                                ? 'You hit the damage target. Well chained!'
-                                : 'Not enough damage — study the hint and try another trial next time.'}
+                                ? 'Nice routing.'
+                                : formatPuzzleFailHint(puzzle.win)}
                         </li>
                         {messages.map((message, index) => (
                             <li
@@ -64,7 +72,7 @@ export const PuzzleResultOverlay = ({
                         ))}
                     </ul>
                     <button type="button" className="run-event__continue" onClick={onContinue}>
-                        Continue
+                        Back to roads
                     </button>
                 </div>
             </div>

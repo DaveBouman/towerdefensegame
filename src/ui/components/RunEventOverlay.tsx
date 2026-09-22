@@ -23,7 +23,7 @@ import {
     getWheelSpinRotationTarget,
 } from '../../game/run/wheelDisplay';
 import { seedScope } from '../../game/random/rng';
-import { getRunPuzzle, rollPuzzleId } from '../../game/run/runPuzzles';
+import { getPuzzleGoalLine, getRunPuzzle, rollPuzzleId } from '../../game/run/runPuzzles';
 import { PUZZLE_TRIAL_RULES } from '../../game/run/rewards';
 import type { RunDeckCard } from '../../game/run/runDeck';
 import { CardChip } from './CardChip';
@@ -435,8 +435,8 @@ export const RunEventOverlay = ({
                         <h2 className="run-event__puzzle-title">{puzzle.title}</h2>
                         <p className="run-event__puzzle-intro">{puzzle.intro}</p>
                         <p className="run-event__puzzle-goal">
-                            Goal: deal at least <strong>{puzzle.damageTarget}</strong> damage
-                            with <strong>{puzzle.cards.length}</strong> cards in one attack.
+                            Goal: {getPuzzleGoalLine(puzzle)}
+                            {' '}({puzzle.cards.length} cards)
                         </p>
                         <ul className="run-event__puzzle-rules">
                             {PUZZLE_TRIAL_RULES.map((rule) => (

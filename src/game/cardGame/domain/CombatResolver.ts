@@ -55,6 +55,8 @@ export interface CombatContext
     /** Lieutenant phase shift when HP crosses threshold. */
     tryTriggerPhaseShift (combatant: EnemyCombatant): { label: string; message: string } | null;
     getPlayerThorns (): number;
+    /** Loop Road: keep opening bombs on the board across rounds. */
+    shouldPersistHazards? (): boolean;
 }
 
 export class CombatResolver
@@ -391,7 +393,9 @@ export class CombatResolver
             }
         }
 
-        this.ctx.fieldEffects.resolveHazardsAfterAttack(sequence.chain);
+        this.ctx.fieldEffects.resolveHazardsAfterAttack(sequence.chain, {
+            persistHazards: this.ctx.shouldPersistHazards?.() === true,
+        });
 
         const remainingSiphonHeal = Math.max(0, sequence.siphonHeal - this.siphonHealedThisAttack);
 

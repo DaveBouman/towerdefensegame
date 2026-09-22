@@ -22,6 +22,8 @@ const readParentSize = (parent: HTMLElement | string): { width: number; height: 
     };
 };
 
+const desktop = isDesktopShell();
+
 const config: Phaser.Types.Core.GameConfig = {
     type: AUTO,
     backgroundColor: '#0c0812',
@@ -30,12 +32,19 @@ const config: Phaser.Types.Core.GameConfig = {
         mode: Scale.RESIZE,
         autoCenter: Scale.CENTER_BOTH,
     },
+    // Cap frame pacing so packaged builds don't run uncapped and thermal-throttle.
+    fps: {
+        target: 60,
+        min: 30,
+        smoothStep: true,
+    },
     render: {
+        // Keep AA + subpixel text — disabling these made HUD/menu type look blocky.
         antialias: true,
         roundPixels: false,
         powerPreference: 'high-performance',
     },
-    ...(isDesktopShell()
+    ...(desktop
         ? {
             // HTML5 audio is more reliable than Web Audio under Electron packaging.
             audio: { disableWebAudio: true },

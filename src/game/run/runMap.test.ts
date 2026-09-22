@@ -5,8 +5,6 @@ import {
     generateRunMap,
     getFloorColumnRange,
     getFloorForColumn,
-    getNode,
-    projectIndex,
     RUN_CONFIG,
 } from './runMap';
 
@@ -26,39 +24,31 @@ describe('runMap', () =>
         expect(getFloorColumnRange(3)).toEqual({ startCol: 8, endCol: 10 });
     });
 
-    it('gives saboteur nodes adjacent routes on the next column', () =>
+    it('is a linear path with one node per column', () =>
     {
-        let checkedSaboteur = false;
+        seedScope('map-linear', 'map');
+        const map = generateRunMap();
 
-        for (let attempt = 0; attempt < 40; attempt++)
+        expect(map.nodes).toHaveLength(map.rows);
+
+        for (let row = 0; row < map.rows; row++)
         {
-            seedScope(`saboteur-routes-${attempt}`, 'map');
-            const map = generateRunMap();
+            const column = map.nodes.filter((node) => node.row === row);
 
-            for (const node of map.nodes)
-            {
-                if (node.enemyId !== 'saboteur' || node.row >= map.rows - 1)
-                {
-                    continue;
-                }
-
-                const nextRow = map.nodes.filter((next) => next.row === node.row + 1);
-
-                if (nextRow.length <= 1)
-                {
-                    continue;
-                }
-
-                checkedSaboteur = true;
-                const primaryCol = projectIndex(node.col, node.colCount, nextRow.length);
-                const destinations = node.nextIds.map((id) => getNode(map, id)!);
-                const hasAdjacentRoute = destinations.some((next) => next.col !== primaryCol);
-
-                expect(hasAdjacentRoute).toBe(true);
-            }
+            expect(column).toHaveLength(1);
+            expect(column[0]!.colCount).toBe(1);
         }
 
-        expect(checkedSaboteur).toBe(true);
+        for (const node of map.nodes)
+        {
+            if (node.row >= map.rows - 1)
+            {
+                expect(node.nextIds).toHaveLength(0);
+                continue;
+            }
+
+            expect(node.nextIds).toEqual([ `n${node.row + 1}-0` ]);
+        }
     });
 
     it('always places semi-boss fights in the fourth column', () =>
@@ -67,7 +57,7 @@ describe('runMap', () =>
         const map = generateRunMap();
         const semiBossRow = map.nodes.filter((node) => node.row === RUN_CONFIG.semiBossRow);
 
-        expect(semiBossRow.length).toBeGreaterThanOrEqual(1);
+        expect(semiBossRow).toHaveLength(1);
         expect(semiBossRow.every((node) => node.kind === 'semi-boss')).toBe(true);
         expect(semiBossRow.every((node) => node.enemyId === 'smokebinder' || node.enemyId === 'saboteur')).toBe(true);
     });
@@ -141,9 +131,19 @@ describe('runMap', () =>
 
     it('leaves signal nodes unresolved until the player visits', () =>
     {
-        seedScope('map-signals', 'map');
-        const map = generateRunMap();
-        const eventNodes = map.nodes.filter((node) => node.kind === 'event');
+        let eventNodes: ReturnType<typeof generateRunMap>['nodes'] = [];
+
+        for (let attempt = 0; attempt < 40; attempt++)
+        {
+            seedScope(`map-signals-${attempt}`, 'map');
+            const map = generateRunMap();
+            eventNodes = map.nodes.filter((node) => node.kind === 'event');
+
+            if (eventNodes.length > 0)
+            {
+                break;
+            }
+        }
 
         expect(eventNodes.length).toBeGreaterThan(0);
         expect(eventNodes.every((node) => node.eventId === undefined)).toBe(true);

@@ -2,6 +2,7 @@ import { BODY_MOD_IDS } from '../../run/bodyMods';
 import type { RunDeckCard } from '../../run/runDeck';
 import { getBattleEnergyBonus, getRunMaxHealth } from '../../run/runResources';
 import { getTutorialWizardPhaseSpec } from '../../run/tutorialWizardPhases';
+import { evaluatePuzzleWin, type PuzzleWinRule } from '../../run/puzzleWin';
 import { EnemyOverclockTracker, getEnemyDamageRamp as computeEnemyDamageRamp } from './enemyOverclock';
 import { GRID_CONFIG } from '../../config/gridConfig';
 import {
@@ -82,7 +83,10 @@ export interface PuzzleModeConfig {
         loopArrow?: CardDirection;
     }[];
     chainStart?: SlotPosition;
+    /** Legacy / showcase numeric gate; prefer `win` for evaluation. */
     damageTarget: number;
+    /** Clear condition (defaults to damageTarget when omitted). */
+    win?: PuzzleWinRule;
     /** Guided first-run tutorial — multi-attack, no enemy counter, phased hands. */
     tutorialWizard?: boolean;
     maxEnergy?: number;
@@ -107,6 +111,8 @@ export class CardGameSession
     private playerThorns = 0;
     private readonly puzzleMode: PuzzleModeConfig | null;
     private puzzleFinished = false;
+    /** Loop Road: keep packed layout across practice / locked rounds. */
+    private persistBoardLayout = false;
     private tutorialPhaseId: import('../../run/tutorialWizard').TutorialWizardStep | null = null;
     private readonly bodyMods: readonly string[];
     private readonly latchSlots: LatchSlots = {};
@@ -178,6 +184,7 @@ export class CardGameSession
             onCombatantKilled: (instanceId) => this.squad.onCombatantKilled(instanceId),
             tryTriggerPhaseShift: (combatant) => this.squad.tryTriggerPhaseShift(combatant),
             getPlayerThorns: () => this.playerThorns,
+            shouldPersistHazards: () => this.boardEdit.isBoardLocked(),
         }, runAttackCount);
         this.enemyPhase = new EnemyPhaseController({
             combatants: this.squad.combatants,
@@ -194,6 +201,7 @@ export class CardGameSession
                 const passives = this.squad.getLivingCombatants().flatMap((entry) => entry.definition.passives);
                 this.fieldEffects.applySilenceTiles(passives);
             },
+            shouldSkipBoardPlacement: () => this.boardEdit.isBoardLocked(),
         });
         this.boardEdit = new BoardEditController({
             board: this.board,
@@ -396,30 +404,50 @@ export class CardGameSession
     /** Bonus damage the enemy gains for the player's escalating attacks this round. */
     getEnemyDamageRamp (): number
     {
+        if (this.shouldPersistBoardLayout())
+        {
+            return 0;
+        }
+
         return computeEnemyDamageRamp(this.getAttacksThisRound());
     }
 
     /** Fight-long attack bonus: +N after each enemy response. */
     getEnemyOverclock (): number
     {
+        if (this.shouldPersistBoardLayout())
+        {
+            return 0;
+        }
+
         return this.overclock.getBonus();
     }
 
     getEnemyOverclockPerTurn (): number
     {
+        if (this.shouldPersistBoardLayout())
+        {
+            return 0;
+        }
+
         return this.overclock.getPerTurn();
     }
 
     /** Overclock the next Attack will lock in after the enemy responds. */
     getNextEnemyOverclock (): number
     {
+        if (this.shouldPersistBoardLayout())
+        {
+            return 0;
+        }
+
         return this.overclock.getNextBonus();
     }
 
     /** Called once after all enemies finish responding to a player Attack. */
     tickEnemyOverclock (): void
     {
-        if (this.isPlayerDefeated() || this.isEnemyDefeated())
+        if (this.isPlayerDefeated() || this.isEnemyDefeated() || this.shouldPersistBoardLayout())
         {
             return;
         }
@@ -430,6 +458,11 @@ export class CardGameSession
     /** Applies intra-round ramp and fight-long overclock to enemy attack steps. */
     private rampEnemyAction (action: EnemyTurnAction): EnemyTurnAction
     {
+        if (this.shouldPersistBoardLayout())
+        {
+            return action;
+        }
+
         const bonus = this.getEnemyDamageRamp() + this.getEnemyOverclock();
         const totals = aggregateBattleModifiers(this.battleModifiers);
 
@@ -838,15 +871,10 @@ export class CardGameSession
 
     evaluatePuzzleAttack (sequence: AttackSequence): { success: boolean; damageDealt: number }
     {
-        const damageDealt = sequence.totalDamage
-            + sequence.offChainDamage
-            + sequence.abilityEnemyDamage;
-        const target = this.puzzleMode?.damageTarget ?? 0;
+        const win = this.puzzleMode?.win
+            ?? { kind: 'damage' as const, target: this.puzzleMode?.damageTarget ?? 0 };
 
-        return {
-            success: damageDealt >= target,
-            damageDealt,
-        };
+        return evaluatePuzzleWin(win, sequence);
     }
 
     finishPuzzle (): void
@@ -1549,5 +1577,138 @@ export class CardGameSession
     canEditBoard (): boolean
     {
         return this.boardEdit.canEditBoard();
+    }
+
+    setBoardLocked (locked: boolean): void
+    {
+        this.boardEdit.setBoardLocked(locked);
+    }
+
+    isBoardLocked (): boolean
+    {
+        return this.boardEdit.isBoardLocked();
+    }
+
+    /**
+     * Loop Road prep + locked fights keep the packed layout between rounds
+     * (no board wipe into discard).
+     */
+    shouldPersistBoardLayout (): boolean
+    {
+        return this.persistBoardLayout || this.boardEdit.isBoardLocked();
+    }
+
+    setPersistBoardLayout (persist: boolean): void
+    {
+        this.persistBoardLayout = persist;
+    }
+
+    /** Prep dummy practice — resolve the chain without a real enemy response. */
+    isPrepDummyPractice (): boolean
+    {
+        if (!this.persistBoardLayout || this.boardEdit.isBoardLocked())
+        {
+            return false;
+        }
+
+        const living = this.squad.getLivingCombatants();
+
+        return living.length > 0
+            && living.every((combatant) => combatant.definitionId === 'training-dummy');
+    }
+
+    /** Place opening bombs/leeches once at Engage — they stay and tick each round. */
+    placeOpeningEnemyField (): void
+    {
+        for (const combatant of this.squad.getLivingCombatants())
+        {
+            const hazardCount = Math.max(0, combatant.definition.hazardsPerTurn);
+
+            for (let i = 0; i < hazardCount; i++)
+            {
+                this.fieldEffects.placeEnemyHazard();
+            }
+
+            const siphon = getEnemyPassive(combatant.definition.passives, 'siphonNode');
+            const siphonCount = siphon?.nodesPerTurn ?? 0;
+
+            for (let i = 0; i < siphonCount; i++)
+            {
+                this.fieldEffects.placeEnemySiphon();
+            }
+        }
+    }
+
+    /**
+     * Between auto-combat rounds on a locked board: keep layout + bombs,
+     * reset energy/shield, clear exhaust so the chain can fire again.
+     */
+    prepareLockedRoundReset (): void
+    {
+        for (const slot of this.board.slotsInOrder())
+        {
+            const card = this.board.getCardAt(slot);
+
+            if (card && card.owner !== 'enemy' && card.owner !== 'field')
+            {
+                card.exhausted = false;
+                card.spent = false;
+            }
+        }
+
+        this.player.shield = 0;
+        this.playerThorns = 0;
+        this.energyRound.resetEnergy();
+        CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: 0 });
+        this.enemyPhase.queueNextEnemyTurn();
+    }
+
+    /** Swap the living squad for one enemy (Loop Road engage / prep dummy). */
+    replaceLoopEnemy (enemyId: string): void
+    {
+        const removed = this.squad.getCombatants().map((combatant) => combatant.instanceId);
+
+        for (const instanceId of removed)
+        {
+            this.squad.removeCombatant(instanceId);
+        }
+
+        const added = this.squad.addCombatant(enemyId);
+
+        CardGameEventBus.emit(CARD_GAME_EVENTS.COMBATANTS_CHANGED, {
+            added: [ added.instanceId ],
+            removed,
+            reason: 'spawn' as const,
+        });
+    }
+
+    /** Unlock board, refresh energy/HP, clear exhaust, show prep dummy — keep layout. */
+    prepareLoopBetweenStations (): void
+    {
+        this.setBoardLocked(false);
+
+        for (const slot of this.board.slotsInOrder())
+        {
+            const card = this.board.getCardAt(slot);
+
+            if (card)
+            {
+                card.exhausted = false;
+                card.spent = false;
+            }
+        }
+
+        const player = this.getPlayer();
+        const missing = player.maxHealth - player.health;
+
+        if (missing > 0)
+        {
+            this.healPlayer(missing);
+        }
+
+        this.player.shield = 0;
+        this.energyRound.resetEnergy();
+        CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: 0 });
+        this.replaceLoopEnemy('training-dummy');
     }
 }

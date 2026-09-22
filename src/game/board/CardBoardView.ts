@@ -80,6 +80,8 @@ const SLOT_DAMPENED = CYBER.slotDampened;
 const SLOT_DAMPENED_BORDER = CYBER.slotDampenedBorder;
 const SLOT_NULLIFIED = CYBER.slotNullified;
 const SLOT_NULLIFIED_BORDER = CYBER.slotNullifiedBorder;
+const SLOT_ROAD = CYBER.slotRoad;
+const SLOT_ROAD_BORDER = CYBER.slotRoadBorder;
 const SLOT_INSET = 4;
 const AXIS_IDLE = '#a89482';
 const AXIS_START = '#7af0ff';
@@ -120,6 +122,7 @@ export class CardBoardView
     private readonly bombDisabledOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
     private readonly dampenedOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
     private readonly nullifiedOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
+    private readonly roadOverlays: (Phaser.GameObjects.Rectangle | null)[][] = [];
     private readonly cardContainers: (Phaser.GameObjects.Container | null)[][] = [];
     private highlightedSlot: SlotPosition | null = null;
     private highlightMode: BoardHighlightMode = null;
@@ -147,8 +150,8 @@ export class CardBoardView
     private chainPathTentativeFrom: number | null = null;
     private streakBarRuns: StreakBarRun[] = [];
     private streakBarDimSlots = new Set<string>();
-    private readonly streakStormTimers: (Phaser.Time.TimerEvent | undefined)[] = [];
-    private readonly streakStormStrikeGfx: Phaser.GameObjects.Graphics[] = [];
+    private streakStormTimer?: Phaser.Time.TimerEvent;
+    private streakStormGfx?: Phaser.GameObjects.Graphics;
 
     constructor (
         private readonly scene: Phaser.Scene,
@@ -205,6 +208,7 @@ export class CardBoardView
             this.bombDisabledOverlays[row] = [];
             this.dampenedOverlays[row] = [];
             this.nullifiedOverlays[row] = [];
+            this.roadOverlays[row] = [];
             this.cardContainers[row] = [];
 
             for (let col = 0; col < cols; col++)
@@ -222,6 +226,7 @@ export class CardBoardView
                 this.bombDisabledOverlays[row][col] = null;
                 this.dampenedOverlays[row][col] = null;
                 this.nullifiedOverlays[row][col] = null;
+                this.roadOverlays[row][col] = null;
                 this.cardContainers[row][col] = null;
 
                 const card = board.getCardAt({ row, col });
@@ -588,26 +593,16 @@ export class CardBoardView
 
     private stopStreakLightning (): void
     {
-        for (let i = 0; i < this.streakStormTimers.length; i++)
+        this.streakStormTimer?.remove(false);
+        this.streakStormTimer = undefined;
+
+        if (this.streakStormGfx?.active)
         {
-            this.streakStormTimers[i]?.remove(false);
-            this.streakStormTimers[i] = undefined;
+            this.scene.tweens.killTweensOf(this.streakStormGfx);
+            this.streakStormGfx.clear();
+            this.streakStormGfx.setAlpha(0);
         }
 
-        this.streakStormTimers.length = 0;
-
-        while (this.streakStormStrikeGfx.length > 0)
-        {
-            const gfx = this.streakStormStrikeGfx.pop();
-
-            if (gfx?.active)
-            {
-                this.scene.tweens.killTweensOf(gfx);
-                gfx.destroy();
-            }
-        }
-
-        this.streakBarGfx.clear();
         this.streakBarGfx.setAlpha(1);
     }
 
@@ -615,66 +610,61 @@ export class CardBoardView
     {
         this.stopStreakLightning();
 
-        const activeRuns = this.streakBarRuns.filter((run) => run.slots.length >= 2);
-
-        if (activeRuns.length === 0)
+        if (!this.streakBarRuns.some((run) => run.slots.length >= 2))
         {
             return;
         }
 
-        // Each streak set gets its own randomized storm clock.
-        activeRuns.forEach((run, index) =>
-        {
-            this.scheduleRunStormStrike(run, true, index);
-        });
+        // One shared storm clock (was per-run + fresh Graphics every strike).
+        this.scheduleStreakStormStrike(true);
     }
 
-    private scheduleRunStormStrike (
-        run: StreakBarRun,
-        immediate: boolean,
-        setIndex: number,
-    ): void
+    private scheduleStreakStormStrike (immediate: boolean): void
     {
-        const runStillPresent = (): boolean => this.streakBarRuns.some((candidate) =>
-            candidate.behaviorId === run.behaviorId
-            && candidate.slots.length === run.slots.length
-            && candidate.slots.every((slot, i) =>
-                slot.row === run.slots[i]?.row && slot.col === run.slots[i]?.col));
-
-        if (!runStillPresent())
+        if (!this.streakBarRuns.some((run) => run.slots.length >= 2))
         {
             return;
         }
 
-        // Cosmetics only — not game RNG. Each set has its own beat.
+        // Cosmetics only — rare strikes so idle boards stay cheap.
         const delay = immediate
-            ? 350 + setIndex * 420 + Math.random() * 900
-            : 1200 + Math.random() * 2400;
+            ? 2200 + Math.random() * 1800
+            : 5500 + Math.random() * 4500;
 
-        this.streakStormTimers[setIndex]?.remove(false);
-
-        this.streakStormTimers[setIndex] = this.scene.time.delayedCall(delay, () =>
+        this.streakStormTimer?.remove(false);
+        this.streakStormTimer = this.scene.time.delayedCall(delay, () =>
         {
-            if (!runStillPresent())
+            const runs = this.streakBarRuns.filter((run) => run.slots.length >= 2);
+
+            if (runs.length === 0)
             {
                 return;
             }
 
+            const run = runs[Math.floor(Math.random() * runs.length)]!;
+
             this.fireRunStormStrike(run);
-            this.scheduleRunStormStrike(run, false, setIndex);
+            this.scheduleStreakStormStrike(false);
         });
     }
 
     private fireRunStormStrike (run: StreakBarRun): void
     {
-        const gfx = this.scene.add.graphics();
+        if (!this.streakStormGfx || !this.streakStormGfx.active)
+        {
+            this.streakStormGfx = this.scene.add.graphics();
+            this.container.add(this.streakStormGfx);
+        }
+
+        const gfx = this.streakStormGfx;
         const centers = run.slots.map((slot) => this.slotCenter(slot));
         const palette = streakStormColor(run.behaviorId);
 
-        this.container.add(gfx);
+        this.scene.tweens.killTweensOf(gfx);
+        gfx.clear();
+        gfx.setAlpha(1);
         this.container.bringToTop(gfx);
         this.container.bringToTop(this.streakBarLabels);
-        this.streakStormStrikeGfx.push(gfx);
 
         this.drawThroughBolt(gfx, centers, palette.glow);
 
@@ -682,46 +672,23 @@ export class CardBoardView
         {
             const rect = this.cardInnerRect(point);
 
-            gfx.fillStyle(palette.glow, 0.12 + Math.random() * 0.08);
+            gfx.fillStyle(palette.glow, 0.1);
             gfx.fillRoundedRect(rect.left, rect.top, rect.width, rect.height, 4);
         }
 
-        gfx.setAlpha(1);
-
-        this.scene.time.delayedCall(90, () =>
-        {
-            if (!gfx.active)
+        this.scene.tweens.add({
+            targets: gfx,
+            alpha: 0,
+            duration: 480,
+            delay: 140,
+            ease: 'Cubic.easeOut',
+            onComplete: () =>
             {
-                return;
-            }
-
-            gfx.setAlpha(0.3);
-            this.scene.time.delayedCall(70, () =>
-            {
-                if (!gfx.active)
+                if (gfx.active)
                 {
-                    return;
+                    gfx.clear();
                 }
-
-                gfx.setAlpha(1);
-                this.scene.tweens.add({
-                    targets: gfx,
-                    alpha: 0,
-                    duration: 420,
-                    ease: 'Cubic.easeOut',
-                    onComplete: () =>
-                    {
-                        const index = this.streakStormStrikeGfx.indexOf(gfx);
-
-                        if (index >= 0)
-                        {
-                            this.streakStormStrikeGfx.splice(index, 1);
-                        }
-
-                        gfx.destroy();
-                    },
-                });
-            });
+            },
         });
     }
 
@@ -1370,6 +1337,19 @@ export class CardBoardView
         });
     }
 
+    /** Marks tiles on the Loop Hero–style puzzle road (under cards). */
+    setRoadSlots (slots: readonly SlotPosition[]): void
+    {
+        this.setSlotOverlays(
+            slots,
+            this.roadOverlays,
+            SLOT_ROAD,
+            SLOT_ROAD_BORDER,
+            0.4,
+            -1,
+        );
+    }
+
     /** Marks board slots the player cannot place cards on. */
     setBlockedSlots (
         silenced: readonly SlotPosition[],
@@ -1417,6 +1397,8 @@ export class CardBoardView
         overlays: (Phaser.GameObjects.Rectangle | null)[][],
         fill: number,
         border: number,
+        alpha = 0.55,
+        depth = 1,
     ): void
     {
         const active = new Set(slots.map((slot) => `${slot.row},${slot.col}`));
@@ -1451,12 +1433,25 @@ export class CardBoardView
                     slotSize,
                     slotSize,
                     fill,
-                    0.55,
+                    alpha,
                 );
 
                 overlay.setStrokeStyle(2, border, 0.95);
-                overlay.setDepth(1);
+                overlay.setDepth(depth);
                 this.container.add(overlay);
+                // Keep road under cards; other overlays stay above empty slots.
+                if (depth < 0)
+                {
+                    this.container.sendToBack(overlay);
+                    // Slot bodies should stay under road? Road should be above empty slot fill.
+                    const body = this.slotBodies[row]?.[col];
+
+                    if (body)
+                    {
+                        this.container.moveAbove(overlay, body);
+                    }
+                }
+
                 overlays[row][col] = overlay;
             }
         }
@@ -1650,6 +1645,9 @@ export class CardBoardView
         this.hideJokerDirectionPicker();
         this.chainStartTween?.stop();
         this.chainStartIdleTween?.stop();
+        this.clearStreakBars();
+        this.streakStormGfx?.destroy();
+        this.streakStormGfx = undefined;
         this.clearChainPath();
         this.container.destroy();
     }

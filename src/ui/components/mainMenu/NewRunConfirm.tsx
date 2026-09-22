@@ -26,15 +26,15 @@ export const NewRunConfirm = ({
         <BackButton onClick={onBack} />
         <p className="main-menu__eyebrow">{pause ? 'Confirm' : 'Jack in'}</p>
         <h2 className="main-menu__screen-title">
-            {pause ? 'Start a new run?' : 'Start run'}
+            {pause ? 'Start a fresh road?' : 'Start the road'}
         </h2>
         {pause && (
             <p className="main-menu__confirm-copy">
-                This abandons your current progress. The map, deck, and HP will reset.
+                This leaves your current session and returns you to the road gallery.
             </p>
         )}
         <label className="main-menu__field main-menu__field--seed">
-            <span className="main-menu__field-label">Run seed</span>
+            <span className="main-menu__field-label">Seed</span>
             <span className="main-menu__seed-row">
                 <input
                     className="main-menu__seed-input"
@@ -72,14 +72,14 @@ export const NewRunConfirm = ({
                 className={`main-menu__start${pause ? ' main-menu__start--danger' : ''}`}
                 onClick={onConfirm}
             >
-                {pause ? 'Yes, new run' : 'Start run'}
+                {pause ? 'Yes, start the road' : 'Start the road'}
             </button>
             <button
                 type="button"
                 className="main-menu__secondary"
                 onClick={onCancel}
             >
-                {pause ? 'Keep current run' : 'Back'}
+                {pause ? 'Keep playing' : 'Back'}
             </button>
         </div>
     </>
