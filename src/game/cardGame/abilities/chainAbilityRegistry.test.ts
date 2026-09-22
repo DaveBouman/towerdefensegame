@@ -131,7 +131,7 @@ describe('chain abilities', () =>
         const sequence = planAttack(board, { row: 0, col: 0 });
 
         expect(sequence.abilityPoisonStacks).toBe(1);
-        expect(sequence.chain[0]?.armor).toBe(3);
+        expect(sequence.chain[0]?.armor).toBe(10);
         expect(sequence.chain[2]?.armor).toBe(0);
     });
 

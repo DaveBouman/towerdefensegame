@@ -256,11 +256,11 @@ export class Game extends Scene
     {
         this.runPhase = phase;
 
-        // Loop prep keeps the chain board under the walk map / station fight.
+        // Loop prep keeps the chain board under walk map, station fight, and card pick.
         if (
             this.battleActive
             && this.loopPersistBoard
-            && (phase === 'loop-map' || phase === 'battle')
+            && (phase === 'loop-map' || phase === 'battle' || phase === 'loop-card-reward')
         )
         {
             this.refreshBattleLayout();
@@ -555,7 +555,9 @@ export class Game extends Scene
         this.handView?.syncHand(this.session.getHand());
         this.enemySquad?.syncFromSession(this.session);
         this.playerView?.setHealth(this.session.getPlayer());
+        this.armorView?.setArmor(this.session.getPlayer().shield);
         this.syncPileViews();
+        this.refreshBattleLayout();
         this.emitAttackReadiness();
     };
 

@@ -148,7 +148,7 @@ describe('AttackPipeline', () =>
             { row: 0, col: 1 },
             { row: 1, col: 1 },
         ]);
-        expect(chain[2].armor).toBe(3);
+        expect(chain[2].armor).toBe(10);
     });
 
     it('follows diagonal arrows', () =>
@@ -744,7 +744,7 @@ describe('AttackPipeline', () =>
 
         expect(sequence.chain[0]?.damage).toBe(0);
         expect(sequence.chain[0]?.armor).toBe(4);
-        expect(sequence.chain[1]?.armor).toBe(3);
+        expect(sequence.chain[1]?.armor).toBe(12);
     });
 
     it('ignores enemy hazards for off-chain player bonuses', () =>

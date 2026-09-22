@@ -1691,7 +1691,7 @@ export class CardGameSession
         this.enemyAttackResolvedMidChain = false;
     }
 
-    /** After a mid-chain defend, later cards strip this much shield. */
+    /** After a mid-chain defend, each later card strips this much shield (countdown). */
     decayPlayerShield (amount: number): number
     {
         const stripped = Math.min(this.player.shield, Math.max(0, amount));

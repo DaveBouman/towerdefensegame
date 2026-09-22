@@ -613,19 +613,20 @@ export function runChainPlayback (
         );
         const stepDurationMs = Math.max(300, pacedMs);
 
-        // Cards after a defend strip shield — land defend on the enemy's hit tick.
+        // Cards after a defend tick shield down — land defend on the enemy's hit tick.
         if (defendedThisChain)
         {
-            const stripped = deps.session.decayPlayerShield(GAME_RULES.defendDecayPerCard ?? 2);
+            const stripped = deps.session.decayPlayerShield(GAME_RULES.defendDecayPerCard ?? 1);
 
             if (stripped > 0)
             {
                 deps.setDisplayedArmor(deps.session.getPlayer().shield);
+                deps.armorView.showShieldAbsorb(stripped);
                 playFloatingText(
                     deps.scene,
-                    deps.playerView.container,
-                    deps.playerView.container.width / 2 || 40,
-                    12,
+                    deps.armorView.container,
+                    0,
+                    -8,
                     `−${stripped}`,
                     '#7af0ff',
                     { fontSize: 16 },

@@ -16,13 +16,13 @@
     {
       "id": "defend",
       "label": "Defend",
-      "power": 3,
+      "power": 10,
       "behaviorId": "defend",
       "visualId": "defend",
       "arrowPool": "orthogonal",
       "tier": 1,
       "upgrade": {
-        "power": 5
+        "power": 14
       },
       "duration": 12
     },
