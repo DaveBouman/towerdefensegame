@@ -8,7 +8,7 @@
       "shieldGain": 13,
       "attackChance": 0.65,
       "hazardsPerTurn": 1,
-      "attackDuration": 3
+      "attackDuration": 30
     },
     {
       "id": "thornward",
@@ -18,12 +18,18 @@
       "shieldGain": 15,
       "attackChance": 0.5,
       "hazardsPerTurn": 1,
-      "attackDuration": 4,
+      "attackDuration": 30,
       "passives": [
-        { "id": "thorns", "reflectDamage": 1 }
+        {
+          "id": "thorns",
+          "reflectDamage": 1
+        }
       ],
       "combatTraits": [
-        { "id": "damageCap", "maxPerCard": 5 }
+        {
+          "id": "damageCap",
+          "maxPerCard": 5
+        }
       ]
     },
     {
@@ -35,8 +41,16 @@
       "attackChance": 0.45,
       "hazardsPerTurn": 1,
       "passives": [
-        { "id": "enrage", "attackBonusPerTrap": 3, "extraTrapsPerTrap": 0 },
-        { "id": "escalate", "trapsPerRamp": 1, "maxTraps": 4 },
+        {
+          "id": "enrage",
+          "attackBonusPerTrap": 3,
+          "extraTrapsPerTrap": 0
+        },
+        {
+          "id": "escalate",
+          "trapsPerRamp": 1,
+          "maxTraps": 4
+        },
         "silenceTile",
         "curseHand",
         {
@@ -64,7 +78,10 @@
         "nullifyLane"
       ],
       "combatTraits": [
-        { "id": "hitWard", "hitsBlocked": 3 }
+        {
+          "id": "hitWard",
+          "hitsBlocked": 3
+        }
       ]
     },
     {
@@ -75,11 +92,20 @@
       "shieldGain": 13,
       "attackChance": 0.6,
       "hazardsPerTurn": 1,
-      "attackDuration": 4,
+      "attackDuration": 35,
       "passives": [
         "smoke",
-        { "id": "skillJam", "suppressedSkillCards": 3 },
-        { "id": "dampenTiles", "parity": "even", "multiplier": 0.5, "everyTurns": 2, "duration": 1 },
+        {
+          "id": "skillJam",
+          "suppressedSkillCards": 3
+        },
+        {
+          "id": "dampenTiles",
+          "parity": "even",
+          "multiplier": 0.5,
+          "everyTurns": 2,
+          "duration": 1
+        },
         {
           "id": "phaseShift",
           "healthRatio": 0.5,
@@ -121,7 +147,7 @@
       "shieldGain": 12,
       "attackChance": 0.5,
       "hazardsPerTurn": 1,
-      "attackDuration": 5,
+      "attackDuration": 40,
       "passives": [
         "pressureColumn"
       ]
@@ -164,7 +190,11 @@
       "passives": [
         {
           "id": "shatterOnDeath",
-          "parts": [ "android-arm", "android-core", "android-legs" ]
+          "parts": [
+            "android-arm",
+            "android-core",
+            "android-legs"
+          ]
         }
       ]
     },
@@ -177,7 +207,10 @@
       "attackChance": 0.7,
       "hazardsPerTurn": 0,
       "passives": [
-        { "id": "thorns", "reflectDamage": 1 }
+        {
+          "id": "thorns",
+          "reflectDamage": 1
+        }
       ]
     },
     {
@@ -207,7 +240,10 @@
       "attackChance": 0.55,
       "hazardsPerTurn": 0,
       "passives": [
-        { "id": "credLeech", "amountPerTurn": 3 }
+        {
+          "id": "credLeech",
+          "amountPerTurn": 3
+        }
       ]
     },
     {
@@ -219,7 +255,11 @@
       "attackChance": 0.5,
       "hazardsPerTurn": 1,
       "passives": [
-        { "id": "rerollTax", "attackBonus": 4, "extraTraps": 1 }
+        {
+          "id": "rerollTax",
+          "attackBonus": 4,
+          "extraTraps": 1
+        }
       ]
     },
     {
@@ -231,7 +271,10 @@
       "attackChance": 0.6,
       "hazardsPerTurn": 0,
       "passives": [
-        { "id": "cardThief", "fleeAfterTurns": 5 }
+        {
+          "id": "cardThief",
+          "fleeAfterTurns": 5
+        }
       ]
     },
     {
@@ -243,7 +286,10 @@
       "attackChance": 0.45,
       "hazardsPerTurn": 1,
       "passives": [
-        { "id": "skillJam", "suppressedSkillCards": 3 }
+        {
+          "id": "skillJam",
+          "suppressedSkillCards": 3
+        }
       ]
     },
     {
@@ -255,7 +301,10 @@
       "attackChance": 0.55,
       "hazardsPerTurn": 0,
       "passives": [
-        { "id": "stutterClock", "everyGlobalTurns": 2 }
+        {
+          "id": "stutterClock",
+          "everyGlobalTurns": 2
+        }
       ]
     },
     {
@@ -279,7 +328,10 @@
       "attackChance": 0.5,
       "hazardsPerTurn": 1,
       "passives": [
-        { "id": "handRedirect", "everyTurns": 1 }
+        {
+          "id": "handRedirect",
+          "everyTurns": 1
+        }
       ]
     },
     {
@@ -291,7 +343,10 @@
       "attackChance": 0.45,
       "hazardsPerTurn": 0,
       "passives": [
-        { "id": "siphonNode", "nodesPerTurn": 1 }
+        {
+          "id": "siphonNode",
+          "nodesPerTurn": 1
+        }
       ]
     },
     {
@@ -303,7 +358,11 @@
       "attackChance": 0.6,
       "hazardsPerTurn": 1,
       "passives": [
-        { "id": "linkRage", "attackBonus": 6, "extraTraps": 1 }
+        {
+          "id": "linkRage",
+          "attackBonus": 6,
+          "extraTraps": 1
+        }
       ]
     },
     {
@@ -315,7 +374,10 @@
       "attackChance": 0.35,
       "hazardsPerTurn": 0,
       "passives": [
-        { "id": "bodyguard", "protectDefinitionId": "glass-striker" }
+        {
+          "id": "bodyguard",
+          "protectDefinitionId": "glass-striker"
+        }
       ]
     },
     {

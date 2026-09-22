@@ -10,7 +10,8 @@
       "tier": 1,
       "upgrade": {
         "power": 8
-      }
+      },
+      "duration": 10
     },
     {
       "id": "defend",
@@ -22,7 +23,8 @@
       "tier": 1,
       "upgrade": {
         "power": 5
-      }
+      },
+      "duration": 12
     },
     {
       "id": "attack-special",
@@ -35,7 +37,8 @@
       "tier": 2,
       "upgrade": {
         "power": 9
-      }
+      },
+      "duration": 10
     },
     {
       "id": "attack-leap",
@@ -45,7 +48,7 @@
       "visualId": "attack",
       "arrowPool": "orthogonal",
       "chainStepDistance": 2,
-      "duration": 2,
+      "duration": 15,
       "tier": 1,
       "upgrade": {
         "power": 7
@@ -63,7 +66,8 @@
       "tier": 2,
       "upgrade": {
         "power": 8
-      }
+      },
+      "duration": 15
     },
     {
       "id": "defend-special",
@@ -75,7 +79,8 @@
       "tier": 2,
       "upgrade": {
         "power": 7
-      }
+      },
+      "duration": 12
     },
     {
       "id": "defend-leap",
@@ -85,7 +90,7 @@
       "visualId": "defend",
       "arrowPool": "orthogonal",
       "chainStepDistance": 2,
-      "duration": 2,
+      "duration": 15,
       "tier": 1,
       "upgrade": {
         "power": 5
@@ -102,7 +107,8 @@
       "tier": 1,
       "upgrade": {
         "chainStepDistance": 3
-      }
+      },
+      "duration": 12
     },
     {
       "id": "loop-reset",
@@ -113,7 +119,8 @@
       "arrowPool": "orthogonal",
       "tier": 1,
       "collectible": false,
-      "noUpgrade": true
+      "noUpgrade": true,
+      "duration": 8
     },
     {
       "id": "poison",
@@ -128,7 +135,8 @@
       "tier": 2,
       "upgrade": {
         "power": 2
-      }
+      },
+      "duration": 11
     },
     {
       "id": "fire",
@@ -143,7 +151,8 @@
       "tier": 2,
       "upgrade": {
         "power": 7
-      }
+      },
+      "duration": 10
     },
     {
       "id": "hazard",
@@ -154,7 +163,8 @@
       "arrowPool": "orthogonal",
       "tier": 1,
       "collectible": false,
-      "noUpgrade": true
+      "noUpgrade": true,
+      "duration": 5
     },
     {
       "id": "siphon",
@@ -165,7 +175,8 @@
       "arrowPool": "orthogonal",
       "tier": 1,
       "collectible": false,
-      "noUpgrade": true
+      "noUpgrade": true,
+      "duration": 5
     },
     {
       "id": "boost",
@@ -176,7 +187,8 @@
       "arrowPool": "orthogonal",
       "collectible": false,
       "tier": 1,
-      "noUpgrade": true
+      "noUpgrade": true,
+      "duration": 6
     },
     {
       "id": "rupture",
@@ -191,7 +203,8 @@
       "tier": 2,
       "upgrade": {
         "power": 8
-      }
+      },
+      "duration": 12
     },
     {
       "id": "bulwark",
@@ -206,7 +219,8 @@
       "tier": 2,
       "upgrade": {
         "power": 6
-      }
+      },
+      "duration": 14
     },
     {
       "id": "surge",
@@ -221,7 +235,8 @@
       "tier": 2,
       "upgrade": {
         "power": 6
-      }
+      },
+      "duration": 10
     },
     {
       "id": "corner-strike",
@@ -234,7 +249,8 @@
       "tier": 2,
       "upgrade": {
         "power": 8
-      }
+      },
+      "duration": 10
     },
     {
       "id": "corner-defense",
@@ -247,7 +263,8 @@
       "tier": 2,
       "upgrade": {
         "power": 7
-      }
+      },
+      "duration": 12
     },
     {
       "id": "burden",
@@ -260,7 +277,8 @@
       "handEndPenalty": 5,
       "tier": 1,
       "collectible": false,
-      "noUpgrade": true
+      "noUpgrade": true,
+      "duration": 5
     },
     {
       "id": "fuse",
@@ -275,7 +293,8 @@
       "upgrade": {
         "power": 4,
         "handEndPenalty": 5
-      }
+      },
+      "duration": 10
     },
     {
       "id": "courier",
@@ -289,7 +308,8 @@
       "tier": 2,
       "upgrade": {
         "discardFromHandOnPlay": 1
-      }
+      },
+      "duration": 5
     },
     {
       "id": "shiv",
@@ -304,7 +324,8 @@
       "tier": 2,
       "upgrade": {
         "power": 6
-      }
+      },
+      "duration": 10
     },
     {
       "id": "miasma",
@@ -319,7 +340,8 @@
       "tier": 2,
       "upgrade": {
         "power": 3
-      }
+      },
+      "duration": 8
     },
     {
       "id": "cinder",
@@ -334,7 +356,8 @@
       "tier": 2,
       "upgrade": {
         "power": 6
-      }
+      },
+      "duration": 7
     },
     {
       "id": "lacerate",
@@ -350,7 +373,8 @@
       "tier": 2,
       "upgrade": {
         "power": 7
-      }
+      },
+      "duration": 15
     },
     {
       "id": "scorch",
@@ -366,7 +390,8 @@
       "tier": 2,
       "upgrade": {
         "power": 9
-      }
+      },
+      "duration": 11
     },
     {
       "id": "bramble",
@@ -382,7 +407,8 @@
       "tier": 2,
       "upgrade": {
         "power": 6
-      }
+      },
+      "duration": 12
     },
     {
       "id": "thorns",
@@ -394,7 +420,8 @@
       "tier": 2,
       "upgrade": {
         "power": 2
-      }
+      },
+      "duration": 7
     },
     {
       "id": "glitch",
@@ -413,7 +440,8 @@
           "stat": "enemy-attack",
           "delta": -0.15
         }
-      }
+      },
+      "duration": 7
     },
     {
       "id": "hardwire",
@@ -432,7 +460,8 @@
           "stat": "player-armor",
           "delta": 0.15
         }
-      }
+      },
+      "duration": 7
     },
     {
       "id": "patch",
@@ -451,7 +480,8 @@
           "stat": "player-damage-taken",
           "delta": -0.15
         }
-      }
+      },
+      "duration": 7
     },
     {
       "id": "overclock",
@@ -470,7 +500,8 @@
           "stat": "player-damage-dealt",
           "delta": 0.15
         }
-      }
+      },
+      "duration": 7
     },
     {
       "id": "echo",
@@ -480,7 +511,8 @@
       "visualId": "echo",
       "arrowPool": "orthogonal",
       "tier": 1,
-      "upgrade": {}
+      "upgrade": {},
+      "duration": 8
     },
     {
       "id": "salvage",
@@ -495,7 +527,8 @@
       "upgrade": {
         "power": 6,
         "healOnKill": 10
-      }
+      },
+      "duration": 10
     },
     {
       "id": "switchback",
@@ -510,7 +543,8 @@
       "tooltipProviderId": "switchback",
       "upgrade": {
         "power": 7
-      }
+      },
+      "duration": 10
     },
     {
       "id": "phase-relay",
@@ -524,7 +558,8 @@
       "tooltipProviderId": "phase-relay",
       "upgrade": {
         "power": 6
-      }
+      },
+      "duration": 10
     },
     {
       "id": "phase-bulwark",
@@ -538,7 +573,8 @@
       "tooltipProviderId": "phase-bulwark",
       "upgrade": {
         "power": 7
-      }
+      },
+      "duration": 12
     },
     {
       "id": "neurotoxin",
@@ -553,7 +589,8 @@
       "tier": 2,
       "upgrade": {
         "power": 4
-      }
+      },
+      "duration": 8
     },
     {
       "id": "black-ichor",
@@ -568,7 +605,8 @@
       "tier": 3,
       "upgrade": {
         "power": 5
-      }
+      },
+      "duration": 8
     },
     {
       "id": "serration",
@@ -583,7 +621,8 @@
       "tier": 2,
       "upgrade": {
         "power": 9
-      }
+      },
+      "duration": 10
     },
     {
       "id": "exsanguinate",
@@ -599,7 +638,8 @@
       "tier": 3,
       "upgrade": {
         "power": 10
-      }
+      },
+      "duration": 15
     },
     {
       "id": "kindling",
@@ -614,7 +654,8 @@
       "tier": 2,
       "upgrade": {
         "power": 8
-      }
+      },
+      "duration": 7
     },
     {
       "id": "white-hot",
@@ -630,7 +671,8 @@
       "tier": 3,
       "upgrade": {
         "power": 10
-      }
+      },
+      "duration": 11
     },
     {
       "id": "citadel",
@@ -645,7 +687,8 @@
       "tier": 3,
       "upgrade": {
         "power": 8
-      }
+      },
+      "duration": 12
     },
     {
       "id": "execution",
@@ -660,7 +703,8 @@
       "upgrade": {
         "power": 13,
         "healOnKill": 14
-      }
+      },
+      "duration": 10
     },
     {
       "id": "amp-core",
@@ -675,7 +719,8 @@
       "tier": 3,
       "upgrade": {
         "power": 7
-      }
+      },
+      "duration": 10
     },
     {
       "id": "redline",
@@ -688,7 +733,8 @@
       "tier": 3,
       "upgrade": {
         "power": 16
-      }
+      },
+      "duration": 9
     }
   ]
 }

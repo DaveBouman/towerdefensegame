@@ -1,4 +1,4 @@
-import { getCardDefinitionOrThrow, isCardExhaustOnPlay } from '../../config/cardRegistry';
+import { getCardDefinitionOrThrow, getCardDurationTicks, isCardExhaustOnPlay } from '../../config/cardRegistry';
 import type { CardInstance } from '../../domain/types';
 import { defaultCardTooltipProviders } from './defaultCardTooltipProviders';
 import type { CardTooltipContent, CardTooltipContext, CardTooltipOverride, CardTooltipProvider } from './types';
@@ -64,6 +64,9 @@ export const resolveCardTooltip = (card: CardInstance): CardTooltipContent =>
     const provider = getCardTooltipProvider(providerId) ?? getCardTooltipProvider('default')!;
     const content = mergeOverride(provider.getTooltip(ctx), definition.tooltip);
     const lines = [ ...content.lines ];
+    const durationTicks = getCardDurationTicks(definition);
+
+    lines.push(`Duration ${durationTicks} ticks on the attack clock.`);
 
     if (isCardExhaustOnPlay(definition))
     {

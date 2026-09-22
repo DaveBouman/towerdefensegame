@@ -19,8 +19,9 @@ export interface CardGameEnemyDefinition {
     /** Traps placed on the board every enemy turn. */
     hazardsPerTurn: number;
     /**
-     * Beats from chain start until this attack lands (Loop Road timing).
-     * Defend earlier so shield is up; cards after a defend strip shield.
+     * Ticks from chain start until this attack lands (Loop Road timing).
+     * Real time = ticks × `gameRules.tickMs`. Defend earlier so shield is up;
+     * cards after a defend strip shield.
      */
     attackDuration?: number;
     passives?: EnemyPassiveInput[];

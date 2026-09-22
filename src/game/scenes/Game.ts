@@ -96,8 +96,8 @@ export class Game extends Scene
     private pendingLoopRoadTiles: import('../cardGame/domain/types').SlotPosition[] | null = null;
     /** Loop Road: keep chain board alive across walk-map ↔ station fights. */
     private loopPersistBoard = false;
-    /** Loop Road: true while fighting a station (board edits blocked). */
-    private loopBoardLocked = false;
+    /** Station enemy is live — rearrange until first Attack locks. */
+    private loopStationEngaged = false;
     /** Locked fight: Attack once, then auto-replay until KO. */
     private autoRepeatCombat = false;
     private lowHpVignette?: Phaser.GameObjects.Rectangle;
@@ -390,6 +390,15 @@ export class Game extends Scene
             {
                 this.autoRepeatCombat = active;
             },
+            commitLoopStationAttack: () =>
+            {
+                if (!this.loopPersistBoard || !this.loopStationEngaged || !this.session)
+                {
+                    return;
+                }
+
+                this.session.setBoardLocked(true);
+            },
         };
     }
 
@@ -467,7 +476,7 @@ export class Game extends Scene
         }
 
         this.loopPersistBoard = Boolean(loopPrep);
-        this.loopBoardLocked = false;
+        this.loopStationEngaged = false;
 
         const battleEnemyIds = enemyIds && enemyIds.length > 0
             ? enemyIds
@@ -509,13 +518,14 @@ export class Game extends Scene
             return;
         }
 
-        this.loopBoardLocked = true;
+        // Engage the station enemy, show intents (incl. hit timing), but keep the board
+        // editable until the first Attack locks the layout.
+        this.loopStationEngaged = true;
         this.battleResolved = false;
         this.autoRepeatCombat = false;
-        // Dummy practice can leave an attack lock / spent energy — clear for the real fight.
         this.session.releaseAttackLock();
         this.session.cancelEnemyTurn();
-        this.session.setBoardLocked(true);
+        this.session.setBoardLocked(false);
         this.session.replaceLoopEnemy(enemyId);
         this.session.placeOpeningEnemyField();
         this.session.prepareLockedRoundReset();
@@ -537,7 +547,7 @@ export class Game extends Scene
             return;
         }
 
-        this.loopBoardLocked = false;
+        this.loopStationEngaged = false;
         this.battleResolved = false;
         this.autoRepeatCombat = false;
         this.session.prepareLoopBetweenStations();
@@ -697,6 +707,7 @@ export class Game extends Scene
         }, {
             canSelect: () =>
             {
+                // Loop Road always starts top-left — no mid-column start picks.
                 if (this.loopPersistBoard)
                 {
                     return false;
@@ -925,7 +936,7 @@ export class Game extends Scene
         this.activePuzzleId = null;
         this.rerollModeActive = false;
         this.loopPersistBoard = false;
-        this.loopBoardLocked = false;
+        this.loopStationEngaged = false;
         this.autoRepeatCombat = false;
         this.pendingLoopRoadTiles = null;
     }
@@ -938,7 +949,7 @@ export class Game extends Scene
         }
 
         // Prep dummy — ignore accidental wins before a station engage.
-        if (this.loopPersistBoard && !this.loopBoardLocked)
+        if (this.loopPersistBoard && !this.loopStationEngaged)
         {
             return;
         }
@@ -984,7 +995,7 @@ export class Game extends Scene
             return;
         }
 
-        if (this.loopPersistBoard && !this.loopBoardLocked)
+        if (this.loopPersistBoard && !this.loopStationEngaged)
         {
             return;
         }

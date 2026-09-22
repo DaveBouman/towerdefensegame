@@ -7,7 +7,8 @@ export const attachEnemyIntentTooltip = (
     hitArea: Phaser.GameObjects.Rectangle,
     step: EnemyTurnStep,
     phase: 'upcoming' | 'executing',
+    options: { attackTimingTicks?: number } = {},
 ): void =>
 {
-    attachDomTooltip(scene, hitArea, () => resolveEnemyIntentTooltip(step, phase));
+    attachDomTooltip(scene, hitArea, () => resolveEnemyIntentTooltip(step, phase, options));
 };

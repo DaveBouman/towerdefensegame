@@ -38,6 +38,8 @@ export interface BattleAttackFlowDeps
     /** Loop Road locked fight — Attack starts auto-repeat until KO. */
     isAutoRepeatCombat?: () => boolean;
     setAutoRepeatCombat?: (active: boolean) => void;
+    /** Loop Road: lock the packed board on the first real Attack. */
+    commitLoopStationAttack?: () => void;
 }
 
 /** Releases attack lock and re-enables player input. */
@@ -73,7 +75,12 @@ export const handleAttack = (deps: BattleAttackFlowDeps): void =>
         return;
     }
 
-    if (deps.session.isBoardLocked())
+    if (deps.session.shouldPersistBoardLayout() && !deps.session.isPrepDummyPractice())
+    {
+        deps.commitLoopStationAttack?.();
+        deps.setAutoRepeatCombat?.(true);
+    }
+    else if (deps.session.isBoardLocked())
     {
         deps.setAutoRepeatCombat?.(true);
     }
@@ -253,6 +260,61 @@ export const handleAttackResolved = (
 
         unlockPlayerInput(deps);
         deps.emitAttackReadiness();
+        return;
+    }
+
+    // Loop Road locked fights: enemy hit is timed mid-chain (card durations in ticks).
+    // Skip the post-round enemy attack — auto-loop the chain instead.
+    if (deps.session.isBoardLocked())
+    {
+        deps.setAutoRepeatCombat?.(true);
+
+        if (deps.session.isPlayerDefeated())
+        {
+            deps.setAutoRepeatCombat?.(false);
+            unlockPlayerInput(deps);
+            deps.loseBattle();
+            return;
+        }
+
+        if (!deps.session.hasEnergy())
+        {
+            deps.session.prepareLockedRoundReset();
+        }
+        else
+        {
+            deps.session.clearMidChainEnemyAttackFlag();
+            deps.session.queueNextEnemyTurn();
+        }
+
+        deps.syncBoardFromSession();
+        deps.enemySquad.syncFromSession(deps.session);
+        deps.enemySquad.showAllIntents(deps.session);
+        deps.armorView?.setArmor(deps.session.getPlayer().shield);
+        deps.syncPileViews();
+        unlockPlayerInput(deps);
+        deps.emitAttackReadiness();
+
+        deps.delayCall(450, () =>
+        {
+            if (!deps.session || deps.session.isBusy() || !deps.session.isBoardLocked())
+            {
+                return;
+            }
+
+            if (deps.session.isEnemyDefeated() || deps.session.isPlayerDefeated())
+            {
+                return;
+            }
+
+            if (!deps.isAutoRepeatCombat?.())
+            {
+                return;
+            }
+
+            handleAttack(deps);
+        });
+
         return;
     }
 

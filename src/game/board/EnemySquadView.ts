@@ -1,4 +1,5 @@
 import type { CardGameSession } from '../cardGame/domain/CardGameSession';
+import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import { getEnemyCombatTraits } from '../cardGame/combat/combatTraits/collect';
 import type { EnemyCombatant, EnemyTurnAction } from '../cardGame/domain/types';
 import { isCombatantAlive } from '../cardGame/domain/enemyCombatants';
@@ -242,9 +243,14 @@ export class EnemySquadView
         view.setDefeated(!isCombatantAlive(combatant));
     }
 
-    showIntent (instanceId: string, action: EnemyTurnAction, phase: 'upcoming' | 'executing' = 'upcoming'): void
+    showIntent (
+        instanceId: string,
+        action: EnemyTurnAction,
+        phase: 'upcoming' | 'executing' = 'upcoming',
+        options: { attackTimingTicks?: number } = {},
+    ): void
     {
-        this.getView(instanceId)?.showIntent(action, phase);
+        this.getView(instanceId)?.showIntent(action, phase, options);
     }
 
     clearIntent (instanceId?: string): void
@@ -273,7 +279,17 @@ export class EnemySquadView
                 continue;
             }
 
-            this.showIntent(combatant.instanceId, action, phase);
+            const attackTimingTicks = Math.round(
+                combatant.definition.attackDuration
+                    ?? GAME_RULES.defaultEnemyAttackDuration
+                    ?? 30,
+            );
+
+            this.showIntent(combatant.instanceId, action, phase, {
+                attackTimingTicks: action.steps.some((step) => step.kind === 'attack')
+                    ? attackTimingTicks
+                    : undefined,
+            });
         }
     }
 

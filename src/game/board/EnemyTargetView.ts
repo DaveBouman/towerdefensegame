@@ -490,9 +490,13 @@ export class EnemyTargetView
         this.container.add(this.passiveIconsContainer);
     }
 
-    showIntent (action: EnemyTurnAction, phase: 'upcoming' | 'executing' = 'upcoming'): void
+    showIntent (
+        action: EnemyTurnAction,
+        phase: 'upcoming' | 'executing' = 'upcoming',
+        options: { attackTimingTicks?: number } = {},
+    ): void
     {
-        const intentKey = `${phase}:${JSON.stringify(action)}`;
+        const intentKey = `${phase}:${JSON.stringify(action)}:${options.attackTimingTicks ?? ''}`;
 
         if (this.lastIntentKey === intentKey && this.intentContainer?.active)
         {
@@ -502,7 +506,7 @@ export class EnemyTargetView
         this.clearIntent();
         this.lastIntentKey = intentKey;
 
-        const steps = getEnemyIntentStepVisuals(action, phase);
+        const steps = getEnemyIntentStepVisuals(action, phase, options);
 
         if (steps.length === 0)
         {
@@ -788,7 +792,9 @@ export class EnemyTargetView
             0,
         );
 
-        attachEnemyIntentTooltip(this.scene, hitArea, visual.step, phase);
+        attachEnemyIntentTooltip(this.scene, hitArea, visual.step, phase, {
+            attackTimingTicks: visual.attackTimingTicks,
+        });
 
         const parts: Phaser.GameObjects.GameObject[] = [ plate, hitArea ];
 

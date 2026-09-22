@@ -11,6 +11,7 @@ export interface EnemyIntentTooltipContent {
 export const resolveEnemyIntentTooltip = (
     step: EnemyTurnStep,
     phase: 'upcoming' | 'executing',
+    options: { attackTimingTicks?: number } = {},
 ): EnemyIntentTooltipContent =>
 {
     const hazardPower = getCardDefinitionOrThrow(GAME_RULES.hazard.definitionId).power;
@@ -19,17 +20,24 @@ export const resolveEnemyIntentTooltip = (
     switch (step.kind)
     {
         case 'attack':
+        {
+            const ticks = options.attackTimingTicks;
+            const timingLine = ticks !== undefined && ticks > 0
+                ? `Hits mid-chain at ${ticks} ticks (sum of card durations).`
+                : 'Hits mid-chain when card durations reach the enemy timer.';
+
             return {
                 title: cardLabel('attack'),
                 lines: [
                     upcoming
-                        ? `Will deal ${step.amount ?? 0} damage to you after your turn.`
+                        ? `Will deal ${step.amount ?? 0} damage when the hit timer lands.`
                         : `Deals ${step.amount ?? 0} damage to you.`,
-                    'Enemy shield absorbs damage first.',
-                    'Each extra attack you make this round ramps this damage.',
-                    `Each response adds +${GAME_RULES.enemyStrengthPerTurn} Overclock. Attack again only if you can drop them.`,
+                    timingLine,
+                    'Place Defend so armor is up on that tick.',
+                    'Cards after a Defend strip shield — time the guard to the hit.',
                 ],
             };
+        }
         case 'shield':
             return {
                 title: intentLabel('shield'),

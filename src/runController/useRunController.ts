@@ -788,6 +788,7 @@ export const useRunController = () =>
         setActiveBattleKind('enemy');
         setPhase('battle');
         EventBus.emit(GAME_EVENTS.LOOP_ENGAGE, { enemyId: station.enemyId });
+        setRunToast('Enemy intent shows hit timing — rearrange, then Attack to lock.');
     }, [ loopClearedSteps, loopMapDungeon, loopWalkerStep ]);
 
     const retreatLoopToHome = useCallback((): void =>

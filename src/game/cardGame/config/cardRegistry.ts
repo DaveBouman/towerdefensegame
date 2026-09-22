@@ -78,8 +78,9 @@ export interface CardDefinition {
      */
     chainStepMsMultiplier?: number;
     /**
-     * Shared timeline beats this card occupies (defend timing vs enemy attack).
-     * Defaults to `gameRules.defaultCardDuration`.
+     * Ticks this card occupies on the shared attack timeline
+     * (defend timing vs enemy `attackDuration`). Defaults to
+     * `gameRules.defaultCardDuration`. Real time = ticks × `tickMs`.
      */
     duration?: number;
 }
@@ -138,9 +139,14 @@ export interface GameRules {
     activationStart: { row: number; col: number };
     activationStartColumn: number;
     maxChainSteps: number;
-    /** Beats a card occupies on the shared attack timeline (default 1). */
+    /**
+     * Wall-clock milliseconds per combat tick.
+     * Faster modes later: lower this without changing card/enemy tick costs.
+     */
+    tickMs: number;
+    /** Ticks this card occupies on the shared attack timeline (default). */
     defaultCardDuration: number;
-    /** Beats until a telegraphed enemy attack lands during your chain. */
+    /** Ticks until a telegraphed enemy attack lands during your chain. */
     defaultEnemyAttackDuration: number;
     /** After a defend in the chain, each later card removes this much shield. */
     defendDecayPerCard: number;
@@ -219,9 +225,20 @@ export const getChainStepMs = (
     return Math.round(baseMs * multiplier);
 };
 
-/** Timeline beats for defend-timing vs enemy attack duration. */
-export const getCardDuration = (card: Pick<CardDefinition, 'duration'>): number =>
-    Math.max(1, card.duration ?? GAME_RULES.defaultCardDuration ?? 1);
+/** Ticks this card occupies on the defend / enemy-hit timeline. */
+export const getCardDurationTicks = (card: Pick<CardDefinition, 'duration'>): number =>
+    Math.max(1, Math.round(card.duration ?? GAME_RULES.defaultCardDuration ?? 10));
+
+/** @deprecated Prefer getCardDurationTicks — alias kept for call sites mid-migration. */
+export const getCardDuration = getCardDurationTicks;
+
+/** Wall-clock ms for one combat tick (faster modes change this). */
+export const getTickMs = (): number =>
+    Math.max(1, GAME_RULES.tickMs ?? 100);
+
+/** Convert timeline ticks to wall-clock milliseconds. */
+export const ticksToMs = (ticks: number): number =>
+    Math.round(Math.max(0, ticks) * getTickMs());
 
 export const getCardDefinition = (id: string): CardDefinition | undefined =>
     definitions.get(id);

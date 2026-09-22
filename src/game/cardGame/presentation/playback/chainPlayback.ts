@@ -1,4 +1,4 @@
-import { GAME_RULES, getCardDefinitionOrThrow, getCardDuration, getChainStepMs } from '../../config/cardRegistry';
+import { GAME_RULES, getCardDefinitionOrThrow, getCardDurationTicks, getChainStepMs, ticksToMs } from '../../config/cardRegistry';
 import {
     applyJokerChosenDirection,
     getNextChainSlotFromStep,
@@ -72,9 +72,44 @@ export function runChainPlayback (
     let current: SlotPosition | null = board.getCardAt(chainStart) ? chainStart : null;
     let activeStep: ActivationStep | null = null;
     const stepMs = GAME_RULES.activationStepMs;
-    let timelineBeat = 0;
+    let timelineTicks = 0;
     let defendedThisChain = false;
     const midChainAttack = getMidChainEnemyAttackPlan(deps.session);
+
+    const playMidChainEnemyHit = (plan: NonNullable<typeof midChainAttack>): void =>
+    {
+        deps.session.markEnemyAttackResolvedMidChain();
+        const enemyView = plan.attackerInstanceId
+            ? deps.enemySquad.getView(plan.attackerInstanceId)
+            : deps.enemySquad.firstView;
+        enemyView?.playEnemyAttackPulse();
+
+        const result = deps.session.resolveEnemyAttack(
+            plan.damage,
+            plan.attackerInstanceId,
+        );
+        deps.playerView.setHealth(result.player);
+        deps.setDisplayedArmor(result.player.shield);
+
+        if (result.shieldAbsorbed > 0)
+        {
+            deps.armorView.showShieldAbsorb(result.shieldAbsorbed);
+            playShieldAbsorbSfx();
+        }
+
+        if (result.healthDamage > 0)
+        {
+            const tier = getDamageTierStyle(result.healthDamage);
+
+            deps.playerView.playHitFlash();
+            deps.playerView.showDamageNumber(result.healthDamage, tier);
+            shakeCamera(deps.scene, tier.shakeIntensity * 1.3);
+            playPlayerHitSfx(result.healthDamage);
+            deps.requestHitstop?.(tier.hitstopMs);
+        }
+
+        playSfx('enemy-move', { volume: 0.55 });
+    };
 
     const buildCurrentSequence = (): AttackSequence =>
         deps.session.buildAttackSequence(chain, stepMs);
@@ -136,6 +171,18 @@ export function runChainPlayback (
         {
             finishSequence();
             return;
+        }
+
+        // Short chains: still land the timed hit if the clock never crossed.
+        if (midChainAttack && !deps.session.didResolveEnemyAttackMidChain())
+        {
+            playMidChainEnemyHit(midChainAttack);
+
+            if (deps.session.isPlayerDefeated())
+            {
+                finishSequence();
+                return;
+            }
         }
 
         const offChainSlots = getOffChainSlots(board, chain);
@@ -557,12 +604,16 @@ export function runChainPlayback (
         const boosted = isBoostedChainStep(resolvedChain, stepIndex);
         const boostMultiplier = getBoostMultiplierForStep(resolvedChain, stepIndex);
         const definition = getCardDefinitionOrThrow(step.definitionId);
+        const cardTicks = getCardDurationTicks(definition);
         const pacedMs = Math.round(
-            getChainStepMs(definition, stepMs, resolvedStep.behaviorId) * getChainPaceMultiplier(stepIndex),
+            Math.max(
+                getChainStepMs(definition, stepMs, resolvedStep.behaviorId),
+                ticksToMs(cardTicks),
+            ) * getChainPaceMultiplier(stepIndex),
         );
         const stepDurationMs = Math.max(300, pacedMs);
 
-        // Cards after a defend strip shield — land defend on the enemy's hit beat.
+        // Cards after a defend strip shield — land defend on the enemy's hit tick.
         if (defendedThisChain)
         {
             const stripped = deps.session.decayPlayerShield(GAME_RULES.defendDecayPerCard ?? 2);
@@ -584,47 +635,17 @@ export function runChainPlayback (
 
         const resolveMidChainEnemyHitThen = (next: () => void): void =>
         {
-            timelineBeat += getCardDuration(definition);
+            timelineTicks += cardTicks;
 
             if (!midChainAttack
                 || deps.session.didResolveEnemyAttackMidChain()
-                || timelineBeat < midChainAttack.beat)
+                || timelineTicks < midChainAttack.atTicks)
             {
                 next();
                 return;
             }
 
-            deps.session.markEnemyAttackResolvedMidChain();
-            const enemyView = midChainAttack.attackerInstanceId
-                ? deps.enemySquad.getView(midChainAttack.attackerInstanceId)
-                : deps.enemySquad.firstView;
-            enemyView?.playEnemyAttackPulse();
-
-            const result = deps.session.resolveEnemyAttack(
-                midChainAttack.damage,
-                midChainAttack.attackerInstanceId,
-            );
-            deps.playerView.setHealth(result.player);
-            deps.setDisplayedArmor(result.player.shield);
-
-            if (result.shieldAbsorbed > 0)
-            {
-                deps.armorView.showShieldAbsorb(result.shieldAbsorbed);
-                playShieldAbsorbSfx();
-            }
-
-            if (result.healthDamage > 0)
-            {
-                const tier = getDamageTierStyle(result.healthDamage);
-
-                deps.playerView.playHitFlash();
-                deps.playerView.showDamageNumber(result.healthDamage, tier);
-                shakeCamera(deps.scene, tier.shakeIntensity * 1.3);
-                playPlayerHitSfx(result.healthDamage);
-                deps.requestHitstop?.(tier.hitstopMs);
-            }
-
-            playSfx('enemy-move', { volume: 0.55 });
+            playMidChainEnemyHit(midChainAttack);
 
             if (deps.session.isPlayerDefeated())
             {

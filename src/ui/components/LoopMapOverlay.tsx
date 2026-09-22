@@ -41,8 +41,8 @@ export const LoopMapOverlay = ({
                     <p className="loop-map__eyebrow">Walk map</p>
                     <h1 className="loop-map__title">{encounter.title}</h1>
                     <p className="loop-map__tagline">
-                        Pack from top-left (right/down starters). Defend on the enemy hit beat.
-                        Path previews the chain; Attack the dummy to test. Engage locks the board.
+                        Pack from top-left (right/down starters). Engage to see the enemy intent
+                        and hit timer, rearrange, then Attack to lock and auto-loop.
                         {' '}{remaining} station{remaining === 1 ? '' : 's'} left.
                     </p>
                 </header>
@@ -117,7 +117,7 @@ export const LoopMapOverlay = ({
                                         Step {station.stepIndex + 1}
                                         {done
                                             ? ' · cleared'
-                                            : ` · ${preview.hp} HP · hits beat ${preview.attackDuration}`}
+                                            : ` · ${preview.hp} HP · hits at ${preview.attackDuration}t`}
                                         {here && !done ? ' · here' : ''}
                                     </span>
                                 </div>
@@ -129,7 +129,7 @@ export const LoopMapOverlay = ({
                 <footer className="loop-map__footer">
                     {canFight ? (
                         <button type="button" className="main-menu__start" onClick={onFightStation}>
-                            Engage (lock board)
+                            Engage — plan then Attack
                         </button>
                     ) : (
                         <button type="button" className="main-menu__start" onClick={onAdvance}>

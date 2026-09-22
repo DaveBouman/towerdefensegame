@@ -1,4 +1,5 @@
 import { getCardGameEnemyDefinitionOrThrow } from '../cardGame/config/enemyCatalog';
+import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import { getEnemyIdentity } from '../cardGame/presentation/enemyIdentity';
 import type { CardDirection } from '../cardGame/domain/cardDirections';
 import { BODY_MOD_IDS } from './bodyMods';
@@ -326,7 +327,7 @@ export const getStationPreview = (enemyId: string) =>
         label: enemy.label,
         hp: enemy.maxHealth,
         portraitFile: identity.portraitFile ?? 'basic.png',
-        attackDuration: enemy.attackDuration ?? 3,
+        attackDuration: enemy.attackDuration ?? GAME_RULES.defaultEnemyAttackDuration ?? 30,
     };
 };
 

@@ -8,6 +8,8 @@ export interface EnemyIntentStepVisual {
     tint: number;
     textColor: string;
     amountLabel?: string;
+    /** Loop Road: ticks until this attack lands mid-chain. */
+    attackTimingTicks?: number;
 }
 
 const INTENT_STYLE: Record<EnemyTurnKind, {
@@ -92,6 +94,7 @@ export const getActiveBattleModifierVisual = (
 export const getEnemyIntentStepVisuals = (
     action: EnemyTurnAction,
     phase: 'upcoming' | 'executing',
+    options: { attackTimingTicks?: number } = {},
 ): EnemyIntentStepVisual[] =>
     action.steps.map((step) =>
     {
@@ -111,19 +114,39 @@ export const getEnemyIntentStepVisuals = (
         }
 
         const style = INTENT_STYLE[step.kind][phase];
+        let amountLabel: string | undefined;
+
+        if (step.kind === 'place-hazard'
+            || step.kind === 'place-siphon'
+            || step.kind === 'dampen-field'
+            || step.kind === 'redirect-hand')
+        {
+            amountLabel = undefined;
+        }
+        else if (step.kind === 'shield' || step.kind === 'shield-ally')
+        {
+            amountLabel = `+${step.amount ?? 0}`;
+        }
+        else if (step.kind === 'attack')
+        {
+            const damage = String(step.amount ?? 0);
+            const ticks = options.attackTimingTicks;
+
+            amountLabel = ticks !== undefined && ticks > 0
+                ? `${damage}·${ticks}t`
+                : damage;
+        }
+        else
+        {
+            amountLabel = String(step.amount ?? 0);
+        }
 
         return {
             step,
             textureKey: ENEMY_INTENT_TEXTURE_KEY[step.kind],
             tint: style.tint,
             textColor: style.text,
-            amountLabel: step.kind === 'place-hazard'
-                || step.kind === 'place-siphon'
-                || step.kind === 'dampen-field'
-                || step.kind === 'redirect-hand'
-                ? undefined
-                : step.kind === 'shield' || step.kind === 'shield-ally'
-                    ? `+${step.amount ?? 0}`
-                    : String(step.amount ?? 0),
+            amountLabel,
+            attackTimingTicks: step.kind === 'attack' ? options.attackTimingTicks : undefined,
         };
     });

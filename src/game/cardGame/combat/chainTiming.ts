@@ -1,16 +1,19 @@
 import { GAME_RULES } from '../config/cardRegistry';
 import type { CardGameSession } from '../domain/CardGameSession';
 
-/** Mid-chain enemy hit planned from telegraphed intent + attackDuration. */
+/** Mid-chain enemy hit timed in ticks along the card-duration clock. */
 export interface MidChainEnemyAttackPlan {
-    beat: number;
+    /** Ticks from chain start until the hit lands. */
+    atTicks: number;
     damage: number;
     attackerInstanceId?: string;
 }
 
 /**
- * Loop Road: enemy attack lands during your chain at `attackDuration` beats.
- * Place defend so its armor is up when the hit lands; later cards decay shield.
+ * Loop Road: enemy attack lands during your chain after `attackDuration` ticks
+ * on the shared card-duration clock. Place defend so armor is up; later cards
+ * decay shield. Wall-clock pacing is `ticks × gameRules.tickMs` (faster modes
+ * only change tickMs).
  */
 export const getMidChainEnemyAttackPlan = (
     session: CardGameSession,
@@ -50,15 +53,17 @@ export const getMidChainEnemyAttackPlan = (
         return null;
     }
 
-    const beat = Math.max(
+    const atTicks = Math.max(
         1,
-        combatant.definition.attackDuration
-            ?? GAME_RULES.defaultEnemyAttackDuration
-            ?? 3,
+        Math.round(
+            combatant.definition.attackDuration
+                ?? GAME_RULES.defaultEnemyAttackDuration
+                ?? 30,
+        ),
     );
 
     return {
-        beat,
+        atTicks,
         damage: attackStep.amount ?? 0,
         attackerInstanceId: combatant.instanceId,
     };
