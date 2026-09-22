@@ -20,6 +20,7 @@ export type RunPhase =
     | 'loop-hub'
     | 'loop-map'
     | 'loop-card-reward'
+    | 'loop-burst-draft'
     | 'loop-loot'
     | 'victory'
     | 'defeat';

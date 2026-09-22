@@ -132,11 +132,9 @@ export const getEnemyIntentStepVisuals = (
         }
         else if (step.kind === 'attack')
         {
-            const damage = String(step.amount ?? 0);
             const ticks = options.attackTimingTicks;
 
-            // Damage and hit-beat stay separate — `13·30t` was unreadable.
-            amountLabel = damage;
+            amountLabel = String(step.amount ?? 0);
             timingLabel = ticks !== undefined && ticks > 0
                 ? `HIT ${ticks}`
                 : undefined;

@@ -150,6 +150,10 @@ export interface GameRules {
     defaultEnemyAttackDuration: number;
     /** After a defend in the chain, each later card removes this much shield. */
     defendDecayPerCard: number;
+    /** Locked Loop fights: auto-Attack this many times, then pause for cards. */
+    loopBurstLoops: number;
+    /** Cards offered after a completed Loop burst (enemy still alive). */
+    loopBurstCardCount: number;
     battleModifier?: { step: number; enemyIntentChance: number };
     chainAbilities: {
         poisonTrail: { damagePerSubsequentCard: number; damagePerStack: number };

@@ -26,19 +26,19 @@ The amber road is **not** painted on the card grid. The card grid is **not** whe
 
 1. **Walk map ≠ chain board** — two spaces; chain stays visible on the left during the walk.
 2. **Stations on the loop** — specific steps hold enemies; advance to engage one at a time.
-3. **Prep then lock** — build the board before attack; after Engage you still rearrange while reading enemy intent/timing; **Attack** locks and auto-loops. Rearrange again only outside battle.
-4. **Attack timing** — each card costs ticks (Attack = 10); enemy hits mid-chain every `attackDuration` ticks (Raider = 30, so 30 / 60 / …). If the chain ends early, the hit still lands on the last card. Wall-clock = ticks × `tickMs`. Defend grants **10** shield; each later card ticks it down by **1**. Auto-loop until KO.
-5. **Loot → home** — clear the loop (or dungeon) → pick loot → stash buffs future chains. Station wins also grant kit cards (more arrows/combos).
-6. **Optional dungeon** — same walk map, harder stations.
+3. **Prep then lock** — build the board before attack; after Engage you rearrange while reading intent; **Attack** locks for a **3-loop burst**.
+4. **Attack timing** — each card costs ticks (Attack = 10); enemy hits mid-chain every `attackDuration` ticks. Board marks **HIT** where the strike lands. Intent shows damage + timing.
+5. **Burst break** — after 3 loops, if the enemy lives: unlock, take **3 cards** (pick directions), rearrange, Attack again. Repeat until KO. Station clear still grants a card.
+6. **Loot → home** — clear the loop → pick loot → stash. Optional dungeon.
 
 ### Target loop (v1)
 
 ```
 Menu → Home (stash)
-  → Enter ring / dungeon → Walk map (right) + chain board (left, editable)
-  → Pack layout → Advance → station → Engage (lock board, place bombs once)
-  → Attack → auto-replay chain ↔ enemy until KO (enemy hits mid-chain on beat N; bombs tick each round)
-  → win → pick a card (new arrows/combos) → unlock board, back to walk map
+  → Walk map + chain board (left)
+  → Pack → Engage station → Attack
+  → 3 auto-loops (enemy hits mid-chain) → if alive: take 3 cards + rearrange → Attack again
+  → KO → station card → walk map
   → all stations clear → Loot → Home
 ```
 
@@ -430,6 +430,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-09-22 | **3-loop bursts.** Locked station fights auto-Attack **3 times**, then unlock for a **3-card draft** + rearrange before the next burst (until KO). No more infinite auto-loop. |
+| 2026-09-22 | **Less fight foresight.** Board shows **HIT** markers only (no running tick totals). Walk-map stations no longer list HP / hit ticks. Enemy intent still shows attack damage + HIT timing. |
 | 2026-09-22 | **Enemy hit every timer beat.** Mid-chain strikes land every `attackDuration` ticks (not only the first), and short chains still get the hit on the last card. Auto-loop rounds clear the mid-chain flag so each loop can hit again. |
 | 2026-09-22 | **Station card direction pick.** After a station clear, rewards no longer come with a fixed arrow — pick the card, then choose its direction (same picker as event rewards). |
 | 2026-09-22 | **Tick hit beat on board.** After cards are placed, the chain stamps running tick totals and **HIT N** on the step where the enemy mid-chain attack lands. Enemy intent shows damage and `HIT 30` as separate lines (no more `13·30t`). |

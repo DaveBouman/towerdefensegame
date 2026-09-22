@@ -10,6 +10,11 @@ export interface ChainTickBeat
     cumulativeTicks: number;
     /** True on steps that cross a multiple of the enemy hit timer (or last card if short). */
     isHitBeat: boolean;
+    /**
+     * Enemy timer beat this step lands (30, 60, …) — not the cumulative sum.
+     * Set only when `isHitBeat` is true.
+     */
+    hitBeatTicks?: number;
 }
 
 /**
@@ -37,11 +42,11 @@ export const buildChainTickBeats = (
 
         sum += ticks;
 
-        const isHitBeat = hitAtTicks !== null
+        const crossed = hitAtTicks !== null
             && hitAtTicks > 0
             && Math.floor(sum / hitAtTicks) > Math.floor(before / hitAtTicks);
 
-        if (isHitBeat)
+        if (crossed)
         {
             anyHitMarked = true;
         }
@@ -49,7 +54,10 @@ export const buildChainTickBeats = (
         return {
             slot: { ...slot },
             cumulativeTicks: sum,
-            isHitBeat,
+            isHitBeat: crossed,
+            hitBeatTicks: crossed && hitAtTicks
+                ? Math.floor(sum / hitAtTicks) * hitAtTicks
+                : undefined,
         };
     });
 
@@ -61,9 +69,12 @@ export const buildChainTickBeats = (
     )
     {
         // Chain ends before the enemy timer — strike still lands on the last step.
+        const last = beats[beats.length - 1]!;
+
         beats[beats.length - 1] = {
-            ...beats[beats.length - 1]!,
+            ...last,
             isHitBeat: true,
+            hitBeatTicks: hitAtTicks,
         };
     }
 

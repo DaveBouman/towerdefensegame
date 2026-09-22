@@ -35,7 +35,7 @@ export interface BattleAttackFlowDeps
     endBattle: () => void;
     winBattle: () => void;
     loseBattle: () => void;
-    /** Loop Road locked fight — Attack starts auto-repeat until KO. */
+    /** Loop Road locked fight — Attack auto-repeats within a burst. */
     isAutoRepeatCombat?: () => boolean;
     setAutoRepeatCombat?: (active: boolean) => void;
     /** Loop Road: lock the packed board on the first real Attack. */
@@ -264,11 +264,9 @@ export const handleAttackResolved = (
     }
 
     // Loop Road locked fights: enemy hit is timed mid-chain (card durations in ticks).
-    // Skip the post-round enemy attack — auto-loop the chain instead.
+    // Auto-loop within a burst (default 3), then pause for cards + rearrange.
     if (deps.session.isBoardLocked())
     {
-        deps.setAutoRepeatCombat?.(true);
-
         if (deps.session.isPlayerDefeated())
         {
             deps.setAutoRepeatCombat?.(false);
@@ -276,6 +274,25 @@ export const handleAttackResolved = (
             deps.loseBattle();
             return;
         }
+
+        const burstDone = deps.session.registerLoopBurstAttack();
+
+        if (burstDone)
+        {
+            deps.setAutoRepeatCombat?.(false);
+            deps.session.prepareLoopBurstBreak();
+            deps.syncBoardFromSession();
+            deps.enemySquad.syncFromSession(deps.session);
+            deps.enemySquad.showAllIntents(deps.session);
+            deps.armorView?.setArmor(deps.session.getPlayer().shield);
+            deps.syncPileViews();
+            unlockPlayerInput(deps);
+            deps.emitAttackReadiness();
+            EventBus.emit(GAME_EVENTS.LOOP_BURST_BREAK);
+            return;
+        }
+
+        deps.setAutoRepeatCombat?.(true);
 
         if (!deps.session.hasEnergy())
         {

@@ -118,7 +118,7 @@ export const LoopMapOverlay = ({
                                         Step {station.stepIndex + 1}
                                         {done
                                             ? ' · cleared'
-                                            : ` · ${preview.hp} HP · hits at ${preview.attackDuration}t`}
+                                            : ' · hostile'}
                                         {here && !done ? ' · here' : ''}
                                     </span>
                                 </div>

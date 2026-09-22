@@ -86,6 +86,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
         loopLootOffers,
         loopLootDungeon,
         loopCardOffers,
+        loopBurstOffers,
         loopWalkerStep,
         loopClearedSteps,
         loopMapDungeon,
@@ -95,6 +96,7 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
         retreatLoopToHome,
         takeLoopLootHome,
         takeStationCard,
+        takeBurstCard,
         openPracticeRoads,
         startLegacyRun,
         restHeal,
@@ -183,6 +185,18 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                     offers={loopCardOffers}
                     onTake={takeStationCard}
                 />
+            )}
+            {phase === 'loop-burst-draft' && loopBurstOffers && (
+                <>
+                    <GameHud captureMode={captureMode} />
+                    <LoopStationCardOverlay
+                        offers={loopBurstOffers}
+                        onTake={takeBurstCard}
+                        eyebrow="Burst break"
+                        title={`${loopBurstOffers.length} card${loopBurstOffers.length === 1 ? '' : 's'} left`}
+                        tagline="Three loops done. Take these cards, aim their arrows, rearrange the board, then Attack for another three loops."
+                    />
+                </>
             )}
             {phase === 'loop-loot' && loopLootOffers && (
                 <LoopLootOverlay

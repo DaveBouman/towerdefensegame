@@ -260,7 +260,10 @@ export class Game extends Scene
         if (
             this.battleActive
             && this.loopPersistBoard
-            && (phase === 'loop-map' || phase === 'battle' || phase === 'loop-card-reward')
+            && (phase === 'loop-map'
+                || phase === 'battle'
+                || phase === 'loop-card-reward'
+                || phase === 'loop-burst-draft')
         )
         {
             this.refreshBattleLayout();
@@ -529,6 +532,7 @@ export class Game extends Scene
         this.session.replaceLoopEnemy(enemyId);
         this.session.placeOpeningEnemyField();
         this.session.prepareLockedRoundReset();
+        this.session.resetLoopBurst();
         this.boardView?.clearChainPath();
         this.boardView?.syncFromBoard(this.session.board);
         this.handView?.syncHand(this.session.getHand());

@@ -115,6 +115,8 @@ export class CardGameSession
     private persistBoardLayout = false;
     /** Enemy attack already landed mid-chain this exchange — skip in enemy phase. */
     private enemyAttackResolvedMidChain = false;
+    /** Locked fight: Attacks completed in the current 3-loop burst. */
+    private loopsThisBurst = 0;
     private tutorialPhaseId: import('../../run/tutorialWizard').TutorialWizardStep | null = null;
     private readonly bodyMods: readonly string[];
     private readonly latchSlots: LatchSlots = {};
@@ -1691,6 +1693,57 @@ export class CardGameSession
         this.enemyAttackResolvedMidChain = false;
     }
 
+    getLoopsThisBurst (): number
+    {
+        return this.loopsThisBurst;
+    }
+
+    getLoopBurstLimit (): number
+    {
+        return Math.max(1, Math.round(GAME_RULES.loopBurstLoops ?? 3));
+    }
+
+    /** Call after each locked Attack resolves. Returns true when the burst is done. */
+    registerLoopBurstAttack (): boolean
+    {
+        this.loopsThisBurst += 1;
+
+        return this.loopsThisBurst >= this.getLoopBurstLimit();
+    }
+
+    resetLoopBurst (): void
+    {
+        this.loopsThisBurst = 0;
+    }
+
+    /**
+     * After a 3-loop burst: unlock board, keep the station enemy, refresh energy.
+     * Player picks cards and rearranges before the next Attack.
+     */
+    prepareLoopBurstBreak (): void
+    {
+        this.setBoardLocked(false);
+        this.loopsThisBurst = 0;
+        this.enemyAttackResolvedMidChain = false;
+        this.player.shield = 0;
+        this.playerThorns = 0;
+        this.energyRound.resetEnergy();
+
+        for (const slot of this.board.slotsInOrder())
+        {
+            const card = this.board.getCardAt(slot);
+
+            if (card && card.owner !== 'enemy' && card.owner !== 'field')
+            {
+                card.exhausted = false;
+                card.spent = false;
+            }
+        }
+
+        CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: 0 });
+        this.enemyPhase.queueNextEnemyTurn();
+    }
+
     /** After a mid-chain defend, each later card strips this much shield (countdown). */
     decayPlayerShield (amount: number): number
     {
@@ -1813,6 +1866,7 @@ export class CardGameSession
 
         this.player.shield = 0;
         this.energyRound.resetEnergy();
+        this.loopsThisBurst = 0;
         CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: 0 });
         this.replaceLoopEnemy('training-dummy');
     }

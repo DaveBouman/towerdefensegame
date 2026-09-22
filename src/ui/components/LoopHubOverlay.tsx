@@ -98,12 +98,18 @@ export const LoopLootOverlay = ({
 interface LoopStationCardOverlayProps {
     offers: readonly LoopStationCardOffer[];
     onTake: (offer: LoopStationCardOffer) => void;
+    eyebrow?: string;
+    title?: string;
+    tagline?: string;
 }
 
-/** After clearing a station — pick a card, then choose its arrow. */
+/** Pick a card, then choose its arrow (station clear or mid-fight burst draft). */
 export const LoopStationCardOverlay = ({
     offers,
     onTake,
+    eyebrow = 'Station clear',
+    title = 'New card',
+    tagline = 'Starter arrows are only right and down. Pick a card, then aim its arrow — left, up, leaps, and diagonals unlock more routes.',
 }: LoopStationCardOverlayProps) =>
 {
     const [ picking, setPicking ] = useState<LoopStationCardOffer | null>(null);
@@ -114,7 +120,7 @@ export const LoopStationCardOverlay = ({
             <div className="puzzle-select">
                 <div className="puzzle-select__panel">
                     <header className="puzzle-select__header">
-                        <p className="puzzle-select__eyebrow">Station clear</p>
+                        <p className="puzzle-select__eyebrow">{eyebrow}</p>
                         <h1 className="puzzle-select__title">{picking.label}</h1>
                         <p className="puzzle-select__tagline">
                             Choose the chain direction for this card.
@@ -123,7 +129,11 @@ export const LoopStationCardOverlay = ({
 
                     <CardDirectionPicker
                         definitionId={picking.definitionId}
-                        onPick={(arrow) => onTake({ ...picking, arrow })}
+                        onPick={(arrow) =>
+                        {
+                            onTake({ ...picking, arrow });
+                            setPicking(null);
+                        }}
                     />
 
                     <footer className="puzzle-select__footer">
@@ -144,12 +154,9 @@ export const LoopStationCardOverlay = ({
         <div className="puzzle-select">
             <div className="puzzle-select__panel">
                 <header className="puzzle-select__header">
-                    <p className="puzzle-select__eyebrow">Station clear</p>
-                    <h1 className="puzzle-select__title">New card</h1>
-                    <p className="puzzle-select__tagline">
-                        Starter arrows are only right and down. Pick a card, then aim its
-                        arrow — left, up, leaps, and diagonals unlock more routes.
-                    </p>
+                    <p className="puzzle-select__eyebrow">{eyebrow}</p>
+                    <h1 className="puzzle-select__title">{title}</h1>
+                    <p className="puzzle-select__tagline">{tagline}</p>
                 </header>
 
                 <ul className="puzzle-select__list">

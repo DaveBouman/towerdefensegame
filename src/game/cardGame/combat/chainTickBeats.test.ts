@@ -28,6 +28,7 @@ describe('buildChainTickBeats', () =>
 
         expect(beats.map((beat) => beat.cumulativeTicks)).toEqual([ 10, 20, 32 ]);
         expect(beats.map((beat) => beat.isHitBeat)).toEqual([ false, false, true ]);
+        expect(beats[2]?.hitBeatTicks).toBe(30);
     });
 
     it('marks every timer multiple on a long chain', () =>
@@ -47,6 +48,7 @@ describe('buildChainTickBeats', () =>
         expect(beats.map((beat) => beat.isHitBeat)).toEqual([
             false, false, true, false, false,
         ]);
+        expect(beats[2]?.hitBeatTicks).toBe(30);
     });
 
     it('marks the last card when the chain is shorter than the enemy timer', () =>
@@ -64,6 +66,7 @@ describe('buildChainTickBeats', () =>
 
         expect(beats.map((beat) => beat.cumulativeTicks)).toEqual([ 10, 20 ]);
         expect(beats.map((beat) => beat.isHitBeat)).toEqual([ false, true ]);
+        expect(beats[1]?.hitBeatTicks).toBe(30);
     });
 
     it('does not mark a hit beat when no enemy timing is provided', () =>
@@ -75,7 +78,12 @@ describe('buildChainTickBeats', () =>
         const beats = buildChainTickBeats(board, [{ row: 0, col: 0 }], null);
 
         expect(beats).toEqual([
-            { slot: { row: 0, col: 0 }, cumulativeTicks: 10, isHitBeat: false },
+            {
+                slot: { row: 0, col: 0 },
+                cumulativeTicks: 10,
+                isHitBeat: false,
+                hitBeatTicks: undefined,
+            },
         ]);
     });
 });

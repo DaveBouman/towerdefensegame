@@ -415,7 +415,7 @@ export class CardBoardView
     setChainBeatLabels (beats: readonly ChainTickBeat[]): void
     {
         const key = beats
-            .map((beat) => `${beat.slot.row},${beat.slot.col}:${beat.cumulativeTicks}:${beat.isHitBeat ? 1 : 0}`)
+            .map((beat) => `${beat.slot.row},${beat.slot.col}:${beat.cumulativeTicks}:${beat.isHitBeat ? beat.hitBeatTicks ?? 1 : 0}`)
             .join('|');
 
         if (key === this.chainBeatKey)
@@ -436,19 +436,21 @@ export class CardBoardView
 
         for (const beat of beats)
         {
+            if (!beat.isHitBeat)
+            {
+                continue;
+            }
+
             const center = this.slotCenter(beat.slot);
-            const label = beat.isHitBeat
-                ? `HIT ${beat.cumulativeTicks}`
-                : String(beat.cumulativeTicks);
-            const color = beat.isHitBeat ? '#ff8a84' : '#fcee0a';
+            // Location only — no tick arithmetic (keeps defend timing, not a DPS spreadsheet).
             const text = this.scene.add.text(
                 center.x,
                 center.y + tileSize * 0.34,
-                label,
+                'HIT',
                 {
-                    ...uiDisplayTextStyle(beat.isHitBeat ? fontSize + 1 : fontSize, color, {
+                    ...uiDisplayTextStyle(fontSize + 1, '#ff8a84', {
                         bold: true,
-                        backgroundColor: beat.isHitBeat ? '#3a1018cc' : '#00000099',
+                        backgroundColor: '#3a1018cc',
                         padding: { x: 4, y: 2 },
                     }),
                 },

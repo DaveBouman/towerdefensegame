@@ -107,6 +107,7 @@ export const useRunController = () =>
     const [ loopLootOffers, setLoopLootOffers ] = useState<LoopLootDef[] | null>(null);
     const [ loopLootDungeon, setLoopLootDungeon ] = useState(false);
     const [ loopCardOffers, setLoopCardOffers ] = useState<LoopStationCardOffer[] | null>(null);
+    const [ loopBurstOffers, setLoopBurstOffers ] = useState<LoopStationCardOffer[] | null>(null);
     const [ loopWalkerStep, setLoopWalkerStep ] = useState(0);
     const [ loopClearedSteps, setLoopClearedSteps ] = useState<number[]>([]);
     const [ loopMapDungeon, setLoopMapDungeon ] = useState(false);
@@ -334,6 +335,61 @@ export const useRunController = () =>
         setPhase('loop-map');
         setRunToast(`Gained ${offer.label} (${offer.arrow}) — rearrange, then keep walking.`);
     }, [ loopLootDungeon ]);
+
+    const takeBurstCard = useCallback((offer: LoopStationCardOffer): void =>
+    {
+        if (!offer.arrow)
+        {
+            return;
+        }
+
+        const card = { definitionId: offer.definitionId, arrow: offer.arrow };
+        setDeck((prev) => [ ...prev, card ]);
+        EventBus.emit(GAME_EVENTS.LOOP_GAIN_CARD, card);
+
+        setLoopBurstOffers((prev) =>
+        {
+            if (!prev)
+            {
+                return null;
+            }
+
+            const next = prev.filter((entry) => entry.definitionId !== offer.definitionId);
+
+            if (next.length === 0)
+            {
+                setPhase('battle');
+                setRunToast('Board unlocked — rearrange, then Attack for another 3 loops.');
+                return null;
+            }
+
+            setRunToast(`Gained ${offer.label} — ${next.length} card${next.length === 1 ? '' : 's'} left.`);
+            return next;
+        });
+    }, []);
+
+    useEffect(() =>
+    {
+        const onBurstBreak = (): void =>
+        {
+            const count = Math.max(1, Math.round(GAME_RULES.loopBurstCardCount ?? 3));
+            seedScope(
+                seedRef.current,
+                `loop-burst:${loopDungeonRef.current ? 'dungeon' : 'surface'}:${deckRef.current.length}`,
+            );
+            setLoopBurstOffers(rollStationCardOffers(count));
+            setPhase('loop-burst-draft');
+            setRunToast(`3 loops done — take ${count} cards, rearrange, then Attack again.`);
+        };
+
+        EventBus.on(GAME_EVENTS.LOOP_BURST_BREAK, onBurstBreak);
+
+        return () =>
+        {
+            EventBus.off(GAME_EVENTS.LOOP_BURST_BREAK, onBurstBreak);
+        };
+    }, []);
+
     useBattleBridge(
         {
             seed: seedRef,
@@ -740,6 +796,8 @@ export const useRunController = () =>
         setLoopMapDungeon(dungeon);
         setLoopWalkerStep(0);
         setLoopClearedSteps([]);
+        setLoopCardOffers(null);
+        setLoopBurstOffers(null);
         setDeck(kit);
         setBodyMods(mods);
         setPlayerHealth(MAX_HEALTH);
@@ -1215,6 +1273,7 @@ export const useRunController = () =>
         loopLootOffers,
         loopLootDungeon,
         loopCardOffers,
+        loopBurstOffers,
         loopWalkerStep,
         loopClearedSteps,
         loopMapDungeon,
@@ -1224,6 +1283,7 @@ export const useRunController = () =>
         retreatLoopToHome,
         takeLoopLootHome,
         takeStationCard,
+        takeBurstCard,
         openPracticeRoads,
         startLegacyRun,
         restHeal,
