@@ -6022,6 +6022,30 @@ button.pile-view__card {
     padding-top: 4px;
 }
 
+.puzzle-select__back {
+    justify-self: start;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(168, 184, 208, 0.35);
+    background: transparent;
+    color: #a8b8d0;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: var(--cursor-pointer, pointer);
+}
+
+.puzzle-select__back:hover {
+    border-color: rgba(232, 251, 255, 0.55);
+    color: #e8fbff;
+}
+
+.puzzle-select__footer:has(> :only-child) {
+    grid-template-columns: 1fr;
+}
+
 /* —— Kit select (Backpack-style prep) —— */
 .kit-select {
     position: fixed;

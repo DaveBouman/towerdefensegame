@@ -27,7 +27,7 @@ The amber road is **not** painted on the card grid. The card grid is **not** whe
 1. **Walk map ≠ chain board** — two spaces; chain stays visible on the left during the walk.
 2. **Stations on the loop** — specific steps hold enemies; advance to engage one at a time.
 3. **Prep then lock** — build the board before attack; after Engage you still rearrange while reading enemy intent/timing; **Attack** locks and auto-loops. Rearrange again only outside battle.
-4. **Attack timing** — each card costs ticks (Attack = 10); enemy hits mid-chain when those add up to their `attackDuration` (Raider = 30). Wall-clock = ticks × `tickMs` (faster modes later). Defend grants **10** shield; each later card ticks it down by **1**. Place defend so armor is still up on the hit tick. Auto-loop until KO.
+4. **Attack timing** — each card costs ticks (Attack = 10); enemy hits mid-chain when those add up to their `attackDuration` (Raider = 30). Wall-clock = ticks × `tickMs` (faster modes later). After cards are placed, the path shows running tick totals and **HIT N** on the step where the enemy lands. Defend grants **10** shield; each later card ticks it down by **1**. Auto-loop until KO.
 5. **Loot → home** — clear the loop (or dungeon) → pick loot → stash buffs future chains. Station wins also grant kit cards (more arrows/combos).
 6. **Optional dungeon** — same walk map, harder stations.
 
@@ -430,9 +430,11 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
+| 2026-09-22 | **Station card direction pick.** After a station clear, rewards no longer come with a fixed arrow — pick the card, then choose its direction (same picker as event rewards). |
+| 2026-09-22 | **Tick hit beat on board.** After cards are placed, the chain stamps running tick totals and **HIT N** on the step where the enemy mid-chain attack lands. Enemy intent shows damage and `HIT 30` as separate lines (no more `13·30t`). |
 | 2026-09-22 | **Defend countdown.** Defend grants **10** shield; each card after it ticks shield down by **1** (`defendDecayPerCard`) with clear HUD feedback — place it so armor is still up on the enemy’s mid-chain hit tick. |
 | 2026-09-22 | **Loop board survives station card pick.** Winning a station no longer tears down the Phaser board when entering `loop-card-reward` — the left chain stays under the pick UI, then unlocks again for the walk map. |
-| 2026-09-22 | **Loop Road timing + growth.** Chain always starts top-left; starter arrows are right/down only. Timing uses **ticks** (`tickMs` wall-clock; faster modes change only `tickMs`). Attack cards are **10 ticks**, Raider hits at **30 ticks**. Loop enemies **always attack** (never shield) so defend timing stays reliable. Engage shows intent (`13·30t`) while board stays editable; Attack locks and auto-loops. Station card picks unlock more routes. |
+| 2026-09-22 | **Loop Road timing + growth.** Chain always starts top-left; starter arrows are right/down only. Timing uses **ticks** (`tickMs` wall-clock; faster modes change only `tickMs`). Attack cards are **10 ticks**, Raider hits at **30 ticks**. Loop enemies **always attack** (never shield) so defend timing stays reliable. Engage shows intent while board stays editable; Attack locks and auto-loops. Station card picks unlock more routes. |
 | 2026-09-21 | **Snappy board edits.** Placing/moving cards no longer rebuilds every board wrapper or re-fades enemy intents — only changed tiles update, and path/streak redraws skip when unchanged. |
 | 2026-09-21 | **Anchored card bonus.** Attack/Defend/Redline cards left unmoved after placement grant +2 damage / +2 armor (in-chain and off-chain) for the energy round. Moving, swapping, or picking up clears the bonus; cyan pin marks anchored tiles. |
 | 2026-09-21 | **Combat layout scales with viewport.** Board tile, hand cards, and piles shrink from the 96px design when height is tight so 1280×720 keeps armor above the hand with no board overlap. |

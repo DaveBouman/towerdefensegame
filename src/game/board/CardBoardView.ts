@@ -19,6 +19,7 @@ import { isCardAnchored } from '../cardGame/combat/anchoredBonus';
 import { JokerDirectionPicker } from './JokerDirectionPicker';
 import { playCardPlaceSettle } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import type { StreakBarRun } from '../cardGame/combat/streakBarRuns';
+import type { ChainTickBeat } from '../cardGame/combat/chainTickBeats';
 
 const STREAK_STORM_COLORS: Record<string, { glow: number; label: string }> = {
     attack: { glow: CYBER.attackGlow, label: '#ffb8dc' },
@@ -144,10 +145,12 @@ export class CardBoardView
     private readonly chainPathGfx: Phaser.GameObjects.Graphics;
     private readonly streakBarGfx: Phaser.GameObjects.Graphics;
     private readonly streakBarLabels: Phaser.GameObjects.Container;
+    private readonly chainBeatLabels: Phaser.GameObjects.Container;
     private chainPathSlots: SlotPosition[] = [];
     private chainPathVisited = 0;
     private chainPathActive = false;
     private chainPathTentativeFrom: number | null = null;
+    private chainBeatKey = '';
     private streakBarRuns: StreakBarRun[] = [];
     private streakBarDimSlots = new Set<string>();
     private streakStormTimer?: Phaser.Time.TimerEvent;
@@ -167,6 +170,7 @@ export class CardBoardView
         this.chainPathGfx = scene.add.graphics();
         this.streakBarGfx = scene.add.graphics();
         this.streakBarLabels = scene.add.container(0, 0);
+        this.chainBeatLabels = scene.add.container(0, 0);
 
         const panelPad = 14;
         const panelW = cols * tileSize + panelPad * 2;
@@ -184,7 +188,13 @@ export class CardBoardView
             0.94,
             0.35,
         );
-        this.container.add([ backdrop, this.chainPathGfx, this.streakBarGfx, this.streakBarLabels ]);
+        this.container.add([
+            backdrop,
+            this.chainPathGfx,
+            this.streakBarGfx,
+            this.streakBarLabels,
+            this.chainBeatLabels,
+        ]);
 
         const slotBrackets = scene.add.graphics();
 
@@ -395,6 +405,65 @@ export class CardBoardView
         this.chainPathActive = false;
         this.chainPathTentativeFrom = null;
         this.chainPathGfx.clear();
+        this.clearChainBeatLabels();
+    }
+
+    /**
+     * Running tick totals along the planned path. Recalculate after each place/move.
+     * The hit beat (enemy mid-chain strike) is marked when `isHitBeat` is set.
+     */
+    setChainBeatLabels (beats: readonly ChainTickBeat[]): void
+    {
+        const key = beats
+            .map((beat) => `${beat.slot.row},${beat.slot.col}:${beat.cumulativeTicks}:${beat.isHitBeat ? 1 : 0}`)
+            .join('|');
+
+        if (key === this.chainBeatKey)
+        {
+            return;
+        }
+
+        this.clearChainBeatLabels();
+        this.chainBeatKey = key;
+
+        if (beats.length === 0)
+        {
+            return;
+        }
+
+        const tileSize = this.layout.tileSize;
+        const fontSize = Math.max(11, Math.round(tileSize * 0.16));
+
+        for (const beat of beats)
+        {
+            const center = this.slotCenter(beat.slot);
+            const label = beat.isHitBeat
+                ? `HIT ${beat.cumulativeTicks}`
+                : String(beat.cumulativeTicks);
+            const color = beat.isHitBeat ? '#ff8a84' : '#fcee0a';
+            const text = this.scene.add.text(
+                center.x,
+                center.y + tileSize * 0.34,
+                label,
+                {
+                    ...uiDisplayTextStyle(beat.isHitBeat ? fontSize + 1 : fontSize, color, {
+                        bold: true,
+                        backgroundColor: beat.isHitBeat ? '#3a1018cc' : '#00000099',
+                        padding: { x: 4, y: 2 },
+                    }),
+                },
+            ).setOrigin(0.5, 0.5);
+
+            this.chainBeatLabels.add(text);
+        }
+
+        this.container.bringToTop(this.chainBeatLabels);
+    }
+
+    clearChainBeatLabels (): void
+    {
+        this.chainBeatKey = '';
+        this.chainBeatLabels.removeAll(true);
     }
 
     /** During Attack: brighten the path through the latest activated slot. */

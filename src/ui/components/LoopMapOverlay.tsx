@@ -41,8 +41,9 @@ export const LoopMapOverlay = ({
                     <p className="loop-map__eyebrow">Walk map</p>
                     <h1 className="loop-map__title">{encounter.title}</h1>
                     <p className="loop-map__tagline">
-                        Pack from top-left (right/down starters). Engage to see the enemy intent
-                        and hit timer, rearrange, then Attack to lock and auto-loop.
+                        Pack from top-left (right/down starters). Engage to see enemy damage and
+                        HIT timing — the board marks which card the hit lands on. Then Attack to
+                        lock and auto-loop.
                         {' '}{remaining} station{remaining === 1 ? '' : 's'} left.
                     </p>
                 </header>

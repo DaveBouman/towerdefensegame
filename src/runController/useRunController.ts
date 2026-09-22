@@ -306,6 +306,11 @@ export const useRunController = () =>
 
     const takeStationCard = useCallback((offer: LoopStationCardOffer): void =>
     {
+        if (!offer.arrow)
+        {
+            return;
+        }
+
         const card = { definitionId: offer.definitionId, arrow: offer.arrow };
         setDeck((prev) => [ ...prev, card ]);
         EventBus.emit(GAME_EVENTS.LOOP_GAIN_CARD, card);
@@ -321,13 +326,13 @@ export const useRunController = () =>
             seedScope(seedRef.current, `loop-loot:${dungeon ? 'dungeon' : 'surface'}`);
             setLoopLootOffers(rollLoopLootOffers(dungeon));
             setPhase('loop-loot');
-            setRunToast(`Gained ${offer.label} — loop clear, pick loot.`);
+            setRunToast(`Gained ${offer.label} (${offer.arrow}) — loop clear, pick loot.`);
             return;
         }
 
         EventBus.emit(GAME_EVENTS.LOOP_RESUME_PREP);
         setPhase('loop-map');
-        setRunToast(`Gained ${offer.label} — rearrange, then keep walking.`);
+        setRunToast(`Gained ${offer.label} (${offer.arrow}) — rearrange, then keep walking.`);
     }, [ loopLootDungeon ]);
     useBattleBridge(
         {

@@ -8,6 +8,8 @@ export interface EnemyIntentStepVisual {
     tint: number;
     textColor: string;
     amountLabel?: string;
+    /** Separate from damage — e.g. `HIT 30` for Loop Road mid-chain timing. */
+    timingLabel?: string;
     /** Loop Road: ticks until this attack lands mid-chain. */
     attackTimingTicks?: number;
 }
@@ -115,6 +117,7 @@ export const getEnemyIntentStepVisuals = (
 
         const style = INTENT_STYLE[step.kind][phase];
         let amountLabel: string | undefined;
+        let timingLabel: string | undefined;
 
         if (step.kind === 'place-hazard'
             || step.kind === 'place-siphon'
@@ -132,9 +135,11 @@ export const getEnemyIntentStepVisuals = (
             const damage = String(step.amount ?? 0);
             const ticks = options.attackTimingTicks;
 
-            amountLabel = ticks !== undefined && ticks > 0
-                ? `${damage}·${ticks}t`
-                : damage;
+            // Damage and hit-beat stay separate — `13·30t` was unreadable.
+            amountLabel = damage;
+            timingLabel = ticks !== undefined && ticks > 0
+                ? `HIT ${ticks}`
+                : undefined;
         }
         else
         {
@@ -147,6 +152,7 @@ export const getEnemyIntentStepVisuals = (
             tint: style.tint,
             textColor: style.text,
             amountLabel,
+            timingLabel,
             attackTimingTicks: step.kind === 'attack' ? options.attackTimingTicks : undefined,
         };
     });

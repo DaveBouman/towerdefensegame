@@ -601,16 +601,20 @@ export class EnemyTargetView
         stepGap: number;
         rowGap: number;
         amountFontSize: number;
+        timingFontSize: number;
         stackGap: number;
         labelPad: number;
         stepHeightStacked: number;
+        stepHeightWithTiming: number;
         stepHeightIconOnly: number;
     }
     {
         const scale = Math.max(0.9, Math.min(1.05, this.enemySize / 120));
         const iconSize = Math.max(22, Math.round(INTENT_ICON_SIZE * scale));
         const amountFontSize = Math.max(14, Math.round(INTENT_AMOUNT_FONT_SIZE * scale));
+        const timingFontSize = Math.max(11, Math.round(amountFontSize * 0.78));
         const stackGap = Math.max(2, Math.round(INTENT_STACK_GAP * scale));
+        const stepHeightStacked = iconSize + stackGap + amountFontSize;
 
         return {
             scale,
@@ -618,9 +622,11 @@ export class EnemyTargetView
             stepGap: Math.max(10, Math.round(10 * scale)),
             rowGap: Math.max(6, Math.round(6 * scale)),
             amountFontSize,
+            timingFontSize,
             stackGap,
             labelPad: 6,
-            stepHeightStacked: iconSize + stackGap + amountFontSize,
+            stepHeightStacked,
+            stepHeightWithTiming: stepHeightStacked + stackGap + timingFontSize,
             stepHeightIconOnly: iconSize,
         };
     }
@@ -648,15 +654,19 @@ export class EnemyTargetView
         metrics: ReturnType<EnemyTargetView['getIntentMetrics']>,
     ): number
     {
-        if (!visual.amountLabel)
+        if (!visual.amountLabel && !visual.timingLabel)
         {
             return metrics.iconSize;
         }
 
-        return Math.max(
-            metrics.iconSize,
-            this.measureIntentLabelWidth(visual.amountLabel, metrics.amountFontSize) + metrics.labelPad,
-        );
+        const amountWidth = visual.amountLabel
+            ? this.measureIntentLabelWidth(visual.amountLabel, metrics.amountFontSize) + metrics.labelPad
+            : 0;
+        const timingWidth = visual.timingLabel
+            ? this.measureIntentLabelWidth(visual.timingLabel, metrics.timingFontSize) + metrics.labelPad
+            : 0;
+
+        return Math.max(metrics.iconSize, amountWidth, timingWidth);
     }
 
     private getIntentFitScale (rowWidth: number): number
@@ -677,6 +687,11 @@ export class EnemyTargetView
         metrics: ReturnType<EnemyTargetView['getIntentMetrics']>,
     ): number
     {
+        if (steps.some((step) => Boolean(step.timingLabel)))
+        {
+            return metrics.stepHeightWithTiming;
+        }
+
         // Keep label band for the whole row when any step has a value — icons stay level.
         if (steps.some((step) => Boolean(step.amountLabel)))
         {
@@ -820,6 +835,22 @@ export class EnemyTargetView
             }).setOrigin(0.5, 0);
 
             parts.push(label);
+        }
+
+        if (visual.timingLabel)
+        {
+            const timingY = rowTop
+                + metrics.iconSize
+                + metrics.stackGap
+                + (visual.amountLabel ? metrics.amountFontSize + metrics.stackGap : 0);
+            const timing = this.scene.add.text(centerX, timingY, visual.timingLabel, {
+                ...uiDisplayTextStyle(metrics.timingFontSize, '#ffb347', {
+                    bold: true,
+                    strokeColor: '#0a0a14',
+                }),
+            }).setOrigin(0.5, 0);
+
+            parts.push(timing);
         }
 
         return parts;

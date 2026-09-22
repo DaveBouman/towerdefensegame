@@ -32,7 +32,7 @@ export interface LoopStationCardOffer {
     definitionId: string;
     label: string;
     blurb: string;
-    /** New cards may use left / up / diagonal for more combinations. */
+    /** Set when the player chooses a direction on the reward screen. */
     arrow?: CardDirection;
 }
 
@@ -65,73 +65,62 @@ const DUNGEON_KIT: readonly RunDeckCard[] = [
     { definitionId: 'boost' },
 ];
 
-/** Unlocks after station clears — more directions and behaviors. */
+/** Unlocks after station clears — player picks the arrow when taking the card. */
 const STATION_CARD_POOL: readonly LoopStationCardOffer[] = [
     {
         definitionId: 'attack-leap',
         label: 'Leap Strike',
         blurb: 'Jump a tile — opens branching routes.',
-        arrow: 'right',
     },
     {
         definitionId: 'defend-leap',
         label: 'Leap Guard',
         blurb: 'Defend that leaps — armor with reach.',
-        arrow: 'down',
     },
     {
         definitionId: 'echo',
         label: 'Echo',
         blurb: 'Replay the previous card in the chain.',
-        arrow: 'right',
     },
     {
         definitionId: 'switchback',
         label: 'Switchback',
         blurb: 'Turns the chain — unlocks left routing.',
-        arrow: 'left',
     },
     {
         definitionId: 'attack-special',
         label: 'Strike',
         blurb: 'Diagonal attack — more path combinations.',
-        arrow: 'down-right',
     },
     {
         definitionId: 'rupture',
         label: 'Rupture',
         blurb: 'Heavy hit for closing long chains.',
-        arrow: 'right',
     },
     {
         definitionId: 'boost',
         label: 'Boost',
         blurb: 'Double the next step.',
-        arrow: 'down',
     },
     {
         definitionId: 'fire',
         label: 'Fire',
         blurb: 'Fire trail combos with attacks.',
-        arrow: 'right',
     },
     {
         definitionId: 'poison',
         label: 'Rad',
         blurb: 'Poison trail — more combo lines.',
-        arrow: 'down',
     },
     {
         definitionId: 'attack',
         label: 'Attack',
-        blurb: 'Extra attack — try the new arrows.',
-        arrow: 'up',
+        blurb: 'Extra attack — aim it where you need it.',
     },
     {
         definitionId: 'defend',
         label: 'Defend',
         blurb: 'Extra guard — time it to the enemy hit.',
-        arrow: 'left',
     },
 ];
 

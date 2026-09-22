@@ -10,6 +10,8 @@ import type { CardGameSession } from '../cardGame/domain/CardGameSession';
 import type { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { planChainPathPreview } from '../cardGame/combat/AttackPipeline';
 import { findAllStreakBarRuns } from '../cardGame/combat/streakBarRuns';
+import { buildChainTickBeats } from '../cardGame/combat/chainTickBeats';
+import { getMidChainEnemyAttackPlan } from '../cardGame/combat/chainTiming';
 import { playFloatingText } from '../cardGame/presentation/visualEffects/visualEffectTweens';
 import { GAME_RULES } from '../cardGame/config/cardRegistry';
 import { EventBus } from '../EventBus';
@@ -297,6 +299,24 @@ export const emitAttackReadiness = (
         else
         {
             deps.boardView.clearChainPath();
+        }
+
+        // Hit beat depends on placed cards — refresh whenever the board syncs.
+        if (preview.slots.length > 0)
+        {
+            const midHit = getMidChainEnemyAttackPlan(deps.session);
+
+            deps.boardView.setChainBeatLabels(
+                buildChainTickBeats(
+                    deps.session.board,
+                    preview.slots,
+                    midHit?.atTicks ?? null,
+                ),
+            );
+        }
+        else
+        {
+            deps.boardView.clearChainBeatLabels();
         }
     }
 

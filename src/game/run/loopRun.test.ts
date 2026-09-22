@@ -26,11 +26,12 @@ describe('loopRun starters and station cards', () =>
         )).toBe(true);
     });
 
-    it('rolls three station card offers', () =>
+    it('rolls three station card offers without a pre-set arrow', () =>
     {
         const offers = rollStationCardOffers(3);
 
         expect(offers).toHaveLength(3);
         expect(new Set(offers.map((offer) => offer.definitionId)).size).toBeGreaterThan(0);
+        expect(offers.every((offer) => offer.arrow === undefined)).toBe(true);
     });
 });

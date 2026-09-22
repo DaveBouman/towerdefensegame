@@ -9,6 +9,8 @@ import { boostedBuffVisual } from './visualEffects/boostedBuffVisual';
 import { getCardVisualEffectOrThrow } from './visualEffects/visualEffectRegistry';
 import { scaleBoostedDelta } from '../combat/chainBoost';
 import { findAllStreakBarRuns } from '../combat/streakBarRuns';
+import { buildChainTickBeats } from '../combat/chainTickBeats';
+import { getMidChainEnemyAttackPlan } from '../combat/chainTiming';
 import type { ArmorView } from '../../board/ArmorView';
 import type { CardBoardView } from '../../board/CardBoardView';
 import type { CardHandView } from '../../board/CardHandView';
@@ -131,6 +133,12 @@ export class CardGamePresenter
         {
             this.boardView.clearChainPath();
         }
+
+        const midHit = getMidChainEnemyAttackPlan(this.session);
+
+        this.boardView.setChainBeatLabels(
+            buildChainTickBeats(this.session.board, slots, midHit?.atTicks ?? null),
+        );
 
         runChainPlayback(this.getChainPlaybackDeps(), chainStart, (sequence) =>
         {

@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import {
     getLoopLoot,
     type LoopLootDef,
     type LoopStationCardOffer,
 } from '../../game/run/loopRun';
+import { CardDirectionPicker } from './CardDirectionPicker';
 
 interface LoopHubOverlayProps {
     homeLootIds: readonly string[];
@@ -98,40 +100,74 @@ interface LoopStationCardOverlayProps {
     onTake: (offer: LoopStationCardOffer) => void;
 }
 
-/** After clearing a station — pick a card that unlocks more routing. */
+/** After clearing a station — pick a card, then choose its arrow. */
 export const LoopStationCardOverlay = ({
     offers,
     onTake,
-}: LoopStationCardOverlayProps) => (
-    <div className="puzzle-select">
-        <div className="puzzle-select__panel">
-            <header className="puzzle-select__header">
-                <p className="puzzle-select__eyebrow">Station clear</p>
-                <h1 className="puzzle-select__title">New card</h1>
-                <p className="puzzle-select__tagline">
-                    Starter arrows are only right and down. New cards unlock left, up, leaps,
-                    and diagonals — more combinations on the chain.
-                </p>
-            </header>
+}: LoopStationCardOverlayProps) =>
+{
+    const [ picking, setPicking ] = useState<LoopStationCardOffer | null>(null);
 
-            <ul className="puzzle-select__list">
-                {offers.map((offer) => (
-                    <li key={`${offer.definitionId}-${offer.arrow ?? 'any'}`} className="puzzle-select__card">
-                        <h2 className="puzzle-select__card-title">{offer.label}</h2>
-                        <p className="puzzle-select__card-intro">
-                            {offer.blurb}
-                            {offer.arrow ? ` Arrow: ${offer.arrow}.` : ''}
+    if (picking)
+    {
+        return (
+            <div className="puzzle-select">
+                <div className="puzzle-select__panel">
+                    <header className="puzzle-select__header">
+                        <p className="puzzle-select__eyebrow">Station clear</p>
+                        <h1 className="puzzle-select__title">{picking.label}</h1>
+                        <p className="puzzle-select__tagline">
+                            Choose the chain direction for this card.
                         </p>
+                    </header>
+
+                    <CardDirectionPicker
+                        definitionId={picking.definitionId}
+                        onPick={(arrow) => onTake({ ...picking, arrow })}
+                    />
+
+                    <footer className="puzzle-select__footer">
                         <button
                             type="button"
-                            className="puzzle-select__start"
-                            onClick={() => onTake(offer)}
+                            className="puzzle-select__back"
+                            onClick={() => setPicking(null)}
                         >
-                            Take card
+                            Back to cards
                         </button>
-                    </li>
-                ))}
-            </ul>
+                    </footer>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="puzzle-select">
+            <div className="puzzle-select__panel">
+                <header className="puzzle-select__header">
+                    <p className="puzzle-select__eyebrow">Station clear</p>
+                    <h1 className="puzzle-select__title">New card</h1>
+                    <p className="puzzle-select__tagline">
+                        Starter arrows are only right and down. Pick a card, then aim its
+                        arrow — left, up, leaps, and diagonals unlock more routes.
+                    </p>
+                </header>
+
+                <ul className="puzzle-select__list">
+                    {offers.map((offer) => (
+                        <li key={offer.definitionId} className="puzzle-select__card">
+                            <h2 className="puzzle-select__card-title">{offer.label}</h2>
+                            <p className="puzzle-select__card-intro">{offer.blurb}</p>
+                            <button
+                                type="button"
+                                className="puzzle-select__start"
+                                onClick={() => setPicking(offer)}
+                            >
+                                Choose direction
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </div>
-    </div>
-);
+    );
+};
