@@ -24,6 +24,8 @@ export interface EnemyPhaseHost
     tickEnemyOverclock (): void;
     /** Loop Road locked fight — no mid-fight board placement. */
     shouldSkipBoardPlacement? (): boolean;
+    /** Loop Road tick timing — enemy always attacks (never shields). */
+    shouldForceEnemyAttackOnly? (): boolean;
 }
 
 export class EnemyPhaseController
@@ -99,6 +101,7 @@ export class EnemyPhaseController
                 bonusTraps: combatant.pendingExtraTraps ?? 0,
                 phaseShiftActive: combatant.phaseShiftActive === true,
                 skipBoardPlacement: this.host.shouldSkipBoardPlacement?.() === true,
+                forceAttackOnly: this.host.shouldForceEnemyAttackOnly?.() === true,
             });
             const allySteps = planAllySupportSteps(
                 combatant,

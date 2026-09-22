@@ -1,5 +1,5 @@
 import type { CardDefinition } from '../cardGame/config/cardRegistry';
-import { GAME_RULES, getCardDefinitionOrThrow } from '../cardGame/config/cardRegistry';
+import { GAME_RULES, getCardDefinitionOrThrow, getCardDurationTicks } from '../cardGame/config/cardRegistry';
 import type { CardVisualStyle } from './cardVisuals';
 import { CARD_VISUALS } from './cardVisuals';
 
@@ -74,3 +74,7 @@ export const formatCardPowerLabel = (definition: CardDefinition): string =>
 
     return String(definition.power);
 };
+
+/** Tick cost shown on card faces (e.g. `10t`). */
+export const formatCardTickLabel = (definition: CardDefinition): string =>
+    `${getCardDurationTicks(definition)}t`;

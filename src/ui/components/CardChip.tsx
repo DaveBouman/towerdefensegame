@@ -1,6 +1,6 @@
 import { getCardDefinitionOrThrow } from '../../game/cardGame/config/cardRegistry';
 import type { CardDirection } from '../../game/cardGame/domain/cardDirections';
-import { cardVisualCssVars, formatCardPowerLabel, resolveCardVisualStyle } from '../../game/cards/cardVisualUtils';
+import { cardVisualCssVars, formatCardPowerLabel, formatCardTickLabel, resolveCardVisualStyle } from '../../game/cards/cardVisualUtils';
 import { CardBehaviorIcon } from './CardBehaviorIcon';
 import { DirectionArrowIcon } from './DirectionArrowIcon';
 
@@ -41,6 +41,7 @@ export const CardChip = ({
     const cssVars = cardVisualCssVars(style);
     const displayLabel = label ?? definition.label;
     const displayPower = power !== undefined ? String(power) : formatCardPowerLabel(definition);
+    const tickLabel = formatCardTickLabel(definition);
     const classes = [
         'card-chip',
         size === 'pile' ? 'card-chip--pile' : 'card-chip--hand',
@@ -65,6 +66,9 @@ export const CardChip = ({
             {countBadge !== undefined && countBadge > 1 && (
                 <span className="card-chip__badge">×{countBadge}</span>
             )}
+            <span className="card-chip__ticks" aria-label={`${tickLabel} duration`}>
+                {tickLabel}
+            </span>
             {arrow && (
                 <span className={arrowClass(arrow)} aria-label={`Arrow ${arrow}`}>
                     <DirectionArrowIcon direction={arrow} />

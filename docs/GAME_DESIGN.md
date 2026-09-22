@@ -430,7 +430,7 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
-| 2026-09-22 | **Loop Road timing + growth.** Chain always starts top-left; starter arrows are right/down only. Timing uses **ticks** (`tickMs` wall-clock; faster modes change only `tickMs`). Attack cards are **10 ticks**, Raider hits at **30 ticks**. Engage shows intent (`13·30t`) while board stays editable; Attack locks and auto-loops. Station card picks unlock more routes. |
+| 2026-09-22 | **Loop Road timing + growth.** Chain always starts top-left; starter arrows are right/down only. Timing uses **ticks** (`tickMs` wall-clock; faster modes change only `tickMs`). Attack cards are **10 ticks**, Raider hits at **30 ticks**. Loop enemies **always attack** (never shield) so defend timing stays reliable. Engage shows intent (`13·30t`) while board stays editable; Attack locks and auto-loops. Station card picks unlock more routes. |
 | 2026-09-21 | **Snappy board edits.** Placing/moving cards no longer rebuilds every board wrapper or re-fades enemy intents — only changed tiles update, and path/streak redraws skip when unchanged. |
 | 2026-09-21 | **Anchored card bonus.** Attack/Defend/Redline cards left unmoved after placement grant +2 damage / +2 armor (in-chain and off-chain) for the energy round. Moving, swapping, or picking up clears the bonus; cyan pin marks anchored tiles. |
 | 2026-09-21 | **Combat layout scales with viewport.** Board tile, hand cards, and piles shrink from the 96px design when height is tight so 1280×720 keeps armor above the hand with no board overlap. |

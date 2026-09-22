@@ -163,9 +163,6 @@ export const RunPhaseScreens = (props: RunPhaseScreensProps) =>
                 <LoopHubOverlay
                     homeLootIds={homeLootIds}
                     onWalkLoop={() => startLoopWalk(false)}
-                    onEnterDungeon={() => startLoopWalk(true)}
-                    onBackToMenu={returnToMenu}
-                    onOpenRoads={openPracticeRoads}
                 />
             )}
             {phase === 'loop-map' && (

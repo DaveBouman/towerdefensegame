@@ -204,6 +204,7 @@ export class CardGameSession
                 this.fieldEffects.applySilenceTiles(passives);
             },
             shouldSkipBoardPlacement: () => this.boardEdit.isBoardLocked(),
+            shouldForceEnemyAttackOnly: () => this.shouldPersistBoardLayout(),
         });
         this.boardEdit = new BoardEditController({
             board: this.board,

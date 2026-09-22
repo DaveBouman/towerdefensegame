@@ -10,7 +10,7 @@ import { ARROW_GLYPH, arrowLabelPosition, cornerEntryArrowPosition } from './car
 import { createDirectionArrowImage, createLoopBadgeImage } from './directionArrowVisual';
 import type { CardDirection } from '../cardGame/domain/cardDirections';
 import { CARD_VISUALS, getCardFrontArtKey } from './cardVisuals';
-import { formatCardPowerLabel } from './cardVisualUtils';
+import { formatCardPowerLabel, formatCardTickLabel } from './cardVisualUtils';
 
 export interface CardVisualOptions {
     width: number;
@@ -234,6 +234,16 @@ export const buildCardGraphic = (
     ).setOrigin(0.5);
 
     container.add([ ...layers, ...cardDecor, power ]);
+
+    const tickBadge = scene.add.text(6, 6, formatCardTickLabel(definition), {
+        ...uiDisplayTextStyle(11, '#fcee0a', {
+            bold: true,
+            backgroundColor: '#000000aa',
+            padding: { x: 3, y: 1 },
+        }),
+    }).setOrigin(0, 0);
+
+    container.add(tickBadge);
 
     if (leapDistance > 1)
     {

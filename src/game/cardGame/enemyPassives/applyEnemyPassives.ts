@@ -34,6 +34,11 @@ export interface EnemyTurnPlanningContext {
     phaseShiftActive?: boolean;
     /** Loop Road locked fight — attack/shield only; no mid-fight board placement. */
     skipBoardPlacement?: boolean;
+    /**
+     * Loop Road tick timing: always telegraph/resolve an attack (never shield).
+     * Defend timing only works when the hit is guaranteed.
+     */
+    forceAttackOnly?: boolean;
 }
 
 const isLastStandActive = (
@@ -49,9 +54,25 @@ const planCombatStep = (
     passives: readonly EnemyPassiveConfig[],
     enrageStacks: number,
     bonusAttack = 0,
+    forceAttackOnly = false,
 ): EnemyTurnStep =>
 {
     const lastStand = getEnemyPassive(passives, 'lastStand');
+    const enrage = getEnemyPassive(passives, 'enrage');
+    const attackBonus = (enrage?.attackBonusPerTrap ?? 0) * enrageStacks + bonusAttack;
+
+    if (forceAttackOnly)
+    {
+        if (lastStand && isLastStandActive(enemyState, lastStand))
+        {
+            return { kind: 'attack', amount: lastStand.attackDamage + bonusAttack };
+        }
+
+        return {
+            kind: 'attack',
+            amount: enemy.attackDamage + attackBonus,
+        };
+    }
 
     if (lastStand && isLastStandActive(enemyState, lastStand))
     {
@@ -64,9 +85,6 @@ const planCombatStep = (
             ? { kind: 'attack', amount: lastStand.attackDamage + bonusAttack }
             : { kind: 'shield', amount: lastStand.shieldGain };
     }
-
-    const enrage = getEnemyPassive(passives, 'enrage');
-    const attackBonus = (enrage?.attackBonusPerTrap ?? 0) * enrageStacks + bonusAttack;
 
     if (random() < enemy.attackChance)
     {
@@ -87,6 +105,7 @@ const buildCombatSteps = (
     passives: readonly EnemyPassiveConfig[],
     combatStep: EnemyTurnStep,
     globalEnemyTurns: number,
+    forceAttackOnly = false,
 ): EnemyTurnStep[] =>
 {
     const steps = [ combatStep ];
@@ -102,7 +121,8 @@ const buildCombatSteps = (
         steps.push({ ...combatStep });
     }
 
-    if (getEnemyPassive(passives, 'phantomIntent'))
+    // Phantom shield decoys break Loop Road tick-timing — skip when attack-only.
+    if (!forceAttackOnly && getEnemyPassive(passives, 'phantomIntent'))
     {
         const decoy: EnemyTurnStep = combatStep.kind === 'attack'
             ? { kind: 'shield', amount: enemy.shieldGain, decoy: true }
@@ -117,7 +137,6 @@ const buildCombatSteps = (
 
     return steps;
 };
-
 export const planEnemyTurnWithPassives = ({
     enemy,
     enemyState,
@@ -128,6 +147,7 @@ export const planEnemyTurnWithPassives = ({
     bonusTraps = 0,
     phaseShiftActive = false,
     skipBoardPlacement = false,
+    forceAttackOnly = false,
 }: EnemyTurnPlanningContext): EnemyTurnAction =>
 {
     const passives = enemy.passives;
@@ -178,8 +198,9 @@ export const planEnemyTurnWithPassives = ({
     steps.push(...buildCombatSteps(
         enemy,
         passives,
-        planCombatStep(enemy, enemyState, passives, enrageStacks, phaseBonusAttack),
+        planCombatStep(enemy, enemyState, passives, enrageStacks, phaseBonusAttack, forceAttackOnly),
         globalEnemyTurns,
+        forceAttackOnly,
     ));
 
     if (skipBoardPlacement)

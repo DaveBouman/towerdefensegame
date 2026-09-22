@@ -7,18 +7,12 @@ import {
 interface LoopHubOverlayProps {
     homeLootIds: readonly string[];
     onWalkLoop: () => void;
-    onEnterDungeon: () => void;
-    onBackToMenu: () => void;
-    onOpenRoads: () => void;
 }
 
-/** Home between loop walks — stash loot, choose surface or dungeon. */
+/** Home between loop walks — stash loot, walk the ring. */
 export const LoopHubOverlay = ({
     homeLootIds,
     onWalkLoop,
-    onEnterDungeon,
-    onBackToMenu,
-    onOpenRoads,
 }: LoopHubOverlayProps) => (
     <div className="puzzle-select">
         <div className="puzzle-select__panel">
@@ -26,51 +20,35 @@ export const LoopHubOverlay = ({
                 <p className="puzzle-select__eyebrow">Home</p>
                 <h1 className="puzzle-select__title">The Road</h1>
                 <p className="puzzle-select__tagline">
-                    Two boards: a circular <strong>walk map</strong> (this run) and a separate
-                    <strong> chain board</strong> that opens only when you fight a station.
-                    Loot comes home and buffs the next chain.
+                    Pack your chain, walk the ring, clear stations.
                 </p>
             </header>
 
-            <section className="kit-select__section">
-                <h2 className="kit-select__section-label">Stash ({homeLootIds.length})</h2>
-                <ul className="kit-select__kit">
-                    {homeLootIds.length === 0 && (
-                        <li className="kit-select__empty">Empty — clear a loop to bring loot home.</li>
-                    )}
-                    {homeLootIds.map((id, index) =>
-                    {
-                        const loot = getLoopLoot(id);
+            {homeLootIds.length > 0 && (
+                <section className="kit-select__section">
+                    <h2 className="kit-select__section-label">Stash ({homeLootIds.length})</h2>
+                    <ul className="kit-select__kit">
+                        {homeLootIds.map((id, index) =>
+                        {
+                            const loot = getLoopLoot(id);
 
-                        return (
-                            <li key={`${id}-${index}`}>
-                                <span className="kit-select__chip kit-select__chip--packed">
-                                    {loot.label}
-                                </span>
-                            </li>
-                        );
-                    })}
-                </ul>
-            </section>
+                            return (
+                                <li key={`${id}-${index}`}>
+                                    <span className="kit-select__chip kit-select__chip--packed">
+                                        {loot.label}
+                                    </span>
+                                </li>
+                            );
+                        })}
+                    </ul>
+                </section>
+            )}
 
-            <footer className="kit-select__footer" style={{ gridTemplateColumns: '1fr 1fr' }}>
+            <footer className="kit-select__footer" style={{ gridTemplateColumns: '1fr' }}>
                 <button type="button" className="main-menu__start" onClick={onWalkLoop}>
                     Walk the ring
                 </button>
-                <button type="button" className="main-menu__start" onClick={onEnterDungeon}>
-                    Enter dungeon
-                </button>
-                <button type="button" className="main-menu__secondary" onClick={onOpenRoads}>
-                    Practice roads
-                </button>
-                <button type="button" className="main-menu__secondary" onClick={onBackToMenu}>
-                    Menu
-                </button>
             </footer>
-
-            <p className="puzzle-select__tagline" style={{ marginTop: 8 }}>
-                Walk map first — chain board only in combat.
-            </p>
         </div>
     </div>
 );
