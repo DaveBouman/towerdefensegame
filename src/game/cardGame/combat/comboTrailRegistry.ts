@@ -1,3 +1,4 @@
+import { GAME_RULES, getCardDefinitionOrThrow } from '../config/cardRegistry';
 import type { ActivationStep, SlotPosition } from '../domain/types';
 import { getAlternatingAttackDefendIndicesAfter } from '../abilities/fireAlternation';
 import { getDefendIndicesReplacedByPoison } from '../abilities/poisonReplacement';
@@ -7,6 +8,7 @@ export interface ComboTrailStep
 {
     slot: SlotPosition;
     behaviorId: string;
+    definitionId?: string;
 }
 
 /** One visual combo trail found on a chain. */
@@ -38,6 +40,18 @@ export interface ComboTrailDetector
     starterBehaviorId: string;
     detect: (args: ComboTrailDetectArgs) => ComboTrailHit | null;
 }
+
+const stepHasAbility = (step: ActivationStep | ComboTrailStep, abilityId: string): boolean =>
+{
+    const definitionId = 'definitionId' in step ? step.definitionId : undefined;
+
+    if (!definitionId)
+    {
+        return false;
+    }
+
+    return (getCardDefinitionOrThrow(definitionId).chainAbilityIds ?? []).includes(abilityId);
+};
 
 const radTrailDetector: ComboTrailDetector = {
     id: 'rad-trail',
@@ -89,6 +103,148 @@ const fireTrailDetector: ComboTrailDetector = {
     },
 };
 
+/** Bleed: first Rupture/Shiv/… when the chain has enough attacks. */
+const bleedTrailDetector: ComboTrailDetector = {
+    id: 'bleed-trail',
+    starterBehaviorId: 'attack',
+    detect: ({ startIndex, steps, chain, minLength }) =>
+    {
+        const starter = steps[startIndex] ?? chain[startIndex];
+
+        if (!starter || !stepHasAbility(starter, 'bleed'))
+        {
+            return null;
+        }
+
+        if (chain.findIndex((step, index) =>
+            stepHasAbility(steps[index] ?? step, 'bleed')) !== startIndex)
+        {
+            return null;
+        }
+
+        const { attackThreshold } = GAME_RULES.chainAbilities.bleed;
+        const attackIndices = chain
+            .map((step, index) => (step.behaviorId === 'attack' ? index : -1))
+            .filter((index) => index >= 0);
+        const extraAttacks = Math.max(0, attackIndices.length - attackThreshold);
+
+        if (extraAttacks <= 0 || attackIndices.length < minLength)
+        {
+            return null;
+        }
+
+        return {
+            behaviorId: 'bleed',
+            indices: attackIndices,
+            label: `BLEED→${extraAttacks}`,
+        };
+    },
+};
+
+/** Fortify: first Bulwark/Bramble/… when the chain has enough defends. */
+const fortifyTrailDetector: ComboTrailDetector = {
+    id: 'fortify-trail',
+    starterBehaviorId: 'defend',
+    detect: ({ startIndex, steps, chain, minLength }) =>
+    {
+        const starter = steps[startIndex] ?? chain[startIndex];
+
+        if (!starter || !stepHasAbility(starter, 'fortify'))
+        {
+            return null;
+        }
+
+        if (chain.findIndex((step, index) =>
+            stepHasAbility(steps[index] ?? step, 'fortify')) !== startIndex)
+        {
+            return null;
+        }
+
+        const { defendThreshold } = GAME_RULES.chainAbilities.fortify;
+        const defendIndices = chain
+            .map((step, index) => (step.behaviorId === 'defend' ? index : -1))
+            .filter((index) => index >= 0);
+        const extraDefends = Math.max(0, defendIndices.length - defendThreshold);
+
+        if (extraDefends <= 0 || defendIndices.length < minLength)
+        {
+            return null;
+        }
+
+        return {
+            behaviorId: 'fortify',
+            indices: defendIndices,
+            label: `FORT→${extraDefends}`,
+        };
+    },
+};
+
+/** Overload: first Surge/Amp when other ability cards are already on the wire. */
+const overloadTrailDetector: ComboTrailDetector = {
+    id: 'overload-trail',
+    starterBehaviorId: 'attack',
+    detect: ({ startIndex, steps, chain, minLength }) =>
+    {
+        const starter = steps[startIndex] ?? chain[startIndex];
+
+        if (!starter || !stepHasAbility(starter, 'overload'))
+        {
+            return null;
+        }
+
+        if (chain.findIndex((step, index) =>
+            stepHasAbility(steps[index] ?? step, 'overload')) !== startIndex)
+        {
+            return null;
+        }
+
+        const abilityIndices: number[] = [];
+
+        for (let index = 0; index < chain.length; index++)
+        {
+            if (index === startIndex)
+            {
+                continue;
+            }
+
+            const step = steps[index] ?? chain[index];
+            const definitionId = step && 'definitionId' in step ? step.definitionId : undefined;
+
+            if (!definitionId)
+            {
+                continue;
+            }
+
+            if ((getCardDefinitionOrThrow(definitionId).chainAbilityIds ?? []).length > 0)
+            {
+                abilityIndices.push(index);
+            }
+        }
+
+        if (abilityIndices.length <= 0)
+        {
+            return null;
+        }
+
+        const jokerBonus = chain.some((step) => step.behaviorId === 'joker') ? 2 : 1;
+        const damage = abilityIndices.length
+            * GAME_RULES.chainAbilities.overload.damagePerAbilityCard
+            * jokerBonus;
+        const indices = [ startIndex, ...abilityIndices ];
+
+        if (indices.length < minLength)
+        {
+            return null;
+        }
+
+        return {
+            behaviorId: 'overload',
+            indices,
+            label: `OVL ${damage}`,
+        };
+    },
+};
+
 /**
  * Ordered list of combo-trail detectors. First match per starter index wins for that
  * starter behavior; multiple starters (Rad then Fire) can still fire on one chain.
@@ -97,6 +253,9 @@ const fireTrailDetector: ComboTrailDetector = {
 export const COMBO_TRAIL_DETECTORS: readonly ComboTrailDetector[] = [
     radTrailDetector,
     fireTrailDetector,
+    bleedTrailDetector,
+    fortifyTrailDetector,
+    overloadTrailDetector,
 ];
 
 const detectorsByStarter = (() =>

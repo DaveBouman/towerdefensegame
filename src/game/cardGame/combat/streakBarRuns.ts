@@ -17,6 +17,7 @@ export interface StreakBarStep
 {
     slot: SlotPosition;
     behaviorId: string;
+    definitionId?: string;
 }
 
 export type StreakBarKind = 'type-stack' | 'combo';

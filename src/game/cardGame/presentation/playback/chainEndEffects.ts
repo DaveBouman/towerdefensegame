@@ -161,7 +161,15 @@ export function playChainAbilityEffectVisual (
                     target.width / 2,
                     target.height * 0.22,
                     label,
-                    effect.abilityId === 'overload' ? '#fcee0a' : '#f39c12',
+                    effect.abilityId === 'overload'
+                        ? '#fcee0a'
+                        : effect.abilityId === 'bleed'
+                            ? '#ff2d55'
+                            : effect.abilityId === 'fortify'
+                                ? '#f0c040'
+                                : effect.abilityId === 'fire-alternation'
+                                    ? '#ff6b35'
+                                    : '#f39c12',
                 );
             }
         }
@@ -469,11 +477,26 @@ function formatAbilityEffectLabel (
             return `OVERLOAD ${amount}`;
         }
 
+        if (effect.abilityId === 'bleed')
+        {
+            return `BLEED +${amount}`;
+        }
+
+        if (effect.abilityId === 'fire-alternation')
+        {
+            return `FIRE +${amount}`;
+        }
+
         return `+${amount}`;
     }
 
     if (effect.armorGain > 0)
     {
+        if (effect.abilityId === 'fortify')
+        {
+            return `FORT +${session.getScaledArmorGain(effect.armorGain)}`;
+        }
+
         return `+${session.getScaledArmorGain(effect.armorGain)}`;
     }
 

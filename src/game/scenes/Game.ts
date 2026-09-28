@@ -873,10 +873,25 @@ export class Game extends Scene
 
         if (ratio <= 0.25 && ratio > 0)
         {
-            this.lowHpVignette!.setAlpha(0.1 + (0.25 - ratio) * 0.3);
+            const base = 0.12 + (0.25 - ratio) * 0.38;
+
+            this.lowHpVignette!.setAlpha(base);
+
+            if (!this.tweens.isTweening(this.lowHpVignette))
+            {
+                this.tweens.add({
+                    targets: this.lowHpVignette,
+                    alpha: { from: base, to: base + 0.08 },
+                    duration: 520,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut',
+                });
+            }
         }
         else
         {
+            this.tweens.killTweensOf(this.lowHpVignette);
             this.lowHpVignette!.setAlpha(0);
         }
     }

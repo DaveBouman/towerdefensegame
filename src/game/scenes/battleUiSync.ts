@@ -9,6 +9,7 @@ import type { PlayerHealthView } from '../board/PlayerHealthView';
 import type { CardGameSession } from '../cardGame/domain/CardGameSession';
 import type { CardGamePresenter } from '../cardGame/presentation/CardGamePresenter';
 import { planChainPathPreview } from '../cardGame/combat/AttackPipeline';
+import { collectComboTrails } from '../cardGame/combat/comboTrailRegistry';
 import { findAllStreakBarRuns } from '../cardGame/combat/streakBarRuns';
 import { buildChainTickBeats } from '../cardGame/combat/chainTickBeats';
 import { getMidChainEnemyAttackPlan } from '../cardGame/combat/chainTiming';
@@ -35,6 +36,16 @@ export interface BattleUiSyncDeps
     layout?: BoardLayout;
     rerollModeActive: boolean;
 }
+
+/** Last combo storm labels — used to flash when a board edit breaks a storm. */
+let lastStormLabels: string[] = [];
+
+export const getLastStormLabels = (): readonly string[] => lastStormLabels;
+
+export const noteStormLabels = (labels: readonly string[]): void =>
+{
+    lastStormLabels = [ ...labels ];
+};
 
 interface AttackReadinessEmitCache
 {
@@ -213,7 +224,7 @@ export const emitRerollState = (
     });
 };
 
-export const emitTurnState = (deps: Pick<BattleUiSyncDeps, 'session'>): void =>
+export const emitTurnState = (deps: Pick<BattleUiSyncDeps, 'session' | 'boardView'>): void =>
 {
     if (!deps.session)
     {
@@ -221,6 +232,41 @@ export const emitTurnState = (deps: Pick<BattleUiSyncDeps, 'session'>): void =>
     }
 
     const editBudget = deps.session.getBoardEditBudget();
+    const planned = deps.session.planAttack();
+    const momentum = deps.session.getComboMomentum();
+    const momentumMult = deps.session.getComboMomentumMult();
+    const loopIndex = deps.session.getLoopsThisBurst();
+    const burstLimit = deps.session.getLoopBurstLimit();
+
+    let stormLabels: string[] = [];
+    let forecastDamage = 0;
+    let forecastBonus = 0;
+
+    if (planned)
+    {
+        const trailSteps = planned.chain.map((step) => ({
+            slot: step.slot,
+            behaviorId: step.behaviorId,
+            definitionId: step.definitionId,
+        }));
+        const { hits } = collectComboTrails(trailSteps, planned.chain, 2);
+
+        stormLabels = hits.map((hit) => hit.label);
+        forecastBonus = Math.ceil(planned.abilityEnemyDamage * momentumMult);
+        forecastDamage = Math.ceil(
+            (planned.totalDamage + planned.abilityEnemyDamage + planned.offChainDamage)
+                * momentumMult,
+        );
+    }
+
+    const broken = lastStormLabels.filter((label) => !stormLabels.includes(label));
+
+    if (broken.length > 0 && deps.boardView)
+    {
+        deps.boardView.flashStormBreak();
+    }
+
+    noteStormLabels(stormLabels);
 
     EventBus.emit(GAME_EVENTS.TURN_STATE, {
         energy: deps.session.getEnergy(),
@@ -229,6 +275,17 @@ export const emitTurnState = (deps: Pick<BattleUiSyncDeps, 'session'>): void =>
         canEndTurn: false,
         // null budget = unlimited (prep / burst draft); omit so HUD skips the hint.
         ...(editBudget === null ? {} : { boardMovesRemaining: editBudget }),
+        ...(deps.session.shouldPersistBoardLayout()
+            ? {
+                comboMomentum: momentum,
+                comboMomentumMult: momentumMult,
+                loopIndex,
+                burstLimit,
+                forecastDamage,
+                forecastBonus,
+                stormLabels,
+            }
+            : {}),
     });
 };
 
@@ -292,7 +349,10 @@ export const emitAttackReadiness = (
             deps.boardView.clearStreakBars();
         }
 
-        if (!readChainPathLitEnabled())
+        // Always show path while the board is editable (Engage / between-Attack / prep).
+        const showPath = deps.session.canEditBoard() || readChainPathLitEnabled();
+
+        if (!showPath)
         {
             deps.boardView.clearChainPath();
         }

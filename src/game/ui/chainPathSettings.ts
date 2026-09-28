@@ -2,15 +2,23 @@
 
 const STORAGE_KEY = 'signal-chain-path-lit';
 
+/** Default on so combo storms / path are visible during prep and between-Attack windows. */
 export const readChainPathLitEnabled = (): boolean =>
 {
     try
     {
-        return localStorage.getItem(STORAGE_KEY) === '1';
+        const raw = localStorage.getItem(STORAGE_KEY);
+
+        if (raw === null)
+        {
+            return true;
+        }
+
+        return raw === '1';
     }
     catch
     {
-        return false;
+        return true;
     }
 };
 

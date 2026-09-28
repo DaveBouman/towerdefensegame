@@ -172,6 +172,14 @@ export const playAbilityProcSfx = (visualId: string, abilityId?: string): void =
     {
         rate = 0.9;
     }
+    else if (ability.includes('bleed') || ability.includes('overload'))
+    {
+        rate = 1.12;
+    }
+    else if (ability.includes('fortify'))
+    {
+        rate = 0.94;
+    }
     else if (ability.includes('boost') || visual.includes('boost'))
     {
         rate = 1.08;

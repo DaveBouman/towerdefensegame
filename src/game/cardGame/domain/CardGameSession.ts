@@ -15,6 +15,12 @@ import {
 } from '../config/enemyCatalog';
 import { buildAttackSequence as buildRawAttackSequence, planAttack } from '../combat/AttackPipeline';
 import {
+    getComboMomentumMultiplier,
+    getLoopEnemyHitMultiplier,
+    loopLandedComboEvent,
+    scaleEnemyTurnAttackDamage,
+} from '../combat/comboMomentum';
+import {
     aggregateBattleModifiers,
     scaleIncomingDamage,
     type BattleModifier,
@@ -117,6 +123,8 @@ export class CardGameSession
     private enemyAttackResolvedMidChain = false;
     /** Locked fight: Attacks completed in the current 3-loop burst. */
     private loopsThisBurst = 0;
+    /** Combo crescendo stacks earned across the current burst. */
+    private comboMomentum = 0;
     private tutorialPhaseId: import('../../run/tutorialWizard').TutorialWizardStep | null = null;
     private readonly bodyMods: readonly string[];
     private readonly latchSlots: LatchSlots = {};
@@ -189,6 +197,7 @@ export class CardGameSession
             tryTriggerPhaseShift: (combatant) => this.squad.tryTriggerPhaseShift(combatant),
             getPlayerThorns: () => this.playerThorns,
             shouldPersistHazards: () => this.boardEdit.isBoardLocked(),
+            getComboMomentumMultiplier: () => getComboMomentumMultiplier(this.comboMomentum),
         }, runAttackCount);
         this.enemyPhase = new EnemyPhaseController({
             combatants: this.squad.combatants,
@@ -465,7 +474,10 @@ export class CardGameSession
     {
         if (this.shouldPersistBoardLayout())
         {
-            return action;
+            return scaleEnemyTurnAttackDamage(
+                action,
+                getLoopEnemyHitMultiplier(this.loopsThisBurst),
+            );
         }
 
         const bonus = this.getEnemyDamageRamp() + this.getEnemyOverclock();
@@ -1698,6 +1710,35 @@ export class CardGameSession
         return this.loopsThisBurst;
     }
 
+    getComboMomentum (): number
+    {
+        return this.comboMomentum;
+    }
+
+    getComboMomentumMult (): number
+    {
+        return getComboMomentumMultiplier(this.comboMomentum);
+    }
+
+    /** After a resolved Attack sequence: +1 momentum if any combo event landed. */
+    registerComboMomentumFromSequence (sequence: AttackSequence): void
+    {
+        if (!this.shouldPersistBoardLayout() || this.isPrepDummyPractice())
+        {
+            return;
+        }
+
+        if (loopLandedComboEvent(sequence))
+        {
+            this.comboMomentum += 1;
+        }
+    }
+
+    clearComboMomentum (): void
+    {
+        this.comboMomentum = 0;
+    }
+
     getLoopBurstLimit (): number
     {
         return Math.max(1, Math.round(GAME_RULES.loopBurstLoops ?? 3));
@@ -1714,6 +1755,7 @@ export class CardGameSession
     resetLoopBurst (): void
     {
         this.loopsThisBurst = 0;
+        this.comboMomentum = 0;
     }
 
     /**
@@ -1725,6 +1767,7 @@ export class CardGameSession
         this.setBoardLocked(false);
         this.boardEdit.setEditBudget(null);
         this.loopsThisBurst = 0;
+        this.comboMomentum = 0;
         this.enemyAttackResolvedMidChain = false;
         this.player.shield = 0;
         this.playerThorns = 0;
@@ -1746,8 +1789,7 @@ export class CardGameSession
     }
 
     /**
-     * Between Attacks inside a burst: unlock and allow a few board moves, then
-     * the player presses Attack again (no auto-repeat).
+     * Between Attacks inside a burst: unlock for a few board moves; next Attack auto-fires.
      */
     prepareLoopBetweenAttacks (): void
     {
@@ -1905,6 +1947,7 @@ export class CardGameSession
         this.player.shield = 0;
         this.energyRound.resetEnergy();
         this.loopsThisBurst = 0;
+        this.comboMomentum = 0;
         this.boardEdit.setEditBudget(null);
         CardGameEventBus.emit(CARD_GAME_EVENTS.ARMOR_CHANGED, { armor: 0 });
         this.replaceLoopEnemy('training-dummy');

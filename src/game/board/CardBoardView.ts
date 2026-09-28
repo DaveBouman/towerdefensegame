@@ -26,6 +26,9 @@ const STREAK_STORM_COLORS: Record<string, { glow: number; label: string }> = {
     defend: { glow: CYBER.defendGlow, label: '#ffd4a0' },
     poison: { glow: 0x00ff9d, label: '#b8ffe0' },
     fire: { glow: 0xff6b35, label: '#ffc8a0' },
+    bleed: { glow: 0xff2d55, label: '#ffb0c0' },
+    fortify: { glow: 0xf0c040, label: '#ffe9a8' },
+    overload: { glow: 0xb388ff, label: '#e0d0ff' },
     siphon: { glow: 0x55efc4, label: '#b8ffe8' },
     thorns: { glow: 0xc44dff, label: '#e0c8ff' },
     echo: { glow: 0x5ce1e6, label: '#b8f8ff' },
@@ -396,6 +399,47 @@ export class CardBoardView
         this.syncStreakCardChrome();
         this.streakBarGfx.clear();
         this.streakBarLabels.removeAll(true);
+    }
+
+    /** Brief red pulse when a board edit breaks a live combo storm. */
+    flashStormBreak (): void
+    {
+        if (this.streakBarRuns.length === 0 && this.streakBarLabels.length === 0)
+        {
+            return;
+        }
+
+        this.scene.tweens.killTweensOf(this.streakBarGfx);
+        this.streakBarGfx.setAlpha(1);
+        this.scene.tweens.add({
+            targets: this.streakBarGfx,
+            alpha: { from: 1, to: 0.2 },
+            duration: 90,
+            yoyo: true,
+            repeat: 2,
+            ease: 'Sine.easeInOut',
+            onComplete: () =>
+            {
+                this.streakBarGfx.setAlpha(1);
+            },
+        });
+
+        for (const child of this.streakBarLabels.list)
+        {
+            if (child instanceof Phaser.GameObjects.Text)
+            {
+                const previous = String(child.style.color ?? '#ffffff');
+
+                child.setColor('#ff4a4a');
+                this.scene.time.delayedCall(280, () =>
+                {
+                    if (child.active)
+                    {
+                        child.setColor(previous);
+                    }
+                });
+            }
+        }
     }
 
     clearChainPath (): void

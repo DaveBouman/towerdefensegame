@@ -156,6 +156,12 @@ export interface GameRules {
     loopBurstCardCount: number;
     /** Board moves allowed between Attacks inside a Loop burst. */
     loopBetweenAttackMoves: number;
+    /** Pause (ms) between Attacks in a burst so the player can spend those moves. */
+    loopBetweenAttackPauseMs: number;
+    /** Extra player damage multiplier per combo-momentum stack across a Loop burst. */
+    comboMomentumBonus: number;
+    /** Extra enemy mid-chain hit damage per completed loop in a burst. */
+    loopEnemyHitEscalation: number;
     battleModifier?: { step: number; enemyIntentChance: number };
     chainAbilities: {
         poisonTrail: { damagePerSubsequentCard: number; damagePerStack: number };

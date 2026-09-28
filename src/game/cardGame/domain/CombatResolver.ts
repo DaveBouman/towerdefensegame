@@ -57,6 +57,8 @@ export interface CombatContext
     getPlayerThorns (): number;
     /** Loop Road: keep opening bombs on the board across rounds. */
     shouldPersistHazards? (): boolean;
+    /** Loop Road: combo crescendo damage multiplier (≥1). */
+    getComboMomentumMultiplier? (): number;
 }
 
 export class CombatResolver
@@ -714,6 +716,13 @@ export class CombatResolver
         {
             scaled = Math.ceil(scaled * CAPACITOR_BANK_ATTACK_MULTIPLIER);
             this.capacitorChargeReady = false;
+        }
+
+        const momentum = this.ctx.getComboMomentumMultiplier?.() ?? 1;
+
+        if (momentum > 1.0001 && scaled > 0)
+        {
+            scaled = Math.ceil(scaled * momentum);
         }
 
         return scaled;

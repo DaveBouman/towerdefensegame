@@ -46,6 +46,9 @@
   "loopBurstLoops": 3,
   "loopBurstCardCount": 3,
   "loopBetweenAttackMoves": 3,
+  "loopBetweenAttackPauseMs": 3000,
+  "comboMomentumBonus": 0.15,
+  "loopEnemyHitEscalation": 0.2,
   "battleModifier": {
     "step": 0.1,
     "enemyIntentChance": 0.35

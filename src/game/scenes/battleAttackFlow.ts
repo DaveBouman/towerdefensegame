@@ -10,6 +10,7 @@ import type { CardGamePresenter } from '../cardGame/presentation/CardGamePresent
 import { resolveEnemyPhasePlayback } from '../cardGame/presentation/playback/enemyPhasePlayback';
 import { EventBus } from '../EventBus';
 import { GAME_EVENTS } from '../events/gameEvents';
+import { GAME_RULES } from '../cardGame/config/cardRegistry';
 
 /** Deps bag for player attack → resolve → enemy response wiring. */
 export interface BattleAttackFlowDeps
@@ -275,6 +276,7 @@ export const handleAttackResolved = (
             return;
         }
 
+        deps.session.registerComboMomentumFromSequence(sequence);
         const burstDone = deps.session.registerLoopBurstAttack();
 
         if (burstDone)
@@ -292,8 +294,8 @@ export const handleAttackResolved = (
             return;
         }
 
-        // Between Attacks: unlock for a few board moves, then player Attacks again.
-        deps.setAutoRepeatCombat?.(false);
+        // Between Attacks: brief rearrange window (up to N moves), then auto Attack.
+        deps.setAutoRepeatCombat?.(true);
 
         if (!deps.session.hasEnergy())
         {
@@ -312,6 +314,49 @@ export const handleAttackResolved = (
             moves: deps.session.getBoardEditBudget() ?? 0,
             loop: deps.session.getLoopsThisBurst(),
             burstLimit: deps.session.getLoopBurstLimit(),
+        });
+
+        const planned = deps.session.planAttack();
+        const hasStorm = Boolean(
+            planned
+            && (
+                planned.chainAbilityEffects.some((effect) =>
+                    effect.enemyDamage > 0
+                    || effect.armorGain > 0
+                    || effect.poisonStacks > 0)
+                || Object.values(planned.stackMultipliers).some(
+                    (mult) => typeof mult === 'number' && mult >= 1.3,
+                )
+            ),
+        );
+        const pauseMs = Math.max(
+            500,
+            Math.round(GAME_RULES.loopBetweenAttackPauseMs ?? 3000),
+        ) + (hasStorm ? 500 : 0);
+
+        deps.delayCall(pauseMs, () =>
+        {
+            if (!deps.session || deps.session.isBusy())
+            {
+                return;
+            }
+
+            if (deps.session.isEnemyDefeated() || deps.session.isPlayerDefeated())
+            {
+                return;
+            }
+
+            if (!deps.isAutoRepeatCombat?.())
+            {
+                return;
+            }
+
+            if (deps.session.getLoopsThisBurst() >= deps.session.getLoopBurstLimit())
+            {
+                return;
+            }
+
+            handleAttack(deps);
         });
 
         return;

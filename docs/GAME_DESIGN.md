@@ -2,7 +2,7 @@
 
 > **For AI agents:** This document describes the active game, design goals, and implementation map. Update this file when gameplay systems change. Do not reference removed tower-defense code — it was deleted as obsolete.
 
-**Last updated:** 2026-09-22  
+**Last updated:** 2026-09-28  
 **Branch:** `puzzle-redesign` — **Loop Road** (two boards: walk map + chain combat)
 
 ---
@@ -20,7 +20,7 @@ The amber road is **not** painted on the card grid. The card grid is **not** whe
 
 ### Player fantasy
 
-> I walk a circular road with my chain board always on the left. I pack a layout, engage a station (board locks), resolve, unlock and rearrange between stations. Loot comes home and makes the next walk stronger.
+> I walk a circular road with my chain board always on the left. I pack a **combo wire**, engage a station, and ride a **3-loop crescendo** — storms light up, momentum builds, and between loops I protect or pivot the combo. Loot comes home and makes the next walk stronger.
 
 ### Pillars
 
@@ -28,17 +28,18 @@ The amber road is **not** painted on the card grid. The card grid is **not** whe
 2. **Stations on the loop** — specific steps hold enemies; advance to engage one at a time.
 3. **Prep then lock** — build the board before attack; after Engage you rearrange while reading intent; **Attack** locks into a **3-loop burst**.
 4. **Attack timing** — each card costs ticks (Attack = 10); enemy hits mid-chain every `attackDuration` ticks. Board marks **HIT** where the strike lands. Intent shows damage + timing.
-5. **Between Attacks** — after each loop (1–2 of 3), unlock for **3 board moves** (place/move/swap/pick up), then Attack again. No auto-repeat.
-6. **Burst break** — after 3 loops, if the enemy lives: unlock, take **3 cards** (pick directions), rearrange freely, Attack again. Repeat until KO. Station clear still grants a card.
-7. **Loot → home** — clear the loop → pick loot → stash. Optional dungeon.
+5. **Combo crescendo** — Fire / Rad / Bleed / Fortify / Overload storms are visible on the board + HUD forecast. Landing a combo earns **momentum** (`comboMomentumBonus` per stack) for later loops in the burst. Enemy HIT damage steps up per completed loop (`loopEnemyHitEscalation`).
+6. **Between Attacks** — after each loop (1–2 of 3), unlock briefly for **3 board moves** to protect or rebuild storms; next Attack **auto-fires** (or press Attack early).
+7. **Burst break** — after 3 loops, if the enemy lives: unlock, take **3 cards** (pick directions), rearrange freely, Attack again. Repeat until KO. Station clear still grants a card.
+8. **Loot → home** — clear the loop → pick loot → stash. Optional dungeon.
 
 ### Target loop (v1)
 
 ```
 Menu → Home (stash)
   → Walk map + chain board (left)
-  → Pack → Engage station → Attack
-  → Loop → up to 3 board moves → Attack → … (×3)
+  → Pack combos → Engage station → Attack
+  → Loop → protect/pivot storms (3 moves, auto next Attack) → … (×3, momentum up)
   → if alive: take 3 cards + rearrange → Attack again
   → KO → station card → walk map
   → all stations clear → Loot → Home
@@ -50,6 +51,7 @@ Menu → Home (stash)
 - Pure no-combat routing puzzles as the default product
 - Branching Slay-the-Spire map as the default
 - Unlimited free editing during a locked Attack chain (limited between-Attack moves only)
+- Parallel multi-cursor / adjacency-aura autobattler (combos ride the arrow wire)
 
 ### Implementation sketch
 
@@ -418,7 +420,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 | Add/edit enemies | `src/game/cardGame/config/enemies.json`, `enemyCatalog.ts`, `enemyPassives/`; in-fight look: `presentation/enemyIdentity.ts` + `public/assets/enemies/` |
 | Chain behavior | `src/game/cardGame/combat/AttackPipeline.ts` |
 | New card ability | `src/game/cardGame/effects/` (behaviors), `abilities/` (chain abilities: rad/fire/bleed/fortify/overload) + register in `chainAbilityRegistry.ts` |
-| Combo storm trail (visual) | Append a detector in `combat/comboTrailRegistry.ts` (Rad/Fire live there); type stacks stay in `typeStack.ts` |
+| Combo storm trail (visual) | Append a detector in `combat/comboTrailRegistry.ts` (Rad/Fire/Bleed/Fortify/Overload); type stacks stay in `typeStack.ts` |
+| Combo crescendo (Loop Road) | `comboMomentum.ts` + `CardGameSession` momentum / loop hit escalation; HUD forecast via `battleUiSync` → `GameHud` |
 | Input prompt glyphs (Deck / pads) | `public/assets/input-prompts/` + `src/game/input/inputPrompts.ts` + `InputPromptIcon`. Auto-detect pad; override via `setInputPromptDeviceOverride`. **Steam Deck is primary.** |
 | Bomb / trap conversion | `AttackPipeline.applyBombConversion` (runs first in `resolveChainSteps`) |
 | Enemy rad status | `CardGameSession.tickPoison`/`applyPoisonStacks` (via `abilityPoisonStacks`), display in `EnemyTargetView.setPoison` |
@@ -432,7 +435,8 @@ Implemented proc / routing mods live in `bodyMods.ts` + `CombatResolver.ts` (`ma
 
 | Date | Change |
 |------|--------|
-| 2026-09-22 | **Between-Attack moves.** Inside a 3-loop burst, after each Attack the board unlocks for **3 edits** (`loopBetweenAttackMoves`), then the player presses Attack again (no auto-repeat). After loop 3: full burst break + 3-card draft. |
+| 2026-09-28 | **Combo crescendo.** Bleed/Fortify/Overload join Rad/Fire as visible board storms; HUD shows damage forecast + loop/momentum. Landing combos builds `comboMomentum` across the 3-loop burst; enemy HIT damage steps up per loop (`loopEnemyHitEscalation`). Between-Attack copy is combo-aware; stronger combo/KO juice. |
+| 2026-09-22 | **Between-Attack moves.** Inside a 3-loop burst, after each Attack the board unlocks briefly for **3 edits** (`loopBetweenAttackMoves`), then the next Attack **auto-fires** after `loopBetweenAttackPauseMs` (Attack early still works). After loop 3: full burst break + 3-card draft. |
 | 2026-09-22 | **3-loop bursts.** Locked station fights run **3 Attacks**, then unlock for a **3-card draft** + rearrange before the next burst (until KO). No more infinite auto-loop. |
 | 2026-09-22 | **Less fight foresight.** Board shows **HIT** markers only (no running tick totals). Walk-map stations no longer list HP / hit ticks. Enemy intent still shows attack damage + HIT timing. |
 | 2026-09-22 | **Enemy hit every timer beat.** Mid-chain strikes land every `attackDuration` ticks (not only the first), and short chains still get the hit on the last card. Auto-loop rounds clear the mid-chain flag so each loop can hit again. |

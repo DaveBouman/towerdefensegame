@@ -8,19 +8,19 @@ export interface DamageTierStyle {
 const DAMAGE_TIERS: readonly { min: number; style: DamageTierStyle }[] = [
     {
         min: 40,
-        style: { color: '#ff2d2d', fontSize: 40, shakeIntensity: 0.028, hitstopMs: 88 },
+        style: { color: '#ff2d2d', fontSize: 44, shakeIntensity: 0.034, hitstopMs: 110 },
     },
     {
         min: 20,
-        style: { color: '#ff9f43', fontSize: 34, shakeIntensity: 0.018, hitstopMs: 56 },
+        style: { color: '#ff9f43', fontSize: 36, shakeIntensity: 0.022, hitstopMs: 72 },
     },
     {
         min: 10,
-        style: { color: '#ffe066', fontSize: 28, shakeIntensity: 0.011, hitstopMs: 32 },
+        style: { color: '#ffe066', fontSize: 30, shakeIntensity: 0.014, hitstopMs: 42 },
     },
     {
         min: 0,
-        style: { color: '#ff7675', fontSize: 22, shakeIntensity: 0.004, hitstopMs: 0 },
+        style: { color: '#ff7675', fontSize: 22, shakeIntensity: 0.005, hitstopMs: 0 },
     },
 ];
 
@@ -68,7 +68,7 @@ export const getDamageTierStyle = (damage: number): DamageTierStyle =>
 };
 
 /** Kill punch — stronger than a big hit so wipe moments land. */
-export const KILL_CAMERA_SHAKE = 0.03;
+export const KILL_CAMERA_SHAKE = 0.038;
 
 /** Later chain steps snap a bit faster — gentle acceleration, not a blur. */
 export const getChainPaceMultiplier = (stepIndex: number): number =>
@@ -89,24 +89,24 @@ export const getBigMomentHoldMs = (moment: ChainMomentInput): number =>
 {
     if (moment.killed)
     {
-        return 200;
+        return 260;
     }
 
     if (moment.abilityDetonation)
     {
-        return 120;
+        return 150;
     }
 
     const damage = moment.damage ?? 0;
 
     if (damage >= 20)
     {
-        return 95;
+        return 120;
     }
 
     if (damage >= 10)
     {
-        return 42;
+        return 55;
     }
 
     return 0;

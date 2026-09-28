@@ -197,6 +197,19 @@ export interface TurnState {
     canEndTurn: boolean;
     /** Loop Road: remaining board edits between Attacks (undefined = unlimited). */
     boardMovesRemaining?: number;
+    /** Loop Road: combo momentum stacks earned this burst. */
+    comboMomentum?: number;
+    /** Damage multiplier from combo momentum (1 = none). */
+    comboMomentumMult?: number;
+    /** Attacks completed in the current burst. */
+    loopIndex?: number;
+    burstLimit?: number;
+    /** Projected chain damage (base steps + ability enemy damage), pre-mitigation. */
+    forecastDamage?: number;
+    /** Ability / storm bonus portion of the forecast. */
+    forecastBonus?: number;
+    /** Live combo storm labels (FIRE→3, BLEED→1, …). */
+    stormLabels?: string[];
 }
 
 export interface HandPenaltyResult {

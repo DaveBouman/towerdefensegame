@@ -43,8 +43,9 @@ export const getMidChainEnemyAttackPlan = (
 
     const readQueuedAttack = (): MidChainEnemyAttackPlan | null =>
     {
-        const queued = session.getQueuedEnemyTurn(combatant.instanceId)
-            ?? session.getTelegraphedEnemyTurn(combatant.instanceId);
+        // Prefer telegraphed (applies Loop Road hit escalation) over raw queue.
+        const queued = session.getTelegraphedEnemyTurn(combatant.instanceId)
+            ?? session.getQueuedEnemyTurn(combatant.instanceId);
 
         if (!queued)
         {

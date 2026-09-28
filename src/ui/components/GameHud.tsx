@@ -112,10 +112,15 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
     const needsTarget = readiness.reason === 'no-target';
     const boardMoves = turnState.boardMovesRemaining;
     const betweenAttackMoves = typeof boardMoves === 'number';
+    const stormLive = (turnState.stormLabels?.length ?? 0) > 0;
+    const primaryStorm = turnState.stormLabels?.[0];
     const showChainStartHint = chainStart.pickable
         && !rerollState.rerollModeActive
         && turnState.energy > 0
         && !betweenAttackMoves;
+    const showComboChip = typeof turnState.forecastDamage === 'number'
+        && turnState.forecastDamage > 0
+        && !captureMode;
 
     const deployHint = (() =>
     {
@@ -137,25 +142,35 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
 
         if (betweenAttackMoves)
         {
+            if (boardMoves > 0 && stormLive && primaryStorm)
+            {
+                return {
+                    title: `${primaryStorm} is live — move carefully. Next Attack auto-fires (or press Attack early).`,
+                    text: `${primaryStorm} live — ${boardMoves} move${boardMoves === 1 ? '' : 's'} to protect it.`,
+                };
+            }
+
             if (boardMoves > 0)
             {
                 return {
-                    title: 'Place, move, swap, or pick up cards — each counts as one move. Then Attack again.',
-                    text: `${boardMoves} board move${boardMoves === 1 ? '' : 's'} left.`,
+                    title: 'Place, move, swap, or pick up cards — each counts as one move. Build a combo storm before the next Attack auto-fires.',
+                    text: `${boardMoves} board move${boardMoves === 1 ? '' : 's'} — next Attack auto.`,
                 };
             }
 
             return {
-                title: 'Board moves used up — press Attack to fire the next loop.',
-                text: 'No moves left — Attack.',
+                title: 'Board moves used up — next Attack fires automatically (or press Attack now).',
+                text: 'No moves left — Attack auto.',
             };
         }
 
         if (turnState.energy > 0)
         {
             return {
-                title: 'Place cards and Attack. Enemy strikes back, then overclocks.',
-                text: 'Place cards, then Attack.',
+                title: 'Place cards and Attack. Wire combos (Fire, Rad, Bleed, Fortify, Overload) for crescendo across the burst.',
+                text: stormLive && primaryStorm
+                    ? `${primaryStorm} ready — Attack.`
+                    : 'Place cards, then Attack.',
             };
         }
 
@@ -164,6 +179,16 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
             text: 'Out of energy.',
         };
     })();
+
+    const momentumLabel = typeof turnState.comboMomentumMult === 'number'
+        && turnState.comboMomentumMult > 1.001
+        ? `COMBO ×${turnState.comboMomentumMult.toFixed(2).replace(/\.?0+$/, '')}`
+        : null;
+    const loopLabel = typeof turnState.loopIndex === 'number'
+        && typeof turnState.burstLimit === 'number'
+        && turnState.burstLimit > 0
+        ? `Loop ${Math.min(turnState.loopIndex + 1, turnState.burstLimit)}/${turnState.burstLimit}`
+        : null;
 
     return (
         <aside className={`game-hud${captureMode ? ' game-hud--capture' : ''}`}>
@@ -189,6 +214,29 @@ export const GameHud = ({ captureMode = false }: { captureMode?: boolean }) =>
                     {turnState.energy}/{turnState.maxEnergy}
                 </span>
             </div>
+            {showComboChip && (
+                <div
+                    className="game-hud__combo-chip"
+                    title={
+                        turnState.stormLabels?.length
+                            ? `Storms: ${turnState.stormLabels.join(', ')}`
+                            : 'Projected chain damage before enemy mitigation'
+                    }
+                >
+                    <span className="game-hud__combo-forecast">
+                        ~{turnState.forecastDamage}
+                        {(turnState.forecastBonus ?? 0) > 0
+                            ? ` (+${turnState.forecastBonus})`
+                            : ''}
+                    </span>
+                    {momentumLabel && (
+                        <span className="game-hud__combo-momentum">{momentumLabel}</span>
+                    )}
+                    {loopLabel && (
+                        <span className="game-hud__combo-loop">{loopLabel}</span>
+                    )}
+                </div>
+            )}
             {!captureMode && showChainStartHint && (
                 <p className="game-hud__chain-start-hint" role="status">
                     Chain start: row <strong>{chainStart.rowLabel}</strong>

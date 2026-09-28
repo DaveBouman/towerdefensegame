@@ -307,6 +307,37 @@ html, body, #root {
     color: #ffe6b0;
 }
 
+.game-hud__combo-chip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    flex: 0 0 auto;
+    padding: 4px 8px;
+    border: 1px solid rgba(255, 120, 180, 0.45);
+    background: rgba(40, 8, 28, 0.72);
+    font-size: calc(11px * var(--_ui, 1));
+    letter-spacing: 0.04em;
+    color: #ffd0ea;
+}
+
+.game-hud__combo-forecast {
+    font-weight: 800;
+    color: #ffe066;
+}
+
+.game-hud__combo-momentum {
+    font-weight: 700;
+    color: #ff7ab8;
+    text-transform: uppercase;
+}
+
+.game-hud__combo-loop {
+    font-weight: 600;
+    color: #b8f8ff;
+    opacity: 0.9;
+}
+
 .game-hud__end-turn {
     padding: 8px 16px;
     border: 1px solid #e08a3c;

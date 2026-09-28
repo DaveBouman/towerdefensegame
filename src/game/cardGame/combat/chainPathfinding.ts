@@ -304,7 +304,7 @@ export interface ChainPathPreview
 {
     slots: SlotPosition[];
     /** Behavior ids aligned with `slots` — for streak bars / teaching overlays. */
-    steps: { slot: SlotPosition; behaviorId: string }[];
+    steps: { slot: SlotPosition; behaviorId: string; definitionId: string }[];
     /** Index of the first Reroute whose exit is guessed for preview (null = fully known). */
     tentativeFromIndex: number | null;
 }
@@ -334,7 +334,7 @@ export const planChainPathPreview = (
 ): ChainPathPreview =>
 {
     const slots: SlotPosition[] = [];
-    const steps: { slot: SlotPosition; behaviorId: string }[] = [];
+    const steps: { slot: SlotPosition; behaviorId: string; definitionId: string }[] = [];
     const walkState = createChainWalkState();
     let current: SlotPosition | null = findChainStart(board, startSlot);
     let forcedExit: CardDirection | null = null;
@@ -355,7 +355,11 @@ export const planChainPathPreview = (
 
         forcedExit = null;
         slots.push({ ...step.slot });
-        steps.push({ slot: { ...step.slot }, behaviorId: step.behaviorId });
+        steps.push({
+            slot: { ...step.slot },
+            behaviorId: step.behaviorId,
+            definitionId: step.definitionId,
+        });
 
         const definition = getCardDefinitionOrThrow(step.definitionId);
 
