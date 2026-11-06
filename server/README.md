@@ -31,4 +31,4 @@ Default: `ws://127.0.0.1:8787` (`AB_WS_PORT`, `VITE_AB_WS_URL`).
 - Welcome includes `rules` (buy/sell/reroll costs for UI).
 - State snapshots omit run seed and enemy shop/gold.
 - Battle logs have seeds stripped.
-- **Online (async):** `end_turn` submits your Turn N team. You fight another player’s Turn N snapshot; they are not pulled into your battle. Rematch = fight their last stored lineup as a ghost (no invite).
+- **Online match bank:** `end_turn` saves your lineup by turn. Matchmaking only pairs same run depth (Turn N vs Turn N). Your save stays for later opponents. Rematch = ghost of last lineup. No invites.

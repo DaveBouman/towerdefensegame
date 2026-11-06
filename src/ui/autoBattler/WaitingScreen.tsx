@@ -19,14 +19,15 @@ export const WaitingScreen = ({ controller }: WaitingScreenProps) =>
                     {state.lastMessage || `Waiting for another player on Turn ${turn}…`}
                 </p>
                 <p className="ab-tagline">
-                    Async matchmaking: you fight a Turn {turn} lineup snapshot. That player is not pulled into your fight.
+                    Your Turn {turn} save is in the bank. Waiting for another Turn {turn} save —
+                    only same run depth matches.
                 </p>
                 <button
                     type="button"
                     className="ab-btn ab-btn--ghost ab-btn--wide"
                     onClick={onCancelQueue}
                 >
-                    Cancel wait (back to shop)
+                    Stop waiting (keep save)
                 </button>
             </CyberPanel>
         </div>

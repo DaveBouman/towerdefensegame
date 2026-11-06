@@ -30,7 +30,7 @@ export const RunEndScreen = ({ controller }: RunEndScreenProps) =>
                 <footer className="ab-actions ab-actions--stack">
                     {!won && online && state.canRematchLast ? (
                         <button type="button" className="ab-btn ab-btn--primary" onClick={onRematchLast}>
-                            Rematch last lineup
+                            Rematch last saved lineup
                         </button>
                     ) : null}
                     {online ? (

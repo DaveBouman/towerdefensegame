@@ -31,15 +31,17 @@ import {
 } from '../src/game/autoBattler/serverOnly/buildClientView';
 
 /**
- * Async PvP (SAP-style):
- * - You submit a team for Turn N.
- * - You fight a *snapshot* of someone else's Turn N team.
- * - That does NOT force them to fight you — they get their own opponent when ready.
- * - Rematch last = fight a stored ghost of their last lineup (no invite).
+ * Async match bank (SAP-style):
+ * - End turn → your lineup is *saved* keyed by run depth (turn number).
+ * - You only fight a random save from the *same* turn — never Turn 4 vs Turn 1.
+ * - Saving your run does not make them fight you; others can pull your save later.
+ * - Rematch = fight the stored ghost of the last lineup you faced (no invite).
  */
 
-interface TurnSubmission {
-    guestId: string;
+interface SavedLineup {
+    id: string;
+    turn: number;
+    ownerGuestId: string;
     team: Team;
 }
 
@@ -53,9 +55,7 @@ export interface PlayerSocket {
     pvpPhase: 'shop' | 'waiting' | 'battle' | 'victory' | 'defeat';
     pvpBattle: LockedBattle | null;
     lastMessage: string;
-    /** Ghost team from the last battle you fought (for async rematch). */
     lastOpponentTeam: Team | null;
-    /** If set, next End Turn fights this ghost instead of the pool. */
     pendingGhostTeam: Team | null;
 }
 
@@ -77,12 +77,23 @@ const welcome = (ws: WebSocket, guestId: string): void =>
     });
 };
 
+const pickRandom = <T>(items: readonly T[]): T | null =>
+{
+    if (items.length === 0)
+    {
+        return null;
+    }
+
+    return items[Math.floor(Math.random() * items.length)]!;
+};
+
 export class SessionStore
 {
     private readonly players = new Map<string, PlayerSocket>();
     private readonly bySocket = new Map<WebSocket, string>();
-    /** Turn → submitted lineups available as async opponents. */
-    private readonly turnPools = new Map<number, TurnSubmission[]>();
+    /** Saved lineups by turn — random opponents pull from here. */
+    private readonly savedByTurn = new Map<number, SavedLineup[]>();
+    private saveCounter = 1;
     private battleCounter = 1;
 
     connect (ws: WebSocket): PlayerSocket
@@ -148,7 +159,7 @@ export class SessionStore
             return;
         }
 
-        this.removeSubmissions(guestId);
+        // Keep their saved lineups in the bank so others can still fight them.
         this.players.delete(guestId);
         this.bySocket.delete(ws);
     }
@@ -211,7 +222,7 @@ export class SessionStore
                 this.startPvpRun(player, null);
                 break;
             case 'cancel_queue':
-                this.cancelPvpWaitOrLeave(player);
+                this.cancelWaitOrLeave(player);
                 break;
             case 'shop_buy':
                 this.shopAction(player, (run) => applyBuy(run, message.offerUid));
@@ -247,7 +258,6 @@ export class SessionStore
 
     private startVsAi (player: PlayerSocket): void
     {
-        this.removeSubmissions(player.guestId);
         player.mode = 'vs_ai';
         player.pvpShop = null;
         player.pvpBattle = null;
@@ -258,7 +268,6 @@ export class SessionStore
 
     private startPvpRun (player: PlayerSocket, ghostTeam: Team | null): void
     {
-        this.removeSubmissions(player.guestId);
         player.mode = 'pvp';
         player.run = null;
         player.pvpSeed = `PVP-${player.guestId}-${Date.now()}`;
@@ -267,12 +276,11 @@ export class SessionStore
         player.pvpBattle = null;
         player.pendingGhostTeam = ghostTeam ? cloneTeam(ghostTeam) : null;
         player.lastMessage = ghostTeam
-            ? 'Rematch — Turn 1 shop. End turn to fight their last lineup (they are not notified).'
-            : 'Turn 1 shop. End turn to fight another Turn 1 lineup (async).';
+            ? 'Rematch — Turn 1 shop. End turn to fight their saved lineup (async ghost).'
+            : 'Turn 1 shop. End turn to save your run and fight a random saved opponent.';
         this.pushState(player);
     }
 
-    /** Async rematch: fight a stored ghost. No invite. */
     private rematchLastGhost (player: PlayerSocket): void
     {
         if (player.mode !== 'pvp' || player.pvpPhase !== 'defeat')
@@ -292,13 +300,13 @@ export class SessionStore
         this.startPvpRun(player, player.lastOpponentTeam);
     }
 
-    private cancelPvpWaitOrLeave (player: PlayerSocket): void
+    private cancelWaitOrLeave (player: PlayerSocket): void
     {
         if (player.mode === 'pvp' && player.pvpPhase === 'waiting')
         {
-            this.removeSubmissions(player.guestId);
+            // Keep their save in the bank; just stop waiting for a fight.
             player.pvpPhase = 'shop';
-            player.lastMessage = 'Left the matchmaking pool. Shop again, then End turn.';
+            player.lastMessage = 'Stopped waiting. Your lineup stays saved for others. End turn again when ready.';
             this.pushState(player);
 
             return;
@@ -386,7 +394,6 @@ export class SessionStore
 
     private leaveRun (player: PlayerSocket): void
     {
-        this.removeSubmissions(player.guestId);
         player.mode = 'menu';
         player.run = null;
         player.pvpShop = null;
@@ -394,6 +401,7 @@ export class SessionStore
         player.pvpPhase = 'shop';
         player.pendingGhostTeam = null;
         player.lastMessage = '';
+        // Saved lineups remain in the bank for random opponents.
         send(player.ws, { type: 'state', run: emptyClientRunView() });
     }
 
@@ -409,94 +417,84 @@ export class SessionStore
         const turn = player.pvpShop.turn;
         const myTeam = cloneTeam(player.pvpShop.team);
 
-        // Rematch ghost — fight immediately, no pool / no invite.
         if (player.pendingGhostTeam)
         {
             const ghost = cloneTeam(player.pendingGhostTeam);
             player.pendingGhostTeam = null;
             this.startOneWayBattle(player, ghost, turn, true);
+
             return;
         }
 
-        this.upsertSubmission(turn, player.guestId, myTeam);
-        player.pvpPhase = 'waiting';
-        player.lastMessage = `Waiting for a Turn ${turn} lineup to fight…`;
-        this.pushState(player);
+        // 1) Save this run's lineup so a random opponent can fight it later.
+        this.saveLineup(turn, player.guestId, myTeam);
 
-        const pool = this.turnPools.get(turn) ?? [];
+        // 2) Try to pull a random other saved lineup for this turn.
+        const foe = this.pickRandomSavedOpponent(turn, player.guestId);
+
+        if (foe)
+        {
+            this.startOneWayBattle(player, foe.team, turn, false);
+
+            return;
+        }
+
+        player.pvpPhase = 'waiting';
+        player.lastMessage = `Run saved for Turn ${turn}. Waiting for another saved lineup…`;
+        this.pushState(player);
         send(player.ws, {
             type: 'queued',
-            position: pool.length,
+            position: this.savedByTurn.get(turn)?.length ?? 0,
             turn,
         });
 
-        this.tryAssignOneWayBattles(turn);
+        // Anyone else already waiting can now pull this new save.
+        this.assignWaitingPlayers(turn);
     }
 
-    private upsertSubmission (turn: number, guestId: string, team: Team): void
+    private saveLineup (turn: number, ownerGuestId: string, team: Team): void
     {
-        const pool = this.turnPools.get(turn) ?? [];
-        const existing = pool.findIndex((entry) => entry.guestId === guestId);
-
-        if (existing >= 0)
-        {
-            pool[existing] = { guestId, team: cloneTeam(team) };
-        }
-        else
-        {
-            pool.push({ guestId, team: cloneTeam(team) });
-        }
-
-        this.turnPools.set(turn, pool);
+        const list = this.savedByTurn.get(turn) ?? [];
+        // One active save per owner per turn — replace if they re-submit.
+        const withoutOwner = list.filter((entry) => entry.ownerGuestId !== ownerGuestId);
+        withoutOwner.push({
+            id: `S${this.saveCounter++}`,
+            turn,
+            ownerGuestId,
+            team: cloneTeam(team),
+        });
+        this.savedByTurn.set(turn, withoutOwner);
     }
 
-    private removeSubmissions (guestId: string): void
+    private pickRandomSavedOpponent (turn: number, excludeGuestId: string): SavedLineup | null
     {
-        for (const [ turn, pool ] of this.turnPools)
-        {
-            const next = pool.filter((entry) => entry.guestId !== guestId);
+        const list = this.savedByTurn.get(turn) ?? [];
+        const others = list.filter((entry) => entry.ownerGuestId !== excludeGuestId);
 
-            if (next.length === 0)
-            {
-                this.turnPools.delete(turn);
-            }
-            else
-            {
-                this.turnPools.set(turn, next);
-            }
-        }
+        return pickRandom(others);
     }
 
-    /**
-     * For each waiting player on this turn, assign a one-way battle against
-     * someone else's submitted snapshot. The snapshot owner is not pulled in.
-     */
-    private tryAssignOneWayBattles (turn: number): void
+    /** When a new save appears, give waiting players a random opponent. */
+    private assignWaitingPlayers (turn: number): void
     {
-        const pool = this.turnPools.get(turn) ?? [];
-
-        if (pool.length < 2)
+        for (const player of this.players.values())
         {
-            return;
-        }
-
-        for (const entry of pool)
-        {
-            const player = this.players.get(entry.guestId);
-
-            if (!player || player.mode !== 'pvp' || player.pvpPhase !== 'waiting' || !player.pvpShop)
+            if (
+                player.mode !== 'pvp'
+                || player.pvpPhase !== 'waiting'
+                || !player.pvpShop
+                || player.pvpShop.turn !== turn
+            )
             {
                 continue;
             }
 
-            const opponent = pool.find((other) => other.guestId !== entry.guestId);
+            const foe = this.pickRandomSavedOpponent(turn, player.guestId);
 
-            if (!opponent)
+            if (foe)
             {
-                continue;
+                this.startOneWayBattle(player, foe.team, turn, false);
             }
-
-            this.startOneWayBattle(player, opponent.team, turn, false);
         }
     }
 
@@ -522,8 +520,8 @@ export class SessionStore
         player.lastOpponentTeam = foe;
         player.pvpPhase = 'battle';
         player.lastMessage = isGhostRematch
-            ? `Rematch vs last lineup (Turn ${turn}).`
-            : `Turn ${turn} battle vs a submitted lineup.`;
+            ? `Rematch vs saved lineup (Turn ${turn}).`
+            : `Turn ${turn} — fighting a random saved run.`;
 
         send(player.ws, { type: 'match_found', matchId: battleId, turn });
         this.pushState(player);
@@ -539,7 +537,6 @@ export class SessionStore
         }
 
         const { result } = player.pvpBattle;
-        // You are always side A in one-way battles.
         const won = result.winner === 'a';
         const lost = result.winner === 'b';
         let shop = { ...player.pvpShop };
@@ -550,31 +547,13 @@ export class SessionStore
         }
         else if (lost)
         {
-            const damage = livesLostOnDefeat(result.survivingB);
-            shop = { ...shop, lives: Math.max(0, shop.lives - damage) };
+            shop = {
+                ...shop,
+                lives: Math.max(0, shop.lives - livesLostOnDefeat(result.survivingB)),
+            };
         }
 
-        const finishedTurn = shop.turn;
         player.pvpBattle = null;
-        this.removeSubmissions(player.guestId);
-
-        // Drop this player's finished-turn snapshot so they don't linger as bait forever
-        // after advancing — already removed all; re-add others stay.
-        const pool = this.turnPools.get(finishedTurn);
-
-        if (pool)
-        {
-            const next = pool.filter((entry) => entry.guestId !== player.guestId);
-
-            if (next.length === 0)
-            {
-                this.turnPools.delete(finishedTurn);
-            }
-            else
-            {
-                this.turnPools.set(finishedTurn, next);
-            }
-        }
 
         if (shop.wins >= AUTO_BATTLER_RULES.winsToVictory)
         {
@@ -591,7 +570,7 @@ export class SessionStore
             player.pvpShop = shop;
             player.pvpPhase = 'defeat';
             player.lastMessage = player.lastOpponentTeam
-                ? 'Integrity depleted. Rematch their last lineup (async) or find a new opponent.'
+                ? 'Integrity depleted. Rematch that saved lineup or find a new opponent.'
                 : 'Integrity depleted.';
             this.pushState(player);
 
@@ -605,7 +584,7 @@ export class SessionStore
         );
         player.pvpShop = { ...shop, lives: shop.lives, wins: shop.wins };
         player.pvpPhase = 'shop';
-        player.lastMessage = `Turn ${nextTurn} shop. End turn to fight another Turn ${nextTurn} lineup.`;
+        player.lastMessage = `Turn ${nextTurn} shop. End turn to save your run and fight a random Turn ${nextTurn} save.`;
         this.pushState(player);
     }
 
@@ -637,9 +616,9 @@ export class SessionStore
         const battle = player.pvpBattle
             ? buildClientBattleRemapped(player.pvpBattle, true)
             : null;
-        const pool = this.turnPools.get(shop.turn) ?? [];
+        const savedCount = this.savedByTurn.get(shop.turn)?.length ?? 0;
         const waitingMsg = player.pvpPhase === 'waiting'
-            ? `Waiting for a Turn ${shop.turn} lineup… (${pool.length} submitted)`
+            ? `Your Turn ${shop.turn} run is saved (${savedCount} in bank). Waiting for another save…`
             : player.lastMessage;
 
         return {

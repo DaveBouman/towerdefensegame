@@ -61,7 +61,7 @@ npm run dev      # Vite client
 1. Client never imports `server.ts`, `battle/`, `shop.ts`, `ai/`, `run/`, or `unitRegistry`.
 2. `buildClientRunView` strips enemy shop/gold and run seed; battle log seeds cleared.
 3. Welcome pushes `PublicRules` for button labels — server still validates costs.
-4. **Online is async:** End turn submits your Turn N lineup. You fight someone else’s Turn N **snapshot** — they are not invited and do not auto-fight you. After a **loss**, **Rematch last lineup** fights a stored ghost of that team (no invite), or **New opponent** re-enters the pool.
+4. **Online match bank:** End turn **saves** your lineup keyed by **run depth** (Turn N). You only fight another Turn N save — never Turn 1 vs Turn 4. Your save stays for others later (no invites). After a **loss**, rematch that last save as a ghost, or start fresh.
 
 ## Gameplay (v1)
 

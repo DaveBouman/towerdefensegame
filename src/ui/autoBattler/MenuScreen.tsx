@@ -25,8 +25,8 @@ export const MenuScreen = ({ controller }: MenuScreenProps) =>
                 </p>
                 <ul className="ab-bullets">
                     <li>Thin client — intents only; no local sim authority</li>
-                    <li>Online is async: you fight their lineup, they do not auto-fight yours</li>
-                    <li>Turn N only matches Turn N snapshots</li>
+                    <li>End turn saves your run — others can fight that save later</li>
+                    <li>Only same run depth matches (Turn 4 never fights Turn 1)</li>
                 </ul>
                 <div className="ab-actions ab-actions--stack">
                     <button
