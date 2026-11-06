@@ -2,7 +2,9 @@
 
 ## Project
 
-Card-chain combat game (Phaser + React). See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) for architecture, balance config paths, design goals, and roadmap.
+Super Auto Pets–style cyberpunk auto battler with an **authoritative WebSocket server** (`npm run server`) and thin React client. See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md).
+
+Shared domain: `src/game/autoBattler/`. Server: `server/`. UI: `src/ui/autoBattler/`. Do not trust client-side battle/shop outcomes. Legacy card-chain code under `src/game/cardGame/` is not the App entry.
 
 ## Do not use
 

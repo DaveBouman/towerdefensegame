@@ -1,0 +1,110 @@
+[
+  {
+    "id": "striker",
+    "label": "Attack",
+    "tier": 1,
+    "attack": 2,
+    "health": 3,
+    "abilityId": "none",
+    "tooltip": "No ability."
+  },
+  {
+    "id": "ward",
+    "label": "Defend",
+    "tier": 1,
+    "attack": 1,
+    "health": 4,
+    "abilityId": "buffBehindStart",
+    "tooltip": "Start: friend behind +1 HP."
+  },
+  {
+    "id": "charge",
+    "label": "Charge",
+    "tier": 1,
+    "attack": 1,
+    "health": 2,
+    "abilityId": "faintSummonSpark",
+    "tooltip": "Faint: summon a 1/1 Spark."
+  },
+  {
+    "id": "fire",
+    "label": "Fire",
+    "tier": 2,
+    "attack": 3,
+    "health": 2,
+    "abilityId": "splashBeforeAttack",
+    "tooltip": "Before attack: deal 1 to 2nd enemy."
+  },
+  {
+    "id": "blast",
+    "label": "Blast",
+    "tier": 2,
+    "attack": 2,
+    "health": 2,
+    "abilityId": "snipeFrontStart",
+    "tooltip": "Start: deal 2 to enemy front."
+  },
+  {
+    "id": "rad",
+    "label": "Rad",
+    "tier": 2,
+    "attack": 2,
+    "health": 3,
+    "abilityId": "faintAoe",
+    "tooltip": "Faint: deal 1 to all enemies."
+  },
+  {
+    "id": "trap",
+    "label": "Trap",
+    "tier": 2,
+    "attack": 1,
+    "health": 3,
+    "abilityId": "faintHurtAttacker",
+    "tooltip": "Faint: deal 3 to who killed it."
+  },
+  {
+    "id": "thorns",
+    "label": "Thorns",
+    "tier": 2,
+    "attack": 1,
+    "health": 4,
+    "abilityId": "hurtReflect",
+    "tooltip": "Hurt: deal 1 to attacker."
+  },
+  {
+    "id": "boost",
+    "label": "Boost",
+    "tier": 3,
+    "attack": 2,
+    "health": 2,
+    "abilityId": "buffAdjacentStart",
+    "tooltip": "Start: adjacent friends +1/+1."
+  },
+  {
+    "id": "leech",
+    "label": "Leech",
+    "tier": 3,
+    "attack": 2,
+    "health": 3,
+    "abilityId": "knockOutHeal",
+    "tooltip": "Knock out: heal 3."
+  },
+  {
+    "id": "surge",
+    "label": "Surge",
+    "tier": 3,
+    "attack": 4,
+    "health": 2,
+    "abilityId": "lonelyPower",
+    "tooltip": "Before attack: +2 ATK if no friend behind."
+  },
+  {
+    "id": "switchback",
+    "label": "Switchback",
+    "tier": 3,
+    "attack": 3,
+    "health": 3,
+    "abilityId": "knockOutPushBack",
+    "tooltip": "Knock out: move to back."
+  }
+]

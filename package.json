@@ -1,6 +1,6 @@
 {
   "name": "signal-chain",
-  "description": "Signal Chain — card-chain combat gauntlet (Phaser + React). Packaged for web; Electron/Steam via docs/electron-steam.md.",
+  "description": "Signal Chain — Super Auto Pets–style cyberpunk auto battler (React). Packaged for web; Electron/Steam via docs/electron-steam.md.",
   "version": "1.1.0",
   "productName": "Signal Chain",
   "repository": {
@@ -35,6 +35,8 @@
     "dist:linux": "npm run generate-app-icon && npm run build-nolog && node scripts/run-electron-builder.mjs --linux",
     "test": "vitest run",
     "test:watch": "vitest",
+    "server": "tsx server/index.ts",
+    "server:dev": "tsx watch server/index.ts",
     "generate-sfx": "node scripts/generate-sfx.mjs",
     "generate-app-icon": "node scripts/generate-app-icon.mjs",
     "trim-bgm": "node scripts/trim-bgm.mjs",
@@ -45,7 +47,8 @@
   "dependencies": {
     "phaser": "4.0.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "ws": "^8.22.1"
   },
   "optionalDependencies": {
     "steamworks.js": "^0.4.0"
@@ -58,6 +61,7 @@
     "@resvg/resvg-js": "^2.6.2",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@types/ws": "^8.18.2",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^35.0.0",
     "electron-builder": "26.16.1",
@@ -68,6 +72,7 @@
     "globals": "^16.0.0",
     "sharp": "^0.35.3",
     "terser": "^5.28.1",
+    "tsx": "^4.23.15",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.26.1",
     "vite": "^6.3.1",

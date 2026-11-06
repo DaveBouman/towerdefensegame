@@ -1,0 +1,16 @@
+{
+  "teamSize": 5,
+  "shopSize": 3,
+  "startingGold": 10,
+  "goldPerTurn": 10,
+  "buyCost": 3,
+  "sellReward": 1,
+  "rerollCost": 1,
+  "startingLives": 10,
+  "winsToVictory": 10,
+  "maxTier": 4,
+  "tierByTurn": [1, 1, 2, 2, 3, 3, 4, 4, 4, 4],
+  "livesLostBase": 1,
+  "livesLostPerSurvivor": 1,
+  "livesLostCap": 5
+}
