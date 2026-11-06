@@ -14,8 +14,8 @@ export interface AutoBattlerSocketHandlers {
     onStatus: (status: ConnectionStatus, detail?: string) => void;
     onWelcome: (guestId: string, rules: PublicRules) => void;
     onState: (run: ClientRunView) => void;
-    onQueued?: (position: number) => void;
-    onMatchFound?: (matchId: string) => void;
+    onQueued?: (position: number, turn: number) => void;
+    onMatchFound?: (matchId: string, turn: number) => void;
     onError?: (message: string) => void;
 }
 
@@ -154,10 +154,10 @@ export class AutoBattlerSocket
                 this.handlers.onState(message.run);
                 break;
             case 'queued':
-                this.handlers.onQueued?.(message.position);
+                this.handlers.onQueued?.(message.position, message.turn);
                 break;
             case 'match_found':
-                this.handlers.onMatchFound?.(message.matchId);
+                this.handlers.onMatchFound?.(message.matchId, message.turn);
                 break;
             case 'error':
                 this.handlers.onError?.(message.message);

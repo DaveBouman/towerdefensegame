@@ -23,6 +23,8 @@ export interface ClientRunView {
     battle: ClientLockedBattle | null;
     lastMessage: string;
     matchId?: string;
+    /** Defeat: rematch their last lineup as an async ghost (no invite). */
+    canRematchLast?: boolean;
 }
 
 export type ClientToServerMessage =
@@ -37,13 +39,14 @@ export type ClientToServerMessage =
     | { type: 'shop_move'; from: number; to: number }
     | { type: 'end_turn' }
     | { type: 'battle_continue' }
-    | { type: 'leave_run' };
+    | { type: 'leave_run' }
+    | { type: 'rematch_last' };
 
 export type ServerToClientMessage =
     | { type: 'welcome'; guestId: string; serverTime: number; rules: PublicRules }
     | { type: 'state'; run: ClientRunView }
-    | { type: 'queued'; position: number }
-    | { type: 'match_found'; matchId: string }
+    | { type: 'queued'; position: number; turn: number }
+    | { type: 'match_found'; matchId: string; turn: number }
     | { type: 'error'; message: string };
 
 export const DEFAULT_AB_WS_PORT = 8787;

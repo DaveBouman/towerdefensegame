@@ -88,7 +88,7 @@ export interface AutoBattlerRules {
     livesLostCap: number;
 }
 
-export type RunPhase = 'menu' | 'shop' | 'battle' | 'victory' | 'defeat';
+export type RunPhase = 'menu' | 'shop' | 'waiting' | 'battle' | 'victory' | 'defeat';
 
 export interface LockedBattle {
     seed: string;

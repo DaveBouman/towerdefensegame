@@ -21,41 +21,42 @@ import type {
 import { beginShopTurn, startNewRunShop } from '../src/game/autoBattler/shop';
 import { simulateBattle } from '../src/game/autoBattler/battle/simulateBattle';
 import { AUTO_BATTLER_RULES, livesLostOnDefeat } from '../src/game/autoBattler/config/rules';
+import { createEmptyTeam } from '../src/game/autoBattler/shared/emptyShop';
 import { cloneTeam } from '../src/game/autoBattler/unitRegistry';
-import type { LockedBattle, PlayerShopState } from '../src/game/autoBattler/types';
+import type { LockedBattle, PlayerShopState, Team } from '../src/game/autoBattler/types';
 import {
     buildClientBattleRemapped,
     buildClientRunView,
     emptyClientRunView,
 } from '../src/game/autoBattler/serverOnly/buildClientView';
 
+/**
+ * Async PvP (SAP-style):
+ * - You submit a team for Turn N.
+ * - You fight a *snapshot* of someone else's Turn N team.
+ * - That does NOT force them to fight you — they get their own opponent when ready.
+ * - Rematch last = fight a stored ghost of their last lineup (no invite).
+ */
+
+interface TurnSubmission {
+    guestId: string;
+    team: Team;
+}
+
 export interface PlayerSocket {
     guestId: string;
     ws: WebSocket;
     run: AutoBattlerRunState | null;
     mode: 'menu' | 'vs_ai' | 'pvp';
-    matchId: string | null;
-    queued: boolean;
-    /** PvP: locked shop for this turn. */
-    locked: boolean;
-    /** PvP: acknowledged battle playback. */
-    battleAck: boolean;
-}
-
-interface PvpMatch {
-    id: string;
-    seed: string;
-    playerA: string;
-    playerB: string;
-    turn: number;
-    shopA: PlayerShopState;
-    shopB: PlayerShopState;
-    phase: 'shop' | 'battle' | 'victory_a' | 'victory_b';
-    battle: LockedBattle | null;
-    livesA: number;
-    livesB: number;
-    winsA: number;
-    winsB: number;
+    pvpShop: PlayerShopState | null;
+    pvpSeed: string;
+    pvpPhase: 'shop' | 'waiting' | 'battle' | 'victory' | 'defeat';
+    pvpBattle: LockedBattle | null;
+    lastMessage: string;
+    /** Ghost team from the last battle you fought (for async rematch). */
+    lastOpponentTeam: Team | null;
+    /** If set, next End Turn fights this ghost instead of the pool. */
+    pendingGhostTeam: Team | null;
 }
 
 const send = (ws: WebSocket, message: ServerToClientMessage): void =>
@@ -80,24 +81,14 @@ export class SessionStore
 {
     private readonly players = new Map<string, PlayerSocket>();
     private readonly bySocket = new Map<WebSocket, string>();
-    private readonly queue: string[] = [];
-    private readonly matches = new Map<string, PvpMatch>();
-    private matchCounter = 1;
+    /** Turn → submitted lineups available as async opponents. */
+    private readonly turnPools = new Map<number, TurnSubmission[]>();
+    private battleCounter = 1;
 
     connect (ws: WebSocket): PlayerSocket
     {
         const guestId = createGuestId();
-        const player: PlayerSocket = {
-            guestId,
-            ws,
-            run: null,
-            mode: 'menu',
-            matchId: null,
-            queued: false,
-            locked: false,
-            battleAck: false,
-        };
-
+        const player = this.blankPlayer(guestId, ws);
         this.players.set(guestId, player);
         this.bySocket.set(ws, guestId);
         welcome(ws, guestId);
@@ -106,10 +97,6 @@ export class SessionStore
         return player;
     }
 
-    /**
-     * Prefer reclaiming a stored guest id when the previous socket is dead.
-     * Never let two live sockets share one guest (anti-session-hijack lite).
-     */
     hello (ws: WebSocket, requestedGuestId?: string): void
     {
         const currentId = this.bySocket.get(ws);
@@ -130,7 +117,7 @@ export class SessionStore
         {
             const prior = this.players.get(requestedGuestId)!;
 
-            if (prior.ws !== ws && prior.ws.readyState === prior.ws.OPEN)
+            if (prior.ws !== ws && prior.ws.readyState === 1)
             {
                 welcome(ws, current.guestId);
                 this.pushState(current);
@@ -138,7 +125,6 @@ export class SessionStore
                 return;
             }
 
-            // Reclaim idle guest session onto this socket.
             this.players.delete(current.guestId);
             this.bySocket.set(ws, requestedGuestId);
             prior.ws = ws;
@@ -162,14 +148,7 @@ export class SessionStore
             return;
         }
 
-        this.leaveQueue(guestId);
-        const player = this.players.get(guestId);
-
-        if (player?.matchId)
-        {
-            this.abortMatch(player.matchId, guestId);
-        }
-
+        this.removeSubmissions(guestId);
         this.players.delete(guestId);
         this.bySocket.delete(ws);
     }
@@ -204,6 +183,23 @@ export class SessionStore
         }
     }
 
+    private blankPlayer (guestId: string, ws: WebSocket): PlayerSocket
+    {
+        return {
+            guestId,
+            ws,
+            run: null,
+            mode: 'menu',
+            pvpShop: null,
+            pvpSeed: '',
+            pvpPhase: 'shop',
+            pvpBattle: null,
+            lastMessage: '',
+            lastOpponentTeam: null,
+            pendingGhostTeam: null,
+        };
+    }
+
     private dispatch (player: PlayerSocket, message: ClientToServerMessage): void
     {
         switch (message.type)
@@ -212,11 +208,10 @@ export class SessionStore
                 this.startVsAi(player);
                 break;
             case 'queue_pvp':
-                this.enqueue(player);
+                this.startPvpRun(player, null);
                 break;
             case 'cancel_queue':
-                this.leaveQueue(player.guestId);
-                send(player.ws, { type: 'state', run: emptyClientRunView() });
+                this.cancelPvpWaitOrLeave(player);
                 break;
             case 'shop_buy':
                 this.shopAction(player, (run) => applyBuy(run, message.offerUid));
@@ -242,6 +237,9 @@ export class SessionStore
             case 'leave_run':
                 this.leaveRun(player);
                 break;
+            case 'rematch_last':
+                this.rematchLastGhost(player);
+                break;
             default:
                 send(player.ws, { type: 'error', message: 'Unknown message.' });
         }
@@ -249,19 +247,64 @@ export class SessionStore
 
     private startVsAi (player: PlayerSocket): void
     {
-        this.leaveQueue(player.guestId);
-
-        if (player.matchId)
-        {
-            this.abortMatch(player.matchId, player.guestId);
-        }
-
+        this.removeSubmissions(player.guestId);
         player.mode = 'vs_ai';
-        player.matchId = null;
-        player.locked = false;
-        player.battleAck = false;
+        player.pvpShop = null;
+        player.pvpBattle = null;
+        player.pendingGhostTeam = null;
         player.run = startRun();
         this.pushState(player);
+    }
+
+    private startPvpRun (player: PlayerSocket, ghostTeam: Team | null): void
+    {
+        this.removeSubmissions(player.guestId);
+        player.mode = 'pvp';
+        player.run = null;
+        player.pvpSeed = `PVP-${player.guestId}-${Date.now()}`;
+        player.pvpShop = startNewRunShop(player.pvpSeed);
+        player.pvpPhase = 'shop';
+        player.pvpBattle = null;
+        player.pendingGhostTeam = ghostTeam ? cloneTeam(ghostTeam) : null;
+        player.lastMessage = ghostTeam
+            ? 'Rematch — Turn 1 shop. End turn to fight their last lineup (they are not notified).'
+            : 'Turn 1 shop. End turn to fight another Turn 1 lineup (async).';
+        this.pushState(player);
+    }
+
+    /** Async rematch: fight a stored ghost. No invite. */
+    private rematchLastGhost (player: PlayerSocket): void
+    {
+        if (player.mode !== 'pvp' || player.pvpPhase !== 'defeat')
+        {
+            send(player.ws, { type: 'error', message: 'Rematch is only available after a loss.' });
+
+            return;
+        }
+
+        if (!player.lastOpponentTeam)
+        {
+            send(player.ws, { type: 'error', message: 'No last lineup to rematch.' });
+
+            return;
+        }
+
+        this.startPvpRun(player, player.lastOpponentTeam);
+    }
+
+    private cancelPvpWaitOrLeave (player: PlayerSocket): void
+    {
+        if (player.mode === 'pvp' && player.pvpPhase === 'waiting')
+        {
+            this.removeSubmissions(player.guestId);
+            player.pvpPhase = 'shop';
+            player.lastMessage = 'Left the matchmaking pool. Shop again, then End turn.';
+            this.pushState(player);
+
+            return;
+        }
+
+        this.leaveRun(player);
     }
 
     private shopAction (
@@ -269,9 +312,23 @@ export class SessionStore
         mutate: (run: AutoBattlerRunState) => AutoBattlerRunState,
     ): void
     {
-        if (player.mode === 'pvp' && player.matchId)
+        if (player.mode === 'pvp')
         {
-            this.pvpShopAction(player, mutate);
+            if (!player.pvpShop || player.pvpPhase !== 'shop')
+            {
+                send(player.ws, { type: 'error', message: 'Not in shop phase.' });
+
+                return;
+            }
+
+            const stub: AutoBattlerRunState = {
+                ...createMenuState(),
+                seed: player.pvpSeed,
+                phase: 'shop',
+                player: player.pvpShop,
+            };
+            player.pvpShop = mutate(stub).player;
+            this.pushState(player);
 
             return;
         }
@@ -289,7 +346,7 @@ export class SessionStore
 
     private endTurn (player: PlayerSocket): void
     {
-        if (player.mode === 'pvp' && player.matchId)
+        if (player.mode === 'pvp')
         {
             this.pvpEndTurn(player);
 
@@ -309,7 +366,7 @@ export class SessionStore
 
     private battleContinue (player: PlayerSocket): void
     {
-        if (player.mode === 'pvp' && player.matchId)
+        if (player.mode === 'pvp')
         {
             this.pvpBattleContinue(player);
 
@@ -329,403 +386,276 @@ export class SessionStore
 
     private leaveRun (player: PlayerSocket): void
     {
-        if (player.matchId)
-        {
-            this.abortMatch(player.matchId, player.guestId);
-        }
-
-        this.leaveQueue(player.guestId);
+        this.removeSubmissions(player.guestId);
         player.mode = 'menu';
         player.run = null;
-        player.matchId = null;
-        player.locked = false;
-        player.battleAck = false;
+        player.pvpShop = null;
+        player.pvpBattle = null;
+        player.pvpPhase = 'shop';
+        player.pendingGhostTeam = null;
+        player.lastMessage = '';
         send(player.ws, { type: 'state', run: emptyClientRunView() });
-    }
-
-    private pushState (player: PlayerSocket): void
-    {
-        if (player.mode === 'pvp' && player.matchId)
-        {
-            const match = this.matches.get(player.matchId);
-
-            if (match)
-            {
-                send(player.ws, { type: 'state', run: this.pvpClientView(match, player.guestId) });
-
-                return;
-            }
-        }
-
-        if (!player.run)
-        {
-            send(player.ws, { type: 'state', run: emptyClientRunView() });
-
-            return;
-        }
-
-        send(player.ws, {
-            type: 'state',
-            run: buildClientRunView(
-                player.run,
-                player.mode === 'vs_ai' ? 'vs_ai' : 'menu',
-                player.matchId ?? undefined,
-            ),
-        });
-    }
-
-    private enqueue (player: PlayerSocket): void
-    {
-        if (player.queued || player.mode === 'vs_ai' || player.matchId)
-        {
-            return;
-        }
-
-        player.queued = true;
-        this.queue.push(player.guestId);
-        send(player.ws, { type: 'queued', position: this.queue.length });
-
-        while (this.queue.length >= 2)
-        {
-            const a = this.queue.shift()!;
-            const b = this.queue.shift()!;
-            const pa = this.players.get(a);
-            const pb = this.players.get(b);
-
-            if (!pa || !pb)
-            {
-                if (pa)
-                {
-                    this.queue.unshift(a);
-                }
-
-                if (pb)
-                {
-                    this.queue.unshift(b);
-                }
-
-                break;
-            }
-
-            this.createMatch(pa, pb);
-        }
-    }
-
-    private leaveQueue (guestId: string): void
-    {
-        const player = this.players.get(guestId);
-
-        if (player)
-        {
-            player.queued = false;
-        }
-
-        const index = this.queue.indexOf(guestId);
-
-        if (index >= 0)
-        {
-            this.queue.splice(index, 1);
-        }
-    }
-
-    private createMatch (a: PlayerSocket, b: PlayerSocket): void
-    {
-        a.queued = false;
-        b.queued = false;
-        const id = `M${this.matchCounter++}`;
-        const seed = `PVP-${id}`;
-
-        const match: PvpMatch = {
-            id,
-            seed,
-            playerA: a.guestId,
-            playerB: b.guestId,
-            turn: 1,
-            shopA: startNewRunShop(`${seed}:a`),
-            shopB: startNewRunShop(`${seed}:b`),
-            phase: 'shop',
-            battle: null,
-            livesA: AUTO_BATTLER_RULES.startingLives,
-            livesB: AUTO_BATTLER_RULES.startingLives,
-            winsA: 0,
-            winsB: 0,
-        };
-
-        this.matches.set(id, match);
-        for (const p of [ a, b ])
-        {
-            p.mode = 'pvp';
-            p.matchId = id;
-            p.locked = false;
-            p.battleAck = false;
-            p.run = null;
-        }
-
-        send(a.ws, { type: 'match_found', matchId: id });
-        send(b.ws, { type: 'match_found', matchId: id });
-        this.pushState(a);
-        this.pushState(b);
-    }
-
-    private pvpShopOf (match: PvpMatch, guestId: string): PlayerShopState
-    {
-        return guestId === match.playerA ? match.shopA : match.shopB;
-    }
-
-    private pvpSetShop (match: PvpMatch, guestId: string, shop: PlayerShopState): void
-    {
-        if (guestId === match.playerA)
-        {
-            match.shopA = shop;
-        }
-        else
-        {
-            match.shopB = shop;
-        }
-    }
-
-    private pvpShopAction (
-        player: PlayerSocket,
-        mutate: (run: AutoBattlerRunState) => AutoBattlerRunState,
-    ): void
-    {
-        const match = player.matchId ? this.matches.get(player.matchId) : undefined;
-
-        if (!match || match.phase !== 'shop' || player.locked)
-        {
-            send(player.ws, { type: 'error', message: 'Cannot edit shop now.' });
-
-            return;
-        }
-
-        const shop = this.pvpShopOf(match, player.guestId);
-        const stub: AutoBattlerRunState = {
-            ...createMenuState(),
-            seed: match.seed,
-            phase: 'shop',
-            player: shop,
-        };
-        const next = mutate(stub);
-        this.pvpSetShop(match, player.guestId, next.player);
-        this.pushState(player);
     }
 
     private pvpEndTurn (player: PlayerSocket): void
     {
-        const match = player.matchId ? this.matches.get(player.matchId) : undefined;
-
-        if (!match || match.phase !== 'shop')
+        if (!player.pvpShop || player.pvpPhase !== 'shop')
         {
             send(player.ws, { type: 'error', message: 'Not in shop phase.' });
 
             return;
         }
 
-        player.locked = true;
-        const a = this.players.get(match.playerA);
-        const b = this.players.get(match.playerB);
+        const turn = player.pvpShop.turn;
+        const myTeam = cloneTeam(player.pvpShop.team);
 
-        if (!a?.locked || !b?.locked)
+        // Rematch ghost — fight immediately, no pool / no invite.
+        if (player.pendingGhostTeam)
         {
-            this.pushState(player);
-            const other = player.guestId === match.playerA ? b : a;
-
-            if (other)
-            {
-                this.pushState(other);
-            }
-
+            const ghost = cloneTeam(player.pendingGhostTeam);
+            player.pendingGhostTeam = null;
+            this.startOneWayBattle(player, ghost, turn, true);
             return;
         }
 
-        const battleSeed = `${match.seed}:battle:${match.turn}`;
-        match.battle = {
+        this.upsertSubmission(turn, player.guestId, myTeam);
+        player.pvpPhase = 'waiting';
+        player.lastMessage = `Waiting for a Turn ${turn} lineup to fight…`;
+        this.pushState(player);
+
+        const pool = this.turnPools.get(turn) ?? [];
+        send(player.ws, {
+            type: 'queued',
+            position: pool.length,
+            turn,
+        });
+
+        this.tryAssignOneWayBattles(turn);
+    }
+
+    private upsertSubmission (turn: number, guestId: string, team: Team): void
+    {
+        const pool = this.turnPools.get(turn) ?? [];
+        const existing = pool.findIndex((entry) => entry.guestId === guestId);
+
+        if (existing >= 0)
+        {
+            pool[existing] = { guestId, team: cloneTeam(team) };
+        }
+        else
+        {
+            pool.push({ guestId, team: cloneTeam(team) });
+        }
+
+        this.turnPools.set(turn, pool);
+    }
+
+    private removeSubmissions (guestId: string): void
+    {
+        for (const [ turn, pool ] of this.turnPools)
+        {
+            const next = pool.filter((entry) => entry.guestId !== guestId);
+
+            if (next.length === 0)
+            {
+                this.turnPools.delete(turn);
+            }
+            else
+            {
+                this.turnPools.set(turn, next);
+            }
+        }
+    }
+
+    /**
+     * For each waiting player on this turn, assign a one-way battle against
+     * someone else's submitted snapshot. The snapshot owner is not pulled in.
+     */
+    private tryAssignOneWayBattles (turn: number): void
+    {
+        const pool = this.turnPools.get(turn) ?? [];
+
+        if (pool.length < 2)
+        {
+            return;
+        }
+
+        for (const entry of pool)
+        {
+            const player = this.players.get(entry.guestId);
+
+            if (!player || player.mode !== 'pvp' || player.pvpPhase !== 'waiting' || !player.pvpShop)
+            {
+                continue;
+            }
+
+            const opponent = pool.find((other) => other.guestId !== entry.guestId);
+
+            if (!opponent)
+            {
+                continue;
+            }
+
+            this.startOneWayBattle(player, opponent.team, turn, false);
+        }
+    }
+
+    private startOneWayBattle (
+        player: PlayerSocket,
+        enemyTeam: Team,
+        turn: number,
+        isGhostRematch: boolean,
+    ): void
+    {
+        const battleId = `T${turn}-B${this.battleCounter++}`;
+        const battleSeed = `${player.pvpSeed}|${battleId}`;
+        const myTeam = cloneTeam(player.pvpShop!.team);
+        const foe = cloneTeam(enemyTeam);
+        const result = simulateBattle(battleSeed, myTeam, foe);
+
+        player.pvpBattle = {
             seed: battleSeed,
-            playerTeam: cloneTeam(match.shopA.team),
-            enemyTeam: cloneTeam(match.shopB.team),
-            result: simulateBattle(
-                battleSeed,
-                cloneTeam(match.shopA.team),
-                cloneTeam(match.shopB.team),
-            ),
+            playerTeam: myTeam,
+            enemyTeam: foe,
+            result,
         };
-        match.phase = 'battle';
-        a.locked = false;
-        b.locked = false;
-        a.battleAck = false;
-        b.battleAck = false;
-        this.pushState(a);
-        this.pushState(b);
+        player.lastOpponentTeam = foe;
+        player.pvpPhase = 'battle';
+        player.lastMessage = isGhostRematch
+            ? `Rematch vs last lineup (Turn ${turn}).`
+            : `Turn ${turn} battle vs a submitted lineup.`;
+
+        send(player.ws, { type: 'match_found', matchId: battleId, turn });
+        this.pushState(player);
     }
 
     private pvpBattleContinue (player: PlayerSocket): void
     {
-        const match = player.matchId ? this.matches.get(player.matchId) : undefined;
-
-        if (!match)
+        if (player.pvpPhase !== 'battle' || !player.pvpBattle || !player.pvpShop)
         {
-            send(player.ws, { type: 'error', message: 'No active match.' });
+            send(player.ws, { type: 'error', message: 'Not in battle phase.' });
 
             return;
         }
 
-        if (match.phase !== 'battle' || !match.battle)
+        const { result } = player.pvpBattle;
+        // You are always side A in one-way battles.
+        const won = result.winner === 'a';
+        const lost = result.winner === 'b';
+        let shop = { ...player.pvpShop };
+
+        if (won)
         {
+            shop = { ...shop, wins: shop.wins + 1 };
+        }
+        else if (lost)
+        {
+            const damage = livesLostOnDefeat(result.survivingB);
+            shop = { ...shop, lives: Math.max(0, shop.lives - damage) };
+        }
+
+        const finishedTurn = shop.turn;
+        player.pvpBattle = null;
+        this.removeSubmissions(player.guestId);
+
+        // Drop this player's finished-turn snapshot so they don't linger as bait forever
+        // after advancing — already removed all; re-add others stay.
+        const pool = this.turnPools.get(finishedTurn);
+
+        if (pool)
+        {
+            const next = pool.filter((entry) => entry.guestId !== player.guestId);
+
+            if (next.length === 0)
+            {
+                this.turnPools.delete(finishedTurn);
+            }
+            else
+            {
+                this.turnPools.set(finishedTurn, next);
+            }
+        }
+
+        if (shop.wins >= AUTO_BATTLER_RULES.winsToVictory)
+        {
+            player.pvpShop = shop;
+            player.pvpPhase = 'victory';
+            player.lastMessage = 'Circuit cleared — 10 wins.';
             this.pushState(player);
 
             return;
         }
 
-        player.battleAck = true;
-        const a = this.players.get(match.playerA);
-        const b = this.players.get(match.playerB);
-
-        if (!a?.battleAck || !b?.battleAck)
+        if (shop.lives <= 0)
         {
-            if (a)
-            {
-                this.pushState(a);
-            }
-
-            if (b)
-            {
-                this.pushState(b);
-            }
+            player.pvpShop = shop;
+            player.pvpPhase = 'defeat';
+            player.lastMessage = player.lastOpponentTeam
+                ? 'Integrity depleted. Rematch their last lineup (async) or find a new opponent.'
+                : 'Integrity depleted.';
+            this.pushState(player);
 
             return;
         }
 
-        const { result } = match.battle;
-
-        if (result.winner === 'a')
-        {
-            match.winsA += 1;
-            match.livesB = Math.max(0, match.livesB - livesLostOnDefeat(result.survivingA));
-        }
-        else if (result.winner === 'b')
-        {
-            match.winsB += 1;
-            match.livesA = Math.max(0, match.livesA - livesLostOnDefeat(result.survivingB));
-        }
-
-        a.battleAck = false;
-        b.battleAck = false;
-
-        if (match.winsA >= AUTO_BATTLER_RULES.winsToVictory || match.livesB <= 0)
-        {
-            match.phase = 'victory_a';
-            match.battle = null;
-        }
-        else if (match.winsB >= AUTO_BATTLER_RULES.winsToVictory || match.livesA <= 0)
-        {
-            match.phase = 'victory_b';
-            match.battle = null;
-        }
-        else
-        {
-            match.turn += 1;
-            match.shopA = beginShopTurn(
-                { ...match.shopA, turn: match.turn, lives: match.livesA, wins: match.winsA },
-                `${match.seed}:a`,
-            );
-            match.shopB = beginShopTurn(
-                { ...match.shopB, turn: match.turn, lives: match.livesB, wins: match.winsB },
-                `${match.seed}:b`,
-            );
-            match.shopA = { ...match.shopA, lives: match.livesA, wins: match.winsA };
-            match.shopB = { ...match.shopB, lives: match.livesB, wins: match.winsB };
-            match.phase = 'shop';
-            match.battle = null;
-        }
-
-        this.pushState(a);
-        this.pushState(b);
+        const nextTurn = shop.turn + 1;
+        shop = beginShopTurn(
+            { ...shop, turn: nextTurn, lives: shop.lives, wins: shop.wins },
+            player.pvpSeed,
+        );
+        player.pvpShop = { ...shop, lives: shop.lives, wins: shop.wins };
+        player.pvpPhase = 'shop';
+        player.lastMessage = `Turn ${nextTurn} shop. End turn to fight another Turn ${nextTurn} lineup.`;
+        this.pushState(player);
     }
 
-    private pvpClientView (match: PvpMatch, guestId: string): ClientRunView
+    private pushState (player: PlayerSocket): void
     {
-        const isA = guestId === match.playerA;
-        const selfShop = isA ? match.shopA : match.shopB;
-        const foeShop = isA ? match.shopB : match.shopA;
-        const selfWins = isA ? match.winsA : match.winsB;
-        const selfLives = isA ? match.livesA : match.livesB;
-        const foeWins = isA ? match.winsB : match.winsA;
-        const foeLives = isA ? match.livesB : match.livesA;
-        const self = this.players.get(guestId);
+        if (player.mode === 'pvp' && player.pvpShop)
+        {
+            send(player.ws, { type: 'state', run: this.pvpClientView(player) });
 
-        let phase: ClientRunView['phase'] = 'shop';
-        let lastMessage = `PvP turn ${match.turn}. Opponent ${foeWins}W / ${foeLives}♥`;
+            return;
+        }
 
-        if (match.phase === 'battle')
+        if (player.run)
         {
-            phase = 'battle';
-            lastMessage = self?.battleAck
-                ? 'Waiting for opponent to continue…'
-                : 'Battle resolving…';
+            send(player.ws, {
+                type: 'state',
+                run: buildClientRunView(player.run, 'vs_ai'),
+            });
+
+            return;
         }
-        else if (match.phase === 'victory_a')
-        {
-            phase = isA ? 'victory' : 'defeat';
-            lastMessage = isA ? 'You won the match.' : 'You lost the match.';
-        }
-        else if (match.phase === 'victory_b')
-        {
-            phase = isA ? 'defeat' : 'victory';
-            lastMessage = isA ? 'You lost the match.' : 'You won the match.';
-        }
-        else if (self?.locked)
-        {
-            lastMessage = 'Locked in — waiting for opponent…';
-        }
+
+        send(player.ws, { type: 'state', run: emptyClientRunView() });
+    }
+
+    private pvpClientView (player: PlayerSocket): ClientRunView
+    {
+        const shop = player.pvpShop!;
+        const battle = player.pvpBattle
+            ? buildClientBattleRemapped(player.pvpBattle, true)
+            : null;
+        const pool = this.turnPools.get(shop.turn) ?? [];
+        const waitingMsg = player.pvpPhase === 'waiting'
+            ? `Waiting for a Turn ${shop.turn} lineup… (${pool.length} submitted)`
+            : player.lastMessage;
 
         return {
             mode: 'pvp',
-            phase,
+            phase: player.pvpPhase,
             player: {
-                ...selfShop,
-                lives: selfLives,
-                wins: selfWins,
-                team: cloneTeam(selfShop.team),
-                offers: selfShop.offers.map((offer) => ({ ...offer })),
+                ...shop,
+                team: cloneTeam(shop.team),
+                offers: shop.offers.map((offer) => ({ ...offer })),
             },
-            enemyTeam: cloneTeam(foeShop.team),
-            battle: match.battle ? buildClientBattleRemapped(match.battle, isA) : null,
-            lastMessage,
-            matchId: match.id,
+            enemyTeam: battle
+                ? cloneTeam(battle.enemyTeam)
+                : createEmptyTeam(AUTO_BATTLER_RULES.teamSize),
+            battle,
+            lastMessage: waitingMsg,
+            canRematchLast: player.pvpPhase === 'defeat' && !!player.lastOpponentTeam,
         };
-    }
-
-    private abortMatch (matchId: string, leaverId: string): void
-    {
-        const match = this.matches.get(matchId);
-
-        if (!match)
-        {
-            return;
-        }
-
-        this.matches.delete(matchId);
-        const otherId = match.playerA === leaverId ? match.playerB : match.playerA;
-        const other = this.players.get(otherId);
-
-        if (other)
-        {
-            other.matchId = null;
-            other.mode = 'menu';
-            other.locked = false;
-            other.battleAck = false;
-            send(other.ws, { type: 'error', message: 'Opponent disconnected.' });
-            send(other.ws, { type: 'state', run: emptyClientRunView() });
-        }
-
-        const leaver = this.players.get(leaverId);
-
-        if (leaver)
-        {
-            leaver.matchId = null;
-            leaver.mode = 'menu';
-            leaver.locked = false;
-            leaver.battleAck = false;
-        }
     }
 }

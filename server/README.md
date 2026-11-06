@@ -31,4 +31,4 @@ Default: `ws://127.0.0.1:8787` (`AB_WS_PORT`, `VITE_AB_WS_URL`).
 - Welcome includes `rules` (buy/sell/reroll costs for UI).
 - State snapshots omit run seed and enemy shop/gold.
 - Battle logs have seeds stripped.
-- PvP: both players `end_turn`, then both `battle_continue` before the ladder advances.
+- **Online (async):** `end_turn` submits your Turn N team. You fight another player’s Turn N snapshot; they are not pulled into your battle. Rematch = fight their last stored lineup as a ghost (no invite).

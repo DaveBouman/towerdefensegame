@@ -45,6 +45,7 @@ export const useAutoBattlerController = () =>
             },
             onQueued: (position) => setQueuePosition(position),
             onMatchFound: () => setQueuePosition(null),
+            // turn is carried on ClientRunView.player.turn / lastMessage
             onError: (message) => setStatusDetail(message),
         });
 
@@ -134,6 +135,11 @@ export const useAutoBattlerController = () =>
         socketRef.current?.connect();
     }, []);
 
+    const onRematchLast = useCallback(() =>
+    {
+        send((socket) => socket.send({ type: 'rematch_last' }));
+    }, [ send ]);
+
     return {
         state,
         rules,
@@ -153,6 +159,7 @@ export const useAutoBattlerController = () =>
         onBattleContinue,
         onBackToMenu,
         onReconnect,
+        onRematchLast,
     };
 };
 

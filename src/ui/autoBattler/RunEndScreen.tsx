@@ -7,8 +7,15 @@ interface RunEndScreenProps {
 
 export const RunEndScreen = ({ controller }: RunEndScreenProps) =>
 {
-    const { state, onBackToMenu, onStartRun } = controller;
+    const {
+        state,
+        onBackToMenu,
+        onStartRun,
+        onQueuePvp,
+        onRematchLast,
+    } = controller;
     const won = state.phase === 'victory';
+    const online = state.mode === 'pvp';
 
     return (
         <div className="ab-screen ab-end">
@@ -19,14 +26,24 @@ export const RunEndScreen = ({ controller }: RunEndScreenProps) =>
                     {state.lastMessage}
                     {' '}
                     Wins {state.player.wins} · Lives left {state.player.lives}
-                    {state.mode === 'pvp' && state.matchId ? ` · Match ${state.matchId}` : ''}
                 </p>
-                <footer className="ab-actions">
+                <footer className="ab-actions ab-actions--stack">
+                    {!won && online && state.canRematchLast ? (
+                        <button type="button" className="ab-btn ab-btn--primary" onClick={onRematchLast}>
+                            Rematch last lineup
+                        </button>
+                    ) : null}
+                    {online ? (
+                        <button type="button" className="ab-btn ab-btn--ghost" onClick={onQueuePvp}>
+                            New opponent
+                        </button>
+                    ) : (
+                        <button type="button" className="ab-btn ab-btn--primary" onClick={onStartRun}>
+                            New run vs AI
+                        </button>
+                    )}
                     <button type="button" className="ab-btn ab-btn--ghost" onClick={onBackToMenu}>
                         Menu
-                    </button>
-                    <button type="button" className="ab-btn ab-btn--primary" onClick={onStartRun}>
-                        New run
                     </button>
                 </footer>
             </CyberPanel>

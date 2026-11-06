@@ -9,7 +9,6 @@ interface MenuScreenProps {
 export const MenuScreen = ({ controller }: MenuScreenProps) =>
 {
     const connected = controller.status === 'connected';
-    const queuing = controller.queuePosition !== null;
 
     return (
         <div className="ab-screen ab-menu">
@@ -26,8 +25,8 @@ export const MenuScreen = ({ controller }: MenuScreenProps) =>
                 </p>
                 <ul className="ab-bullets">
                     <li>Thin client — intents only; no local sim authority</li>
-                    <li>Server owns offers, gold, AI, and battle outcomes</li>
-                    <li>Vs AI · 1v1 queue (both must ack after battle)</li>
+                    <li>Online is async: you fight their lineup, they do not auto-fight yours</li>
+                    <li>Turn N only matches Turn N snapshots</li>
                 </ul>
                 <div className="ab-actions ab-actions--stack">
                     <button
@@ -38,24 +37,14 @@ export const MenuScreen = ({ controller }: MenuScreenProps) =>
                     >
                         Start run vs AI
                     </button>
-                    {queuing ? (
-                        <button
-                            type="button"
-                            className="ab-btn ab-btn--ghost ab-btn--wide"
-                            onClick={controller.onCancelQueue}
-                        >
-                            Cancel queue (#{controller.queuePosition})
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
-                            className="ab-btn ab-btn--ghost ab-btn--wide"
-                            disabled={!connected}
-                            onClick={controller.onQueuePvp}
-                        >
-                            Queue 1v1
-                        </button>
-                    )}
+                    <button
+                        type="button"
+                        className="ab-btn ab-btn--ghost ab-btn--wide"
+                        disabled={!connected}
+                        onClick={controller.onQueuePvp}
+                    >
+                        Play online
+                    </button>
                     {!connected ? (
                         <button
                             type="button"
