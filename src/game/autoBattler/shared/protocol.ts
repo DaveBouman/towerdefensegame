@@ -1,14 +1,26 @@
-import type { LockedBattle, PlayerShopState, RunPhase, Team } from '../types';
+import type {
+    BattleEvent,
+    BattleResult,
+    PlayerShopState,
+    RunPhase,
+    Team,
+} from '../types';
+import type { PublicRules } from './publicRules';
 
-/** What the client is allowed to see (enemy shop/gold hidden). */
+/** Battle snapshot for clients — no sim seed. */
+export interface ClientLockedBattle {
+    playerTeam: Team;
+    enemyTeam: Team;
+    result: BattleResult;
+}
+
+/** What the client is allowed to see (enemy shop/gold/seed hidden). */
 export interface ClientRunView {
     mode: 'menu' | 'vs_ai' | 'pvp';
-    seed: string;
     phase: RunPhase;
     player: PlayerShopState;
-    /** Enemy team only — never enemy shop/offers/gold. */
     enemyTeam: Team;
-    battle: LockedBattle | null;
+    battle: ClientLockedBattle | null;
     lastMessage: string;
     matchId?: string;
 }
@@ -28,13 +40,24 @@ export type ClientToServerMessage =
     | { type: 'leave_run' };
 
 export type ServerToClientMessage =
-    | { type: 'welcome'; guestId: string; serverTime: number }
+    | { type: 'welcome'; guestId: string; serverTime: number; rules: PublicRules }
     | { type: 'state'; run: ClientRunView }
     | { type: 'queued'; position: number }
     | { type: 'match_found'; matchId: string }
     | { type: 'error'; message: string };
 
 export const DEFAULT_AB_WS_PORT = 8787;
+
+export const sanitizeBattleLog = (log: readonly BattleEvent[]): BattleEvent[] =>
+    log.map((event) =>
+    {
+        if (event.type === 'start')
+        {
+            return { type: 'start', seed: '' };
+        }
+
+        return event;
+    });
 
 export const parseClientMessage = (raw: string): ClientToServerMessage | null =>
 {

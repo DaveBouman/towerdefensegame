@@ -1,16 +1,49 @@
-import type { ClientRunView, ClientToServerMessage, ServerToClientMessage } from './protocol';
-import { DEFAULT_AB_WS_PORT } from './protocol';
-import { emptyClientRunView } from './clientView';
+import {
+    DEFAULT_AB_WS_PORT,
+    emptyClientRunView,
+    type ClientRunView,
+    type ClientToServerMessage,
+    type PublicRules,
+    type ServerToClientMessage,
+    DEFAULT_PUBLIC_RULES,
+} from '../shared';
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
 export interface AutoBattlerSocketHandlers {
     onStatus: (status: ConnectionStatus, detail?: string) => void;
+    onWelcome: (guestId: string, rules: PublicRules) => void;
     onState: (run: ClientRunView) => void;
     onQueued?: (position: number) => void;
     onMatchFound?: (matchId: string) => void;
     onError?: (message: string) => void;
 }
+
+const GUEST_STORAGE_KEY = 'signal-chain-ab-guest';
+
+export const loadStoredGuestId = (): string | undefined =>
+{
+    try
+    {
+        return localStorage.getItem(GUEST_STORAGE_KEY) ?? undefined;
+    }
+    catch
+    {
+        return undefined;
+    }
+};
+
+export const storeGuestId = (guestId: string): void =>
+{
+    try
+    {
+        localStorage.setItem(GUEST_STORAGE_KEY, guestId);
+    }
+    catch
+    {
+        // ignore
+    }
+};
 
 const defaultWsUrl = (): string =>
 {
@@ -37,6 +70,7 @@ export class AutoBattlerSocket
     {
         this.handlers = handlers;
         this.url = url;
+        this.guestId = loadStoredGuestId() ?? null;
     }
 
     getGuestId (): string | null
@@ -69,7 +103,10 @@ export class AutoBattlerSocket
 
         ws.onerror = () =>
         {
-            this.handlers.onStatus('error', 'Cannot reach auto-battler server. Start it with npm run server.');
+            this.handlers.onStatus(
+                'error',
+                'Cannot reach auto-battler server. Start it with npm run server.',
+            );
         };
 
         ws.onmessage = (event) =>
@@ -110,6 +147,8 @@ export class AutoBattlerSocket
         {
             case 'welcome':
                 this.guestId = message.guestId;
+                storeGuestId(message.guestId);
+                this.handlers.onWelcome(message.guestId, message.rules ?? DEFAULT_PUBLIC_RULES);
                 break;
             case 'state':
                 this.handlers.onState(message.run);

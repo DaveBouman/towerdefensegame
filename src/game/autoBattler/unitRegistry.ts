@@ -1,9 +1,15 @@
-import unitsJson from './config/units.json';
-import type { AbilityId, UnitDefinition, UnitInstance } from './types';
+import type { AbilityId, UnitInstance } from './types';
+import {
+    getAllUnitDefinitions,
+    getUnitDefinition,
+    getUnitDefinitionOrThrow,
+} from './shared/unitCatalog';
 
-const definitions = unitsJson as UnitDefinition[];
-
-const byId = new Map(definitions.map((unit) => [ unit.id, unit ]));
+export {
+    getAllUnitDefinitions,
+    getUnitDefinition,
+    getUnitDefinitionOrThrow,
+};
 
 let nextUid = 1;
 
@@ -12,25 +18,8 @@ export const resetAutoBattlerUidCounter = (): void =>
     nextUid = 1;
 };
 
-export const getAllUnitDefinitions = (): readonly UnitDefinition[] => definitions;
-
-export const getUnitDefinition = (id: string): UnitDefinition | undefined =>
-    byId.get(id);
-
-export const getUnitDefinitionOrThrow = (id: string): UnitDefinition =>
-{
-    const def = byId.get(id);
-
-    if (!def)
-    {
-        throw new Error(`Unknown auto-battler unit: ${id}`);
-    }
-
-    return def;
-};
-
-export const getUnitsForTier = (tier: number): UnitDefinition[] =>
-    definitions.filter((unit) => unit.tier <= tier);
+export const getUnitsForTier = (tier: number) =>
+    getAllUnitDefinitions().filter((unit) => unit.tier <= tier);
 
 export const createUnitInstance = (
     definitionId: string,

@@ -1,20 +1,16 @@
 import { pickRandom, seedScope } from '../random/rng';
 import { AUTO_BATTLER_RULES, tierForTurn } from './config/rules';
+import { createEmptyShopState as createSharedEmptyShop, createEmptyTeam } from './shared/emptyShop';
 import type { PlayerShopState, ShopOffer, Team, UnitInstance } from './types';
 import { createUnitInstance, getUnitsForTier } from './unitRegistry';
 
-const emptyTeam = (): Team =>
-    Array.from({ length: AUTO_BATTLER_RULES.teamSize }, () => null);
-
+/** Server empty shop — fills starting gold from authoritative rules. */
 export const createEmptyShopState = (): PlayerShopState =>
     ({
+        ...createSharedEmptyShop(),
         gold: AUTO_BATTLER_RULES.startingGold,
-        tier: 1,
-        turn: 1,
         lives: AUTO_BATTLER_RULES.startingLives,
-        wins: 0,
-        team: emptyTeam(),
-        offers: [],
+        team: createEmptyTeam(AUTO_BATTLER_RULES.teamSize),
     });
 
 const rollOffer = (tier: number): ShopOffer =>
@@ -205,7 +201,7 @@ export const compactTeam = (team: Team): UnitInstance[] =>
 
 export const teamFromUnits = (units: readonly UnitInstance[]): Team =>
 {
-    const team = emptyTeam();
+    const team = createEmptyTeam(AUTO_BATTLER_RULES.teamSize);
 
     for (let i = 0; i < Math.min(units.length, team.length); i++)
     {

@@ -1,5 +1,8 @@
-import { getUnitDefinitionOrThrow } from '../../game/autoBattler';
-import type { ShopOffer, UnitInstance } from '../../game/autoBattler';
+import {
+    getUnitDefinitionOrThrow,
+    type ShopOffer,
+    type UnitInstance,
+} from '../../game/autoBattler/shared';
 
 interface UnitCardProps {
     definitionId: string;

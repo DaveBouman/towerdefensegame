@@ -8,79 +8,83 @@
 
 ## What this game is
 
-**Signal Chain** is a **Super Auto Pets–style auto battler** (cyberpunk theme) with an **authoritative Node WebSocket server** and a thin React client.
+**Signal Chain** is a **Super Auto Pets–style auto battler** with a hard **client / server split**:
 
-- **Shop phase:** spend gold to buy / sell / reroll / freeze units; arrange up to **5** team slots (left = front). Intents are sent to the server; offers/gold/RNG live server-side.
-- **Battle phase:** server runs pure `simulateBattle` and returns a log. Clients never decide winners.
-- **Run ladder:** 10 lives, 10 wins to clear. Shop tier rises by turn.
-- **Modes:** vs AI (server-hosted AI shop) and 1v1 matchmaking queue.
-- **Theme:** Signal Chain card identities as **units** with ATK/HP and trigger abilities.
-
-Legacy 5×5 card-chain / run-map code remains under `src/game/cardGame/` and `src/game/run/` but is **not** the active App entry.
+- **Client** = display + intents (WebSocket). No shop mutations, no battle authority.
+- **Server** = gold, offers, AI, `simulateBattle`, lives/wins, matchmaking.
+- **Shared** = protocol types, public rule labels, unit catalog (tooltips).
 
 ```mermaid
-sequenceDiagram
-  participant C as Client
-  participant S as Server
-  C->>S: shop_buy / end_turn
-  S->>S: mutateShop + simulateBattle
-  S->>C: state snapshot + battle log
+flowchart TB
+  subgraph client [Client]
+    UI[React UI]
+    Sock[AutoBattlerSocket]
+  end
+  subgraph shared [Shared]
+    Proto[protocol + PublicRules]
+    Catalog[unitCatalog]
+  end
+  subgraph serverHost [Server]
+    Sess[SessionStore]
+    Sim[simulateBattle + shop + AI]
+  end
+  UI --> Sock
+  Sock -->|intents| Sess
+  Sess -->|ClientRunView| Sock
+  Sess --> Sim
+  UI --> Proto
+  UI --> Catalog
+  Sess --> Proto
 ```
 
 ## How to run
 
 ```bash
-npm run server   # ws://127.0.0.1:8787
-npm run dev      # Vite client (must reach the server)
+npm run server   # authoritative WS :8787
+npm run dev      # Vite client
 ```
 
-Optional: `VITE_AB_WS_URL`, `AB_WS_PORT`. See [server/README.md](../server/README.md).
+## Implementation map
 
-## Active implementation map
+| Layer | Path |
+|-------|------|
+| Shared (client-safe) | `src/game/autoBattler/shared/` |
+| Client socket | `src/game/autoBattler/client/` |
+| Client barrel | `src/game/autoBattler/index.ts` (shared + socket only) |
+| Server domain | `src/game/autoBattler/{battle,shop,ai,run,unitRegistry,config}/` |
+| Server barrel | `src/game/autoBattler/server.ts` |
+| WS host | `server/` |
+| Boundary guard | `vite/blockServerAutoBattler.mjs` |
 
-| Area | Path |
-|------|------|
-| Domain (shared) | `src/game/autoBattler/` |
-| Net protocol / client view | `src/game/autoBattler/net/` |
-| Authoritative WS server | `server/index.ts`, `server/sessionStore.ts` |
-| React controller (thin) | `src/autoBattlerController/useAutoBattlerController.ts` |
-| UI | `src/ui/autoBattler/` |
-| Seeded RNG | `src/game/random/rng.ts` |
+### Anti-cheat rules
 
-### Anti-cheat contract
+1. Client never imports `server.ts`, `battle/`, `shop.ts`, `ai/`, `run/`, or `unitRegistry`.
+2. `buildClientRunView` strips enemy shop/gold and run seed; battle log seeds cleared.
+3. Welcome pushes `PublicRules` for button labels — server still validates costs.
+4. PvP requires both `end_turn` locks and both `battle_continue` acks.
 
-- Client sends **intents only** (`ClientToServerMessage`).
-- Server owns shop state, AI opponent, battle sim, lives/wins.
-- Client view strips enemy shop/gold (`toClientRunView` / PvP view builder).
-- Same `simulateBattle(seed, teamA, teamB)` on server for vs AI and 1v1.
+## Gameplay (v1)
 
-### Shop rules (v1)
-
-- Gold refill each turn (`goldPerTurn`, default 10).
-- Buy 3g, sell 1g, reroll 1g, freeze free.
-- Tier from `tierByTurn` table.
-- Loss: `livesLostBase + survivingEnemies` (capped).
-
-### Unit roster (v1)
-
-12 units in `units.json` with abilities: none, buff behind, faint summon, splash, snipe, faint AoE, faint hurt, hurt reflect, buff adjacent, KO heal, lonely power, KO push back.
+- Shop: buy/sell/reroll/freeze; 5 slots; front fights first.
+- Ladder: 10 lives, 10 wins; tier by turn.
+- 12 units in `config/units.json`.
+- Modes: vs AI, 1v1 queue.
 
 ## Roadmap
 
 - [x] Pure seeded battle sim + shop domain
-- [x] React shop / battle / end screens
-- [x] Authoritative WebSocket server (vs AI + 1v1 queue)
-- [x] Client never trusts local battle outcomes
-- [ ] More units / packs / merge-upgrade (SAP level-ups)
+- [x] Authoritative WS server
+- [x] Hard shared/server boundary + Vite import guard
+- [x] PvP dual-ack after battle
 - [ ] Ranked / Steam auth
-- [ ] Spectate / replays from battle logs
-- [ ] Retire or archive legacy card-chain entry points
+- [ ] Spectate / replays
+- [ ] More units / merges
+- [ ] Archive legacy card-chain entry points
 
 ## Changelog
 
 | Date | Change |
 |------|--------|
-| 2026-11-06 | **Authoritative client/server.** `server/` WebSocket host owns shop RNG, AI, and `simulateBattle`. Client sends intents only; 1v1 matchmaking queue included. |
-| 2026-11-06 | **Pivot to Super Auto Pets–style auto battler** on `experimental/auto-battler`. Domain under `src/game/autoBattler/`. |
-| 2026-09-21 | Experimental gunpowder-downright card-chain work. See git history on `experimental/gunpowder-downright`. |
-| 2026-08–09 | Prior card-chain / run-map feature history. Superseded as active product direction. |
+| 2026-11-06 | **Hard client/server boundary.** Shared protocol/catalog only on client; sim/shop/AI server-only; Vite guard; stripped views (no seed/enemy shop); PvP dual battle ack; `PublicRules` on welcome. |
+| 2026-11-06 | Auto-battler pivot + first authoritative WS server. |
+| 2026-09-21 | Legacy card-chain experimental work — superseded. |

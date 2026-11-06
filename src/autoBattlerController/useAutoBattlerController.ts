@@ -1,17 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     AutoBattlerSocket,
+    DEFAULT_PUBLIC_RULES,
+    emptyClientRunView,
+    type ClientRunView,
     type ConnectionStatus,
-} from '../game/autoBattler/net/AutoBattlerSocket';
-import { emptyClientRunView } from '../game/autoBattler/net/clientView';
-import type { ClientRunView } from '../game/autoBattler/net/protocol';
+    type PublicRules,
+} from '../game/autoBattler';
 
 export const useAutoBattlerController = () =>
 {
     const [ state, setState ] = useState<ClientRunView>(() => emptyClientRunView());
+    const [ rules, setRules ] = useState<PublicRules>(DEFAULT_PUBLIC_RULES);
     const [ status, setStatus ] = useState<ConnectionStatus>('connecting');
     const [ statusDetail, setStatusDetail ] = useState('');
     const [ queuePosition, setQueuePosition ] = useState<number | null>(null);
+    const [ guestId, setGuestId ] = useState<string | null>(null);
     const socketRef = useRef<AutoBattlerSocket | null>(null);
 
     useEffect(() =>
@@ -22,10 +26,19 @@ export const useAutoBattlerController = () =>
                 setStatus(next);
                 setStatusDetail(detail ?? '');
             },
+            onWelcome: (id, publicRules) =>
+            {
+                setGuestId(id);
+                setRules(publicRules);
+            },
             onState: (run) =>
             {
                 setState(run);
-                if (run.mode !== 'menu' || run.phase !== 'menu')
+                if (run.mode === 'menu' && run.phase === 'menu')
+                {
+                    // keep queue position until cancel/match
+                }
+                else
                 {
                     setQueuePosition(null);
                 }
@@ -123,10 +136,11 @@ export const useAutoBattlerController = () =>
 
     return {
         state,
+        rules,
         status,
         statusDetail,
         queuePosition,
-        guestId: socketRef.current?.getGuestId() ?? null,
+        guestId,
         onStartRun,
         onQueuePvp,
         onCancelQueue,

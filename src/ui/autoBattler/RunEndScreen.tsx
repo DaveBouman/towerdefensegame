@@ -18,7 +18,8 @@ export const RunEndScreen = ({ controller }: RunEndScreenProps) =>
                 <p className="ab-hint">
                     {state.lastMessage}
                     {' '}
-                    Wins {state.player.wins} · Lives left {state.player.lives} · Seed {state.seed}
+                    Wins {state.player.wins} · Lives left {state.player.lives}
+                    {state.mode === 'pvp' && state.matchId ? ` · Match ${state.matchId}` : ''}
                 </p>
                 <footer className="ab-actions">
                     <button type="button" className="ab-btn ab-btn--ghost" onClick={onBackToMenu}>

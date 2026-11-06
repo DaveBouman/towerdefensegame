@@ -1,5 +1,5 @@
 import { WebSocketServer } from 'ws';
-import { DEFAULT_AB_WS_PORT, parseClientMessage } from '../src/game/autoBattler/net/protocol';
+import { DEFAULT_AB_WS_PORT, parseClientMessage } from '../src/game/autoBattler/shared/protocol';
 import { SessionStore } from './sessionStore';
 
 const port = Number(process.env.AB_WS_PORT ?? DEFAULT_AB_WS_PORT);
@@ -22,11 +22,6 @@ wss.on('connection', (ws) =>
             return;
         }
 
-        if (message.type === 'hello' && message.guestId)
-        {
-            // Re-bind is handled on first connect only; hello just acks.
-        }
-
         store.handle(ws, message);
     });
 
@@ -37,4 +32,4 @@ wss.on('connection', (ws) =>
 });
 
 console.log(`[signal-chain] authoritative auto-battler WS on ws://127.0.0.1:${port}`);
-console.log('[signal-chain] Clients must use this server — battles are never trusted from the client.');
+console.log('[signal-chain] Client is display-only — shop RNG + battles run here only.');

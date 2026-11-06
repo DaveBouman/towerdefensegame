@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { AutoBattlerController } from '../../autoBattlerController/useAutoBattlerController';
-import type { BattleEvent, Team, UnitInstance } from '../../game/autoBattler';
-import { getUnitDefinitionOrThrow } from '../../game/autoBattler';
+import {
+    getUnitDefinitionOrThrow,
+    type BattleEvent,
+    type Team,
+    type UnitInstance,
+} from '../../game/autoBattler/shared';
 import { CyberPanel } from '../components/CyberPanel';
 import { UnitCard, unitFromInstance } from './UnitCard';
 

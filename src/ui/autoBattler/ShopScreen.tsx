@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AUTO_BATTLER_RULES } from '../../game/autoBattler';
 import type { AutoBattlerController } from '../../autoBattlerController/useAutoBattlerController';
 import { CyberPanel } from '../components/CyberPanel';
 import { UnitCard, unitFromInstance, unitFromOffer } from './UnitCard';
@@ -10,7 +9,7 @@ interface ShopScreenProps {
 
 export const ShopScreen = ({ controller }: ShopScreenProps) =>
 {
-    const { state, onBuy, onSell, onReroll, onFreeze, onMove, onEndTurn } = controller;
+    const { state, rules, onBuy, onSell, onReroll, onFreeze, onMove, onEndTurn } = controller;
     const { player } = state;
     const [ selectedTeamIndex, setSelectedTeamIndex ] = useState<number | null>(null);
 
@@ -47,7 +46,7 @@ export const ShopScreen = ({ controller }: ShopScreenProps) =>
                     <div className="ab-meters">
                         <span>Gold {player.gold}</span>
                         <span>Lives {player.lives}</span>
-                        <span>Wins {player.wins}/{AUTO_BATTLER_RULES.winsToVictory}</span>
+                        <span>Wins {player.wins}/{rules.winsToVictory}</span>
                         <span>Tier {player.tier}</span>
                     </div>
                 </header>
@@ -84,7 +83,7 @@ export const ShopScreen = ({ controller }: ShopScreenProps) =>
                                         className="ab-mini-btn"
                                         onClick={() => onSell(slot.uid)}
                                     >
-                                        Sell (+{AUTO_BATTLER_RULES.sellReward})
+                                        Sell (+{rules.sellReward})
                                     </button>
                                 ) : null}
                             </div>
@@ -100,7 +99,7 @@ export const ShopScreen = ({ controller }: ShopScreenProps) =>
                                 <UnitCard
                                     {...unitFromOffer(offer)}
                                     onClick={() => onBuy(offer.uid)}
-                                    footer={`Buy ${AUTO_BATTLER_RULES.buyCost}g`}
+                                    footer={`Buy ${rules.buyCost}g`}
                                 />
                                 <button
                                     type="button"
@@ -118,10 +117,10 @@ export const ShopScreen = ({ controller }: ShopScreenProps) =>
                     <button
                         type="button"
                         className="ab-btn ab-btn--ghost"
-                        disabled={player.gold < AUTO_BATTLER_RULES.rerollCost}
+                        disabled={player.gold < rules.rerollCost}
                         onClick={onReroll}
                     >
-                        Reroll ({AUTO_BATTLER_RULES.rerollCost}g)
+                        Reroll ({rules.rerollCost}g)
                     </button>
                     <button
                         type="button"

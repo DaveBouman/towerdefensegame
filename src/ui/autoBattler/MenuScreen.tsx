@@ -25,9 +25,9 @@ export const MenuScreen = ({ controller }: MenuScreenProps) =>
                     {controller.statusDetail ? ` — ${controller.statusDetail}` : ''}
                 </p>
                 <ul className="ab-bullets">
-                    <li>Shop intents only — server owns offers, gold, and AI</li>
-                    <li>Battles simulated server-side (`simulateBattle`)</li>
-                    <li>Vs AI now · 1v1 matchmaking queue ready</li>
+                    <li>Thin client — intents only; no local sim authority</li>
+                    <li>Server owns offers, gold, AI, and battle outcomes</li>
+                    <li>Vs AI · 1v1 queue (both must ack after battle)</li>
                 </ul>
                 <div className="ab-actions ab-actions--stack">
                     <button

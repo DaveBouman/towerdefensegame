@@ -2,9 +2,13 @@
 
 ## Project
 
-Super Auto Pets–style cyberpunk auto battler with an **authoritative WebSocket server** (`npm run server`) and thin React client. See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md).
+Super Auto Pets–style cyberpunk auto battler with a hard client/server split. See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md).
 
-Shared domain: `src/game/autoBattler/`. Server: `server/`. UI: `src/ui/autoBattler/`. Do not trust client-side battle/shop outcomes. Legacy card-chain code under `src/game/cardGame/` is not the App entry.
+- **Client-safe:** `src/game/autoBattler/shared/` + `client/` (via `src/game/autoBattler/index.ts`)
+- **Server-only:** `src/game/autoBattler/{battle,shop,ai,run}/` + `server/` — never import from UI
+- Vite enforces the boundary (`vite/blockServerAutoBattler.mjs`)
+
+Do not trust client-side battle/shop outcomes. Legacy card-chain under `src/game/cardGame/` is not the App entry.
 
 ## Do not use
 

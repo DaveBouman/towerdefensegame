@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { APP_VERSION } from './readPackageVersion.mjs';
+import { blockServerAutoBattler } from './blockServerAutoBattler.mjs';
 
 const phasermsg = () => {
     return {
@@ -24,6 +25,7 @@ export default defineConfig({
         __APP_VERSION__: JSON.stringify(APP_VERSION),
     },
     plugins: [
+        blockServerAutoBattler(),
         react(),
         phasermsg()
     ],
